@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>[AWS] Data migration from DynamoDB to Aurora MySQL | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[AWS] Data migration from DynamoDB to Aurora MySQL</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 9, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/mysql">MySQL</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/dynamodb">DynamoDB</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/aurora">Aurora</a></code></small>
+
+</p>
+<pre><code>I have migrated data from DynamoDB to Aurora MySQL, so I will write the method.
+</code></pre>
+<p>Please note that the data migration does not mean that all tables are migrated because we have migrated the data stored in one table.</p>
+<img width="351" alt="screenshot 2020-05-09 12.40.26.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173064/e70b4d99-fc01-7cf4-c9b1-c4a0ef7f6ffd.png">
+<h1 id="method">Method</h1>
+<p>I think there are several possible ways to migrate from DynamoDB to Aurora MySQL, but I wrote the code in disposable (?) Python to make the transition quickly and reliably
+Even though it is disposable, there is a possibility that data may be migrated again, so we made it possible to reuse</p>
+<h1 id="implementation">Implementation</h1>
+<ul>
+<li>python3.8 (pipenv)</li>
+<li>pymysql</li>
+<li>boto3</li>
+</ul>
+<h2 id="code">code</h2>
+<p>First, create a model for DynamoDB and Aurora MySQL
+You can use the standard library dataclass to write it concisely and neatly</p>
+<p>Also, as a point, the scan function will be executed recursively in consideration of the case where it is not possible to get it all at once after getting all the records from the DynamoDB table.</p>
+<p>From <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.scan">official document</a></p>
+<blockquote>
+<p>A single Scan operation reads up to the maximum number of items set (if using the Limit parameter) or a maximum of 1 MB of data and then apply any filtering to the results using FilterExpression .If LastEvaluatedKey is present in the response, you need to paginate the result set.</p>
+</blockquote>
+<pre><code class="language-python:" data-lang="python:">from decimal import Decimal
+from dataclasses import dataclass, asdict
+from typing import Any, ClassVar, Dict, List
+
+import boto3
+
+from src.utils import convert_to_datetime
+
+
+@dataclass
+class BaseDynamoDB:
+    table_name: ClassVar[str]
+    hash_key: ClassVar[str]
+
+    @classmethod
+    def get_client(cls) -&gt; Any:
+        client = boto3.resource(&quot;dynamodb&quot;)
+        return client.Table(cls.table_name)
+
+    @classmethod
+    def scan(
+        cls, *, recursive: bool = False, exclusive_start_key: Dict = {},
+    ) -&gt; List[&quot;BaseDynamoDB&quot;]:
+        &quot;&quot;&quot;Retrieve some or all items from DynamoDB Table
+
+        Set recursive to True to get all records
+
+        Args:
+            recursive (bool):
+                Default is False to get some data
+                Set to True to get all records
+            exclusive_start_key (Dict): Primary key of the first item to scan
+
+        Returns:
+            List[&quot;BaseDynamoDB&quot;]: Tabular model instance list
+        &quot;&quot;&quot;
+
+        client = cls.get_client()
+        options = {}
+
+        if exclusive_start_key:
+            options.update(exclusive_start_key)
+
+        response = client.scan(**options)
+        items = list(map(lambda item: cls(**item), response[&quot;Items&quot;])) # type: ignore
+
+        if recursive and &quot;LastEvaluatedKey&quot; in response:
+            tmp = cls.scan(
+                recursive=True,
+                exclusive_start_key=response[&quot;LastEvaluatedKey&quot;],
+            )
+            items.extend(tmp)
+
+        return items
+
+
+@dataclass
+class Qiita(BaseDynamoDB):
+    &quot;&quot;&quot;Imaginary table for Qiita&quot;&quot;&quot;
+
+    table_name: ClassVar[str] = &quot;qiita&quot;
+    hash_key: ClassVar[str] = &quot;user_id&quot;
+
+    user_id: str
+    created_at: int
+    updated_at: int
+    memo: str = &quot;&quot;
+
+    def __post_init__(self) -&gt; None:
+        for attr in (&quot;updated_at&quot;, &quot;created_at&quot;):
+            v = getattr(self, attr)
+            if isinstance(v, Decimal):
+                setattr(self, attr, convert_to_datetime(str(v)))
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        Return &quot;&quot;&quot; instance as dictionary
+
+        Returns:
+            Dict[str, Any]
+        &quot;&quot;&quot;
+
+        return asdict(self)
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:models/aurora.py" data-lang="python:models/aurora.py"><span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime
+<span style="color:#f92672">from</span> dataclasses <span style="color:#f92672">import</span> asdict, dataclass, field, InitVar
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> Any, ClassVar, Dict
+
+
+<span style="color:#a6e22e">@dataclass</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Qiita</span>:
+    <span style="color:#e6db74">&#34;&#34;&#34;Imaginary table for Qiita&#34;&#34;&#34;</span>
+
+    table_name: ClassVar[str] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;qiita&#34;</span>
+    primary_key: ClassVar[str] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;user_id&#34;</span>
+
+    user_id: str
+
+    <span style="color:#75715e"># Date and time management column of DynamoDB</span>
+    created_at: InitVar[datetime]
+    updated_at: InitVar[datetime]
+    <span style="color:#75715e"># Aurora MySQL Date and Time Management Column</span>
+    registration_date: datetime <span style="color:#f92672">=</span> field(init<span style="color:#f92672">=</span>False)
+    update_date: datetime <span style="color:#f92672">=</span> field(init<span style="color:#f92672">=</span>False)
+
+    memo: str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>
+    registration_id: str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;DynamoDB&#34;</span>
+    update_id: str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;DynamoDB&#34;</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__post_init__</span>(
+        self, created_at: datetime, updated_at: datetime
+    ) <span style="color:#f92672">-&gt;</span> None:
+        self<span style="color:#f92672">.</span>registration_date <span style="color:#f92672">=</span> created_at
+        self<span style="color:#f92672">.</span>update_date <span style="color:#f92672">=</span> updated_at
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">to_dict</span>(self) <span style="color:#f92672">-&gt;</span> Dict[str, Any]:
+        Return <span style="color:#e6db74">&#34;&#34;&#34; instance as dictionary
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns:
+</span><span style="color:#e6db74">            Dict[str, Any]
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+
+        result <span style="color:#f92672">=</span> asdict(self)
+        result[<span style="color:#e6db74">&#34;registration_date&#34;</span>] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>registration_date
+        result[<span style="color:#e6db74">&#34;update_date&#34;</span>] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>update_date
+
+        <span style="color:#66d9ef">return</span> result
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:connection.py" data-lang="python:connection.py"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">from</span> contextlib <span style="color:#f92672">import</span> contextmanager
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> Iterator
+
+<span style="color:#f92672">import</span> pymysql
+<span style="color:#f92672">from</span> pymysql.connections <span style="color:#f92672">import</span> Connection
+
+<span style="color:#f92672">from</span> src.utils <span style="color:#f92672">import</span> get_logger
+
+
+logger <span style="color:#f92672">=</span> get_logger(__name__)
+
+
+AURORA_DB <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#34;AURORA_DB&#34;</span>]
+AURORA_HOST <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#34;AURORA_HOST&#34;</span>]
+AURORA_PORT <span style="color:#f92672">=</span> int(os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#34;AURORA_PORT&#34;</span>])
+AURORA_USER <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#34;AURORA_USER&#34;</span>]
+AURORA_PASSWORD <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#34;AURORA_PASSWORD&#34;</span>]
+
+
+<span style="color:#a6e22e">@contextmanager</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">connect</span>() <span style="color:#f92672">-&gt;</span> Iterator[Connection]:
+    <span style="color:#e6db74">&#34;&#34;&#34;Establishes connection with Aurora MySQL
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Returns:
+</span><span style="color:#e6db74">        Iterator[Connection]
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">try</span>:
+        conn <span style="color:#f92672">=</span> pymysql<span style="color:#f92672">.</span>connect(
+            db<span style="color:#f92672">=</span>AURORA_DB,
+            host<span style="color:#f92672">=</span>AURORA_HOST,
+            port<span style="color:#f92672">=</span>AURORA_PORT,
+            user<span style="color:#f92672">=</span>AURORA_USER,
+            password<span style="color:#f92672">=</span>AURORA_PASSWORD,
+            charset<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf8mb4&#34;</span>,cursorclass<span style="color:#f92672">=</span>pymysql<span style="color:#f92672">.</span>cursors<span style="color:#f92672">.</span>DictCursor,
+            connect_timeout<span style="color:#f92672">=</span><span style="color:#ae81ff">120</span>,
+        )
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> err:
+        logger<span style="color:#f92672">.</span>error(<span style="color:#e6db74">&#34;Auraro connection failed&#34;</span>)
+        <span style="color:#66d9ef">raise</span> err
+
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#66d9ef">yield</span> conn
+    <span style="color:#66d9ef">finally</span>:
+        conn<span style="color:#f92672">.</span>close()
+</code></pre></div><p>Below is the main script
+If you change the model name, you can reuse it as much as you want</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">from</span> src.db.connection <span style="color:#f92672">import</span> connect
+<span style="color:#f92672">from</span> src.db.sql <span style="color:#f92672">import</span> INSERT_QIITA
+<span style="color:#f92672">from</span> src.models.dynamodb <span style="color:#f92672">import</span> Qiita <span style="color:#66d9ef">as</span> DynamoDBQiita
+<span style="color:#f92672">from</span> src.models.mysql <span style="color:#f92672">import</span> Qiita <span style="color:#66d9ef">as</span> MySQLQiita
+<span style="color:#f92672">from</span> src.utils <span style="color:#f92672">import</span> get_logger
+
+logger <span style="color:#f92672">=</span> get_logger(__name__)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;START&#34;</span>)
+
+    items <span style="color:#f92672">=</span> DynamoDBQiita<span style="color:#f92672">.</span>scan(recursive<span style="color:#f92672">=</span>True)
+    logger<span style="color:#f92672">.</span>info(f<span style="color:#e6db74">&#34;{len(items)} items have been acquired&#34;</span>)
+
+    params <span style="color:#f92672">=</span> list(
+        map(
+            <span style="color:#66d9ef">lambda</span> item: MySQLQiita(<span style="color:#f92672">**</span>item<span style="color:#f92672">.</span>to_dict())<span style="color:#f92672">.</span>to_dict(),
+            items,
+        )
+    )
+
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#66d9ef">with</span> connect() <span style="color:#66d9ef">as</span> conn:
+            <span style="color:#66d9ef">with</span> conn<span style="color:#f92672">.</span>cursor() <span style="color:#66d9ef">as</span> cursor:
+                cursor<span style="color:#f92672">.</span>executemany(INSERT_QIITA, params)
+                count <span style="color:#f92672">=</span> cursor<span style="color:#f92672">.</span>rowcount
+            conn<span style="color:#f92672">.</span>commit()
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> err:
+        logger<span style="color:#f92672">.</span>error(err)
+        logger<span style="color:#f92672">.</span>error(<span style="color:#e6db74">&#34;INSERT failure&#34;</span>)
+    <span style="color:#66d9ef">else</span>:
+        logger<span style="color:#f92672">.</span>info(f <span style="color:#e6db74">&#34;{count} successful INSERT&#34;</span>)
+
+    logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;END&#34;</span>)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()
+</code></pre></div><h1 id="migration">Migration</h1>
+<h2 id="preparation">Preparation</h2>
+<h3 id="iam">IAM</h3>
+<p>Create an IAM User with the Read Only Role of DynamoDB and obtain the Access Key ID and Secret Access Key.
+Aurora MySQL authenticates with username and password like ordinary MySQL, so it is not necessary</p>
+<h3 id="env">.env</h3>
+<p>Prepare an .env file to make pipenv read credential data</p>
+<pre><code class="language-ini:.env" data-lang="ini:.env">AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=
+AURORA_DB=
+AURORA_HOST=
+AURORA_PORT=
+AURORA_USER=
+AURORA_PASSWORD=
+</code></pre><h3 id="makefile">Makefile</h3>
+<p>I wrote the Makefile to use the same script for staging and production, and only need to execute simple commands
+When executing a python script with pipenv, I want to read the secret key from the .env file, so I made a symbolic link from .env to the .env.$(stage) file for each environment</p>
+<pre><code class="language-makefile:Makefile" data-lang="makefile:Makefile">stage = stg
+
+.PHONY: dymy
+dymy:
+ln -sf .env.$(stage) .env
+pipenv run python -m src.main
+</code></pre><p>As an aside, if you want to execute a python script with pipenv, you can write it in the scripts section of Pipfile, but it is recommended to write Makefile when you want to do other processing like this time, for example.
+Well, shell script is fine, but I personally like Makefile</p>
+<h2 id="farewell-dynamodb-welcome-aurora-mysql">Farewell DynamoDB, Welcome Aurora MySQL</h2>
+<p>Specify prod in the stage argument when executing in a production environment</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make dymy stage<span style="color:#f92672">=</span>prod
+</code></pre></div><p>This completes the data migration from DynamoDB to Aurora MySQL
+If you want to check whether migration was really possible, the number of items stored in the source DynamoDB table must match the count obtained by executing <code>SELECT count(*) FROM ~</code> in Aurora MySQL of the migration destination. Please see</p>
+<p>#Reference</p>
+<ul>
+<li><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.scan">https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/dynamodb.html#DynamoDB.Table.scan</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Even now, let&#39;s try face recognition with Chainer (learning phase) | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Even now, let&rsquo;s try face recognition with Chainer (learning phase)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 9, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/face-recognition"> face recognition</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/chainer"> Chainer</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/cnn"> CNN</a></code></small>
+
+</p>
+<pre><code>###Overview
+</code></pre>
+<p>It is full of feeling that face recognition is announced after the end of development of Chainer is announced,
+I will spell it here as a memorandum.</p>
+<p>This series will be sent in two parts.
+This time, I will explain how to implement the learning phase (learning face images).
+Next time, I will explain the implementation of <a href="https://qiita.com/hima_zin331/items/721a030e7d924340ee27">prediction phase</a>(facerecognitionusingcamera).</p>
+<p>Since I am a ML first-year student and a high school student at the time, some of the information may be incorrect or there may be a bug in the program. If there is such a thing, I would be happy to point it out in the comments.
+(Article created date: February 9, 2020)</p>
+<p>###environment
+<strong>-Software-</strong>
+Windows 10 Home
+Anaconda3 64-bit (Python3.7)
+Spyder
+<strong>-Library-</strong>
+Chainer 7.0.0
+<strong>-Hardware-</strong>
+CPU: Intel core i9 9900K
+GPU: NVIDIA GeForce GTX1080ti
+RAM: 16GB 3200MHz</p>
+<p>###reference
+<strong>Books</strong>
+CQ Publishing Deep Learning Starts with Arithmetic &amp; Rasppies
+(<a href="https://www.amazon.co.jp/%E7%AE%97%E6%95%B0-%E3%83%A9%E3%82%BA%E3%83%91%E3%82%A4%E3%81%8B%E3%82%89%E5%A7%8B%E3%82%81%E3%82%8B-%E3%83%87%E3%82%A3%E3%83%BC%E3%83%97%E3%83%BB%E3%83%A9%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0-%E3%83%9C%E3%83%BC%E3%83%89%E3%83%BB%E3%82%B3%E3%83%B3%E3%83%94%E3%83%A5%E3%83%BC%E3%82%BF%E3%83%BB%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E7%89%A7%E9%87%8E/dp/4789847063">Amazon page</a>)
+<strong>site</strong>
+<a href="https://docs.chainer.org/en/stable/reference/index.html">Chainer API Reference</a></p>
+<p>###program
+For the time being, I will upload it to Github.
+<a href="https://github.com/himazin331/Face-Recognition-Chainer-">https://github.com/himazin331/Face-Recognition-Chainer-</a>
+The repository contains learning phase, prediction phase, data processing program, Haar-Cascade.</p>
+<h3 id="premise">premise</h3>
+<p><strong>Anaconda3 must be installed</strong> for program operation.
+Please refer to the following for how to download and install Anaconda3.
+<a href="https://www.anaconda.com/distribution/#download-section">Anaconda3 download site</a>
+<a href="https://qiita.com/takanorimutoh/items/ea0a3c73220f37858720">How to install Anaconda3 (Windows)</a></p>
+<p>Also, if you like <a href="https://qiita.com/mainichinemui/items/d4c469d0c34c9a866d1f">Here</a> posted by my friend, please refer to it.</p>
+<p>After installing Anaconda3, at the Anaconda3 prompt,
+<code>pip install chainer</code>
+Please enter to install Chainer.</p>
+<h3 id="about-learning-data">About learning data</h3>
+<p>In this program, <strong>learning data is a grayscale image 32×32px JPEG file</strong>
+It is implemented as a prerequisite.
+Please use <a href="https://qiita.com/hima_zin331/items/c4160c5c31888e2066a4">here</a> for data processing.</p>
+<p>###Source code
+<strong>Please note that the code is dirty&hellip;</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:face_recog_train_CH.py" data-lang="python:face_recog_train_CH.py">
+<span style="color:#f92672">import</span> argparse <span style="color:#f92672">as</span> arg
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+
+<span style="color:#f92672">import</span> chainer
+<span style="color:#f92672">import</span> chainer.functions <span style="color:#f92672">as</span> F
+<span style="color:#f92672">import</span> chainer.links <span style="color:#f92672">as</span> L
+<span style="color:#f92672">from</span> chainer <span style="color:#f92672">import</span> training
+<span style="color:#f92672">from</span> chainer.training <span style="color:#f92672">import</span> extensions
+
+<span style="color:#75715e"># CNN definition</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CNN</span>(chainer<span style="color:#f92672">.</span>Chain):
+    
+    <span style="color:#75715e"># Each layer definition</span>
+    <span style="color:#66d9ef">def</span> __init__(self, n_out):
+        super(CNN, self)<span style="color:#f92672">.</span>__init__(
+            <span style="color:#75715e">#Definition of convolutional layer</span>
+            conv1 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>), <span style="color:#75715e"># 1st</span>
+            conv2 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>), <span style="color:#75715e"># 2nd</span>
+            conv3 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>), <span style="color:#75715e"># 3rd</span>
+
+            <span style="color:#75715e"># Linear combination of all neurons</span>
+            link <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Linear(None, <span style="color:#ae81ff">1024</span>), <span style="color:#75715e"># fully connected layer</span>
+            link_class <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Linear(None, n_out), <span style="color:#75715e"># fully connected layer for class classification (n_out: number of classes)</span>
+        )
+        
+    <span style="color:#75715e">#Propagation</span>
+    <span style="color:#66d9ef">def</span> __call__(self, x):
+        
+        <span style="color:#75715e"># Convolutional layer -&gt; ReLU function -&gt; Maximum pooling layer</span>
+        h1 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>max_pooling_2d(F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>conv1(x)), ksize<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>) <span style="color:#75715e"># 1st</span>
+        h2 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>max_pooling_2d(F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>conv2(h1)), ksize<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>) <span style="color:#75715e"># 2nd</span>
+        h3 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>conv3(h2)) <span style="color:#75715e"># 3rd</span>
+        
+        <span style="color:#75715e">#Full connection layer -&gt;ReLU function</span>
+        h4 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>link(h3))
+        
+        <span style="color:#75715e"># Return predicted value</span>
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>link_class(h4) <span style="color:#75715e"># Full connection layer for class classification</span>
+ 
+<span style="color:#75715e"># Trainer</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">trainer</span>(object):
+    
+    <span style="color:#75715e"># Model building, optimization method setup</span>
+    <span style="color:#66d9ef">def</span> __init__(self):
+        
+        <span style="color:#75715e"># Model building</span>
+        self<span style="color:#f92672">.</span>model <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Classifier(CNN(<span style="color:#ae81ff">2</span>))
+        
+        <span style="color:#75715e"># Optimization method setup</span>
+        self<span style="color:#f92672">.</span>optimizer <span style="color:#f92672">=</span> chainer<span style="color:#f92672">.</span>optimizers<span style="color:#f92672">.</span>Adam() <span style="color:#75715e"># Adam algorithm</span>
+        self<span style="color:#f92672">.</span>optimizer<span style="color:#f92672">.</span>setup(self<span style="color:#f92672">.</span>model) <span style="color:#75715e"># optimizer sets the model</span>
+        
+    <span style="color:#75715e">#Learning</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train</span>(self, train_set, batch_size, epoch, gpu, out_path):
+
+        <span style="color:#75715e"># Map to GPU processing</span>
+        <span style="color:#66d9ef">if</span> gpu <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>:
+            chainer<span style="color:#f92672">.</span>cuda<span style="color:#f92672">.</span>get_device(gpu)<span style="color:#f92672">.</span>use() <span style="color:#75715e"># Get device object</span>
+            self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>to_gpu() <span style="color:#75715e"># Copy instance contents to GPU</span>
+        
+        <span style="color:#75715e">#Creation of dataset iterator (definition of iteration of training data, shuffle for each loop)</span>
+        train_iter <span style="color:#f92672">=</span> chainer<span style="color:#f92672">.</span>iterators<span style="color:#f92672">.</span>SerialIterator(train_set, batch_size)
+
+        <span style="color:#75715e"># create updater</span>
+        updater <span style="color:#f92672">=</span> training<span style="color:#f92672">.</span>StandardUpdater(train_iter, self<span style="color:#f92672">.</span>optimizer, device<span style="color:#f92672">=</span>gpu)
+        <span style="color:#75715e"># create trainer</span>
+        trainer <span style="color:#f92672">=</span> training<span style="color:#f92672">.</span>Trainer(updater, (epoch,<span style="color:#e6db74">&#39;epoch&#39;</span>), out<span style="color:#f92672">=</span>out_path)
+
+        <span style="color:#75715e"># extension settings</span>
+        <span style="color:#75715e"># Schematic process flow</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>dump_graph(<span style="color:#e6db74">&#39;main/loss&#39;</span>))
+        <span style="color:#75715e"># Write snapshot for each learning</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>snapshot(), trigger<span style="color:#f92672">=</span>(epoch,<span style="color:#e6db74">&#39;epoch&#39;</span>))
+        <span style="color:#75715e"># log (JSON format) writing</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>LogReport())
+        <span style="color:#75715e"># Plot loss values on a graph</span>
+        trainer<span style="color:#f92672">.</span>extend(
+                extensions<span style="color:#f92672">.</span>PlotReport(<span style="color:#e6db74">&#39;main/loss&#39;</span>,<span style="color:#e6db74">&#39;epoch&#39;</span>, file_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;loss.png&#39;</span>))
+        <span style="color:#75715e"># Plot prediction accuracy on graph</span>
+        trainer<span style="color:#f92672">.</span>extend(
+                extensions<span style="color:#f92672">.</span>PlotReport(<span style="color:#e6db74">&#39;main/accuracy&#39;</span>,<span style="color:#e6db74">&#39;epoch&#39;</span>, file_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;accuracy.png&#39;</span>))
+        <span style="color:#75715e"># Output &#34;learning count, loss value, prediction accuracy, elapsed time&#34; for each learning</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>PrintReport(
+                (<span style="color:#e6db74">&#39;epoch&#39;</span>,<span style="color:#e6db74">&#39;main/loss&#39;</span>,<span style="color:#e6db74">&#39;main/accuracy&#39;</span>,<span style="color:#e6db74">&#39;elapsed_time&#39;</span>])))
+        <span style="color:#75715e">#Progress bar display</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>ProgressBar())
+
+        <span style="color:#75715e"># Start learning</span>
+        trainer<span style="color:#f92672">.</span>run()
+
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;___Training finished</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
+        
+        <span style="color:#75715e"># Model to CPU support</span>
+        self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>to_cpu()
+    
+        <span style="color:#75715e"># Save parameter</span>
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;___Saving parameter...&#34;</span>)
+        param_name <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(out_path, <span style="color:#e6db74">&#34;face_recog.model&#34;</span>) <span style="color:#75715e"># destination for learned parameters</span>
+        chainer<span style="color:#f92672">.</span>serializers<span style="color:#f92672">.</span>save_npz(param_name, self<span style="color:#f92672">.</span>model) <span style="color:#75715e"># Write learned parameters in NPZ formatprint(&#34;___Successfully completed\n\n&#34;)</span>
+    
+<span style="color:#75715e">#Create dataset</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_dataset</span>(data_dir):
+    
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">___Creating a dataset...&#34;</span>)
+    
+    cnt <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    prc <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;/&#39;</span>,<span style="color:#e6db74">&#39;-&#39;</span>,<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">&#39;</span>,<span style="color:#e6db74">&#39;|&#39;</span>]
+    
+    <span style="color:#75715e"># Number of image sets</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Number of Rough-Dataset: {}&#34;</span><span style="color:#f92672">.</span>format(len(os<span style="color:#f92672">.</span>listdir(data_dir))))
+    <span style="color:#75715e">#Number of image data</span>
+    <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>listdir(data_dir):
+        d <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(data_dir, c)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Number of image in a directory </span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">{}</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">: {}&#34;</span><span style="color:#f92672">.</span>format(c, len(os<span style="color:#f92672">.</span>listdir(d))))
+    
+    train <span style="color:#f92672">=</span> [] <span style="color:#75715e"># temporary dataset</span>
+    label <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    
+    <span style="color:#75715e"># Create temporary data set</span>
+    <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>listdir(data_dir):
+        
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">class: {}, class id: {}&#39;</span><span style="color:#f92672">.</span>format(c, label)) <span style="color:#75715e"># print class name and class ID</span>
+       
+        d <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(data_dir, c) <span style="color:#75715e"># join folder name and class folder name</span>
+        imgs <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(d) <span style="color:#75715e"># get all image files</span>
+        
+        <span style="color:#75715e"># Read only JPEG format image files</span>
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> [f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> imgs <span style="color:#66d9ef">if</span> (<span style="color:#e6db74">&#39;jpg&#39;</span><span style="color:#f92672">or</span><span style="color:#e6db74">&#39;JPG&#39;</span> <span style="color:#f92672">in</span> f)]:
+            
+            <span style="color:#75715e">#Through cache file</span>
+            <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;Thumbs.db&#39;</span>:
+                <span style="color:#66d9ef">continue</span>
+            
+            train<span style="color:#f92672">.</span>append([os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(d, i), label]) <span style="color:#75715e"># After joining class folder path and image file name, store in list</span>
+
+            cnt <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74"> Loading a images and labels...{} ({} / {})&#34;</span><span style="color:#f92672">.</span>format(prc[cnt<span style="color:#f92672">%</span><span style="color:#ae81ff">4</span>], cnt, len(os<span style="color:#f92672">.</span>listdir(d))), end<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span> )
+            
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74"> Loading a images and labels...Done ({} / {})&#34;</span><span style="color:#f92672">.</span>format(cnt, len(os<span style="color:#f92672">.</span>listdir(d))), end<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>)
+        
+        label <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        cnt <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    train_set <span style="color:#f92672">=</span> chainer<span style="color:#f92672">.</span>datasets<span style="color:#f92672">.</span>LabeledImageDataset(train,<span style="color:#e6db74">&#39;.&#39;</span>) <span style="color:#75715e"># Dataset</span>
+    
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">___Successfully completed</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+    
+    <span style="color:#66d9ef">return</span> train_set
+    
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+
+    <span style="color:#75715e"># Command line options</span>
+    parser <span style="color:#f92672">=</span> arg<span style="color:#f92672">.</span>ArgumentParser(description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Face Recognition train Program(Chainer)&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--data_dir&#39;</span>,<span style="color:#e6db74">&#39;-d&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span>None,
+                        help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Specify folder path (error when not specified)&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--out&#39;</span>,<span style="color:#e6db74">&#39;-o&#39;</span>, type<span style="color:#f92672">=</span>str,
+                        default<span style="color:#f92672">=</span>os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__))<span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/result&#39;</span><span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;/&#39;</span>, os<span style="color:#f92672">.</span>sep),
+                        help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Specify save destination of parameter (default value ./result)&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--batch_size&#39;</span>,<span style="color:#e6db74">&#39;-b&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">32</span>,
+                        help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Specify mini-batch size (default value 32)&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--epoch&#39;</span>,<span style="color:#e6db74">&#39;-e&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">15</span>,
+                        help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Specify number of learning (default value 15)&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--gpu&#39;</span>,<span style="color:#e6db74">&#39;-g&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>,
+                        help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Specify GPU ID (negative value indicates CPU processing, default value -1)&#39;</span>)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+
+    <span style="color:#75715e"># Folder not specified -&gt; Exception</span>
+    <span style="color:#66d9ef">if</span> args<span style="color:#f92672">.</span>data_dir <span style="color:#f92672">==</span> None:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">Exception: Folder not specified.</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+        sys<span style="color:#f92672">.</span>exit()
+    <span style="color:#75715e"># When a folder that does not exist is specified -&gt; Exception</span>
+    <span style="color:#66d9ef">if</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(args<span style="color:#f92672">.</span>data_dir) <span style="color:#f92672">!=</span> True:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">Exception: Folder {} is not found.</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">.</span>format(args<span style="color:#f92672">.</span>data_dir))
+        sys<span style="color:#f92672">.</span>exit()
+
+    <span style="color:#75715e">#Set information output</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;=== Setting information ===&#34;</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;# Images folder: {}&#34;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(args<span style="color:#f92672">.</span>data_dir)))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;# Output folder: {}&#34;</span><span style="color:#f92672">.</span>format(args<span style="color:#f92672">.</span>out))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;# Minibatch-size: {}&#34;</span><span style="color:#f92672">.</span>format(args<span style="color:#f92672">.</span>batch_size))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;# Epoch: {}&#34;</span><span style="color:#f92672">.</span>format(args<span style="color:#f92672">.</span>epoch))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;===========================&#34;</span>)
+
+    <span style="color:#75715e">#Create dataset</span>
+    train_set <span style="color:#f92672">=</span> create_dataset(args<span style="color:#f92672">.</span>data_dir)
+
+    <span style="color:#75715e"># Start learning</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;___Start training...&#34;</span>)
+    Trainer <span style="color:#f92672">=</span> trainer()
+    Trainer<span style="color:#f92672">.</span>train(train_set, args<span style="color:#f92672">.</span>batch_size, args<span style="color:#f92672">.</span>epoch, args<span style="color:#f92672">.</span>gpu, args<span style="color:#f92672">.</span>out)
+   
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    main()
+</code></pre></div><p>###Execution result
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/558214/724941f5-9ab2-b58c-8f10-fc1e66cd3a63.png%22Consolescreen%22" alt="image.png"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/558214/6758fec3-078e-fa20-198e-754cd58d8578.png%22Generatedfile%22" alt="image.png">
+After execution, the above file will be created in the save destination.</p>
+<p><strong>command</strong>
+<code>python face_recog_train_CH.py -d &lt;folder&gt; -e &lt;learning number&gt; -b &lt;batch size&gt;</code>
+‘A’ is a ‘A’ is a ‘A’ is a ‘A’ is a storage destination&gt;
+The default save location of the file is <code>./result</code>.</p>
+<p>###Explanation
+I will explain the code. Unfortunately, my ability to explain is poor.</p>
+<h4 id="network-model">Network model</h4>
+<p>The network model this time is a convolutional neural network (CNN).
+A network model is defined in the CNN class.</p>
+<pre><code class="language-python:CNN" data-lang="python:CNN"># CNN definition
+class CNN(chainer.Chain):
+    
+    # Each layer definition
+    def __init__(self, n_out):
+        super(CNN, self).__init__(
+            #Definition of convolutional layer
+            conv1 = L.Convolution2D(1, 16, 5, 1, 0), # 1st
+            conv2 = L.Convolution2D(16, 32, 5, 1, 0), # 2nd
+            conv3 = L.Convolution2D(32, 64, 5, 1, 0), # 3rd
+
+            # Linear combination of all neurons
+            link = L.Linear(None, 1024), # fully connected layer
+            link_class = L.Linear(None, n_out), # fully connected layer for class classification (n_out: number of classes)
+        )
+        
+    #Propagation
+    def __call__(self, x):
+        
+        # Convolutional layer -&gt; ReLU function -&gt; Maximum pooling layer
+        h1 = F.max_pooling_2d(F.relu(self.conv1(x)), ksize=2) # 1st
+        h2 = F.max_pooling_2d(F.relu(self.conv2(h1)), ksize=2) # 2nd
+        h3 = F.relu(self.conv3(h2)) # 3rd
+        
+        #Full connection layer -&gt;ReLU function
+        h4 = F.relu(self.link(h3))
+        
+        # Return predicted value
+        return self.link_class(h4) # Full connection layer for class classification
+</code></pre><p><code>chainer.Chain</code> is passed as the argument of the CNN class.
+<code>chainer.Chain</code> is a Chainer-specific class and is the core of the network.
+When creating an instance, call the instance method <code>__init__</code> and call the instance method of the superclass <code>chainer.Chain</code> to define the convolutional layer and fully connected layer.</p>
+<table>
+<thead>
+<tr>
+<th align="center">The hyperparameters of the convolutional layer in this program are shown in the table below.Input channel</th>
+<th align="center">Output channel</th>
+<th align="center">Filter size</th>
+<th align="center">Stride width</th>
+<th align="center">Padding width</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">1st</td>
+<td align="center">1</td>
+<td align="center">16</td>
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">2nd</td>
+<td align="center">16</td>
+<td align="center">32</td>
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">3rd</td>
+<td align="center">32</td>
+<td align="center">64</td>
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+<tr>
+<td align="center">Since the training data is assumed to be a grayscale image, the number of input channels in the first convolutional layer is set to 1. 3 for RGB images.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="center">&ldquo;Padding width 0&rdquo; means that no padding process is performed.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The hyperparameters of the fully connected layer are shown in the table below.</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="center">Input dimensions</th>
+<th align="center">Output dimensions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Fully Connected Layer</td>
+<td align="center">None</td>
+<td align="center">1024</td>
+</tr>
+<tr>
+<td align="left">For classification</td>
+<td align="center">None</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="left">If you specify <code>None</code> as the number of input dimensions, it will automatically apply the number of dimensions of the input data.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>This time, I&rsquo;m going to do <strong>two-class classification</strong>, so I set the output dimension number of all connected layers for <strong>classification to 2</strong>.
+When creating an instance of the class CNN, by entering a numerical value in the argument, the class will be classified according to that numerical value.
+(In the code, it means how many classes <code>n_out</code> classifies.)</p>
+<p>Another method <code>__call__</code> is used for forward propagation.
+The overall structure is shown below.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/558214/e0224d5f-5661-496e-736b-df58222551f7.png%22Networkmodel%22" alt="image.png">
+The pooling layer is the maximum pooling with the pooling area <strong>2×2</strong>.</p>
+<hr>
+<h4 id="create-data-set">Create data set</h4>
+<p>First, there are some points to note about the dataset, so I will first explain the function that creates the dataset.
+Use the crate_dataset function to create a dataset.</p>
+<pre><code class="language-python:create_dataset" data-lang="python:create_dataset">#Create dataset
+def create_dataset(data_dir):
+    
+    print(&quot;\n___Creating a dataset...&quot;)
+    
+    cnt = 0
+    prc = ['/','-','\\','|']
+    
+    # Number of image sets
+    print(&quot;Number of Rough-Dataset: {}&quot;.format(len(os.listdir(data_dir))))
+    #Number of image data
+    for c in os.listdir(data_dir):
+        d = os.path.join(data_dir, c)
+        print(&quot;Number of image in a directory \&quot;{}\&quot;: {}&quot;.format(c, len(os.listdir(d))))
+    
+    train = [] # temporary dataset
+    label = 0
+    
+    # Create temporary data set
+    for c in os.listdir(data_dir):
+        
+        print('\nclass: {}, class id: {}'.format(c, label)) # print class name and class ID
+       
+        d = os.path.join(data_dir, c) # join folder name and class folder name
+        imgs = os.listdir(d) # get all image files
+        
+        # Read only JPEG format image files
+        for i in [f for f in imgs if ('jpg'or'JPG' in f)]:
+            
+            #Through cache file
+            if i =='Thumbs.db':
+                continue
+            
+            train.append([os.path.join(d, i), label]) # After joining class folder path and image file name, store in list
+
+            cnt += 1
+            
+            print(&quot;\r Loading a images and labels...{} ({} / {})&quot;.format(prc[cnt%4], cnt, len(os.listdir(d))), end='' )
+            
+        print(&quot;\r Loading a images and labels...Done ({} / {})&quot;.format(cnt, len(os.listdir(d))), end='')
+        
+        label += 1
+        cnt = 0
+
+    train_set = chainer.datasets.LabeledImageDataset(train,'.') # Dataset
+    
+    print(&quot;\n___Successfully completed\n&quot;)
+    
+    return train_set
+</code></pre><p>The dataset in the classification problem requires training data and correct labels.</p>
+<p>In this case, the learning data is a face image, and the correct answer label is the number corresponding to that face**.
+For example, if you have an incorrect answer class and a correct answer class,
+Collected the labels of the learning data in the incorrect answer class and set it to &ldquo;0&rdquo;.
+The labels of the training data in the correct answer class are collectively set to &ldquo;1&rdquo;.
+Due to its nature, you have to be careful about the structure of the folder.</p>
+<p><strong><folder structure></strong>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/558214/b21ae2c4-2250-a9c1-ed2d-6321f4528de6.png" alt="dataset.png"></p>
+<p>As above, in one folder (train_data),
+Create a folder (false, true) for each class and enter the image data.
+By doing so, the correct answer label of the training data included in false will be 0, and the correct answer label included in true will be 1.
+In this example, the command option -d is train_data.</p>
+<p>After doing the processing as described in the annotation in the code,
+Finally, the code below shows a list of training data and labels,
+Formally create it as a dataset.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    train_set <span style="color:#f92672">=</span> chainer<span style="color:#f92672">.</span>datasets<span style="color:#f92672">.</span>LabeledImageDataset(train,<span style="color:#e6db74">&#39;.&#39;</span>) <span style="color:#75715e"># Dataset</span>
+</code></pre></div><hr>
+<h4 id="learning">Learning</h4>
+<p>Set up and learn before machine learning with trainer class.</p>
+<pre><code class="language-python:trainer" data-lang="python:trainer"># Trainer
+class trainer(object):
+    
+    # Model building, optimization method setup
+    def __init__(self):
+        
+        # Model building
+        self.model = L.Classifier(CNN(2))
+        
+        # Optimization method setup
+        self.optimizer = chainer.optimizers.Adam() # Adam algorithm
+        self.optimizer.setup(self.model) # optimizer sets the model
+</code></pre><p>The instance method <code>__init__</code> is called at the time of instantiation to determine the network model construction and optimization algorithm.
+With <code>self.model = L.Classifier(CNN(2))</code>, you can classify ** into any number of classes by putting an arbitrary value in the parentheses of CNN(2).</p>
+<p>After construction, the activation function and loss function are given by the method of Chainer.links called <code>L.Classifier()</code>. The activation function here is the activation function used when outputting, such as the softmax function. <strong>Activation function is softmax function and loss function is cross-entropy error</strong>, so if it is a classification problem, simply wrap the network model.</p>
+<p>Next, after creating an instance of the optimization algorithm <strong>Adam</strong> with <code>self.optimizer = chainer.optimizers.Adam()</code>,
+Apply the network model with <code>self.optimizer.setup(self.model)</code>.</p>
+<hr>
+<p>In the <code>train</code> method in the <code>trainer</code> class,
+Create a dataset iterator, updater, and trainer, and continue learning.</p>
+<pre><code class="language-Python:trainer" data-lang="Python:trainer">    #Learning
+    def train(self, train_set, batch_size, epoch, gpu, out_path):
+
+        # Map to GPU processing
+        if gpu &gt;= 0:
+            chainer.cuda.get_device(gpu).use() # Get device object
+            self.model.to_gpu() # Copy instance contents to GPU
+
+        #Creation of dataset iterator (definition of iteration of training data, shuffle for each loop)
+        train_iter = chainer.iterators.SerialIterator(train_set, batch_size)
+
+        # create updater
+        updater = training.StandardUpdater(train_iter, self.optimizer, device=gpu)
+        # create trainer
+        trainer = training.Trainer(updater, (epoch,'epoch'), out=out_path)
+
+        # extension settings
+        # Schematic process flow
+        trainer.extend(extensions.dump_graph('main/loss'))
+        # Write snapshot for each learning
+        trainer.extend(extensions.snapshot(), trigger=(epoch,'epoch'))
+        # log (JSON format) writing
+        trainer.extend(extensions.LogReport())
+        # Plot loss values on a graph
+        trainer.extend(extensions.PlotReport('main/loss','epoch', file_name='loss.png'))
+        # Plot prediction accuracy on graph
+        trainer.extend(
+                extensions.PlotReport('main/accuracy','epoch', file_name='accuracy.png'))
+        # Output &quot;learning count, loss value, prediction accuracy, elapsed time&quot; for each learning
+        trainer.extend(extensions.PrintReport(
+                ('epoch','main/loss','main/accuracy','elapsed_time'])))
+        #Progress bar display
+        trainer.extend(extensions.ProgressBar())
+
+        # Start learning
+        trainer.run()
+
+        print(&quot;___Training finished\n\n&quot;)
+
+        # Model to CPU support
+        self.model.to_cpu()
+
+        # Save parameter
+        print(&quot;___Saving parameter...&quot;)
+        param_name = os.path.join(out_path, &quot;face_recog.model&quot;) # destination for learned parameters
+        chainer.serializers.save_npz(param_name, self.model) # Write learned parameters in NPZ format
+        print(&quot;___Successfully completed\n\n&quot;)
+</code></pre><hr>
+<p>In the code below, <strong>Create a Dataset Iterator</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e">#Creation of dataset iterator (definition of iteration of training data, shuffle for each loop)</span>
+        train_iter <span style="color:#f92672">=</span> chainer<span style="color:#f92672">.</span>iterators<span style="color:#f92672">.</span>SerialIterator(train_set, batch_size)
+</code></pre></div><p>It will <strong>create data order shuffles and minibatches</strong>.
+Specify the target dataset (<code>train_set</code>) and mini-batch size (<code>batch_size</code>) as arguments.</p>
+<hr>
+<p>Next, create <strong>updater</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e"># create updater</span>
+        updater <span style="color:#f92672">=</span> training<span style="color:#f92672">.</span>StandardUpdater(train_iter, self<span style="color:#f92672">.</span>optimizer, device<span style="color:#f92672">=</span>gpu)
+</code></pre></div><p>The <code>updater</code> <strong>updates the parameters</strong>.
+As an argument, specify the dataset iterator (<code>train_iter</code>), the optimization algorithm (<code>self.optimizer</code>), and the GPU ID if necessary.
+The optimization algorithm is the one that applies the optimization algorithm to the network model with <code>self.optimizer.setup()</code>.
+Specifying <code>chainer.optimizers.Adam()</code> directly does not work.</p>
+<hr>
+<p>Next, <strong>create a trainer</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e"># create trainer</span>
+        trainer <span style="color:#f92672">=</span> training<span style="color:#f92672">.</span>Trainer(updater, (epoch,<span style="color:#e6db74">&#39;epoch&#39;</span>), out<span style="color:#f92672">=</span>out_path)
+</code></pre></div><p>The <code>trainer</code> <strong>implements the learning loop</strong>.
+You define what you want to end learning with a trigger (condition).
+Usually, it triggers the learning frequency epoch or iteration.</p>
+<p>In this case, set the <strong>learning frequency <code>epoch</code> as a trigger</strong>.
+As arguments, updater(<code>updater</code>) and stop trigger (<code>(epoch,'epoch')</code>)
+In addition, specify the save destination of the file created by the extension.</p>
+<hr>
+<p>Next is learning! Let&rsquo;s add a convenient extension before.
+chainer has an extension called <strong>Trainer Extension</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e"># extension settings</span>
+        <span style="color:#75715e"># Schematic process flow</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>dump_graph(<span style="color:#e6db74">&#39;main/loss&#39;</span>))
+        <span style="color:#75715e"># Write snapshot for each learning</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>snapshot(), trigger<span style="color:#f92672">=</span>(epoch,<span style="color:#e6db74">&#39;epoch&#39;</span>))
+        <span style="color:#75715e"># log (JSON format) writing</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>LogReport())
+        <span style="color:#75715e"># Plot loss values on a graph</span>
+        trainer<span style="color:#f92672">.</span>extend(
+                extensions<span style="color:#f92672">.</span>PlotReport(<span style="color:#e6db74">&#39;main/loss&#39;</span>,<span style="color:#e6db74">&#39;epoch&#39;</span>, file_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;loss.png&#39;</span>))
+        <span style="color:#75715e"># Plot prediction accuracy on graph</span>
+        trainer<span style="color:#f92672">.</span>extend(
+                extensions<span style="color:#f92672">.</span>PlotReport(<span style="color:#e6db74">&#39;main/accuracy&#39;</span>,<span style="color:#e6db74">&#39;epoch&#39;</span>, file_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;accuracy.png&#39;</span>))
+        <span style="color:#75715e"># Output &#34;learning count, loss value, prediction accuracy, elapsed time&#34; for each learning</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>PrintReport(
+                (<span style="color:#e6db74">&#39;epoch&#39;</span>,<span style="color:#e6db74">&#39;main/loss&#39;</span>,<span style="color:#e6db74">&#39;main/accuracy&#39;</span>,<span style="color:#e6db74">&#39;elapsed_time&#39;</span>])))
+        <span style="color:#75715e">#Progress bar display</span>
+        trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>ProgressBar())
+</code></pre></div><p>here,
+・A function that writes the input data and the flow of parameters in the following DOT file
+・A function that snapshots information such as parameters at the end of learning
+(You can restart learning from the middle by using snapshot)
+・A function that writes out the history of loss values and prediction accuracy during learning in JSON format
+・A function that plots loss values and prediction accuracy in a graph and writes them out in PNG format
+・Function to output learning count, loss value, prediction accuracy, and elapsed time for each learning
+・Function to display progress bar
+Is given.
+There are some other enhancements as well.
+<a href="https://docs.chainer.org/en/stable/reference/training.html#extensions">Trainer Extension Reference</a>
+Also, generated DOT files and PNG files are generated in the save destination specified in <code>training.Trainer()</code>.</p>
+<hr>
+<p>After adding the extension function, you can finally start learning.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e"># Start learning</span>
+        trainer<span style="color:#f92672">.</span>run()
+</code></pre></div><p>With this one line, everything starts (?)
+Let&rsquo;s wait until learning is finished.</p>
+<p>After learning, save the parameters.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e"># Save parameter</span>
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;___Saving parameter...&#34;</span>)
+        param_name <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(out_path, <span style="color:#e6db74">&#34;face_recog.model&#34;</span>) <span style="color:#75715e"># destination for learned parameters</span>
+        chainer<span style="color:#f92672">.</span>serializers<span style="color:#f92672">.</span>save_npz(param_name, self<span style="color:#f92672">.</span>model) <span style="color:#75715e"># Write learned parameters in NPZ format</span>
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;___Successfully completed</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#34;</span>)
+</code></pre></div><p>In <code>chainer.serializers.save_npz()</code>, specify the parameter save destination (<code>param_name</code>) and network model (<code>self.model</code>).
+If you specify it, the parameter will be saved in NPZ format. Faces are actually recognized using this parameter.</p>
+<p>####main function
+I omit the main function because there is no place to explain it.</p>
+<pre><code class="language-python:main" data-lang="python:main">def main():
+
+    # Command line options
+    parser = arg.ArgumentParser(description='Face Recognition train Program(Chainer)')
+    parser.add_argument('--data_dir','-d', type=str, default=None,
+                        help='Specify folder path (error when not specified)')
+    parser.add_argument('--out','-o', type=str,
+                        default=os.path.dirname(os.path.abspath(__file__))+'/result'.replace('/', os.sep),
+                        help='Specify save destination of parameter (default value ./result)')
+    parser.add_argument('--batch_size','-b', type=int, default=32,
+                        help='Specify mini-batch size (default value 32)')
+    parser.add_argument('--epoch','-e', type=int, default=15,
+                        help='Specify number of learning (default value 15)')
+    parser.add_argument('--gpu','-g', type=int, default=-1,
+                        help='Specify GPU ID (negative value indicates CPU processing, default value -1)')
+    args = parser.parse_args()
+
+    # Folder not specified -&gt; Exception
+    if args.data_dir == None:
+        print(&quot;\nException: Folder not specified.\n&quot;)
+        sys.exit()
+    # When a folder that does not exist is specified -&gt; Exception
+    if os.path.exists(args.data_dir) != True:
+        print(&quot;\nException: Folder {} is not found.\n&quot;.format(args.data_dir))
+        sys.exit()
+
+    #Set information output
+    print(&quot;=== Setting information ===&quot;)print(&quot;# Images folder: {}&quot;.format(os.path.abspath(args.data_dir)))
+    print(&quot;# Output folder: {}&quot;.format(args.out))
+    print(&quot;# Minibatch-size: {}&quot;.format(args.batch_size))
+    print(&quot;# Epoch: {}&quot;.format(args.epoch))
+    print(&quot;===========================&quot;)
+
+    #Create dataset
+    train_set = create_dataset(args.data_dir)
+
+    # Start learning
+    print(&quot;___Start training...&quot;)
+    Trainer = trainer()
+    Trainer.train(train_set, args.batch_size, args.epoch, args.gpu, args.out)
+   
+if __name__ =='__main__':
+    main()
+</code></pre><hr>
+<p><strong>GPU processing</strong>
+Since I have built the environment so that it can be processed by the GPU,
+The following processing is described. It doesn&rsquo;t matter if it exists or not, and it doesn&rsquo;t matter if it is not processed by the GPU.
+However, Chainer has a long learning time unlike Tensorflow, so we recommend GPU processing if possible. .. (It depends on the environment and the problem to be solved)
+I will omit the construction of the GPU processing environment.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#66d9ef">if</span> gpu <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>:
+            chainer<span style="color:#f92672">.</span>cuda<span style="color:#f92672">.</span>get_device(gpu)<span style="color:#f92672">.</span>use() <span style="color:#75715e"># Get device object</span>
+            self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>to_gpu() <span style="color:#75715e"># copy input data to specified device</span>
+</code></pre></div><p>####Note
+In the process below, we will count how many learning data there are,
+<strong>One more item may be added</strong>. This is because it includes the thumbnail cache called Thumbs.db.
+~~Because it is troublesome, we do not perform processing to account for this thing~.
+However, there is no problem because this process is done through when creating the dataset.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>listdir(data_dir):
+        d <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(data_dir, c)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Number of image in a directory </span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">{}</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">: {}&#34;</span><span style="color:#f92672">.</span>format(c, len(os<span style="color:#f92672">.</span>listdir(d))))
+</code></pre></div><p>###in conclusion
+This time for the first time, I posted to Qiita, but I&rsquo;m worried because there are many uneasy places&hellip;
+As mentioned in the overview, please comment if there is something wrong. to correct.</p>
+<p>Next time, in the prediction phase, we will use the camera to recognize faces&hellip;
+I can&rsquo;t show my face, so I&rsquo;ll use a face image of a public figure instead.</p>
+<p>Other than Chainer, implement face recognition program with Tensorflow (tf.keras), challenge visualization of filters and feature maps,
+I have tried various things such as using the hyperparameter optimization framework &ldquo;Optuna&rdquo;, so I hope I can post it in the future. (Although it will be in the form of a memorandum)</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

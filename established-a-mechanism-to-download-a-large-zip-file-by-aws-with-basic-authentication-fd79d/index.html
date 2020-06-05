@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Established a mechanism to download a large zip file by aws with Basic authentication | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Established a mechanism to download a large zip file by aws with Basic authentication</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 19, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/aws">AWS</a></code></small>
+
+</p>
+<pre><code># Article content in three lines
+</code></pre>
+<ul>
+<li>Let&rsquo;s use EC2 and framework</li>
+<li>It can not be assembled without server (it can be assembled but NG due to capacity limitation)</li>
+<li>API Gateway convenient (difficult)</li>
+</ul>
+<h1 id="overview">Overview</h1>
+<p>When sharing a large file, if it exceeds about 8MB for mail, it will be blocked because it is a mail server. Even if it is not blocked, I think that it is quite annoying to send a large file by mail to the server in the first place. So, I want to use a storage service, but I&rsquo;m likely to get angry with the security agreement for Giga file flights (I used to use it in the past), and Google Drive is worried about sharing without a Google account (access without knowing URL Although not possible, it is difficult for everyone to have access).</p>
+<p>All I want is a URL that allows me to share a large file by temporarily applying ID &amp; pass&hellip; (Deleted when finished, or closed when time limit expires).</p>
+<p>So, I recently received the SAA of aws, and I challenged myself to review how to easily share files with aws for a while so that this article was born.</p>
+<p>Personally, I didn&rsquo;t want to turn the server on/off or monitor it, so I proceeded with the idea of building a serverless system.</p>
+<p>By the way, the size of the file you want to share is a zip file of about 100MB.</p>
+<h1 id="build-up-with-api-gateway-lambda-and-s3">Build up with API Gateway, Lambda and S3</h1>
+<h2 id="each-role-of-each-service">Each role of each service</h2>
+<h3 id="api-gateway">API Gateway</h3>
+<p>To publish Lambda and to want to apply Basic authentication to the published URL. After investigating, API Gateway has a method called &ldquo;API Gateway Lambda Authorizer&rdquo; that allows you to authenticate with an access key and prepare Lambda and use it to control API access.</p>
+<h3 id="lambda">Lambda</h3>
+<p>Prepare a Lambda function that performs Basic authentication to use &ldquo;API Gateway Lambda Authorizer&rdquo; and two pages to download a zip file after Basic authentication with Lambda function.</p>
+<p>One displays HTML and asks you to select a file to download. At first, I thought it would be good to download if I stepped on the URL, but what if there are multiple files? So I decided to prepare an HTML page. (When I think about it now, I&rsquo;m happy with the query parameter. Yes&hellip; I thought, but it was no good.</p>
+<p>The other is a Lambda function that returns a file download &amp; zip file (binary) from S3.</p>
+<h3 id="s3">S3</h3>
+<p>You can use it as a place to store the zip file you want to download or a place to store the HTML template.</p>
+<h2 id="diagram">Diagram</h2>
+<p>TODO: Make and paste a diagram</p>
+<h2 id="implementationsetting">Implementation/setting</h2>
+<h3 id="lambda-1">Lambda</h3>
+<p>Function name: <code>download___auth</code></p>
+<p>lambda that performs basic authentication</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> base64
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+policy <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;principalId&#39;</span>:<span style="color:#e6db74">&#39;user&#39;</span>,
+        <span style="color:#e6db74">&#39;policyDocument&#39;</span>: {
+          <span style="color:#e6db74">&#39;Version&#39;</span>: <span style="color:#e6db74">&#39;2012-10-17&#39;</span>,
+          <span style="color:#e6db74">&#39;Statement&#39;</span>: [
+            {
+              <span style="color:#e6db74">&#39;Action&#39;</span>:<span style="color:#e6db74">&#39;execute-api:Invoke&#39;</span>,
+              <span style="color:#e6db74">&#39;Effect&#39;</span>:<span style="color:#e6db74">&#39;Deny&#39;</span>,
+              <span style="color:#e6db74">&#39;Resource&#39;</span>: event[<span style="color:#e6db74">&#39;methodArn&#39;</span>]
+            }
+          ]
+        }
+    }
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> basic_auth(event):
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Auth Error!!!&#39;</span>)
+        <span style="color:#66d9ef">return</span> policy
+        
+    policy[<span style="color:#e6db74">&#39;policyDocument&#39;</span>][<span style="color:#e6db74">&#39;Statement&#39;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;Effect&#39;</span>] <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Allow&#39;</span>
+    <span style="color:#66d9ef">return</span> policy
+    
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">basic_auth</span>(event):
+    <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;headers&#39;</span> <span style="color:#f92672">in</span> event<span style="color:#f92672">.</span>keys() <span style="color:#f92672">and</span><span style="color:#e6db74">&#39;authorization&#39;</span> <span style="color:#f92672">in</span> event[<span style="color:#e6db74">&#39;headers&#39;</span>]<span style="color:#f92672">.</span>keys():
+        auth_header <span style="color:#f92672">=</span> event[<span style="color:#e6db74">&#39;headers&#39;</span>][<span style="color:#e6db74">&#39;authorization&#39;</span>]
+    
+    Get information <span style="color:#f92672">from</span> environment variables of <span style="color:#75715e">#lambda.</span>
+        user <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;USER&#39;</span>]
+        password <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;PASSWORD&#39;</span>]
+        <span style="color:#66d9ef">print</span>(os<span style="color:#f92672">.</span>environ)
+        
+        _b64 <span style="color:#f92672">=</span> base64<span style="color:#f92672">.</span>b64encode(<span style="color:#e6db74">&#39;{}:{}&#39;</span><span style="color:#f92672">.</span>format(user, password)<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;utf-8&#39;</span>))
+        auth_str <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Basic {}&#39;</span><span style="color:#f92672">.</span>format(_b64<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf-8&#39;</span>))
+        <span style="color:#66d9ef">return</span> auth_header <span style="color:#f92672">==</span> auth_str
+
+    <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">Exception</span>(<span style="color:#e6db74">&#39;Auth Error!!!&#39;</span>)
+
+</code></pre></div><p>Function name: <code>download___index</code></p>
+<p>Lambda that displays downloadable files in HTML. HTML template obtained from S3. The template engine is jinja.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> jinja2 <span style="color:#f92672">import</span> Template
+<span style="color:#f92672">import</span> boto3
+<span style="color:#f92672">from</span> botocore.exceptions <span style="color:#f92672">import</span> ClientError
+
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> logging
+
+
+logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger()
+S3 <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)
+TEMPLATE_AWS_S3_BUCKET_NAME <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;hogehoge-downloader&#39;</span>
+BUCKET <span style="color:#f92672">=</span> S3<span style="color:#f92672">.</span>Bucket(TEMPLATE_AWS_S3_BUCKET_NAME)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_object</span>(bucket, object_name):
+    <span style="color:#e6db74">&#34;&#34;&#34;Retrieve an object from an Amazon S3 bucket
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    :param bucket_name: string
+</span><span style="color:#e6db74">    :param object_name: string
+</span><span style="color:#e6db74">    :return: botocore.response.StreamingBody object.If error, return None.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">try</span>:
+        response <span style="color:#f92672">=</span> bucket<span style="color:#f92672">.</span>Object(object_name)<span style="color:#f92672">.</span>get()
+    <span style="color:#66d9ef">except</span> ClientError <span style="color:#66d9ef">as</span> e:
+        <span style="color:#75715e"># AllAccessDisabled error == bucket or object not found</span>
+        logging<span style="color:#f92672">.</span>error(e)
+        <span style="color:#66d9ef">return</span> None
+    <span style="color:#75715e"># Return an open StreamingBody object</span>
+    <span style="color:#66d9ef">return</span> response[<span style="color:#e6db74">&#39;Body&#39;</span>]<span style="color:#f92672">.</span>read()
+
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    index_html <span style="color:#f92672">=</span> get_object(BUCKET,
+                            os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(<span style="color:#e6db74">&#39;template&#39;</span>,<span style="color:#e6db74">&#39;index.html&#39;</span>)) \
+                            <span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf8&#39;</span>)
+    li_html <span style="color:#f92672">=</span> get_object(BUCKET,
+                          os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(<span style="color:#e6db74">&#39;template&#39;</span>,<span style="color:#e6db74">&#39;file_li.html&#39;</span>)) \
+                          <span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf8&#39;</span>)
+
+    index_t <span style="color:#f92672">=</span> Template(index_html)
+    insert_list <span style="color:#f92672">=</span> []
+    objs <span style="color:#f92672">=</span> BUCKET<span style="color:#f92672">.</span>meta<span style="color:#f92672">.</span>client<span style="color:#f92672">.</span>list_objects_v2(Bucket<span style="color:#f92672">=</span>BUCKET<span style="color:#f92672">.</span>name,
+                                              Prefix<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;files&#39;</span>)
+    <span style="color:#66d9ef">for</span> obj <span style="color:#f92672">in</span> objs<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;Contents&#39;</span>):
+        k <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;Key&#39;</span>)
+        ks <span style="color:#f92672">=</span> k<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;/&#39;</span>)
+        <span style="color:#66d9ef">if</span> ks[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;&#39;</span>:
+            <span style="color:#66d9ef">continue</span>
+
+        file_name <span style="color:#f92672">=</span> ks[<span style="color:#ae81ff">1</span>]
+        <span style="color:#66d9ef">print</span>(obj<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;Key&#39;</span>))
+        li_t <span style="color:#f92672">=</span> Template(li_html)
+        insert_list<span style="color:#f92672">.</span>append(li_t<span style="color:#f92672">.</span>render(
+            file_url<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#&#39;</span>,
+            file_name<span style="color:#f92672">=</span>file_name
+        ))
+
+    output_html <span style="color:#f92672">=</span> index_t<span style="color:#f92672">.</span>render(file_li<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join(insert_list))
+    <span style="color:#66d9ef">return</span> output_html
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+    output_html <span style="color:#f92672">=</span> main()
+    
+    <span style="color:#66d9ef">return</span> {
+        <span style="color:#e6db74">&#34;statusCode&#34;</span>: <span style="color:#ae81ff">200</span>,
+        <span style="color:#e6db74">&#34;headers&#34;</span>: {
+            <span style="color:#e6db74">&#34;Content-Type&#34;</span>:<span style="color:#e6db74">&#39;text/html&#39;</span>
+        },
+        <span style="color:#e6db74">&#34;isBase64Encoded&#34;</span>: False,
+        <span style="color:#e6db74">&#34;body&#34;</span>: output_html
+    }
+
+</code></pre></div><p>Function name: <code>download___download</code></p>
+<p>lambda to download files from s3</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> boto3
+<span style="color:#f92672">from</span> botocore.exceptions <span style="color:#f92672">import</span> ClientError
+
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> logging
+<span style="color:#f92672">import</span> base64
+
+logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger()
+S3 <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)
+TEMPLATE_AWS_S3_BUCKET_NAME <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;hogehoge-downloader&#39;</span>
+TEMPLATE_BUCKET <span style="color:#f92672">=</span> S3<span style="color:#f92672">.</span>Bucket(TEMPLATE_AWS_S3_BUCKET_NAME)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_object</span>(bucket, object_name):
+    <span style="color:#e6db74">&#34;&#34;&#34;Retrieve an object from an Amazon S3 bucket
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    :param bucket_name: string
+</span><span style="color:#e6db74">    :param object_name: string:return: botocore.response.StreamingBody object. If error, return None.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">try</span>:
+        response <span style="color:#f92672">=</span> bucket<span style="color:#f92672">.</span>Object(object_name)<span style="color:#f92672">.</span>get()
+    <span style="color:#66d9ef">except</span> ClientError <span style="color:#66d9ef">as</span> e:
+        <span style="color:#75715e"># AllAccessDisabled error == bucket or object not found</span>
+        logging<span style="color:#f92672">.</span>error(e)
+        <span style="color:#66d9ef">return</span> None
+    <span style="color:#75715e"># Return an open StreamingBody object</span>
+    <span style="color:#66d9ef">return</span> response[<span style="color:#e6db74">&#39;Body&#39;</span>]<span style="color:#f92672">.</span>read()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+    file_name <span style="color:#f92672">=</span> event[<span style="color:#e6db74">&#39;queryStringParameters&#39;</span>][<span style="color:#e6db74">&#39;fileName&#39;</span>]
+    body <span style="color:#f92672">=</span> get_object(TEMPLATE_BUCKET, os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(<span style="color:#e6db74">&#39;files&#39;</span>, file_name))
+    <span style="color:#66d9ef">return</span> {
+        <span style="color:#e6db74">&#34;statusCode&#34;</span>: <span style="color:#ae81ff">200</span>,
+        <span style="color:#e6db74">&#34;headers&#34;</span>: {
+            <span style="color:#e6db74">&#34;Content-Disposition&#34;</span>: <span style="color:#e6db74">&#39;attachment;filename=&#34;{}&#34;&#39;</span><span style="color:#f92672">.</span>format(file_name),
+            <span style="color:#e6db74">&#34;Content-Type&#34;</span>: <span style="color:#e6db74">&#39;application/zip&#39;</span>
+        },
+        <span style="color:#e6db74">&#34;isBase64Encoded&#34;</span>: True,
+        <span style="color:#e6db74">&#34;body&#34;</span>: base64<span style="color:#f92672">.</span>b64encode(body)<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+    }
+</code></pre></div><h3 id="api-gateway-1">API Gateway</h3>
+<h4 id="初期構築">初期構築</h4>
+<ul>
+<li>APIタイプはREST APIを選択</li>
+</ul>
+<p>こんな感じで構築。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/4b25c2ca-31a5-5585-d43a-cfa164d28f03.png" alt="image.png"></p>
+<h4 id="オーソライザーの設定">オーソライザーの設定</h4>
+<p>Basic認証を行うlambda関数と連携するよう設定する。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/8a91964f-0b10-ca09-a0fb-7d98d30ff949.png" alt="image.png"></p>
+<p>下記のように設定する。認可のキャッシュのチェックを外すのに注意。（チェック入れたままだと複数リソースを設定した場合、変な動き方をする）</p>
+<img width="867" alt="スクリーンショット 2020-03-15 11.41.06.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/6b412758-5fbb-24cc-e83d-1263b2460d6f.png">
+<p>authの設定はこれで完了です。あとは各メソッドで設定すればおｋです。</p>
+<h4 id="リソースメソッドの作成">リソース・メソッドの作成</h4>
+<p>下記のようにリソース・メソッドを用意する。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/564014c5-e755-1202-b0e1-b49d757901ed.png" alt="image.png"></p>
+<p>それぞれの詳細の設定についてはこれから説明する。</p>
+<h5 id="html"><code>/html</code></h5>
+<p>lambdaプロキシ統合の使用にチェックをいれる。これをいれることで、lambda側でheaderなどを定義できるようにする。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/8d5a1f98-1653-b9c1-f47c-5e67611979b6.png" alt="image.png"></p>
+<p>メソッドリクエストにBasic認証で認証するように設定。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/043f8540-3db9-6e39-718e-363495c1c410.png" alt="image.png"></p>
+<p>メソッドレスポンスにて、htmlを認識できるように修正。レスポンス本文のコンテンツタイプを <code>text/html</code> に修正する。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/22131a64-7403-626f-0745-a93a091716de.png" alt="image.png"></p>
+<p>これで設定完了。</p>
+<h5 id="download"><code>/download</code></h5>
+<p>HTML側と同様に、lambdaプロキシ統合の使用にチェックをいれる。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/31f5f7bf-c8b4-7b6a-3b0b-b2fba0174af7.png" alt="image.png"></p>
+<p>ここも同様にBasic認証を設定。</p>
+<p>また、ダウンロードするファイル名をパラメータで受け取りたいため、URLクエリ文字列パラメータに <code>fileName</code> という名前のパラメータを設定。（必須にしたい場合はチェックを入れればよい）</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/b3fe9e03-9a0c-de96-6d06-c6abc7972234.png" alt="image.png"></p>
+<p>zipファイルをダウンロードさせたいため、メソッドレスポンスのコンテンツタイプを変更。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/b93166cb-c492-5a0d-4e8f-3c9f42c3d518.png" alt="image.png"></p>
+<p>最後に、左メニューにある設定からバイナリメディアタイプを追加。ここに対象のコンテンツタイプを設定することで、lambdaからの返却値（base64）がバイナリに変換されるようになる。（ただし、リクエストヘッダーにContent-type、またはAcceptに <code>application/zip</code> を追加してあげないといけない）</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/101690/57da8fc7-661e-a993-ff47-f5c08ed2354e.png" alt="image.png"></p>
+<h3 id="s3-1">S3</h3>
+<p>bucket名: <code>hogehoge-downloader</code> を作成し、下記ディレクトリを作成.</p>
+<ul>
+<li><code>files</code>: zipファイルを格納</li>
+<li><code>template</code>: HTMLテンプレートファイルを用意</li>
+</ul>
+<p>HTMLテンプレートは適当に作った下記。</p>
+<p><code>index.html</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+   &lt;<span style="color:#f92672">head</span>&gt;
+      &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">charset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8&#34;</span>&gt;
+      &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;viewport&#34;</span> <span style="color:#a6e22e">content</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;width=device-width, initial-scale=1&#34;</span>&gt;
+      &lt;<span style="color:#f92672">title</span>&gt;ダウンローダー&lt;/<span style="color:#f92672">title</span>&gt;
+      &lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;stylesheet&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css&#34;</span>&gt;
+      &lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">defer</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://use.fontawesome.com/releases/v5.3.1/js/all.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+   &lt;/<span style="color:#f92672">head</span>&gt;
+   &lt;<span style="color:#f92672">body</span>&gt;
+      &lt;<span style="color:#f92672">section</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;section&#34;</span>&gt;
+         &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;container&#34;</span>&gt;
+            &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;container&#34;</span>&gt;
+               &lt;<span style="color:#f92672">ul</span>&gt;{{ file_li }}&lt;/<span style="color:#f92672">ul</span>&gt;
+         &lt;/<span style="color:#f92672">div</span>&gt;
+         &lt;/<span style="color:#f92672">div</span>&gt;
+      &lt;/<span style="color:#f92672">section</span>&gt;
+   &lt;/<span style="color:#f92672">body</span>&gt;
+  &lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://unpkg.com/axios/dist/axios.min.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+  &lt;<span style="color:#f92672">script</span>&gt;
+      <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">download</span>(<span style="color:#a6e22e">e</span>) {
+        <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">zipUrl</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;https://xxx.aws.com/prod/download?fileName=&#39;</span> <span style="color:#f92672">+</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">filename</span>;
+        <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">blob</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">axios</span>.<span style="color:#a6e22e">get</span>(<span style="color:#a6e22e">zipUrl</span>, {
+            <span style="color:#a6e22e">responseType</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;blob&#39;</span>,
+            <span style="color:#a6e22e">headers</span><span style="color:#f92672">:</span> {
+                <span style="color:#a6e22e">Accept</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;application/zip&#39;</span>
+            },
+        }).<span style="color:#a6e22e">then</span>(<span style="color:#a6e22e">response</span> =&gt; {
+            window.<span style="color:#a6e22e">URL</span> <span style="color:#f92672">=</span> window.<span style="color:#a6e22e">URL</span> <span style="color:#f92672">||</span> window.<span style="color:#a6e22e">webkitURL</span>;
+            <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">uri</span> <span style="color:#f92672">=</span> window.<span style="color:#a6e22e">URL</span>.<span style="color:#a6e22e">createObjectURL</span>(<span style="color:#a6e22e">response</span>.<span style="color:#a6e22e">data</span>);
+            <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">link</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">createElement</span>(<span style="color:#e6db74">&#39;a&#39;</span>);
+            <span style="color:#a6e22e">link</span>.<span style="color:#a6e22e">download</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">filename</span>;
+            <span style="color:#a6e22e">link</span>.<span style="color:#a6e22e">href</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">uri</span>;
+            <span style="color:#a6e22e">link</span>.<span style="color:#a6e22e">click</span>()
+        }).<span style="color:#66d9ef">catch</span>(<span style="color:#a6e22e">error</span> =&gt; {
+            <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#a6e22e">error</span>);
+        });
+    }
+
+    <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">links</span> <span style="color:#f92672">=</span> Array.<span style="color:#a6e22e">from</span>(document.<span style="color:#a6e22e">getElementsByClassName</span>(<span style="color:#e6db74">&#39;downloadLink&#39;</span>));
+    <span style="color:#a6e22e">links</span>.<span style="color:#a6e22e">map</span>(<span style="color:#a6e22e">l</span> =&gt; <span style="color:#a6e22e">l</span>.<span style="color:#a6e22e">addEventListener</span>(<span style="color:#e6db74">&#39;click&#39;</span>, {<span style="color:#a6e22e">filename</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">l</span>.<span style="color:#a6e22e">dataset</span>.<span style="color:#a6e22e">filename</span>, <span style="color:#a6e22e">handleEvent</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">download</span>}));
+  &lt;/<span style="color:#f92672">script</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p><code>file_li.html</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">li</span>&gt;
+ &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ file_url }}&#34;</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;downloadLink&#34;</span> <span style="color:#a6e22e">data-filename</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ file_name }}&#34;</span>&gt;{{ file_name }}&lt;/<span style="color:#f92672">a</span>&gt;
+&lt;/<span style="color:#f92672">li</span>&gt;
+</code></pre></div><h2 id="ハマったこと">ハマったこと</h2>
+<ul>
+<li>オーソライザーのキャッシュ許可するとなぜかリソースごとに認証おｋ・NGがでてくる　→　キャッシュしないようにすると回避できる-The set binary media type is not filtered (?) in the response. Processed by Content-type and Accept of request header</li>
+<li>When using content-disposition, it is good to prepare a header with lambda &amp; check the use of Lambda proxy integration</li>
+</ul>
+<h2 id="problem">problem</h2>
+<p>However, this configuration does not work. I didn&rsquo;t notice until I got together. .. ..</p>
+<p>I didn&rsquo;t notice until I actually set up and confirmed the error.</p>
+<p>Please check this page.</p>
+<p><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/limits.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/limits.html</a></p>
+<blockquote>
+<p>Call payload (request and response) 6 MB (synchronous)</p>
+</blockquote>
+<p>What! ! ? ? ? ! ! 6MB? ? ? ! ! ? ? ?</p>
+<p>Dead end.</p>
+<p><FONT SIZE=6>~End~</FONT></p>
+<h1 id="build-with-ec2">Build with EC2</h1>
+<p>Yes</p>
+<h2 id="diagram-1">Diagram</h2>
+<p>EC2 only. Prepared on Ubuntu 18.04.</p>
+<h2 id="implementationsetting-1">Implementation/setting</h2>
+<p>The API of Bottle is prepared in the Python container prepared by Docker. Bottle handles all the basic authentication and zip file download processes.</p>
+<p>Download the zip file placed in the current directory.</p>
+<h3 id="apppy">app.py</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> bottle
+
+
+<span style="color:#75715e"># BASIC authentication username and password</span>
+USERNAME <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;user&#34;</span>
+PASSWORD <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;pass&#34;</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">check</span>(username, password):
+    <span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Check BASIC authentication username and password
+</span><span style="color:#e6db74">    Apply with @bottle.auth_basic(check)
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">return</span> username <span style="color:#f92672">==</span> USERNAME <span style="color:#f92672">and</span> password <span style="color:#f92672">==</span> PASSWORD
+
+
+<span style="color:#a6e22e">@bottle.route</span>(<span style="color:#e6db74">&#34;/zip&#34;</span>)
+<span style="color:#a6e22e">@bottle.auth_basic</span>(check)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">zip</span>():
+    zip_filename <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;files.zip&#39;</span>
+    <span style="color:#66d9ef">with</span> open(zip_filename,<span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        body <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>read()
+
+    response<span style="color:#f92672">.</span>content_type <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;application/zip&#39;</span>
+    response<span style="color:#f92672">.</span>set_header(<span style="color:#e6db74">&#39;Content-Disposition&#39;</span>,<span style="color:#e6db74">&#39;attachment; filename=&#34;{}&#34;&#39;</span><span style="color:#f92672">.</span>format(zip_filename))
+    response<span style="color:#f92672">.</span>set_header(<span style="color:#e6db74">&#39;Content-Length&#39;</span>, len(body))
+    response<span style="color:#f92672">.</span>body <span style="color:#f92672">=</span> body
+    <span style="color:#66d9ef">return</span> response
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    bottle<span style="color:#f92672">.</span>run(host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;0.0.0.0&#39;</span>, port<span style="color:#f92672">=</span><span style="color:#ae81ff">80</span>, debug<span style="color:#f92672">=</span>True)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ docker run -p 80:80 -v <span style="color:#66d9ef">$(</span>pwd<span style="color:#66d9ef">)</span>:/app -it docker-image-hogehoge python3 /app/app.py
+</code></pre></div><p>Now you have a URL to download even with a large amount (though it takes time)! ! ! ! ! ! !</p>
+<p>#Miscellaneous thoughts</p>
+<p>For studying! It&rsquo;s serverless! I was enthusiastic about it, but I should have done it with EC2 from the beginning. .. .. .. .. .. ..</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

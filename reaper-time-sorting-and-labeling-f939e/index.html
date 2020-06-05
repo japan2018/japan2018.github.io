@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>REAPER time sorting and labeling | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>REAPER time sorting and labeling</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 31, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/reaper">REAPER</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I originally used a script to change the item names in batch with REAPER, so I used it,</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/96808/02754ae6-3c3a-b2db-dbc6-8416ef2e5171.png" alt="image.png"></p>
+<p>When the tracks were separated, it felt like the name was poured into each track.
+I wish it was a single track, but&hellip;</p>
+<p>When I noticed it, it was divided into tracks.</p>
+<p>So
+I wrote a script to fill in the names in chronological order.</p>
+<p>(Also, if there are too many numbers, it seems that the letters are over, so it only worked halfway)</p>
+<h1 id="overall-flow">Overall flow</h1>
+<ol>
+<li>Get the number of selected items</li>
+<li>Get the selected item</li>
+<li>Get the current take</li>
+<li>Get the start time and take of the current take</li>
+<li>Sort by time (sort)</li>
+<li>In the dialog, get the character for renaming</li>
+<li>Rename when the button is pressed</li>
+</ol>
+<p>#Input dialog</p>
+<p>I used Python tkinter.
+You will see this screen.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/96808/daa40dd0-4fd7-b7e1-d03e-632a1f98a9b1.png" alt="image.png"></p>
+<p>#Source</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-tatLable.py" data-lang="tatLable.py">RPR_ClearConsole()
+
+<span style="color:#75715e">#Get Selected Items</span>
+itemNum <span style="color:#f92672">=</span> RPR_CountSelectedMediaItems(<span style="color:#ae81ff">0</span>)
+
+itemList <span style="color:#f92672">=</span> []
+
+<span style="color:#66d9ef">for</span> itemidx <span style="color:#f92672">in</span> range(itemNum):
+  mediaItem <span style="color:#f92672">=</span> RPR_GetSelectedMediaItem(<span style="color:#ae81ff">0</span>,itemidx)
+  itemList<span style="color:#f92672">.</span>append(mediaItem)
+  
+<span style="color:#75715e"># Sort Items</span>
+dict <span style="color:#f92672">=</span> {}
+ 
+<span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> itemList:
+  currentTakeId <span style="color:#f92672">=</span> RPR_GetMediaItemInfo_Value(item, <span style="color:#e6db74">&#34;I_CURTAKE&#34;</span>)
+  startTime <span style="color:#f92672">=</span> RPR_GetMediaItemInfo_Value(item, <span style="color:#e6db74">&#34;D_POSITION&#34;</span>)
+  currentTake <span style="color:#f92672">=</span> RPR_GetMediaItemTake(item,int(currentTakeId))
+  
+  retval, tk, parmname, stringNeedBig,setnewvalue <span style="color:#f92672">=</span> RPR_GetSetMediaItemTakeInfo_String(currentTake, <span style="color:#e6db74">&#34;P_NAME&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, False)
+ 
+  dict[startTime] <span style="color:#f92672">=</span> currentTake
+  <span style="color:#75715e">#RPR_ShowConsoleMsg(str(startTime) + &#34;,&#34;)</span>
+<span style="color:#75715e">#RPR_ShowConsoleMsg(str(startTime) + &#34;\n&#34;)</span>
+  
+<span style="color:#75715e"># Sort Start Time</span>
+sortedList <span style="color:#f92672">=</span> sorted(dict<span style="color:#f92672">.</span>items(), key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">0</span>], reverse<span style="color:#f92672">=</span>False)
+
+<span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> sortedList:
+  retval, tk, parmname, stringNeedBig,setnewvalue <span style="color:#f92672">=</span> RPR_GetSetMediaItemTakeInfo_String(item[<span style="color:#ae81ff">1</span>], <span style="color:#e6db74">&#34;P_NAME&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, False)
+  RPR_ShowConsoleMsg(stringNeedBig <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;,&#34;</span>)
+  
+<span style="color:#75715e"># Dialog</span>
+<span style="color:#f92672">import</span> tkinter
+root <span style="color:#f92672">=</span> tkinter<span style="color:#f92672">.</span>Tk()
+root<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#34;Rename Item with CSV&#34;</span>)
+root<span style="color:#f92672">.</span>geometry(<span style="color:#e6db74">&#34;400x200&#34;</span>)
+
+label <span style="color:#f92672">=</span> tkinter<span style="color:#f92672">.</span>Label(root, text<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Names(separated by </span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">,</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">)&#34;</span>)
+label<span style="color:#f92672">.</span>grid()
+
+txtbox <span style="color:#f92672">=</span> tkinter<span style="color:#f92672">.</span>Entry()
+txtbox<span style="color:#f92672">.</span>grid()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">clicked</span>():
+  nameList <span style="color:#f92672">=</span> txtbox<span style="color:#f92672">.</span>get()<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;,&#39;</span>)
+  
+  index <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+  length <span style="color:#f92672">=</span> len(nameList)
+  <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> sortedList:
+    
+    <span style="color:#66d9ef">if</span> index <span style="color:#f92672">&lt;=</span> length:
+      newName <span style="color:#f92672">=</span> nameList[index]
+      retval, tk, parmname, stringNeedBig,setnewvalue <span style="color:#f92672">=</span> RPR_GetSetMediaItemTakeInfo_String(item[<span style="color:#ae81ff">1</span>], <span style="color:#e6db74">&#34;P_NAME&#34;</span>, newName, True)
+      index <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+     
+  root<span style="color:#f92672">.</span>destroy()
+
+button <span style="color:#f92672">=</span> tkinter<span style="color:#f92672">.</span>Button(root, text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;OK&#34;</span>, command<span style="color:#f92672">=</span> clicked)
+button<span style="color:#f92672">.</span>grid()
+
+root<span style="color:#f92672">.</span>mainloop()
+</code></pre></div><p>#Summary</p>
+<p>I found that I could manage the time as well.
+I found that a simple GUI can also be used, so it seems that various things will be improved.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

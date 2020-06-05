@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Build a lightweight FastAPI development environment using Docker | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Build a lightweight FastAPI development environment using Docker</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 31, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/alpine">alpine</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/fastapi">FastAPI</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>I often use FastAPI recently, and I wanted to quickly build it with Docker and dispose of it.
+As a memo, I&rsquo;d like to leave a lightweight construction method.</p>
+<h2 id="preparation">Preparation</h2>
+<ul>
+<li>Environment that can use Docker and Docker Compose</li>
+</ul>
+<pre><code class="language-bash:version" data-lang="bash:version">$ docker --version
+Docker version 19.03.8, build afacb8b7f0
+</code></pre><ul>
+<li>The file structure looks like this</li>
+</ul>
+<pre><code class="language-bash:" data-lang="bash:">.
+├── Dockerfile
+├── docker-compose.yml
+├── main.py
+└── requirements.txt
+</code></pre><h2 id="source">Source</h2>
+<p>You can clone from here
+<a href="https://github.com/sattosan/sample-fastapi-alpine">https://github.com/sattosan/sample-fastapi-alpine</a></p>
+<h3 id="dockerfile">Dockerfile</h3>
+<p>It is made based on alpine</p>
+<pre><code class="language-dockerfile:Dockerfile" data-lang="dockerfile:Dockerfile">FROM python:3.8-alpine
+
+WORKDIR /app
+
+ADD requirements.txt.
+# Install required packages in container
+RUN apk add --no-cache build-base mariadb-connector-c-dev
+Install the Python packages listed in # requirements.txt
+RUN pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
+
+ADD main.py.
+# Waits for FastAPI on 8000 port
+CMD [&quot;uvicorn&quot;, &quot;main:app&quot;, &quot;--reload&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8000&quot;]
+</code></pre><h3 id="docker-compose">Docker Compose</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml:docker-compose.yml" data-lang="yml:docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#34;3.0&#34;</span>
+
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#75715e"># FastAPI</span>
+  <span style="color:#66d9ef">api</span>:
+    <span style="color:#66d9ef">container_name</span>: <span style="color:#e6db74">&#34;api&#34;</span>
+    build:.
+    <span style="color:#66d9ef">restart</span>: always
+    <span style="color:#66d9ef">tty</span>: <span style="color:#66d9ef">true</span>
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">8000</span>:<span style="color:#ae81ff">8000</span>
+</code></pre></div><h3 id="summarize-the-required-packages">Summarize the required packages</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt:requirements.txt" data-lang="txt:requirements.txt">uvicorn
+fastapi
+</code></pre></div><h3 id="sample-code">Sample code</h3>
+<p>Prepared the sample code in <a href="https://fastapi.tiangolo.com/">Documentation</a> of FastAPI</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> FastAPI
+
+app <span style="color:#f92672">=</span> FastAPI()
+
+
+<span style="color:#a6e22e">@app.get</span>(<span style="color:#e6db74">&#34;/&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_root</span>():
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;Hello&#34;</span>: <span style="color:#e6db74">&#34;World&#34;</span>}
+</code></pre></div><h2 id="execute">execute</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker-compose up -d --build
+</code></pre></div><h2 id="docker-image-size-check">Docker Image size check</h2>
+<ul>
+<li>alpine based Image size</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker images | grep api
+latest bff0158b61ca <span style="color:#ae81ff">29</span> minutes ago 275MB
+</code></pre></div><ul>
+<li>Image size of the original family</li>
+</ul>
+<p>It is the result of building based on <a href="https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker">honke-sama</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker images | grep api
+latest 878110f2207f <span style="color:#ae81ff">11</span> seconds ago 1.02GB
+</code></pre></div><p>You can see that it was 3.6 times less than the original family</p>
+<h2 id="operation-check">Operation check</h2>
+<p>APIs generated with FastAPI are automatically documented with Swagger</p>
+<h3 id="take-a-look-at-swagger">Take a look at Swagger</h3>
+<p>You can see the documentation by accessing <code>domain/docs</code></p>
+<p>http://localhost:8000/docs</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130670/6d4c1c40-5139-0707-209c-bf455867c490.png" alt="Capture.PNG"></p>
+<h3 id="try-hitting-the-api">Try hitting the API</h3>
+<p>When you hit it with curl, it will return like this</p>
+<pre><code class="language-bash:" data-lang="bash:">$ curl localhost:8000
+{&quot;Hello&quot;:&quot;World&quot;}
+</code></pre><h2 id="in-conclusion">in conclusion</h2>
+<p>This time I tried to build a lightweight development environment based on alpine.</p>
+<p>It is 3.6 times lighter than the original family, so I think it is a sufficient environment for single use.
+Recently, since FastAPI is being used in various projects including Netflix,
+If you haven&rsquo;t used it yet, please check it out!</p>
+<ul>
+<li>Netflix OSS: <a href="https://netflixtechblog.com/introducing-dispatch-da4b8a2a8072">https://netflixtechblog.com/introducing-dispatch-da4b8a2a8072</a></li>
+</ul>
+<h2 id="reference-site">Reference site</h2>
+<ul>
+<li>Honke: <a href="https://fastapi.tiangolo.com/">https://fastapi.tiangolo.com/</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

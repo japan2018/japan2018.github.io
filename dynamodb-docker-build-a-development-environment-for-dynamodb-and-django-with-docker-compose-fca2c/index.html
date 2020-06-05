@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>[DynamoDB] [Docker] Build a development environment for DynamoDB and Django with docker-compose | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[DynamoDB] [Docker] Build a development environment for DynamoDB and Django with docker-compose</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 9, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/dynamodb">DynamoDB</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/dockerfile">dockerfile</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/docker-compose">docker-compose</a></code></small>
+
+</p>
+<pre><code># Build a development environment for DynamoDB and Django with docker-compose
+</code></pre>
+<h2 id="introduction">Introduction</h2>
+<p>DynamoDB is cheap and fast. Did you know that there is a Docker Image for developing such DynamoDB locally? We will inquire about an example of development environment construction using such Docker Image.</p>
+<h2 id="environment">Environment</h2>
+<p>The following image versions are used according to the production environment.
+Use <a href="https://github.com/aaronshaf/dynamodb-admin">dynamodb-admin</a> for DynamoDB GUI operation. Node is used to build the environment together.</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.7.4</td>
+</tr>
+<tr>
+<td>MySQL</td>
+<td>5.7</td>
+</tr>
+<tr>
+<td>Node</td>
+<td>10.16.3-alpine</td>
+</tr>
+</tbody>
+</table>
+<h2 id="environment-1">Environment</h2>
+<h3 id="django-and-mysql">Django and MySQL</h3>
+<p>Since we&rsquo;re building from scratch, we&rsquo;ll start with the Django project.
+The official Django image is out-of-date, so make it yourself.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ django-admin startproject dynamodb_example
+$ cd dynamodb_example/
+$ touch docker-compose.yml
+$ touch Dockerfile
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile" data-lang="Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> python:3.7.4</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get update<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get install -y --no-install-recommends apt-utils gettext<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> mkdir /app; mkdir /app/dynamodb_example<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">WORKDIR</span><span style="color:#e6db74"> /app</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> dynamodb_example /app/dynamodb_example<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> requirements.txt /app/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> manage.py /app/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip install -r requirements.txt<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">EXPOSE</span><span style="color:#e6db74"> 8080</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;python&#34;</span>, <span style="color:#e6db74">&#34;manage.py&#34;</span>, <span style="color:#e6db74">&#34;runserver&#34;</span>, <span style="color:#e6db74">&#34;0.0.0.0:8080&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker-compose.yml" data-lang="docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#66d9ef">mysql</span>:
+    <span style="color:#66d9ef">container_name</span>: example-mysql
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">53306</span>:<span style="color:#ae81ff">3306</span>
+    <span style="color:#66d9ef">image</span>: mysql:<span style="color:#ae81ff">5.7</span>
+    <span style="color:#66d9ef">command</span>: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    <span style="color:#66d9ef">volumes</span>:
+      -./persist/mysql:/var/lib/mysql
+    <span style="color:#66d9ef">restart</span>: always
+    <span style="color:#66d9ef">environment</span>:
+      <span style="color:#66d9ef">MYSQL_USER</span>: example
+      <span style="color:#66d9ef">MYSQL_PASSWORD</span>: example
+      <span style="color:#66d9ef">MYSQL_DATABASE</span>: example
+      <span style="color:#66d9ef">MYSQL_ROOT_PASSWORD</span>: example
+
+  <span style="color:#66d9ef">django</span>:
+    <span style="color:#66d9ef">container_name</span>: example-django
+    build:.
+    <span style="color:#66d9ef">volumes</span>:
+      -.:/app
+    <span style="color:#66d9ef">working_dir</span>: /app
+    <span style="color:#66d9ef">command</span>: sh -c <span style="color:#e6db74">&#34;./wait-for-it.sh db:3306; python3 manage.py runserver 0.0.0.0:8000&#34;</span>
+    <span style="color:#66d9ef">env_file</span>: .env
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">58080</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">depends_on</span>:
+      -mysql
+</code></pre></div><p>The reason why there are 50,000 ports is because I don&rsquo;t want to suffer them. There is no particular meaning.
+For the library to connect with DynamoDB, put <strong>boto3</strong> and <strong>pynamodb</strong> that is Wrap it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-requirements.txt" data-lang="requirements.txt">boto3
+pynamodb
+Django==2.2.4
+djangorestframework==3.10.3
+django-filter
+mysqlclient==1.3.13
+</code></pre></div><p>I don&rsquo;t make much sense of environment variables, but for the time being&hellip;</p>
+<pre><code class="language-.env" data-lang=".env">DB_ENGINE=django.db.backends.mysql
+DB_HOST=mysql
+DB_DATABASE=example
+DB_USERNAME=root
+DB_PASSWORD=example
+DB_PORT=3306
+</code></pre><p>For the time being, I want to check the communication between Django and MySQL, so rewrite DATABASES of Django.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-setting.py" data-lang="setting.py">DATABASES <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;default&#39;</span>: {
+        <span style="color:#e6db74">&#39;ENGINE&#39;</span>: os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#39;DB_ENGINE&#39;</span>),
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#39;DB_DATABASE&#39;</span>),
+        <span style="color:#e6db74">&#39;USER&#39;</span>: os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#39;DB_USERNAME&#39;</span>),
+        <span style="color:#e6db74">&#39;PASSWORD&#39;</span>: os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#39;DB_PASSWORD&#39;</span>),
+        <span style="color:#e6db74">&#39;HOST&#39;</span>: os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#39;DB_HOST&#39;</span>),
+        <span style="color:#e6db74">&#39;OPTIONS&#39;</span>: {
+            <span style="color:#e6db74">&#39;init_command&#39;</span>:<span style="color:#e6db74">&#39;SET foreign_key_checks = 0;&#39;</span>,
+            <span style="color:#e6db74">&#39;charset&#39;</span>:<span style="color:#e6db74">&#39;utf8mb4&#39;</span>,
+        },
+    }
+}
+</code></pre></div><p>If you come to this point, check whether it will start up for the time being.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker-compose up -d
+$ docker-compose exec django bash
+$ python manage.py migrate
+</code></pre></div><p>If there is no problem, I will add <strong>DynamoDB Local</strong> and <strong>dynamodb-admin</strong>.</p>
+<h3 id="dynamodb-local">DynamoDB Local</h3>
+<p>Add dynamodb to docker-compose.yml.
+Specify dbPath at the end of the command to make it persistent.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker-compose.yml" data-lang="docker-compose.yml">  <span style="color:#66d9ef">dynamodb</span>:
+    <span style="color:#66d9ef">container_name</span>: example-dynamodb
+    <span style="color:#66d9ef">image</span>: amazon/dynamodb-local
+    <span style="color:#66d9ef">command</span>: -jar DynamoDBLocal.jar -dbPath /home/dynamodblocal/data
+    <span style="color:#66d9ef">volumes</span>:
+      -./persist/dynamodb:/home/dynamodblocal/data
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">50706</span>:<span style="color:#ae81ff">8000</span>
+</code></pre></div><h3 id="dynamodb-admin">dynamodb-admin</h3>
+<p>I had an official image, but I will use it because I made it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ mkdir dynamodb-admin
+$ touch dynamodb-admin/Dockerfile
+$ touch dynamodb-admin/.env
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dynamodb-admin/Dockerfile" data-lang="dynamodb-admin/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> node:10.16.3-alpine</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> <span style="color:#f92672">[</span><span style="color:#e6db74">&#34;apk&#34;</span>, <span style="color:#e6db74">&#34;update&#34;</span><span style="color:#f92672">]</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> <span style="color:#f92672">[</span><span style="color:#e6db74">&#34;npm&#34;</span>, <span style="color:#e6db74">&#34;install&#34;</span>, <span style="color:#e6db74">&#34;dynamodb-admin&#34;</span>, <span style="color:#e6db74">&#34;-g&#34;</span><span style="color:#f92672">]</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">EXPOSE</span><span style="color:#e6db74"> 50727</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;dynamodb-admin&#34;</span>, <span style="color:#e6db74">&#34;-p&#34;</span>, <span style="color:#e6db74">&#34;50727&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>In the environment variable <code>DYNAMO_ENDPOINT</code>, specify the container service name of dynamodb and the port on the container side.</p>
+<pre><code class="language-.env" data-lang=".env">DYNAMO_ENDPOINT=http://dynamodb:8000
+AWS_REGION=ap-northeast-1
+AWS_ACCESS_KEY_ID=ACCESS_ID
+AWS_SECRET_ACCESS_KEY=ACCESS_KEY
+</code></pre><p>The final docker-compose.yml file with this dyanamodb-admin added is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker-compose.yml" data-lang="docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#66d9ef">dynamodb</span>:
+    <span style="color:#66d9ef">container_name</span>: example-dynamodb
+    <span style="color:#66d9ef">image</span>: amazon/dynamodb-local
+    <span style="color:#66d9ef">command</span>: -jar DynamoDBLocal.jar -dbPath /home/dynamodblocal/data
+    <span style="color:#66d9ef">volumes</span>:
+      -./persist/dynamodb:/home/dynamodblocal/data
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">50706</span>:<span style="color:#ae81ff">8000</span>
+  <span style="color:#66d9ef">dynamodb-admin</span>:
+    <span style="color:#66d9ef">container_name</span>: example-dynamodb-admin
+    <span style="color:#66d9ef">build</span>: dynamodb-admin/
+    <span style="color:#66d9ef">command</span>: dynamodb-admin -p <span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">env_file</span>: dynamodb-admin/.env
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">50727</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">depends_on</span>:
+      -dynamodb
+  <span style="color:#66d9ef">mysql</span>:
+    <span style="color:#66d9ef">container_name</span>: example-mysql
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">53306</span>:<span style="color:#ae81ff">3306</span>
+    <span style="color:#66d9ef">image</span>: mysql:<span style="color:#ae81ff">5.7</span>
+    <span style="color:#66d9ef">command</span>: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    <span style="color:#66d9ef">volumes</span>:
+      -./persist/mysql:/var/lib/mysql
+    <span style="color:#66d9ef">restart</span>: always
+    <span style="color:#66d9ef">environment</span>:
+      <span style="color:#66d9ef">MYSQL_USER</span>: example
+      <span style="color:#66d9ef">MYSQL_PASSWORD</span>: example
+      <span style="color:#66d9ef">MYSQL_DATABASE</span>: example
+      <span style="color:#66d9ef">MYSQL_ROOT_PASSWORD</span>: example
+  <span style="color:#66d9ef">django</span>:
+    <span style="color:#66d9ef">container_name</span>: example-django
+    build:.
+    <span style="color:#66d9ef">volumes</span>:
+      -.:/app
+    <span style="color:#66d9ef">working_dir</span>: /app
+    <span style="color:#66d9ef">command</span>: sh -c <span style="color:#e6db74">&#34;./wait-for-it.sh db:3306; python3 manage.py runserver 0.0.0.0:8000&#34;</span>
+    <span style="color:#66d9ef">env_file</span>: .env
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">58080</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">depends_on</span>:
+      -mysql
+      -dynamodb
+</code></pre></div><p>It is successful if <a href="http://localhost:50727">http://localhost:50727</a> is displayed in the browser and the following is displayed.<img width="1440" alt="Screenshots 2019-09-29 23.11.48.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/235240/2d30bb09-2dd5-10ec-cf3f-e46d89da1ac4.png">
+All you want to do is Create Table.</p>
+<h2 id="persistence-confirmation">Persistence confirmation</h2>
+<p>I will make a table appropriately.
+<img width="1440" alt="Screenshots 2019-09-29 23.18.51.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/235240/d43230de-6525-3da5-022b-5c423f329a3f.png">
+Was created.
+<img width="1143" alt="Screenshots 2019-09-29 23.19.02.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/235240/819ed312-83a5-6778-cf52-e45ea8fde64b.png"></p>
+<p>Delete the container and restart it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker-compose down
+$ docker-compose up -d
+</code></pre></div><p>If you open <a href="http://localhost:50727">http://localhost:50727</a> and the previous table remains, the persistence is successful.</p>
+<h2 id="finally">Finally</h2>
+<p>This repository is published below. The tag is <strong>1.0.0</strong> as it may be updated in the future.
+<a href="https://github.com/Cohey0727/example_dynamodb">https://github.com/Cohey0727/example_dynamodb</a>
+Please use it if you like.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Computer Vision : Object Detection Part1 - Bounding Box preprocessing | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Computer Vision : Object Detection Part1 - Bounding Box preprocessing</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 20, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/deeplearning"> DeepLearning</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/coconut"> Coconut</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/cntk"> CNTK</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/objectdetection"> ObjectDetection</a></code></small>
+
+</p>
+<pre><code>#Target
+</code></pre>
+<p>Summary of object detection using Microsoft Cognitive Toolkit (CNTK).</p>
+<p>Part 1 prepares for object detection using Microsoft Cognitive Toolkit.
+As a training data set for object detection, Microsoft Common Objects in Context (COCO) provided by Microsoft is used.</p>
+<p>We will introduce them in the following order.</p>
+<ol>
+<li>Object detection by neural network</li>
+<li>Pretreatment of bounding box</li>
+<li>Dimension Clustering for creating Anchor Box</li>
+<li>Create a file to be read by the built-in reader provided by CNTK</li>
+</ol>
+<p>#Introduction</p>
+<h2 id="object-detection-by-neural-network">Object detection by neural network</h2>
+<p>There are two main types of object detection, a 2-stage system in which candidate regions are detected and then classified, and a 1-stage system in which candidate regions are detected and classified at the same time. It is well known that</p>
+<p>Especially for object detection that requires real time, a high-speed 1-stage system is used.</p>
+<p>Therefore, this time, using the features from multiple layers like SSD <a href="#reference">[1]</a>,thealgorithmofYOLO<a href="#reference">[2]</a> is followed for learning bounding boxes and classification. Train a network of real-time object detection on your model.</p>
+<p>The input image is a BGR color image and the size is 416x416, and the base convolutional neural network (CNN) has <a href="https://qiita.com/sho_watari/items/5bbee80e14ff76580993">Computer Vision: Image Classification Part2-Training CNN model</a>.)UsetheoriginalCNN(coco21) trained in.</p>
+<h2 id="bounding-box-pretreatment">Bounding box pretreatment</h2>
+<p><a href="https://qiita.com/sho_watari/items/bf0cdaa32cbbc2192393#coco-%E3%83%87%E3%83%BC%E3%82%BF%E3%82%BB%E3%83%83%E3%83%88%E3%81%AE%E8%A7%A3%E6%9E%90">Computer Vision: Image Classification Part1-Understanding COCO dataset</a>MicrosoftCOCOimageshaveboundingboxesandtheirInformationonall80categoriesisattachedtotheboundingbox.<a href="#reference">[3]</a></p>
+<p>YOLO algorithm is used to detect the candidate area where the object exists. Therefore, as preprocessing, it is necessary to calculate the center coordinates and the width and height of the bounding box included in each image, and convert them to the ratio when the size of the original image is 1. The structure of the directory this time is as follows.</p>
+<p><a href="https://qiita.com/sho_watari/items/bf0cdaa32cbbc2192393">COCO</a></p>
+<ul>
+<li>&ndash;COCO</li>
+<li>&ndash;Train2014
+―― |-COCO_train2014_000000000009.jpg</li>
+<li>|-&hellip;
+<a href="https://qiita.com/sho_watari/items/e4f315650965ea7f77df">MNIST</a>
+<a href="https://qiita.com/sho_watari/items/ad247ec4fb260b96ae6a">NICS</a>
+SSMD
+Ssmd_boundingbox.py
+coco21.h5</li>
+</ul>
+<h2 id="dimension-clustering-for-creating-anchor-box">Dimension Clustering for creating Anchor Box</h2>
+<p>Since there are various shapes of bounding boxes, there is an anchor box as a method of stabilizing learning. <a href="#reference">[4]</a></p>
+<p>Anchor boxes are used for both SSD and YOLOv2 <a href="#reference">[5]</a>. Similar to YOLOv2, the width and height of the bounding box included in the training data are used to represent a typical case using unsupervised k-means clustering. Find the desired width and height. The number of anchor boxes was set to 5.</p>
+<h2 id="create-a-file-that-saves-images-bounding-boxes-and-categories-used-for-learning">Create a file that saves images, bounding boxes and categories used for learning</h2>
+<p>All we need is a text file of ImageDeserializer to read the images used for training and CFTDeserializer to read the bounding box and category label corresponding to each image. ImageDeserializer and CTFDeserializer are CNTK&rsquo;s built-in readers respectively. For ImageDeserializer, [Computer Vision: Image Classification Part1-Understanding COCO dataset](<a href="https://qiita.com/sho_watari/items/bf0cdaa32cbbc2192393#%E8%A7%A3%E8%CTFDeserializerisintroducedin%5BComputerVision:ImageCaptionPart1-STAIRCaptions%5D(https://qiita.com/sho_watari/items/ad247ec4fb260b96ae6a#%E8%A7%A3%E8%AA%AC)">https://qiita.com/sho_watari/items/bf0cdaa32cbbc2192393#%E8%A7%A3%E8%CTFDeserializerisintroducedin[ComputerVision:ImageCaptionPart1-STAIRCaptions](https://qiita.com/sho_watari/items/ad247ec4fb260b96ae6a#%E8%A7%A3%E8%AA%AC)</a>. doing.</p>
+<p>However, this time, I wanted to learn multiple bounding boxes and categories that exist in one image at the same time, so some ingenuity was required during training. We will introduce these ideas in Part 2 where we actually conducted training.</p>
+<p>#Implementation</p>
+<h2 id="execution-environment">Execution environment</h2>
+<p>###hardware
+CPU Intel(R) Core(TM) i7-7700 3.60GHz</p>
+<p>###software
+・Windows 10 Pro 1909
+・Python 3.6.6
+・Numpy 1.17.3
+・Opencv-contrib-python 4.1.1.26
+・Scikit-learn 0.21.3</p>
+<h2 id="program-to-execute">Program to execute</h2>
+<p>The implemented program is published on <a href="https://github.com/sho-watari/ComputerVision/tree/master/SSMD">GitHub</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:ssmd_boundingbox.py" data-lang="Python:ssmd_boundingbox.py"></code></pre></div><h2 id="comment">Comment</h2>
+<p>Some parts of the program to be executed are extracted and supplemented.</p>
+<p>Since multiple category labels and bounding boxes are assigned to one image, keep it in dictionary format with the image ID as the key.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:ssmd_boundingbox.py" data-lang="Python:ssmd_boundingbox.py">bbox_dict <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> ann <span style="color:#f92672">in</span> annotations:
+    image_id <span style="color:#f92672">=</span> ann[<span style="color:#e6db74">&#34;image_id&#34;</span>]
+    category_id <span style="color:#f92672">=</span> ann[<span style="color:#e6db74">&#34;category_id&#34;</span>]
+    bbox <span style="color:#f92672">=</span> ann[<span style="color:#e6db74">&#34;bbox&#34;</span>]
+    bbox<span style="color:#f92672">.</span>append(categories[str(category_id)][<span style="color:#ae81ff">0</span>])
+
+    bbox_dict<span style="color:#f92672">.</span>setdefault(image_id, [])<span style="color:#f92672">.</span>append(bbox)
+</code></pre></div><p>The correct bounding box has center coordinates (x, y) and the width and height are normalized to [0, 1] with the original width and height.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:ssmd_boundingbox.py" data-lang="Python:ssmd_boundingbox.py">box <span style="color:#f92672">=</span> [(bbox[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+</span> bbox[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">/</span> width, (bbox[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> bbox[<span style="color:#ae81ff">3</span>] <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">/</span> height, bbox[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">/</span> width, bbox[<span style="color:#ae81ff">3</span>] <span style="color:#f92672">/</span> height]
+</code></pre></div><p>Finally, we perform k-means clustering on all bounding box widths and heights.</p>
+<pre><code class="language-Python:dimension_clustering" data-lang="Python:dimension_clustering">def dimension_clustering(bounding_boxes, num_anchors):
+    centroid, label, _ = k_means(bounding_boxes, num_anchors)
+
+    np.save(&quot;anchor_boxes.npy&quot;, centroid)
+    print(&quot;\nSaved anchor_boxes.npy&quot;)
+</code></pre><p>#result
+When the program is executed, the center coordinates of the bounding box, the width and height, and the category label corresponding to that bounding box are written, and finally the width of a representative bounding box obtained by k-means clustering from all bounding boxes. Save the height and height as a Numpy file.</p>
+<pre><code>Now 10000 samples...
+Now 20000 samples...
+...
+Now 80000 samples...
+
+Number of samples 82081
+
+Saved anchor_boxes.npy
+</code></pre><p>The width and height of the anchor box obtained this time are as follows. It is sorted in ascending order and displayed with two significant figures, and the anchor box is shown in the figure below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Text" data-lang="Text">(0.06, 0.08)
+(0.19, 0.28)
+(0.31, 0.67)
+(0.66, 0.35)
+(0.83, 0.83)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176315/8e117b85-cff4-625e-ac95-0a9104e2c5ac.png" alt="dimension_clustering.png"></p>
+<p>Now that you have created an anchor box and a text file to use for training, Part 2 trains an end-to-end object detection network using CNTK.</p>
+<p>#reference
+<a href="http://cocodataset.org/#home">Microsoft COCO Common Objects in Context</a></p>
+<p><a href="https://qiita.com/sho_watari/items/bf0cdaa32cbbc2192393">Computer Vision: Image Classification Part1-Understanding COCO dataset</a>
+<a href="https://qiita.com/sho_watari/items/5bbee80e14ff76580993">Computer Vision: Image Classification Part2-Training CNN model</a>
+<a href="https://qiita.com/sho_watari/items/ad247ec4fb260b96ae6a">Computer Vision :Image Caption Part1-STAIR Captions</a>1.WeiLiu,DragomirAnguelov,DumitruErhan,ChristianSzegedy,ScottReed,Cheng-YangFu,andAlexanderC.Berg.&ldquo;SSD:SingleShotMultiBoxDetector&rdquo;,arXivpreprintarXiv:1512.02325(2016). European Conference on Computer Vision. 2016, pp 21-37.
+2. Joseph Redmon, Santosh Divvala, Ross Girshick, and Ali Farhadi. &ldquo;You Only Look Once: Unified, Real-Time Object Detection&rdquo;, The IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2016, pp 779-788.
+3. Tsung-Yi Lin, Michael Maire, Serge Belongie, Lubomir Bourdev, Ross Girshick, James Hays, Pietro Perona, Deva Ramanan, C. Lawrence Zitnick, and Piotr Dollár. &ldquo;Microsoft COCO: Common Objects in Context&rdquo;, European Conference on Computer Vision. 2014, pp 740-755.
+4. Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. &ldquo;Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks&rdquo;, In Advances in Neural Information Processing Systems (NIPS). 2015, pp 91-99.
+5. Joseph Redmon and Ali Farhadi. &ldquo;YOLO9000: better, faster, stronger&rdquo;, The IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2017, pp 7263-7271.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

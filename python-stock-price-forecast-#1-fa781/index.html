@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Python: Stock price forecast #1 | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Python: Stock price forecast #1</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 23, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/stock-price"> stock price</a></code></small>
+
+</p>
+<pre><code>#Get tweets
+</code></pre>
+<h2 id="overview">Overview</h2>
+<p>There are two methods for making investment decisions in stock investment: technical analysis and fundamentals analysis.
+This time we will deal with the technical analysis.</p>
+<p>Predict the Nikkei Stock Average using Twitter. First, I will explain the general flow.</p>
+<p>1, Get the past tweets of an account from Twitter using TwitterAPI.
+2. Use the polar dictionary to analyze the sentiment of daily tweets.
+3, Get the time series data of Nikkei 225.
+Predict the up and down of the stock price on the next day from 4, sentiment using machine learning.</p>
+<h2 id="access-token">Access token</h2>
+<p>To get tweets from Twitte, you need an access token.
+This is like the ID and PASS in the user account</p>
+<pre><code>It refers to two types of character strings, &quot;Access Token Key&quot; and &quot;Access Token Secret&quot;.
+Here we get tweets that contain a word.
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> requests_oauthlib <span style="color:#f92672">import</span> OAuth1Session
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> datetime<span style="color:#f92672">,</span> time<span style="color:#f92672">,</span> sys
+
+CK <span style="color:#f92672">=</span> Enter <span style="color:#e6db74">``</span> <span style="color:#75715e"># Consumer Key in&#39;&#39;</span>
+Enter CS <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span> <span style="color:#75715e"># Consumer Secret in&#39;&#39;</span>
+AT <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span> Enter <span style="color:#75715e"># Access Token in&#39;&#39;</span>
+AS <span style="color:#f92672">=</span> <span style="color:#e6db74">``</span> <span style="color:#75715e"># Accesss Token Secert in&#39;&#39;</span>
+
+session <span style="color:#f92672">=</span> OAuth1Session(CK, CS, AT, AS)
+
+url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://api.twitter.com/1.1/search/tweets.json&#39;</span>
+res <span style="color:#f92672">=</span> session<span style="color:#f92672">.</span>get(url, params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;q&#39;</span>:<span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;python&#39;</span>,<span style="color:#e6db74">&#39;count&#39;</span>:<span style="color:#ae81ff">100</span>})
+res_text <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(res<span style="color:#f92672">.</span>text)
+<span style="color:#66d9ef">for</span> tweet <span style="color:#f92672">in</span> res_text[<span style="color:#e6db74">&#39;statuses&#39;</span>]:
+    <span style="color:#66d9ef">print</span> (<span style="color:#e6db74">&#39;-----&#39;</span>)
+    <span style="color:#66d9ef">print</span> (tweet[<span style="color:#e6db74">&#39;created_at&#39;</span>])
+    <span style="color:#66d9ef">print</span> (tweet[<span style="color:#e6db74">&#39;text&#39;</span>])
+</code></pre></div><p>Click here to get tweets including artificial intelligence</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> requests_oauthlib <span style="color:#f92672">import</span> OAuth1Session
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> datetime<span style="color:#f92672">,</span> time<span style="color:#f92672">,</span> sys
+ 
+CK <span style="color:#f92672">=</span> Enter <span style="color:#e6db74">``</span> <span style="color:#75715e"># Consumer Key in&#39;&#39;</span>
+Enter CS <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span> <span style="color:#75715e"># Consumer Secret in&#39;&#39;</span>
+AT <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span> Enter <span style="color:#75715e"># Access Token in&#39;&#39;</span>
+AS <span style="color:#f92672">=</span> <span style="color:#e6db74">``</span> <span style="color:#75715e"># Accesss Token Secert in&#39;&#39;</span>
+ 
+session <span style="color:#f92672">=</span> OAuth1Session(CK, CS, AT, AS)
+ 
+url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://api.twitter.com/1.1/search/tweets.json&#39;</span>
+res <span style="color:#f92672">=</span> session<span style="color:#f92672">.</span>get(url, params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;q&#39;</span>:<span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;artificial intelligence&#39;</span>,<span style="color:#e6db74">&#39;count&#39;</span>:<span style="color:#ae81ff">100</span>})
+res_text <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(res<span style="color:#f92672">.</span>text)
+<span style="color:#66d9ef">for</span> tweet <span style="color:#f92672">in</span> res_text[<span style="color:#e6db74">&#39;statuses&#39;</span>]:
+    <span style="color:#66d9ef">print</span> (<span style="color:#e6db74">&#39;-----&#39;</span>)
+    <span style="color:#66d9ef">print</span> (tweet[<span style="color:#e6db74">&#39;created_at&#39;</span>])
+    <span style="color:#66d9ef">print</span> (tweet[<span style="color:#e6db74">&#39;text&#39;</span>])
+</code></pre></div><h2 id="get-account-tweet">Get account tweet</h2>
+<p>Let&rsquo;s get the tweets of Nikkei Sangyo Shimbun.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> tweepy
+<span style="color:#f92672">import</span> csv
+
+
+consumer_key <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># &#34;Please enter the consumer_key obtained from your personal account here&#34; &#34;</span>
+consumer_secret <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># &#34;Please enter the consumer_secret obtained from your personal account here&#34; &#34;&#34;</span>
+access_key <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># &#34;Please enter the access_key obtained from your personal account here&#34; &#34;</span>
+access_secret <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># &#34;Enter here in the access_secret&#34;&#34; you got with your personal account&#34;</span>
+
+auth <span style="color:#f92672">=</span> tweepy<span style="color:#f92672">.</span>OAuthHandler(consumer_key, consumer_secret)
+auth<span style="color:#f92672">.</span>set_access_token(access_key, access_secret)
+api <span style="color:#f92672">=</span> tweepy<span style="color:#f92672">.</span>API(auth)
+
+<span style="color:#75715e">#Get tweet</span>
+tweet_data <span style="color:#f92672">=</span> []
+
+tweets <span style="color:#f92672">=</span> tweepy<span style="color:#f92672">.</span>Cursor(api<span style="color:#f92672">.</span>user_timeline,screen_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;@nikkei_bizdaily&#34;</span>,exclude_replies <span style="color:#f92672">=</span> True)
+<span style="color:#66d9ef">for</span> tweet <span style="color:#f92672">in</span> tweets<span style="color:#f92672">.</span>items():
+    tweet_data<span style="color:#f92672">.</span>append([tweet<span style="color:#f92672">.</span>id,tweet<span style="color:#f92672">.</span>created_at,tweet<span style="color:#f92672">.</span>text<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>,<span style="color:#e6db74">&#39;&#39;</span>),tweet<span style="color:#f92672">.</span>favorite_count,tweet<span style="color:#f92672">.</span>retweet_count])
+tweet_data
+</code></pre></div><h2 id="save-as-csv-data">Save as csv data</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Save it <span style="color:#f92672">in</span> the data folder <span style="color:#66d9ef">with</span> the name <span style="color:#75715e"># tweets.csv</span>
+<span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#39;./6050_stock_price_prediction_data/tweets.csv&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>, newline<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+    writer <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>writer(f, lineterminator<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+    writer<span style="color:#f92672">.</span>writerow([<span style="color:#e6db74">&#34;id&#34;</span>, <span style="color:#e6db74">&#34;text&#34;</span>, <span style="color:#e6db74">&#34;created_at&#34;</span>, <span style="color:#e6db74">&#34;fav&#34;</span>, <span style="color:#e6db74">&#34;RT&#34;</span>])
+    writer<span style="color:#f92672">.</span>writerows(tweet_data)
+</code></pre></div><p>#Sentiment analysis</p>
+<h2 id="emotional-analysis-1-morphological-analysis">Emotional analysis 1 (morphological analysis)</h2>
+<p>Sentiment analysis uses natural language processing, and the text has a positive meaning.
+Or it is a technology to judge whether it has a negative meaning.</p>
+<p>By sentiment analysis of product reviews
+Widely used for marketing and customer support.</p>
+<p>The main mechanism of sentiment analysis is that the words appearing in the sentence
+It is judged by whether it has a positive/negative/neutral meaning.</p>
+<p>There is a polarity dictionary as a criterion for judgment.
+It is defined in a dictionary in which the morpheme is either positive or negative.</p>
+<p>Sentiment analysis is performed by referring each word in the document to the polarity dictionary.
+Then, first, perform morphological analysis using MeCab.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">import</span> re
+<span style="color:#75715e">#Create MeCab instance. If no argument is specified, the IPA dictionary will be used.</span>
+m <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;&#39;</span>)
+
+<span style="color:#75715e"># A function that morphologically analyzes text and returns a list of dictionaries</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_diclist</span>(text):
+    parsed <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>parse(text) <span style="color:#75715e"># Morphological analysis result (obtained as a character string including a line break)</span>
+    lines <span style="color:#f92672">=</span> parsed<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>) <span style="color:#75715e"># Separate the parsed result for each line (1 word) and make a list</span>
+    lines <span style="color:#f92672">=</span> lines[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#75715e"># Delete the last two lines because they are not needed</span>
+    diclist <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> lines:
+        l <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">|,&#39;</span>,word) <span style="color:#75715e"># Each line is separated by a tab and a comma</span>
+        d <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;Surface&#39;</span>:l[<span style="color:#ae81ff">0</span>],<span style="color:#e6db74">&#39;POS1&#39;</span>:l[<span style="color:#ae81ff">1</span>],<span style="color:#e6db74">&#39;POS2&#39;</span>:l[<span style="color:#ae81ff">2</span>],<span style="color:#e6db74">&#39;BaseForm&#39;</span>:l[<span style="color:#ae81ff">7</span>]}
+        diclist<span style="color:#f92672">.</span>append(d)
+    <span style="color:#66d9ef">return</span>(diclist)
+</code></pre></div><p>It will be sunny tomorrow. Click here if you set as an argument</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">import</span> re
+<span style="color:#75715e">#Create MeCab instance. If no argument is specified, the IPA dictionary will be used.</span>
+m <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;&#39;</span>)
+
+<span style="color:#75715e"># A function that morphologically analyzes text and returns a list of dictionaries</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_diclist</span>(text):
+    parsed <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>parse(text) <span style="color:#75715e"># Morphological analysis result (obtained as a character string including a line break)</span>
+    lines <span style="color:#f92672">=</span> parsed<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>) <span style="color:#75715e"># Separate the parsed result for each line (1 word) and make a list</span>
+    lines <span style="color:#f92672">=</span> lines[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#75715e"># Delete the last two lines because they are not needed</span>
+    diclist <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> lines:
+        l <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">|,&#39;</span>,word) <span style="color:#75715e"># Each line is separated by a tab and a comma</span>
+        d <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;Surface&#39;</span>:l[<span style="color:#ae81ff">0</span>],<span style="color:#e6db74">&#39;POS1&#39;</span>:l[<span style="color:#ae81ff">1</span>],<span style="color:#e6db74">&#39;POS2&#39;</span>:l[<span style="color:#ae81ff">2</span>],<span style="color:#e6db74">&#39;BaseForm&#39;</span>:l[<span style="color:#ae81ff">7</span>]}
+        diclist<span style="color:#f92672">.</span>append(d)
+    <span style="color:#66d9ef">return</span>(diclist)
+
+get_diclist(<span style="color:#e6db74">&#34;It will be fine tomorrow.&#34;</span>)
+
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/430767/febf46a1-2722-9d7d-f5ec-2f471b3e8b81.png" alt="image.png"></p>
+<h2 id="sentiment-analysis-2-polarity-dictionary">Sentiment analysis 2 (Polarity dictionary)</h2>
+<p>This time, we use the word emotion polarity correspondence table as the polarity dictionary.</p>
+<p>This refers to the &ldquo;Iwanami Japanese dictionary (Iwanami Shoten)&rdquo; and assigns a real value from -1 to +1.</p>
+<p>The closer to -1, the more negative
+The closer to +1 the more positive.</p>
+<p>Then read the polar dictionary
+Create lists and dictionaries.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Store Word <span style="color:#f92672">and</span> PN <span style="color:#f92672">in</span> list type <span style="color:#f92672">in</span> <span style="color:#75715e">#word_list and pn_list respectively.</span>
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+pn_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./6050_stock_price_prediction_data/pn_ja.csv&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>, names<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;Word&#39;</span>,<span style="color:#e6db74">&#39;Reading&#39;</span>,<span style="color:#e6db74">&#39;POS&#39;</span>,<span style="color:#e6db74">&#39;PN&#39;</span>))
+word_list<span style="color:#f92672">=</span>list(pn_df[<span style="color:#e6db74">&#39;Word&#39;</span>])
+pn_list<span style="color:#f92672">=</span>list(pn_df[<span style="color:#e6db74">&#39;PN&#39;</span>])
+
+Create a dictionary that stores word_list <span style="color:#f92672">and</span> pn_list <span style="color:#66d9ef">as</span> <span style="color:#75715e">#pn_dict.</span>
+pn_dict <span style="color:#f92672">=</span> dict(zip(word_list,pn_list))
+</code></pre></div><h2 id="sentiment-analysis-3-pn-value">Sentiment analysis 3 (PN value)</h2>
+<p>We will implement the function that returns the value of PN by referring to the polarity dictionary.</p>
+<p>Also
+Pass get_diclist (&ldquo;It will be fine tomorrow.&quot;) to the function add_pnvalue and check the function.
+Also pass it to the function get_mean to check the mean of the PN values.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">add_pnvalue</span>(diclist_old, pn_dict):diclist_new <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> diclist_old:
+        base <span style="color:#f92672">=</span> word[<span style="color:#e6db74">&#39;BaseForm&#39;</span>] <span style="color:#75715e"># Get base form from individual dictionary</span>
+        <span style="color:#66d9ef">if</span> base <span style="color:#f92672">in</span> pn_dict:
+            pn <span style="color:#f92672">=</span> float(pn_dict[base])
+        <span style="color:#66d9ef">else</span>:
+            pn <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;notfound&#39;</span> <span style="color:#75715e"># if the word isn&#39;t in the PN table</span>
+        word[<span style="color:#e6db74">&#39;PN&#39;</span>] <span style="color:#f92672">=</span> pn
+        diclist_new<span style="color:#f92672">.</span>append(word)
+    <span style="color:#66d9ef">return</span>(diclist_new)
+
+<span style="color:#75715e"># Calculate the PN average value of each tweet</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_mean</span>(dictlist):
+    pn_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> dictlist:
+        pn <span style="color:#f92672">=</span> word[<span style="color:#e6db74">&#39;PN&#39;</span>]
+        <span style="color:#66d9ef">if</span> pn<span style="color:#f92672">!=</span><span style="color:#e6db74">&#39;notfound&#39;</span>:
+            pn_list<span style="color:#f92672">.</span>append(pn)
+    <span style="color:#66d9ef">if</span> len(pn_list)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">0</span>:
+        pnmean <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>mean(pn_list)
+    <span style="color:#66d9ef">else</span>:
+        pnmean<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">return</span> pnmean
+
+
+dl_old <span style="color:#f92672">=</span> get_diclist(<span style="color:#e6db74">&#34;Tomorrow will be sunny.&#34;</span>)
+Pass <span style="color:#75715e"># get_diclist (&#34;It will be fine tomorrow.&#34;) to the function add_pnvalue and investigate the function.</span>
+dl_new <span style="color:#f92672">=</span> add_pnvalue(dl_old, pn_dict)
+<span style="color:#66d9ef">print</span>(dl_new)
+
+<span style="color:#75715e">#Also pass it to the function get_mean to check the mean of the PN values.</span>
+pnmean <span style="color:#f92672">=</span> get_mean(dl_new)
+<span style="color:#66d9ef">print</span>(pnmean)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/430767/7c222757-d043-a158-a749-11c10ee1ea62.png" alt="image.png"></p>
+<h2 id="sentiment-analysis-4-graphing">Sentiment analysis #4 (Graphing)</h2>
+<p>The change in PN value is displayed in a graph.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">%</span>matplotlib inline
+df_tweets <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./6050_stock_price_prediction_data/tweets.csv&#39;</span>, names<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;date&#39;</span>,<span style="color:#e6db74">&#39;text&#39;</span>,<span style="color:#e6db74">&#39;fav&#39;</span>,<span style="color:#e6db74">&#39;RT&#39;</span>], index_col<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;date&#39;</span>)
+df_tweets <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>drop(<span style="color:#e6db74">&#39;text&#39;</span>, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+df_tweets<span style="color:#f92672">.</span>index <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>to_datetime(df_tweets<span style="color:#f92672">.</span>index)
+df_tweets <span style="color:#f92672">=</span> df_tweets[[<span style="color:#e6db74">&#39;text&#39;</span>]]<span style="color:#f92672">.</span>sort_index(ascending<span style="color:#f92672">=</span>True)
+
+Create an empty list called <span style="color:#75715e">#means_list and find the average value for each tweet.</span>
+means_list <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> tweet <span style="color:#f92672">in</span> df_tweets[<span style="color:#e6db74">&#39;text&#39;</span>]:
+    dl_old <span style="color:#f92672">=</span> get_diclist(tweet)
+    dl_new <span style="color:#f92672">=</span> add_pnvalue(dl_old, pn_dict)
+    pnmean <span style="color:#f92672">=</span> get_mean(dl_new)
+    means_list<span style="color:#f92672">.</span>append(pnmean)
+df_tweets[<span style="color:#e6db74">&#39;pn&#39;</span>] <span style="color:#f92672">=</span> means_list
+df_tweets <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>resample(<span style="color:#e6db74">&#39;D&#39;</span>, how<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mean&#39;</span>)
+
+<span style="color:#75715e"># Plot the date on the x-axis and the PN value on the y-axis.</span>
+x <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>index
+y <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>pn
+plt<span style="color:#f92672">.</span>plot(x,y)
+plt<span style="color:#f92672">.</span>grid(True)
+
+Re<span style="color:#f92672">-</span>output df_tweets <span style="color:#66d9ef">with</span> the name <span style="color:#75715e"># df_tweets.csv.</span>
+df_tweets<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;./6050_stock_price_prediction_data/df_tweets.csv&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/430767/71649d73-0e90-3d20-6cf3-b31ad7432abc.png" alt="image.png"></p>
+<h2 id="sentiment-analysis-5-standardization">Sentiment analysis 5 (standardization)</h2>
+<p>Looking at the results on the graph, it seems that there are many negative values overall.</p>
+<p>This is because the polar dictionary contains a lot of vocabulary with negative connotations.
+Standardization is performed to adjust this result.</p>
+<p>Standardize the PN value
+Also, change PN to the average for each date and plot.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># means_list is standardized and output as x_std</span>
+df_tweets[<span style="color:#e6db74">&#39;pn&#39;</span>] <span style="color:#f92672">=</span> (df_tweets[<span style="color:#e6db74">&#39;pn&#39;</span>]<span style="color:#f92672">-</span>df_tweets[<span style="color:#e6db74">&#39;pn&#39;</span>]<span style="color:#f92672">.</span>mean()) <span style="color:#f92672">/</span> df_tweets[<span style="color:#e6db74">&#39;pn&#39;</span>]<span style="color:#f92672">.</span>std()
+
+<span style="color:#75715e"># Also change PN to the average for each day and plot.</span>
+df_tweets <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>resample(<span style="color:#e6db74">&#39;D&#39;</span>, how<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mean&#39;</span>)
+x <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>index
+y <span style="color:#f92672">=</span> df_tweets<span style="color:#f92672">.</span>pn
+plt<span style="color:#f92672">.</span>plot(x,y)
+plt<span style="color:#f92672">.</span>grid(True)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/430767/4faf675c-2dfc-04af-d7f2-35ccee34fc9b.png" alt="image.png"></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

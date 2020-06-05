@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>python parallel/asynchronous execution memorandum | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>python parallel/asynchronous execution memorandum</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 25, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/python3">Python3</a></code></small>
+
+</p>
+<pre><code>#
+</code></pre>
+<p>A lot of Python asynchronous execution material was similar (official translation/re-editing?).
+It&rsquo;s tough for Ojisan, who has become hard-headed, so I searched for examples and looked at sites in multiple languages, and after trial and error I finally moved, so I just summarized the liver.</p>
+<h1 id="overview">Overview</h1>
+<p>The examples are all patterns of external command execution on Windows
+Almost no commentary.</p>
+<h2 id="check-by-pid">Check by PID</h2>
+<p>Easy and nice. This is what Ojisan came up with.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:pid.py" data-lang="python:pid.py"><span style="color:#f92672">import</span> subprocess
+<span style="color:#f92672">from</span> time <span style="color:#f92672">import</span> sleep
+procs <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> h <span style="color:#f92672">in</span> servers:
+    p <span style="color:#f92672">=</span> subprocess<span style="color:#f92672">.</span>Popen([<span style="color:#e6db74">&#34;some&#34;</span>, <span style="color:#e6db74">&#34;command&#34;</span>], <span style="color:#f92672">...</span>)
+    <span style="color:#75715e"># subprocess.run seems to work with stdout=PIPE, but not investigated</span>
+    procs[p<span style="color:#f92672">.</span>pid] <span style="color:#f92672">=</span> p
+
+<span style="color:#66d9ef">while</span> procs:
+    <span style="color:#66d9ef">for</span> pid <span style="color:#f92672">in</span> list(procs):
+        <span style="color:#66d9ef">if</span> procs[pid]<span style="color:#f92672">.</span>poll <span style="color:#f92672">in</span> <span style="color:#f92672">not</span> None:
+            <span style="color:#66d9ef">del</span> procs[pid]
+    sleep(x)
+</code></pre></div><p>procs can be a list of p from the end, but
+With this method, it&rsquo;s my favorite to be empty at the end.</p>
+<h2 id="parallel-1-no-stdout-required">Parallel 1 (No STDOUT required)</h2>
+<p>This is OK if the target to be executed generates something.
+The run function is targeted for asynchronous execution.
+When I made it for the first time, I called it with run_until_complete, so I was wondering if create_subprocess_shell would just wait.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:async1.py" data-lang="python:async1.py"><span style="color:#f92672">import</span> asyncio
+<span style="color:#f92672">from</span> asyncoio.subprocess <span style="color:#f92672">import</span> DEVNULL
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(param):
+    <span style="color:#75715e"># 2 or less will work</span>
+    p <span style="color:#f92672">=</span> await asyncio<span style="color:#f92672">.</span>create_subprocess_exec(<span style="color:#f92672">*</span>[<span style="color:#e6db74">&#34;some&#34;</span>, <span style="color:#e6db74">&#34;command&#34;</span>, param],
+           stdout<span style="color:#f92672">=</span>DEVNULL, <span style="color:#f92672">...</span>)
+    p <span style="color:#f92672">=</span> await asyncio<span style="color:#f92672">.</span>create_subprocess_shell(<span style="color:#e6db74">&#34;some command </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>param,
+           stdout<span style="color:#f92672">=</span>DEVNULL, <span style="color:#f92672">...</span>)
+
+    await p<span style="color:#f92672">.</span>wait()
+
+<span style="color:#66d9ef">if</span> sys<span style="color:#f92672">.</span>platform<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;win&#39;</span>):
+    loop <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>ProactorEventLoop()
+    asyncio<span style="color:#f92672">.</span>set_event_loop(loop)
+<span style="color:#66d9ef">else</span>:
+    loop <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>get_event_loop()
+
+funcs <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>gather(<span style="color:#f92672">*</span>[run(p) <span style="color:#66d9ef">for</span> p <span style="color:#f92672">in</span> parameters])
+loop<span style="color:#f92672">.</span>run_until_complete(funcs)
+</code></pre></div><h2 id="parallel-2-needs-stdout">Parallel 2 (needs STDOUT)</h2>
+<p>If you want to do something by using the standard output of the execution target, here.
+However, the result will be returned to main&rsquo;s ret in the order in which it was finished, so it must be endured.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:async_stdout.py" data-lang="python:async_stdout.py"><span style="color:#f92672">import</span> asyncio
+<span style="color:#f92672">from</span> asyncoio.subprocess <span style="color:#f92672">import</span> PIPE
+<span style="color:#f92672">import</span> sys
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(param):
+    p <span style="color:#f92672">=</span> await asyncio<span style="color:#f92672">.</span>create_subprocess_shell(<span style="color:#e6db74">&#34;some command </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> param,
+            stdout<span style="color:#f92672">=</span>PIPE, <span style="color:#f92672">...</span>)
+    <span style="color:#66d9ef">return</span> await (p<span style="color:#f92672">.</span>communicate())[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;code&#39;</span>)<span style="color:#f92672">.</span>splitlines()
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    funcs <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>gather(<span style="color:#f92672">*</span>[run(p) <span style="color:#66d9ef">for</span> p <span style="color:#f92672">in</span> parameters]<span style="color:#f92672">*</span>)
+    <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> asyncio<span style="color:#f92672">.</span>as_completed(funcs):
+        ret <span style="color:#f92672">=</span> await f
+
+<span style="color:#66d9ef">if</span> sys<span style="color:#f92672">.</span>platform<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;win&#39;</span>):
+    loop <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>ProactorEventLoop()
+    asyncio<span style="color:#f92672">.</span>set_event_loop(loop)
+<span style="color:#66d9ef">else</span>:
+    loop <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>get_event_loop()
+
+loop<span style="color:#f92672">.</span>run_until_complete(main())
+</code></pre></div><h1 id="remarks">Remarks</h1>
+<p>I feel like I&rsquo;m only writing something similar.
+Will you also write about openpyxl next?</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

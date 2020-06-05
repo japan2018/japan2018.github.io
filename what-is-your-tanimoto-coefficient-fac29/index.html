@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>What is your Tanimoto coefficient? | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>What is your Tanimoto coefficient?</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 27, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/rdkit">RDKit</a></code></small>
+
+</p>
+<pre><code>A famous index for talking about compound similarities is the &quot;Tanimoto coefficient.&quot; However, there are quite a few people who just say &quot;Tanimoto coefficient&quot;, and there is a good chance to writhe, &quot;Isn't that enough explanation?&quot;
+</code></pre>
+<h1 id="for-example-use-the-following-compound-set">For example, use the following compound set</h1>
+<p>The number of compounds is 10.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">smiles <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#39;C1=CC=C2C3CC(CNC3)CN2C1=O&#39;</span>,
+    <span style="color:#e6db74">&#39;CN1c2c(C(N(C)C1=O)=O)[nH0](CC(CO)O)c[nH0]2&#39;</span>,
+    <span style="color:#e6db74">&#39;CN1C2CC(CC1C1C2O1)OC(C(c1ccccc1)CO)=O&#39;</span>,
+    <span style="color:#e6db74">&#39;CN1C2CC(CC1C1C2O1)OC(C(c1cccnc1)CO)=O&#39;</span>, <span style="color:#75715e"># Similar to the compound above</span>
+    <span style="color:#e6db74">&#39;CN(C=1C(=O)N(c2ccccc2)N(C1C)C)C&#39;</span>,
+    <span style="color:#e6db74">&#39;CN(C=1C(=O)N(C2CCCCC2)N(C1C)C)C&#39;</span>, <span style="color:#75715e"># Similar to the compound above</span>
+    <span style="color:#e6db74">&#39;OCC1C(C(C(C(OCC2C(C(C(C(OC(c3ccccc3)C#N)O2)O)O)O)O1)O)O)O&#39;</span>,
+    <span style="color:#e6db74">&#39;OCc1ccccc1OC1C(C(C(C(CO)O1)O)O)O&#39;</span>,
+    <span style="color:#e6db74">&#39;OCc1cc(N)ccc1OC1C(C(C(C(CO)O1)O)O)O&#39;</span>, <span style="color:#75715e"># Similar to the compound above</span>
+    <span style="color:#e6db74">&#39;[nH0]1c(OC)c2c([nH0]cc[nH0]2)[nH0]c1&#39;</span>,
+]
+</code></pre></div><p>Generate compounds with RDKit from #SMILES notation</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit <span style="color:#f92672">import</span> Chem
+
+mols <span style="color:#f92672">=</span> [Chem<span style="color:#f92672">.</span>MolFromSmiles(smile) <span style="color:#66d9ef">for</span> smile <span style="color:#f92672">in</span> smiles]
+</code></pre></div><p>Generate # Morgan fingerprint (a type of)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit.Chem <span style="color:#f92672">import</span> AllChem
+
+fps <span style="color:#f92672">=</span> [AllChem<span style="color:#f92672">.</span>GetMorganFingerprint(mol, <span style="color:#ae81ff">3</span>, useFeatures<span style="color:#f92672">=</span>True) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+</code></pre></div><p>#Calculate Tanimoto coefficient</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit <span style="color:#f92672">import</span> DataStructs
+
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+</code></pre></div><h1 id="tanimoto-coefficient-distribution">Tanimoto coefficient distribution</h1>
+<p>If you do this, you can see the distribution of the Tanimoto coefficient. It seems that molecules with Tanimoto coefficient = 1 are the same molecule, but there are other molecule pairs with higher Tanimoto coefficient. Find out what it is (or imagine it)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">%</span>matplotlib inline
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/80e754f7-03b4-210d-f0a6-082ceebf4b1d.png" alt="output_9_0.png"></p>
+<p>#, so there are various Morgan fingerprints</p>
+<p>Morgan fingerprint has various parameters, and if you change them, the value of the Tanimoto coefficient also changes.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fps <span style="color:#f92672">=</span> [AllChem<span style="color:#f92672">.</span>GetMorganFingerprint(mol, <span style="color:#ae81ff">2</span>, useFeatures<span style="color:#f92672">=</span>True) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/921ec4b2-f7dc-4cde-afe0-4c7e0187d3ea.png" alt="output_11_0.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fps <span style="color:#f92672">=</span> [AllChem<span style="color:#f92672">.</span>GetMorganFingerprint(mol, <span style="color:#ae81ff">1</span>, useFeatures<span style="color:#f92672">=</span>True) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/99ffed5d-b731-7f08-8e27-95172fafd032.png" alt="output_12_0.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fps <span style="color:#f92672">=</span> [AllChem<span style="color:#f92672">.</span>GetMorganFingerprintAsBitVect(mol, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1024</span>) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/b672bd25-9bdd-16ce-74c3-e5f7d5dbed45.png" alt="output_13_0.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fps <span style="color:#f92672">=</span> [AllChem<span style="color:#f92672">.</span>GetMorganFingerprintAsBitVect(mol, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2048</span>) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/3e815d73-4ae9-a7ae-fa38-51b7b92c5e88.png" alt="output_14_0.png"></p>
+<p>There are other fingerprints in #</p>
+<p>I have to calculate all, so I have only two. As one of the important things, in the calculation results below, there are more than 10 Tanimoto coefficients with 1.0. In other words, be aware that the Tanimoto coefficient can be 1.0 even if they are not the same molecule.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fps <span style="color:#f92672">=</span> [AllChem<span style="color:#f92672">.</span>GetMACCSKeysFingerprint(mol) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/e9494460-d99d-0a3c-4b60-15158d6d3b95.png" alt="output_17_0.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fps <span style="color:#f92672">=</span> [Chem<span style="color:#f92672">.</span>RDKFingerprint(mol) <span style="color:#66d9ef">for</span> mol <span style="color:#f92672">in</span> mols]
+sim_matrix <span style="color:#f92672">=</span> [DataStructs<span style="color:#f92672">.</span>BulkTanimotoSimilarity(fp, fps) <span style="color:#66d9ef">for</span> fp <span style="color:#f92672">in</span> fps]
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(sim_matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/f1813182-ed57-cdb8-a1f1-deef534d980f.png" alt="output_18_0.png"></p>
+<p>You can also define the Tanimoto coefficient using # MCS.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit.Chem <span style="color:#f92672">import</span> rdFMCS
+
+matrix <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> mol1 <span style="color:#f92672">in</span> mols:
+    <span style="color:#66d9ef">for</span> mol2 <span style="color:#f92672">in</span> mols:
+        mcs <span style="color:#f92672">=</span> rdFMCS<span style="color:#f92672">.</span>FindMCS([mol1, mol2])
+        a1 <span style="color:#f92672">=</span> len(mol1<span style="color:#f92672">.</span>GetAtoms())
+        a2 <span style="color:#f92672">=</span> len(mol2<span style="color:#f92672">.</span>GetAtoms())
+        matrix<span style="color:#f92672">.</span>append(mcs<span style="color:#f92672">.</span>numAtoms <span style="color:#f92672">/</span> (a1 <span style="color:#f92672">+</span> a2<span style="color:#f92672">-</span>mcs<span style="color:#f92672">.</span>numAtoms))
+
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/9b8d655b-a38d-6e4c-995a-cfc9aa9263d4.png" alt="output_20_0.png"></p>
+<h1 id="mcs-also-has-various-options">MCS also has various options</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit.Chem <span style="color:#f92672">import</span> rdFMCS
+
+matrix <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> mol1 <span style="color:#f92672">in</span> mols:
+    <span style="color:#66d9ef">for</span> mol2 <span style="color:#f92672">in</span> mols:
+        mcs <span style="color:#f92672">=</span> rdFMCS<span style="color:#f92672">.</span>FindMCS([mol1, mol2], atomCompare<span style="color:#f92672">=</span>rdFMCS<span style="color:#f92672">.</span>AtomCompare<span style="color:#f92672">.</span>CompareAny)
+        a1 <span style="color:#f92672">=</span> len(mol1<span style="color:#f92672">.</span>GetAtoms())
+        a2 <span style="color:#f92672">=</span> len(mol2<span style="color:#f92672">.</span>GetAtoms())
+        matrix<span style="color:#f92672">.</span>append(mcs<span style="color:#f92672">.</span>numAtoms <span style="color:#f92672">/</span> (a1 <span style="color:#f92672">+</span> a2<span style="color:#f92672">-</span>mcs<span style="color:#f92672">.</span>numAtoms))
+
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/01c5175a-ad67-0a96-f0c1-b3a2be25b99f.png" alt="output_22_0.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit.Chem <span style="color:#f92672">import</span> rdFMCS
+
+matrix <span style="color:#f92672">=</span> []<span style="color:#66d9ef">for</span> mol1 <span style="color:#f92672">in</span> mols:
+    <span style="color:#66d9ef">for</span> mol2 <span style="color:#f92672">in</span> mols:
+        mcs <span style="color:#f92672">=</span> rdFMCS<span style="color:#f92672">.</span>FindMCS([mol1, mol2])
+        a1 <span style="color:#f92672">=</span> len(mol1<span style="color:#f92672">.</span>GetBonds())
+        a2 <span style="color:#f92672">=</span> len(mol2<span style="color:#f92672">.</span>GetBonds())
+        matrix<span style="color:#f92672">.</span>append(mcs<span style="color:#f92672">.</span>numBonds <span style="color:#f92672">/</span> (a1 <span style="color:#f92672">+</span> a2 <span style="color:#f92672">-</span> mcs<span style="color:#f92672">.</span>numBonds) )
+
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/cdb41050-f811-8974-7153-50ea3d6db0bb.png" alt="output_23_0.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> rdkit.Chem <span style="color:#f92672">import</span> rdFMCS
+
+matrix <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> mol1 <span style="color:#f92672">in</span> mols:
+    <span style="color:#66d9ef">for</span> mol2 <span style="color:#f92672">in</span> mols:
+        mcs <span style="color:#f92672">=</span> rdFMCS<span style="color:#f92672">.</span>FindMCS([mol1, mol2], bondCompare<span style="color:#f92672">=</span>rdFMCS<span style="color:#f92672">.</span>BondCompare<span style="color:#f92672">.</span>CompareOrderExact)
+        a1 <span style="color:#f92672">=</span> len(mol1<span style="color:#f92672">.</span>GetBonds())
+        a2 <span style="color:#f92672">=</span> len(mol2<span style="color:#f92672">.</span>GetBonds())
+        matrix<span style="color:#f92672">.</span>append(mcs<span style="color:#f92672">.</span>numBonds <span style="color:#f92672">/</span> (a1 <span style="color:#f92672">+</span> a2 <span style="color:#f92672">-</span> mcs<span style="color:#f92672">.</span>numBonds) )
+
+plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>array(matrix)<span style="color:#f92672">.</span>flatten(), bins<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>grid()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/211162/d98c4d25-6014-acc9-749d-6f83151b86ed.png" alt="output_24_0.png"></p>
+<h1 id="であなたのおっしゃるタニモト係数ってどれのことかしら">で、あなたのおっしゃる「タニモト係数」って、どれのことかしら？</h1>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

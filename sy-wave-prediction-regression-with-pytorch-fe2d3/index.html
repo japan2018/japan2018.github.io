@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Sy wave prediction (regression) with Pytorch | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Sy wave prediction (regression) with Pytorch</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 28, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/anaconda"> Anaconda</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/chainer"> Chainer</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/regression"> regression</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/pytorch"> PyTorch</a></code></small>
+
+</p>
+<pre><code>#Overview
+</code></pre>
+<p>Hello. A new employee of an IT company.
+Here, I described a sine wave prediction regression model learning program as a sample using Pytorch which is an open source machine learning library.
+(It&rsquo;s not a time series forecast&hellip; I also want to do a time series forecast.)</p>
+<p>By moving chainer to pytorch,
+I was late, but I wrote it because I am trying to catch up this time.
+It also describes what I felt the difference.</p>
+<p>I feel like the transition to pytorch of the following article I wrote before.
+[Now, let&rsquo;s carefully learn sin waves with chainer] <a href="https://qiita.com/kazu-ojisan/items/3f667663a10c8d111b23">1</a></p>
+<p>If you have any suggestions or questions, please do not hesitate to leave them in the comments.</p>
+<h1 id="entire-code">Entire code</h1>
+<p>The code is on GitHub below.
+<a href="https://github.com/kazu-ojisan/NN-pytorch_PredictSinWave">kazu-ojisan/NN-pytorch_PredictSinWave</a></p>
+<p>#environment
+macOS Catalina 10.15.3
+conda 4.7.12
+python 3.7.6 (create a virtual environment with conda)
+pytorch 1.4.0</p>
+<p>Installation of pytorch killed in seconds.
+If you select your environment on the official website below,
+It will display the installation command.
+[Pytorch -Official Site-] <a href="https://pytorch.org/">3</a></p>
+<p>#Each parameter</p>
+<ul>
+<li>Input: 0 to 2π</li>
+<li>Output: sin⁡(Input)</li>
+<li>Number of learning: 200</li>
+<li>Batch size: 10 (Mini batch method)</li>
+<li>Number of learning data: 1000</li>
+<li>Number of test data: 200</li>
+</ul>
+<p>#Model structure</p>
+<ul>
+<li>Middle layer: 2 layers (10 units)</li>
+<li>Activation function: ReLU</li>
+</ul>
+<p>#Implementation
+Below is the URL that was referenced for implementation.</p>
+<ul>
+<li><a href="https://qiita.com/perrying/items/857df46bb6cdc3047bd8">Practice Pytorch</a></li>
+<li>[Solve regression problem with neural network implemented in PyTroch] <a href="https://axa.biopapyrus.jp/deep-learning/pytorch/regression-multiple-features.html">5</a></li>
+</ul>
+<h2 id="module-used">Module used</h2>
+<p>The pytorch module is OK if at least the following is imported.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np <span style="color:#75715e"># array</span>
+<span style="color:#f92672">import</span> time <span style="color:#75715e"># time</span>
+<span style="color:#f92672">from</span> matplotlib <span style="color:#f92672">import</span> pyplot <span style="color:#66d9ef">as</span> plt <span style="color:#75715e"># graph</span>
+<span style="color:#f92672">import</span> os <span style="color:#75715e"># for folder creation</span>
+
+<span style="color:#75715e"># pytorch</span>
+<span style="color:#f92672">import</span> torch <span style="color:#f92672">as</span> T
+<span style="color:#f92672">import</span> torch.nn <span style="color:#f92672">as</span> nn <span style="color:#75715e"># layer configuration</span>
+<span style="color:#f92672">import</span> torch.nn.functional <span style="color:#f92672">as</span> F <span style="color:#75715e"># activation function</span>
+<span style="color:#f92672">from</span> torch <span style="color:#f92672">import</span> optim <span style="color:#75715e"># optimization function</span>
+</code></pre></div><p>##data set
+A simple y=sin(x) dataset (x,y).</p>
+<pre><code class="language-python:" data-lang="python:">Create N #y=sin(x) data sets
+def get_data(N, Nte):
+    x = np.linspace(0, 2 * np.pi, N+Nte)
+    # Separate into learning data and test data
+    ram = np.random.permutation(N+Nte)
+    x_train = np.sort(x[ram[:N]])
+    x_test = np.sort(x[ram[N:]])
+
+    t_train = np.sin(x_train)
+    t_test = np.sin(x_test)
+
+    return x_train, t_train, x_test, t_test
+</code></pre><h2 id="neural-network-structure-forward-propagation-etc">Neural Network structure, forward propagation, etc.</h2>
+<p>The difference from chainer is about replacing the module without any particular.
+In other words, the data type handled by pytorch is &ldquo;Tensor type&rdquo;, so conversion is necessary.
+(Variable type in chainer)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:.py" data-lang="python:.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SIN_NN</span>(nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self, h_units, act):
+        super(SIN_NN, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>l1<span style="color:#f92672">=</span>nn<span style="color:#f92672">.</span>Linear(<span style="color:#ae81ff">1</span>, h_units[<span style="color:#ae81ff">0</span>])
+        self<span style="color:#f92672">.</span>l2<span style="color:#f92672">=</span>nn<span style="color:#f92672">.</span>Linear(h_units[<span style="color:#ae81ff">0</span>], h_units[<span style="color:#ae81ff">1</span>])
+        self<span style="color:#f92672">.</span>l3<span style="color:#f92672">=</span>nn<span style="color:#f92672">.</span>Linear(h_units[<span style="color:#ae81ff">1</span>], <span style="color:#ae81ff">1</span>)
+
+        <span style="color:#66d9ef">if</span> act <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;relu&#34;</span>:
+            self<span style="color:#f92672">.</span>act <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu
+        <span style="color:#66d9ef">elif</span> act <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;sig&#34;</span>:
+            self<span style="color:#f92672">.</span>act <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>sigmoid
+
+    <span style="color:#66d9ef">def</span> __call__(self, x, t):
+        x <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>from_numpy(x<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)<span style="color:#f92672">.</span>reshape(x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">1</span>))
+        t <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>from_numpy(t<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)<span style="color:#f92672">.</span>reshape(t<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">1</span>))
+        y <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>forward(x)
+        <span style="color:#66d9ef">return</span> y, t
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, x):
+        h <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>act(self<span style="color:#f92672">.</span>l1(x))
+        h <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>act(self<span style="color:#f92672">.</span>l2(h))
+        h <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>l3(h)
+
+        <span style="color:#66d9ef">return</span> h
+</code></pre></div><h2 id="learning">Learning</h2>
+<p>I felt the difference with Chainer (more details later)
+① model.parameter() is required as the first argument of the optimization function
+② MSE is defined by Class, so it cannot be used without creating an instance
+③ Switching between learning mode and test mode by &ldquo;model.train()&rdquo; and &ldquo;model.eval()&rdquo;
+(There is no problem this time.)
+④ The extension of model is &ldquo;.pt&rdquo; or &ldquo;.pth&rdquo;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:.py" data-lang="python:.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">training</span>(N, Nte, bs, n_epoch, h_units, act):
+
+    <span style="color:#75715e">#Get dataset</span>
+    x_train, t_train, x_test, t_test <span style="color:#f92672">=</span> get_data(N, Nte)
+    x_test_torch <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>from_numpy(x_test<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)<span style="color:#f92672">.</span>reshape(x_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">1</span>))
+    t_test_torch <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>from_numpy(t_test<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)<span style="color:#f92672">.</span>reshape(t_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">1</span>))
+
+    <span style="color:#75715e"># Model setup</span>
+    model <span style="color:#f92672">=</span> SIN_NN(h_units, act)
+    optimizer <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>Adam(model<span style="color:#f92672">.</span>parameters())
+    MSE <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>MSELoss()
+
+    <span style="color:#75715e"># loss storage array</span>
+    tr_loss <span style="color:#f92672">=</span> []
+    te_loss <span style="color:#f92672">=</span> []
+
+    <span style="color:#75715e"># Create directory</span>
+    <span style="color:#66d9ef">if</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(<span style="color:#e6db74">&#34;Results/{}/Pred&#34;</span><span style="color:#f92672">.</span>format(act)) <span style="color:#f92672">==</span> False:
+        os<span style="color:#f92672">.</span>makedirs(<span style="color:#e6db74">&#34;Results/{}/Pred&#34;</span><span style="color:#f92672">.</span>format(act))
+
+    <span style="color:#75715e"># Measure time</span>
+    start_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;START&#34;</span>)
+
+    <span style="color:#75715e"># Loop for learning</span>
+    <span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, n_epoch <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>):
+        model<span style="color:#f92672">.</span>train()
+        perm <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>permutation(N)
+        sum_loss <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, N, bs):
+            x_batch <span style="color:#f92672">=</span> x_train[perm[i:i <span style="color:#f92672">+</span> bs]]
+            t_batch <span style="color:#f92672">=</span> t_train[perm[i:i <span style="color:#f92672">+</span> bs]]
+
+            optimizer<span style="color:#f92672">.</span>zero_grad()
+            y_batch, t_batch <span style="color:#f92672">=</span> model(x_batch, t_batch)
+            loss <span style="color:#f92672">=</span> MSE(y_batch, t_batch)
+            loss<span style="color:#f92672">.</span>backward()
+            optimizer<span style="color:#f92672">.</span>step()
+            sum_loss <span style="color:#f92672">+=</span> loss<span style="color:#f92672">.</span>data <span style="color:#f92672">*</span> bs
+
+        <span style="color:#75715e"># Calculate the mean of learning error</span>
+        ave_loss <span style="color:#f92672">=</span> sum_loss <span style="color:#f92672">/</span> N
+        tr_loss<span style="color:#f92672">.</span>append(ave_loss)
+
+        <span style="color:#75715e"># Test error</span>
+        model<span style="color:#f92672">.</span>eval()
+        y_test_torch <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>forward(x_test_torch)
+        loss <span style="color:#f92672">=</span> MSE(y_test_torch, t_test_torch)
+        te_loss<span style="color:#f92672">.</span>append(loss<span style="color:#f92672">.</span>data)
+
+    <span style="color:#75715e"># Save the trained model</span>
+    T<span style="color:#f92672">.</span>save(model, <span style="color:#e6db74">&#34;Results/model.pt&#34;</span>)
+</code></pre></div><h2 id="details-what-made-me-feel-the-difference-with-chainer">Details: What made me feel the difference with Chainer</h2>
+<h3 id="-modelparameters-is-required-as-the-first-argument-of-the-optimization-function">① model.parameters() is required as the first argument of the optimization function</h3>
+<p>In model.parameters(), model information such as weight and the number of units are stored.
+Official document: <a href="https://pytorch.org/docs/stable/nn.html#">model.parameters()</a>
+If you output it according to the document, it will be output as follows.</p>
+<pre><code>$python exportModelParam.py
+&lt;class'torch.Tensor'&gt; torch.Size([10, 1])
+&lt;class'torch.Tensor'&gt; torch.Size([10])
+&lt;class'torch.Tensor'&gt; torch.Size([10, 10])
+&lt;class'torch.Tensor'&gt; torch.Size([10])
+&lt;class'torch.Tensor'&gt; torch.Size([1, 10])
+&lt;class'torch.Tensor'&gt; torch.Size([1])
+</code></pre><h3 id="-mse-is-defined-in-class-so-you-cannot-use-it-unless-you-create-an-instance">② MSE is defined in Class, so you cannot use it unless you create an instance</h3>
+<p>See Pytorch&rsquo;s &ldquo;MSE Ross&rdquo; and Chainer&rsquo;s &ldquo;mean_squared_error&rdquo; official docs for convincing.
+Pytorch:<a href="https://pytorch.org/docs/stable/_modules/torch/nn/modules/loss.html#MSELoss">Pytorch -SOURCE CODE FOR TORCH.NN.MODULES.LOSS-</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:MSELoss.py" data-lang="python:MSELoss.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MSELoss</span>(_Loss):
+</code></pre></div><p>Chainer:<a href="https://github.com/chainer/chainer/blob/v7.1.0/chainer/functions/loss/mean_squared_error.py#L43">Chainer -mean_squared_error.py-</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:mean_squared_error.py" data-lang="python:mean_squared_error.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mean_squared_error</span>(x0, x1):
+</code></pre></div><p>###③ Switching between learning mode and test mode by &ldquo;model.train()&rdquo; and &ldquo;model.eval()&ldquo;If you use .eval for test mode, Dropout and Batch Normalization will be disabled and it will be a test specification. In this code, neither Dropout nor Batch Normalization is used, so it works without any change. However, if you use pytorch in the future, I feel that it is better to add habits.</p>
+<h3 id="-the-model-extension-is-pt-or-pth">④ The model extension is &ldquo;.pt&rdquo; or &ldquo;.pth&rdquo;</h3>
+<p>See below.
+<a href="https://pytorch.org/tutorials/beginner/saving_loading_models.html">Tutorials &gt;Saving and Loading Models</a></p>
+<p>#result
+Error graph
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224875/21dce0a6-b7e3-5886-cb15-4ea4bbcf07a8.png" alt="loss_history.png"></p>
+<p>Test data prediction graph
+epoch:20
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224875/01c21f88-fbd6-d9f4-379c-646e3e62bd65.png" alt="ep20.png">
+epoch:200
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224875/b9293a2f-7782-01df-08d5-dfb3adf42710.png" alt="ep200.png"></p>
+<p>##Trouble Shooting</p>
+<ul>
+<li>Apparently you haven&rsquo;t learned?
+-I forgot to initialize the gradient (optimizer.zero_grad())
+-You cannot learn unless you initialize the gradient for each mini-batch.</li>
+</ul>
+<p>#Reference URL</p>
+<ul>
+<li>[Pytorch -Official Site-] <a href="https://pytorch.org/">3</a></li>
+<li><a href="https://qiita.com/perrying/items/857df46bb6cdc3047bd8">Practice Pytorch</a></li>
+<li>[Solve regression problem with neural network implemented in PyTroch] <a href="https://axa.biopapyrus.jp/deep-learning/pytorch/regression-multiple-features.html">5</a></li>
+<li>[Now, let&rsquo;s carefully learn sin waves with chainer] <a href="https://qiita.com/kazu-ojisan/items/3f667663a10c8d111b23">1</a></li>
+</ul>
+<h1 id="entire-code-1">Entire code</h1>
+<p>The code is on GitHub below.
+<a href="https://github.com/kazu-ojisan/NN-pytorch_PredictSinWave">kazu-ojisan/NN-pytorch_PredictSinWave</a></p>
+<h1 id="at-the-end">At the end</h1>
+<p>As you can see, it was quite similar to chainer. I felt that Pytorch had the necessary functions. If you have any suggestions, please do not hesitate to let us know in the comments section.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

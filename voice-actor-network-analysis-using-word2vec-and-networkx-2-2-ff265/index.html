@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Voice actor network analysis (using word2vec and networkx) (2/2) | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Voice actor network analysis (using word2vec and networkx) (2/2)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 9, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/network-analysis"> network analysis</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/networkx"> networkx</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/cytoscape"> Cytoscape</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/voice-actor"> voice actor</a></code></small>
+
+</p>
+<pre><code>### Rough flow of analysis introduced this time
+</code></pre>
+<p>・Create and visualize female voice actor network
+・Try clustering similar voice actors using network information.
+・Visualize the categorized results with Cytoscape</p>
+<p>Hi, this is bamboo-nova. Qiita mainly throws in material analysis.</p>
+<p>If you are interested in my serious stories and analysis, please refer to this (evacuation site)</p>
+<p><a href="http://yukr.hatenablog.com/">Bamboo shoot blog</a></p>
+<p>Also, I have put the source code that summarizes the series of steps so far on Github, so please refer to it if you like!</p>
+<p><a href="https://github.com/bamboo-nova/seiyu_network">bamboo-nova/seiyu_network</a></p>
+<p>Last time, as the pre-stage of voice actor network analysis, I scraped the voice actor&rsquo;s name and gender list and created a learning model with word2vec from the voice actor&rsquo;s Wikipedia text information on the list.</p>
+<p><a href="https://qiita.com/bamboo-nova/items/4df7abf337f7ca8b7aff">Visualization of similar voice actors by network analysis and clustering (1/2)</a></p>
+<p>This time, we will create a network between voice actors using the model that we actually learned, and further categorize the voice actors from there. For network visualization and clustering, in this article we analyze the relationships of only female voice actors in their 20s, but it is also possible to analyze collectively the voice actors in their teens and 30s, so if you are interested, try it!</p>
+<p>The learning model itself was created based on the profile information of female voice actors in their teens and thirties, but at first I would like to visualize and categorize the network of female voice actors in their twenties.</p>
+<h3 id="build-and-visualize-female-voice-actor-network">Build and visualize female voice actor network</h3>
+<p>First of all, load the required modules and load the model trained on word2vec in the previous article.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Load required modules</span>
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> pickle
+<span style="color:#f92672">import</span> networkx <span style="color:#f92672">as</span> nx
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">%</span>matplotlib inline
+
+<span style="color:#75715e"># Load the learning model created using word2vec last time</span>
+<span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#39;mecab_word2vec_seiyu.dump&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+     model <span style="color:#f92672">=</span> pickle<span style="color:#f92672">.</span>load(f)
+
+<span style="color:#75715e"># Devise how to display the network</span>
+plt<span style="color:#f92672">.</span>style<span style="color:#f92672">.</span>use(<span style="color:#e6db74">&#39;seaborn&#39;</span>)
+<span style="color:#75715e"># Countermeasures against garbled characters that make Japanese tofu</span>
+plt<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#39;font.family&#39;</span>] <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;IPAexGothic&#39;</span>
+</code></pre></div><p>Regarding the measures against garbled characters written in the above part, there are corresponding methods on the following sites, so please refer to the following URL to take measures against garbled characters (By the way, I answered ).</p>
+<p><a href="https://teratail.com/questions/238091#reply-346147">How do I avoid tofu in graphviz? </a></p>
+<p>Next, load seiyu20.csv obtained by scraping in the previous article, and take out the list of names of female voice actors in their 20s.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;seiyu20.csv&#39;</span>)
+name <span style="color:#f92672">=</span> df[df<span style="color:#f92672">.</span>Gender<span style="color:#f92672">==</span><span style="color:#e6db74">&#39;female&#39;</span>]
+white_list <span style="color:#f92672">=</span> name<span style="color:#f92672">.</span>Name
+</code></pre></div><p>Then, the word vector of word2vec corresponding to each voice actor&rsquo;s name is extracted, and the correlation coefficient of the word vector is calculated for all combinations of voice actors.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">output <span style="color:#f92672">=</span> []
+label <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> name <span style="color:#f92672">in</span> white_list:
+    <span style="color:#66d9ef">try</span>:
+        vector <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv[name]
+        output<span style="color:#f92672">.</span>append(vector)
+        label<span style="color:#f92672">.</span>append(name)
+    <span style="color:#66d9ef">except</span>:
+        <span style="color:#66d9ef">continue</span>
+res <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>corrcoef(output)
+</code></pre></div><p>This completes the correlation matrix for each voice actor.
+Finally, we will visualize the voice actor network.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Prepare an edge list to <span style="color:#66d9ef">pass</span> to <span style="color:#75715e">#networkx</span>
+edge_lists <span style="color:#f92672">=</span> []
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(res)
+
+edge_name <span style="color:#f92672">=</span> label
+df<span style="color:#f92672">.</span>index <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>columns <span style="color:#f92672">=</span> edge_name
+
+
+<span style="color:#75715e"># Mask the data of 0.05 or less in the triangular matrix on the upper right of the correlation coefficient DF</span>
+tmp_df <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>mask(np<span style="color:#f92672">.</span>triu(np<span style="color:#f92672">.</span>ones(df<span style="color:#f92672">.</span>shape))<span style="color:#f92672">.</span>astype(bool) <span style="color:#f92672">|</span> (df <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0.05</span>))
+<span style="color:#75715e">#Generate edge list</span>
+edge_lists <span style="color:#f92672">=</span> tmp_df<span style="color:#f92672">.</span>stack()<span style="color:#f92672">.</span>reset_index()<span style="color:#f92672">.</span>apply(tuple, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>values
+
+G <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G<span style="color:#f92672">.</span>add_weighted_edges_from(edge_lists)
+
+
+
+
+<span style="color:#75715e"># Preparation for drawing</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">8</span>)) <span style="color:#75715e"># Set according to the drawing target</span>
+
+pos <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>circular_layout(G)
+
+line_width <span style="color:#f92672">=</span> [d[<span style="color:#e6db74">&#39;weight&#39;</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">10</span> <span style="color:#66d9ef">for</span> u,v,d <span style="color:#f92672">in</span> G<span style="color:#f92672">.</span>edges(data<span style="color:#f92672">=</span>True)]
+nx<span style="color:#f92672">.</span>draw_networkx(G, pos<span style="color:#f92672">=</span>pos, font_size<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, node_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gray&#39;</span>, width<span style="color:#f92672">=</span>line_width, font_family<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;IPAexGothic&#39;</span>)
+plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#39;netres.png&#39;</span>)
+</code></pre></div><p>Output result:</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/4af8f053-9626-1cb3-3832-867d7a940fe2.png" alt="Screenshot 2020-02-08 19.32.32.png"></p>
+<p>Visualization is performed so that edges that are similar to each other are similar to each other (voice actors with a high correlation coefficient), but if you look closely, there are some places where the thick part is clear, so there seems to be something related, so it is random. Not so!</p>
+<p>In the middle of the above source code, the correlation coefficient threshold is set as <code>tmp_df = df.mask(np.triu(np.ones(df.shape)).astype(bool) | (df &lt;0.05))</code> I am filtering with. This was adjusted based on the clustering coefficient of the network.</p>
+<p>The clustering coefficient (coefficient between 0 and 1) is, for each node, calculate the relational expression of <code>(number of links between a certain node and adjacent nodes) / v(v-1)/2</code>, They are averaged over all nodes. This <strong>higher clustering coefficient indicates higher network density</strong>. Regarding the clustering coefficient, it is said that the clustering coefficient confirmed in real world networks is about 0.1 to 0.7 (<a href="https://en.wikipedia.org/wiki/%E8%A4%87%E9%9B%91%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%E3%82%AF">Complex network</a>
+). However, since the number of nodes in the network is not so large this time and the amount of original text data may be small, I think it will be better to adjust it to 0.4 to 0.7. When I actually perform network analysis, I often tune threshold values based on the clustering coefficient and then output.</p>
+<p>This time, it is adjusted with the following clustering coefficient.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(nx<span style="color:#f92672">.</span>average_clustering(G))
+<span style="color:#ae81ff">0.610103228782055</span>
+</code></pre></div><p>I was able to visualize it as a network, and I will try it with PageRank analysis. Since the text data learned by word2vec is applied, what I am doing is closer to the LexRank algorithm than PageRank analysis. The interpretation is that the female voice actor who summarizes the visualized network (which is indispensable in the composition) has a higher value.</p>
+<p>For details on the mechanism of LexRank, please refer to the following URL, so please refer to it if you like.
+<a href="https://ohke.hateblo.jp/entry/2018/11/17/230000">Python: Summarize Japanese articles with Lex Rank</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">pr <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>pagerank(G)
+pos1 <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>spring_layout(G)
+
+
+<span style="color:#75715e"># Visualization</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">30</span>, <span style="color:#ae81ff">30</span>))
+nx<span style="color:#f92672">.</span>draw_networkx_edges(G, pos1)
+nx<span style="color:#f92672">.</span>draw_networkx_nodes(G, pos<span style="color:#f92672">=</span>pos1, node_color<span style="color:#f92672">=</span>list(pr<span style="color:#f92672">.</span>values()), cmap<span style="color:#f92672">=</span>plt<span style="color:#f92672">.</span>cm<span style="color:#f92672">.</span>Reds, font_family<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;IPAexGothic&#39;</span>, node_size<span style="color:#f92672">=</span>[<span style="color:#ae81ff">100000</span><span style="color:#f92672">*</span>v <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> pr<span style="color:#f92672">.</span>values()] )
+nx<span style="color:#f92672">.</span>draw_networkx_labels(G,pos1,font_size<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>, font_family<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;IPAexGothic&#39;</span>)
+
+plt<span style="color:#f92672">.</span>axis(<span style="color:#e6db74">&#39;off&#39;</span>)
+plt<span style="color:#f92672">.</span>show()
+
+<span style="color:#75715e"># Display the top 10 voice actors with the highest PageRank values.</span>
+score_sorted <span style="color:#f92672">=</span> sorted(pr<span style="color:#f92672">.</span>items(), key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x:<span style="color:#f92672">-</span>x[<span style="color:#ae81ff">1</span>])
+<span style="color:#66d9ef">print</span>(score_sorted[<span style="color:#ae81ff">0</span>:<span style="color:#ae81ff">20</span>])
+</code></pre></div><p>Output result:</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/822628c4-634d-79d9-5d41-985b554d578f.png" alt="figfig.png"></p>
+<pre><code>Top 20 voice actors with the highest PageRank values
+[('Ahashi Ohashi', 0.04555164528689211),
+('Yamazaki Ellie', 0.039995796742290854),
+('Kido Ibuki', 0.03944625539215552),
+('Higashiyama Nao', 0.03748530983574666),
+('Ogura Yui', 0.036855264907774486),
+('Natsukawa Shiina', 0.03677562557911518),
+('Asakura Momo', 0.034883881713288184),
+('Misawa Sachika', 0.03461691295075832),
+('Tadokoro Azusa', 0.03458330057908542),
+('Maaya Uchida', 0.034217274567621005),
+('Moe Toyoda', 0.033018028594089754),
+('Suminako', 0.03235768418454441),
+('Ishihara Kaori', 0.03065891275211937),('Amemiya Ten', 0.030072491383579297),
+('Uesaka Sumire', 0.02920698033366847),
+('Machico', 0.028396698868023),
+('Aimi', 0.02759156041213482),
+('Minase Inori', 0.027163302263303015),
+('Mito Ito', 0.026500204152951186),
+('Haruka Yamazaki', 0.02511585403440591)]]
+</code></pre><h3 id="use-network-information-to-cluster-similar-voice-actors-into-categories">Use network information to cluster similar voice actors into categories</h3>
+<p>Finally, we will categorize the voice actor. This time we will use a clustering technique called <strong>Louvain</strong>. Louvain is a clustering method based on modularity and is a method for defining a value that represents the &ldquo;degree of network connection&rdquo; and optimizing it. Actually, it is a method for finding local optimization, and it is realized by calculating <code>expression: edge ratio in cluster-edge ratio between clusters</code>.</p>
+<p>Techniques such as network indexing and clustering are roughly described in Github&rsquo;s explanation at Matsuo Laboratory of the University of Tokyo, so please refer to it if you like.</p>
+<p>[Network analysis](<a href="https://github.com/matsuolab/Tutorial/wiki/%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%25(E3%82%AF%E5%88%86%E6%9E%90)">https://github.com/matsuolab/Tutorial/wiki/%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%(E3%82%AF%E5%88%86%E6%9E%90)</a></p>
+<p>Louvain can be easily analyzed by installing community with pip, so this module is used for network clustering with Louvain. I also want to save the clustered results in the form of .graphml and visualize them neatly with cytoscape.</p>
+<p>First, let&rsquo;s perform clustering with Louvain.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> community
+partition <span style="color:#f92672">=</span> community<span style="color:#f92672">.</span>best_partition(G)
+size <span style="color:#f92672">=</span> float(len(set(partition<span style="color:#f92672">.</span>values())))
+pos <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>spring_layout(G)
+count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.</span>
+<span style="color:#66d9ef">for</span> com <span style="color:#f92672">in</span> set(partition<span style="color:#f92672">.</span>values()):
+    count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1.</span>
+    list_nodes <span style="color:#f92672">=</span> [nodes <span style="color:#66d9ef">for</span> nodes <span style="color:#f92672">in</span> partition<span style="color:#f92672">.</span>keys() <span style="color:#66d9ef">if</span> partition[nodes] <span style="color:#f92672">==</span> com]
+    nx<span style="color:#f92672">.</span>draw_networkx_nodes(G, pos, list_nodes, node_size<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>, node_color <span style="color:#f92672">=</span> str(count<span style="color:#f92672">/</span>size))
+
+partition <span style="color:#f92672">=</span> community<span style="color:#f92672">.</span>best_partition(G)
+labels <span style="color:#f92672">=</span> dict([(i, str(i)) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(nx<span style="color:#f92672">.</span>number_of_nodes(G))])
+nx<span style="color:#f92672">.</span>set_node_attributes(G, labels,<span style="color:#e6db74">&#39;label&#39;</span>)
+nx<span style="color:#f92672">.</span>set_node_attributes(G, partition,<span style="color:#e6db74">&#39;community&#39;</span>)
+<span style="color:#75715e">#nx.write_gml(G, &#34;community.gml&#34;) Since it is garbled, save it in the following form.</span>
+nx<span style="color:#f92672">.</span>write_graphml(G, <span style="color:#e6db74">&#34;community.graphml&#34;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>)
+</code></pre></div><p>Before displaying in cytoscape, let&rsquo;s take a look at the voice actors for each cluster.
+First, the first cluster&hellip;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># First cluster</span>
+<span style="color:#66d9ef">for</span> k,v <span style="color:#f92672">in</span> partition<span style="color:#f92672">.</span>items():
+    <span style="color:#66d9ef">if</span> int(v)<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">print</span>(k)
+<span style="color:#75715e"># Output result:</span>
+Eri Yamazaki
+Ibuki Kido
+Ayaka Ohashi
+Azusa Tadokoro
+Machico
+M<span style="color:#960050;background-color:#1e0010">・</span>A<span style="color:#960050;background-color:#1e0010">・</span>O
+</code></pre></div><p>We were able to confirm that it was wonderfully solidified with Horipro voice actor + α!
+<a href="https://moca-news.net/article/20140226/2014022614590a_/01/">https://moca-news.net/article/20140226/2014022614590a_/01/</a></p>
+<p>Next, let&rsquo;s look at the second cluster.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Second cluster</span>
+<span style="color:#66d9ef">for</span> k,v <span style="color:#f92672">in</span> partition<span style="color:#f92672">.</span>items():
+    <span style="color:#66d9ef">if</span> int(v)<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+        <span style="color:#66d9ef">print</span>(k)
+<span style="color:#75715e"># Output result:</span>
+Morohoshi Sumire
+Natsukawa Shiina
+Akina
+Asakura Momo
+Amemiya Ten
+Aimi
+Miki Sasaki
+Kuraguchi peach
+Ayaka Mori
+Tokui blue sky
+</code></pre></div><p>This has the impression that TrySail and Milky Holmes are mainly frozen.
+Apparently, clustering seems to be working! !</p>
+<p>Finally, I would like to visualize the voice actor network categorized with Cytoscape neatly.</p>
+<h3 id="visualize-the-categorized-result-with-cytoscape">Visualize the categorized result with Cytoscape</h3>
+<p>First, install Cytoscape.</p>
+<p><a href="http://www.cytoscape.org/">Cytoscape</a></p>
+<p>Cytoscape is a network visualization tool, and I would like to see a tool created mainly for bioinformatics, but it can also be used for other purposes besides bioinformatics. It&rsquo;s very convenient because it gives you great freedom.</p>
+<p>After installation, open it and go to [File-&gt;Import-&gt;Network-&gt;File] on the toolbar and open the network file you saved earlier.</p>
+<p>![Screenshot 2020-02-08 20.53.06.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/4c2bdc4d-7749-af2e-38ca-(b73b24c4d8a5.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/4c2bdc4d-7749-af2e-38ca-(b73b24c4d8a5.png)</a></p>
+<p>In the above state, it cannot be said that it is beautiful, so first let&rsquo;s start by color-coding each cluster.
+There, click on the &ldquo;Style&rdquo; tab on the left. Then open &ldquo;Fill Color&rdquo; there. Then, Column and Mapping Type are displayed. Select &ldquo;community&rdquo; for Column and &ldquo;Disctete Mapping&rdquo; for Mapping Type.</p>
+<p>![Screenshot 2020-02-08 20.54.09.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/e5939ad5-f0cf-36b4-41da-(45f8f017fd22.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/e5939ad5-f0cf-36b4-41da-(45f8f017fd22.png)</a></p>
+<p>Then, I think that the following screen will appear, so I will specify the color for each.</p>
+<p>![Screenshot 2020-02-08 20.56.22.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/01e9d4b0-29fb-7555-e070-(2f19fd7fdcc7.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/01e9d4b0-29fb-7555-e070-(2f19fd7fdcc7.png)</a></p>
+<p>Now that you have made the specifications, let&rsquo;s roughly change the layout. You can choose various layouts from Layout-&gt;yFiles Layouts on the toolbar and other options there, so choose a layout that is easy for you to see, then drag and move with your mouse to adjust it.</p>
+<p>By the way, the result of my voice actor network is like this (I fixed it because there was a request that the previous was difficult to see).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/580487/738795d3-be3a-bb91-0623-c6e7f35a211a.png" alt="fourpath.graphml.png"></p>
+<p>As a result, female voice actors in their twenties are roughly divided into five clusters when categorized based on Wikipedia profile information,
+・A cluster centered on HoriPro voice actors (Ayaka Ohashi, Azusa Tadokoro, etc.)
+・TrySail, cluster centering on Milky Holmes (Amamiya Amamiya, Aimi, etc.)
+・A cluster consisting of three members of King Records and people related to them (Inori Minase, Sumire Uesaka, etc.)
+・A cluster made up of talented people (Saori Hayami, Nao Higashiyama, etc.)
+・A cluster that seems to have a strong idol color (Aoi Yuki, Miki Ito, etc.)</p>
+<p>I think we could make a big classification like this.</p>
+<h3 id="summary">Summary</h3>
+<p>This time, we visualized the relationships between female voice actors in their 20s by network analysis based on their profile information on Wikipedia. In addition, ** clustering was performed to achieve the categorization of female voice actors in their 20s, and the results were visualized with Cytoscape **. It was the first time for me to actually bring in data and analyze it as a hobby, so I was worried, but I was glad that the result was like that!</p>
+<p>At Qiita, we plan to introduce such material analysis when we have time, so if you have any requests, please comment!</p>
+<p>Also, it will be my encouragement in the future, so if you find it interesting, please like it.</p>
+<h4 id="other-reference-materials">Other reference materials</h4>
+<p><a href="https://qiita.com/chike0905/items/0ea1089c5b7e3482f489">Clustering with python-louvain</a>
+<a href="https://qiita.com/a-lilas/items/d7654def2fa831c0dfdf">Visualize Twitter followers with NetworkX and Cytoscape</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

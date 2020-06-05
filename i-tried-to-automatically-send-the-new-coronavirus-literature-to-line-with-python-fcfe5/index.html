@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>I tried to automatically send the new coronavirus literature to LINE with Python | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to automatically send the new coronavirus literature to LINE with Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 23, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/beginner"> beginner</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/pubmed"> pubmed</a></code></small>
+
+</p>
+<pre><code># Overview
+</code></pre>
+<p>In this article, we will deal with the method of extracting documents related to the new coronavirus newly registered on the previous day from the medical literature database and automatically transmitting them to LINE. The main content is to extract documents that match a certain keyword from a database called PubMed.</p>
+<p>When there is a new paper, you will be notified like this.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/614462/9b590c07-5787-18b2-4e19-2b3ed5147a0d.png" alt="Completion image (with paper)"></p>
+<p>Without it it looks like this.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/614462/273a8b32-80e6-6360-4f0b-d6a690043788.png" alt="Completion image (no paper)"></p>
+<p>#Environment</p>
+<pre><code>Python 3.6.5
+beautifulsoup4==4.9.0
+requests==2.23.0
+urllib3==1.25.9
+</code></pre><h1 id="database-and-keyword-selection">Database and keyword selection</h1>
+<p>This time, <a href="https://pubmed.ncbi.nlm.nih.gov/">PubMed</a>isusedasamedicalliteraturedatabase.PubMedisadatabasecreatedbyNCBI(NationalCenterforBiologicalSciences)inNLM(NationalBookofMedicine). You can search for documents published in major medical journals in the world.</p>
+<p>Next, regarding keywords, when I investigated new coronaviruses, the words &ldquo;coronavirus&rdquo; and &ldquo;Covid-19&rdquo; were often used. Therefore, I decided to extract documents containing either the word &ldquo;coronavirus&rdquo; or &ldquo;Covod-19&rdquo; this time.</p>
+<h1 id="pubmed-api">PubMed API</h1>
+<p>I used PubMed&rsquo;s API as a method to extract documents from PubMed.
+There are multiple APIs available in PubMed, but I used ESearch and EFetch.
+For details, refer to <a href="https://www.ncbi.nlm.nih.gov/books/NBK25499/">Documents</a>.</p>
+<p>#ESearch_Overview
+ESearch can get a list of article IDs that match the search formula.
+Based on this URL,</p>
+<pre><code>http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&amp;term=
+</code></pre><p>If you enter a search expression after &ldquo;term=&rdquo;, the ID that matches the search expression will be returned.</p>
+<p>For example, try &ldquo;corona virus&rdquo;.</p>
+<pre><code>http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&amp;term=coronavirus
+</code></pre><p>If you enter the above URL in a browser, the result like this will be displayed.
+<img width="280" alt="ESearch retmax=20" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/614462/798bccda-96b7-4554-3ef5-b26d1aaa2c46.png"></p>
+<p>I have successfully obtained the article ID. Count means the number of documents matching the search expression, and retmax means the number of documents to be displayed among the matching documents. The initial value of retmax is 20, but you can get up to 100,000.</p>
+<p>For example, to change retmax to 100, you need to add &ldquo;retmax=100&rdquo; to the URL.</p>
+<pre><code>http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&amp;term=coronavirus&amp;retmax=100
+</code></pre><p>If you enter the above URL in your browser,
+<img width="350" alt="ESearch retmax=100" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/614462/0b2ca534-5bd7-2f18-30a4-d092ed2514d3.png">
+It looks like. The number of documents displayed has increased to 100.</p>
+<p>You can put some conditions for extracting documents like &ldquo;retmax&rdquo;.
+This time, besides &ldquo;retmax&rdquo;, &ldquo;field&rdquo;, &ldquo;mindate&rdquo;, &ldquo;maxdate&rdquo; are used.</p>
+<p>In &ldquo;field&rdquo;, you can select the search location from &ldquo;title&rdquo; or &ldquo;abstract&rdquo;.
+&ldquo;mindate&rdquo;, &ldquo;maxdate&rdquo; allows you to decide when the article will be included in the publication date of PubMed.
+For example, if you want to search for documents from April 2019 to April 2020 by title only,</p>
+<pre><code>&amp;field=title&amp;mindate=2019/4/1&amp;maxdate=2020/4/31
+</code></pre><p>I will add.</p>
+<p>#ESearch_code
+First, create a URL to find out the ID of the article that corresponds to the search formula.
+This time, we are using a search formula that connects &ldquo;coronavirus&rdquo; and &ldquo;covid-19&rdquo; with OR.</p>
+<pre><code class="language-python:" data-lang="python:">import time
+def make_url(yesterday,query):
+    &quot;&quot;&quot;
+    Create url for Esearch
+    Arguments: date, search formula
+    Return value: str type url
+    &quot;&quot;&quot;
+    #Esearch basic URL
+    baseURL=&quot;http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&amp;term=&quot;
+    
+    # Limit search scope to title or abstract
+    field=&quot;field=title/abstract&quot;
+
+    # Change the maximum number of IDs you can get to 1000
+    retmax=&quot;retmax=1000&quot;
+
+    # Only yesterday's literature
+    mindate=&quot;mindate={}&quot;.format(yesterday)
+    maxdate=&quot;maxdate={}&quot;.format(yesterday)
+
+    # Join each string
+    url=&quot;&amp;&quot;.join([baseURL+query,field,retmax,mindate,maxdate])
+    
+    time.sleep(5)
+    return url
+</code></pre><p>Once you have created the URL, use it to get a list of IDs.
+We use Beautiful Soup to make it easy to get an ID.</p>
+<pre><code class="language-python:" data-lang="python:">from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+import urllib.request
+
+def get_id(url):
+    &quot;&quot;&quot;
+    Obtaining a paper ID
+    Argument: Research url
+    Returns: list of ids
+    &quot;&quot;&quot;
+    Get a list of IDs with #ESearch
+    article_id_list=urllib.request.urlopen(url)
+    
+    #Get only ID
+    bs=BeautifulSoup(article_id_list,&quot;html.parser&quot;)
+    ids=bs.find_all(&quot;id&quot;)
+    
+    return ids
+</code></pre><p>#EFetch_Overview
+Use EFetch to get information such as title and abstract from the article ID.
+This URL will be the basis.</p>
+<pre><code>https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&amp;id=
+</code></pre><p>You can get information about the paper by entering the id of the paper in &ldquo;id=&rdquo;.</p>
+<p>#EFetch_ code
+Get the information of the article from each ID obtained by ESearch.</p>
+<pre><code class="language-python:" data-lang="python:">from bs4 import BeautifulSoup
+import urllib.request
+import time
+
+def get_summary(id):
+    &quot;&quot;&quot;
+    Get a paper summary
+    Argument: id
+    Return value: Title, url of paper
+    &quot;&quot;&quot;
+    #EFetch basic URL
+    serchURL = &quot;https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&amp;id=&quot;
+    
+    search_url=serchURL+id.text+&quot;&amp;retmode=xml&quot;
+    summary=urllib.request.urlopen(search_url)
+    summary_bs=BeautifulSoup(summary,&quot;html.parser&quot;)
+    
+    #Reference URL is created from the article ID
+    article_URL=&quot;https://pubmed.ncbi.nlm.nih.gov/{}/&quot;.format(id.text)
+    
+    # Extract the title of the document
+    title=summary_bs.find(&quot;articletitle&quot;)
+    title=title.text
+    
+    time.sleep(5)
+    return title,article_URL
+</code></pre><p>#LINE Notify_ code
+After that, the information of the obtained paper will be output.
+You can send a message from python to LINE by using LINE Notify.
+I referred to this article (<a href="https://qiita.com/moriita/items/5b199ac6b14ceaa4f7c9)">https://qiita.com/moriita/items/5b199ac6b14ceaa4f7c9)</a>.</p>
+<pre><code class="language-python:Send" data-lang="python:Send">def output_line(line_access_token,message):
+    &quot;&quot;&quot;
+    Send notification to LINE
+    Arguments: access token, notification content
+    Return value: None
+    &quot;&quot;&quot;
+    line_url = &quot;https://notify-api.line.me/api/notify&quot;
+    line_headers = {'Authorization':'Bearer' + line_access_token}
+    payload = {'message': message}
+    r=requests.post(line_url, headers=line_headers, params=payload,)
+</code></pre><h1 id="entire-code">Entire code</h1>
+<pre><code class="language-python:" data-lang="python:">from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+from datetime import date,timedelta
+import urllib.requestimport requests
+import time
+
+def main():
+    &quot;&quot;&quot;
+    Main processing
+    &quot;&quot;&quot;
+    #LINE access token
+    line_access_token ='LINE access token'
+
+    #Get date
+    yesterday=date.today()-timedelta(days=1)
+    yesterday=&quot;/&quot;.join([str(yesterday.year),str(yesterday.month),str(yesterday.day)])
+    
+    #Search formula
+    query=&quot;coronavirus+OR+covid-19&quot;
+
+    #Esearch link acquisition
+    URL=make_url(yesterday,query)
+
+    #Get the paper id
+    ids=get_id(URL)
+
+    #When there is no new paper
+    if ids == []:
+        message=&quot;There are no new papers for Covid-19&quot;
+        output_line(line_access_token,message)
+  
+    #When there is a new paper
+    else:
+        for id in ids:
+            #Get the article title and URL
+            title,article_URL=get_summary(id)
+
+            Send notification to #LINE
+            message=&quot;&quot;&quot;{}
+            {}&quot;&quot;&quot;.format(title,article_URL)
+            output_line(line_access_token,message)
+
+def make_url(yesterday,query):
+    &quot;&quot;&quot;
+    Create url for Esearch
+    Arguments: date, search formula
+    Return value: str type url
+    &quot;&quot;&quot;
+    #Esearch basic URL
+    baseURL=&quot;http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&amp;term=&quot;
+    
+    # Limit search scope to title or abstract
+    field=&quot;field=title/abstract&quot;
+
+    # Change the maximum number of IDs you can get to 1000
+    retmax=&quot;retmax=1000&quot;
+
+    # Only yesterday's literature
+    mindate=&quot;mindate={}&quot;.format(yesterday)
+    maxdate=&quot;maxdate={}&quot;.format(yesterday)
+
+    # Join each string
+    url=&quot;&amp;&quot;.join([baseURL+query,field,retmax,mindate,maxdate])
+    
+    time.sleep(5)
+    return url
+    
+def get_id(url):
+    &quot;&quot;&quot;
+    Obtaining a paper ID
+    Argument: Research url
+    Returns: list of ids
+    &quot;&quot;&quot;
+    Get a list of IDs with #ESearch
+    article_id_list=urllib.request.urlopen(url)
+    
+    #Get only ID
+    bs=BeautifulSoup(article_id_list,&quot;html.parser&quot;)
+    ids=bs.find_all(&quot;id&quot;)
+    
+    return ids
+
+def get_summary(id):
+    &quot;&quot;&quot;
+    Get a paper summary
+    Argument: id
+    Return value: Title, url of paper
+    &quot;&quot;&quot;
+    #EFetch basic URL
+    serchURL = &quot;https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&amp;id=&quot;
+    
+    search_url=serchURL+id.text+&quot;&amp;retmode=xml&quot;
+    summary=urllib.request.urlopen(search_url)
+    summary_bs=BeautifulSoup(summary,&quot;html.parser&quot;)
+    
+    #Reference URL is created from the article ID
+    article_URL=&quot;https://pubmed.ncbi.nlm.nih.gov/{}/&quot;.format(id.text)
+    
+    # Extract the title of the document
+    title=summary_bs.find(&quot;articletitle&quot;)
+    title=title.text
+    
+    time.sleep(5)
+    return title,article_URL
+        
+def output_line(line_access_token,message):
+    &quot;&quot;&quot;
+    Send notification to LINE
+    Arguments: access token, notification content
+    Return value: None
+    &quot;&quot;&quot;
+    line_url = &quot;https://notify-api.line.me/api/notify&quot;
+    line_headers = {'Authorization':'Bearer' + line_access_token}
+    payload = {'message': message}
+    r=requests.post(line_url, headers=line_headers, params=payload,)
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre><p>After that, by running this with cron, you can automatically send the title and URL of the document to LINE every day.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

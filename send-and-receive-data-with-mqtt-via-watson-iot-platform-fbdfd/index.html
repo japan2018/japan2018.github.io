@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Send and receive data with MQTT via Watson IoT Platform | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Send and receive data with MQTT via Watson IoT Platform</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 23, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/mqtt">mqtt</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/watsoniotplatform">watsoniotplatform</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Watson IoT Platform (Internet of Things Platform, WIOTP) is a platform for IoT based on IBM Cloud. We provide various functions such as collection, storage, and visualization of data obtained from devices such as sensors.
+An official SDK for connecting devices and applications is provided, and you can send and receive data via MQTT.
+This article explains how to do this.</p>
+<h1 id="watson-iot-platform-concept">Watson IoT Platform concept</h1>
+<p>First, I will explain the concept of &ldquo;things&rdquo; handled by WIOTP.
+WIOTP defines the following three types of &ldquo;things&rdquo; to be connected, and the functions that can be implemented and the connection methods differ.</p>
+<ul>
+<li>Application</li>
+<li>Device</li>
+<li>Gateway</li>
+</ul>
+<h2 id="application">Application</h2>
+<p>The application can use the most functions of the three things, can receive the event sent from the device and utilize it for the service, or can send the event as a device itself.
+In order to implement as an application, it is necessary to issue an API key on the WIOTP console in advance. By authenticating with the API key when connecting to WIOTP, the connected application can be identified by WIOTP.
+Also, the assumed application type is defined in WIOTP, and it is possible to limit the functions that can be used by selecting the application type for each API key.</p>
+<p>The following functions are available in the application.</p>
+<ul>
+<li>Receive events sent from the device</li>
+<li>Send a command to the device</li>
+<li>Send an event as a device</li>
+<li>Receive commands as a device</li>
+</ul>
+<h2 id="device">device</h2>
+<p>The role of the device is to send the surrounding information obtained from sensors etc. to WIOTP.
+In order to implement as a device, it is necessary to set the device type and device ID in the WIOTP console in advance, and the device ID is set to be unique for each device.
+With WIOTP, it is possible to identify by which device the connection request or data transmission was performed by the device ID.</p>
+<p>The following features are available on your device:</p>
+<ul>
+<li>Send an event to the application, such as &ldquo;Human sensor detected person&rdquo;</li>
+<li>Receive commands sent by the application</li>
+</ul>
+<h2 id="gateway">Gateway</h2>
+<p>When multiple devices of the same type and role exist, the role of the gateway is to relay data between them and WIOTP. By doing so, WIOTP can actually handle the data sent from multiple devices as if they were sent from one device (gateway), making it easier to process the data.
+Like the device, the gateway needs to set the device type and device ID in the WIOTP console in advance. It is treated as one of the devices in WIOTP.</p>
+<p>The following functions are available on the gateway.</p>
+<ul>
+<li>Receive events sent from the device and relay them to your application</li>
+<li>Receive commands sent from the application and relay them to the device</li>
+</ul>
+<p>#Create sample</p>
+<p>▽We will actually use the official SDK to create a sample application that periodically sends and receives events to WIOTP. This time, create the sender as a device and the receiver as an application.</p>
+<h2 id="assumption">Assumption</h2>
+<ul>
+<li>Must have an IBM Cloud account</li>
+<li>You have created an instance of Watson IoT Platform on IBM Cloud</li>
+</ul>
+<h2 id="advance-preparation">Advance preparation</h2>
+<h3 id="setting-up-the-device-with-wiotp">Setting up the device with WIOTP</h3>
+<p>Register the device required to implement the device.</p>
+<ul>
+<li>
+<p>Open an instance of Watson IoT Platform and open &ldquo;Devices&rdquo; from the menu on the left side of the screen.</p>
+</li>
+<li>
+<p>A page saying &ldquo;Browse for device&rdquo; is displayed. Click the &ldquo;Add device&rdquo; button in the upper right.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/122591/5577efa2-7d2b-e0a8-7fc8-9cf00fe6e7b6.png" alt="image.png"></p>
+</li>
+<li>
+<p>Set any value in &ldquo;Device type&rdquo; and &ldquo;Device ID&rdquo;, and click the &ldquo;Next&rdquo; button.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/122591/725fbd1d-4493-16f4-b391-0f624ea23141.png" alt="image.png"></p>
+</li>
+<li>
+<p>On the next page, just click the &ldquo;Next&rdquo; button without entering anything.</p>
+</li>
+<li>
+<p>The &ldquo;Automatically Generated Authentication Token&rdquo; page is displayed. The &ldquo;authentication token&rdquo; can be automatically generated or can be set to any value. After setting, click the &ldquo;Next&rdquo; button.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/122591/4fa62fd6-c0f0-fdf3-6793-ab2237af7172.png" alt="image.png"></p>
+</li>
+<li>
+<p>When the summary screen is displayed, click the &ldquo;Finish&rdquo; button.</p>
+</li>
+<li>
+<p>When the &ldquo;Device Drilldown&rdquo; page is displayed, device registration is complete. Make a note of the information displayed here, as you will use it later.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/122591/73e27fa7-277c-ccc1-e5ad-ffc137b9b9b8.png" alt="image.png"></p>
+</li>
+</ul>
+<h3 id="issuing-an-api-key-with-wiotp">Issuing an API key with WIOTP</h3>
+<p>Issue the API key required to implement the application.
+For details, see “1. Issuing an API key” in the following article.
+<a href="https://qiita.com/Motonaga/items/6304f5f66f63cb566943">https://qiita.com/Motonaga/items/6304f5f66f63cb566943</a></p>
+<h2 id="sender-implementation">Sender implementation</h2>
+<p>Implement the sending device.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:publish.py" data-lang="python:publish.py"><span style="color:#f92672">import</span> wiotp.sdk.application
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> json
+
+<span style="color:#75715e">## Embed various parameters for &#34;device&#34; set in WIOTP in JSON format configuration information (options)</span>
+org_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxx&#34;</span> <span style="color:#75715e"># WIOTP organization ID</span>
+device_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample_id&#34;</span> <span style="color:#75715e"># &#34;Device ID&#34; set in advance</span>
+device_type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample_type&#34;</span> <span style="color:#75715e"># &#34;Device type&#34; set in advance</span>
+token <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample-token&#34;</span> <span style="color:#75715e"># &#34;Authentication token&#34; set in advance</span>
+event_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample&#34;</span> <span style="color:#75715e"># Identifier of the event to send. You can set any value. Set the same value as the receiving side</span>
+
+options <span style="color:#f92672">=</span> {
+  <span style="color:#e6db74">&#34;identity&#34;</span>: {
+    <span style="color:#e6db74">&#34;orgId&#34;</span>: org_id,
+    <span style="color:#e6db74">&#34;typeId&#34;</span>: device_type,
+    <span style="color:#e6db74">&#34;deviceId&#34;</span>: device_id
+  },
+  <span style="color:#e6db74">&#34;auth&#34;</span>: {
+    <span style="color:#e6db74">&#34;token&#34;</span>: token
+  }
+}
+
+<span style="color:#75715e"># Connect to WIOTP as &#34;device&#34; using SDK</span>
+client <span style="color:#f92672">=</span> wiotp<span style="color:#f92672">.</span>sdk<span style="color:#f92672">.</span>device<span style="color:#f92672">.</span>DeviceClient(options, logHandlers<span style="color:#f92672">=</span>None)
+client<span style="color:#f92672">.</span>connect()
+
+<span style="color:#75715e"># Increment {count} every 2 seconds and send to WIOTP</span>
+myData <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;message&#39;</span>:<span style="color:#e6db74">&#39;foo&#39;</span>,<span style="color:#e6db74">&#39;count&#39;</span>: <span style="color:#ae81ff">0</span>}
+<span style="color:#66d9ef">while</span> True:
+  <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;data published: &#34;</span>, json<span style="color:#f92672">.</span>dumps(myData))
+  client<span style="color:#f92672">.</span>publishEvent(event_id, <span style="color:#e6db74">&#34;json&#34;</span>, myData)
+  myData[<span style="color:#e6db74">&#39;count&#39;</span>] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+  time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">2</span>)
+</code></pre></div><h2 id="receiver-implementation">Receiver implementation</h2>
+<p>Implement the receiving application.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:subscribe.py" data-lang="python:subscribe.py"><span style="color:#f92672">import</span> wiotp.sdk.application
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> time
+
+app_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample_app&#34;</span> <span style="color:#75715e"># The application identifier. Set any value</span>
+app_auth_key <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxx&#34;</span> <span style="color:#75715e"># API key of application issued by WIOTP</span>
+app_auth_token <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxx&#34;</span> <span style="color:#75715e"># Authentication token of application issued by WIOTP</span>
+
+<span style="color:#75715e"># Embed various parameters for &#34;application&#34; set in WIOTP in JSON format configuration information (options)</span>
+options <span style="color:#f92672">=</span> {
+  <span style="color:#e6db74">&#34;identity&#34;</span>: {
+    <span style="color:#e6db74">&#34;appId&#34;</span>: app_id
+  },
+  <span style="color:#e6db74">&#34;auth&#34;</span>: {
+    <span style="color:#e6db74">&#34;key&#34;</span>: app_auth_key,
+    <span style="color:#e6db74">&#34;token&#34;</span>: app_auth_token
+  }
+}
+
+<span style="color:#75715e">#Connect to WIOTP as an &#34;application&#34; using SDK</span>
+client <span style="color:#f92672">=</span> wiotp<span style="color:#f92672">.</span>sdk<span style="color:#f92672">.</span>application<span style="color:#f92672">.</span>ApplicationClient(options, logHandlers<span style="color:#f92672">=</span>None)
+client<span style="color:#f92672">.</span>connect()
+
+<span style="color:#75715e"># Set the callback function when the event is received. Here, the received event information is written to standard output</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">event_callback</span>(event):
+  <span style="color:#75715e"># The body of the received data can be obtained with event.data</span>
+  <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{} event&#39;{}&#39; received from device [{}]: {}&#34;</span><span style="color:#f92672">.</span>format(event<span style="color:#f92672">.</span>format, event<span style="color:#f92672">.</span>eventId, event<span style="color:#f92672">.</span>device, json<span style="color:#f92672">.</span>dumps(event<span style="color:#f92672">.</span>data)))
+client<span style="color:#f92672">.</span>deviceEventCallback <span style="color:#f92672">=</span> event_callback
+
+<span style="color:#75715e">#Set the parameters of the subscribing device (the same as the sender) and start Subscribe</span>
+device_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample_id&#34;</span> <span style="color:#75715e"># &#34;Device ID&#34; set in advance</span>
+device_type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample_type&#34;</span> <span style="color:#75715e"># &#34;Device type&#34; set in advance</span>
+event_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample&#34;</span> <span style="color:#75715e"># Identifier of the event to receive. You can set any value. Same value as sender</span>
+
+client<span style="color:#f92672">.</span>subscribeToDeviceEvents(typeId<span style="color:#f92672">=</span>device_type, deviceId<span style="color:#f92672">=</span>device_id, eventId<span style="color:#f92672">=</span>event_id)
+
+<span style="color:#75715e"># Spin a loop to keep your app up and running</span>
+<span style="color:#66d9ef">while</span> True:
+  time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">3</span>)
+</code></pre></div><h1 id="execution-result">Execution result</h1>
+<p>If you execute both the sender and the receiver, the following results are obtained, and you can confirm that you can send and receive data via MQTT as expected.</p>
+<p>WIOTP device console (displays the contents of the sent event)<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/122591/c3fe055c-5b16-f05c-41e9-46fdddce187a.png" alt="image.png"></p>
+<p>受信側のコンソール</p>
+<pre><code>$ python subscribe.py 
+2019-12-23 15:41:58,308   wiotp.sdk.application.client.ApplicationClient  INFO    Connected successfully: a:a54k3u:sample_app
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 0}
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 1}
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 2}
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 3}
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 4}
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 5}
+json event 'sample' received from device [sample_type:sample_id]: {&quot;message&quot;: &quot;foo&quot;, &quot;count&quot;: 6}
+</code></pre><h1 id="まとめ">まとめ</h1>
+<p>本記事では、Watson IoT Platform と接続する「モノ」のコンセプトの説明と、公式のSDKを使用した接続方法について解説しました。
+接続方法については、送信側をデバイス、受信側をアプリケーションとして作成しましたが、実際の現場で使用する際は複数のデバイスをゲートウェイで中継して使用する実装も多くなると思います。</p>
+<h1 id="参考資料">参考資料</h1>
+<ul>
+<li>Github: <a href="https://github.com/ibm-watson-iot/iot-python">https://github.com/ibm-watson-iot/iot-python</a></li>
+<li>Python SDK: <a href="https://ibm-watson-iot.github.io/iot-python/">https://ibm-watson-iot.github.io/iot-python/</a></li>
+<li>公式ドキュメント：https://cloud.ibm.com/docs/services/IoT?topic=iot-platform-connect_devices_apps_gw&amp;locale=ja</li>
+<li>初めてのMQTT：https://gist.github.com/voluntas/89000a06a7b79f1230ab</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

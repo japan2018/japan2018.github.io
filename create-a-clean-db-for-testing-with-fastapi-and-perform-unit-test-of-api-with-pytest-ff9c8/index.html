@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Create a clean DB for testing with FastAPI and perform unit test of API with pytest | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Create a clean DB for testing with FastAPI and perform unit test of API with pytest</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 8, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/fastapi">FastAPI</a></code></small>
+
+</p>
+<pre><code>## things to do
+</code></pre>
+<ol>
+<li><a href="#implementationofasimpleCRUDapplicationusingsqlite3withFastAPI">implementation of a simple CRUD application using sqlite3 with FastAPI</a></li>
+<li>[Create a DB for each test case and perform unit test of API with pytest without affecting other test cases or production DB](#CreateaDBforeachtestcaseandcreateanothertestcase(UnittestofAPIisperformedwithpytestwithoutaffectingtheproductionDB.)</li>
+</ol>
+<h2 id="1-implementing-a-simple-crud-application-using-sqlite3-with-fastapi">1. Implementing a simple CRUD application using sqlite3 with FastAPI</h2>
+<h3 id="crud-application">CRUD application</h3>
+<p>Create a CRUD app for user account. Since the test method is mainly introduced, only the following simple functions will be implemented.</p>
+<ul>
+<li>Create: User registration</li>
+</ul>
+<h3 id="preparation">Preparation</h3>
+<p>In addition to FastAPI, you need pip install of the following packages.</p>
+<ul>
+<li>sqlalchemy</li>
+<li>sqlalchemy-utils</li>
+<li>async-exit-stack (not needed for Python 3.7)</li>
+<li>async-generator (not needed in Python 3.7)</li>
+<li>requests</li>
+<li>pytest</li>
+</ul>
+<h3 id="directory-structure">Directory structure</h3>
+<p>Implement the necessary items with the following directory structure.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">users
+├── __init__.py
+├── crud.py # Function definition for issuing queries
+├── conftest.py # pytest fixture definition
+├── database.py # database settings
+├── main.py # API definition
+├── models.py # table definition
+├── schemas.py # API I/O definition
+└── tests
+    ├── __init__.py
+    └── test_user.py # API test
+</code></pre></div><h3 id="database-settings-databasepy">Database settings (database.py)</h3>
+<p>Specify the database to connect to with the Database URL. Basically, it should be declared as an environment variable, but it is solid for simplicity.
+The notation of main database URL is summarized in <a href="https://docs.sqlalchemy.org/en/13/core/engines.html">here</a>.
+<code>connect_args={&quot;check_same_thread&quot;: False}</code> is a setting for sqlite3, so if you want to use another Database, delete it.</p>
+<p>The <code>sessionmaker</code> instance that is in the <code>SessionLocal variable</code> is
+When called, it creates a session instance. This is used to manage the connection with the DB. We also use session to issue SQL queries.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:database.py" data-lang="python:database.py"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> create_engine
+<span style="color:#f92672">from</span> sqlalchemy.ext.declarative <span style="color:#f92672">import</span> declarative_base
+<span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> sessionmaker
+
+SQLALCHEMY_DATABASE_URL <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;DATABASE_URL&#39;</span>,<span style="color:#e6db74">&#39;sqlite:///./test.db&#39;</span>)
+
+engine <span style="color:#f92672">=</span> create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;check_same_thread&#34;</span>: False}
+)
+SessionLocal <span style="color:#f92672">=</span> sessionmaker(autocommit<span style="color:#f92672">=</span>False, autoflush<span style="color:#f92672">=</span>False, bind<span style="color:#f92672">=</span>engine)
+
+Base <span style="color:#f92672">=</span> declarative_base()
+</code></pre></div><h3 id="table-definition-modelspy">Table definition (models.py)</h3>
+<p>Perform Table definition by inheriting Base defined when setting database. With this definition, you can easily create a table and use the ORM mapper via Base.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:models.py" data-lang="python:models.py"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> Boolean, Column, Integer, String
+<span style="color:#f92672">from</span> .database <span style="color:#f92672">import</span> Base
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">User</span>(Base):
+    __tablename__ <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;users&#34;</span>
+
+    id <span style="color:#f92672">=</span> Column(Integer, primary_key<span style="color:#f92672">=</span>True, index<span style="color:#f92672">=</span>True)
+    email <span style="color:#f92672">=</span> Column(String, unique<span style="color:#f92672">=</span>True, index<span style="color:#f92672">=</span>True)
+    hashed_password <span style="color:#f92672">=</span> Column(String)
+    is_active <span style="color:#f92672">=</span> Column(Boolean, default<span style="color:#f92672">=</span>True)
+</code></pre></div><h3 id="function-definition-for-issuing-queries-crudpy">Function definition for issuing queries (crud.py)</h3>
+<p>sqlalchemy uses session to issue SQL queries. Since this process is likely to cause problems, we will cut it out and make unit testing easier. As much as possible, receive the session without issuing logic and only issue the query.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:crud.py" data-lang="python:crud.py"><span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> Session
+<span style="color:#f92672">from</span> hashlib <span style="color:#f92672">import</span> md5 <span style="color:#66d9ef">as</span> hash_func
+<span style="color:#f92672">from</span> .import models
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_user_by_email_query</span>(db: Session, email: str):
+    <span style="color:#e6db74">&#34;&#34;&#34;get user by email&#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">return</span> db<span style="color:#f92672">.</span>query(models<span style="color:#f92672">.</span>User)<span style="color:#f92672">.</span>filter(models<span style="color:#f92672">.</span>User<span style="color:#f92672">.</span>email <span style="color:#f92672">==</span> email)<span style="color:#f92672">.</span>first()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_user_query</span>(db: Session, email: str, password: str):
+    <span style="color:#e6db74">&#34;&#34;&#34;create user by email and password&#34;&#34;&#34;</span>
+    hashed_password <span style="color:#f92672">=</span> hash_func(password<span style="color:#f92672">.</span>encode())<span style="color:#f92672">.</span>hexdigest()
+    db_user <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>User(email<span style="color:#f92672">=</span>email, hashed_password<span style="color:#f92672">=</span>hashed_password)
+    db<span style="color:#f92672">.</span>add(db_user)
+    db<span style="color:#f92672">.</span>commit()
+    db<span style="color:#f92672">.</span>refresh(db_user)
+    <span style="color:#66d9ef">return</span> db_user
+</code></pre></div><h3 id="api-io-definition-schemaspy">API I/O definition (schemas.py)</h3>
+<p>Define the API I/O. Here we enter our email and password -&gt; we will return the id, email, and active user of the created user. Just decide the schema, and Serialize and Deserialize will go on their own.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:schemas.py" data-lang="python:schemas.py"><span style="color:#f92672">from</span> pydantic <span style="color:#f92672">import</span> BaseModel
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">UserBase</span>(BaseModel):
+    <span style="color:#e6db74">&#34;&#34;&#34;Base User scheme&#34;&#34;&#34;</span>
+    email: str
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">UserCreate</span>(UserBase):
+    <span style="color:#e6db74">&#34;&#34;&#34;Input&#34;&#34;&#34;</span>
+    password: str
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">User</span>(UserBase):
+    <span style="color:#e6db74">&#34;&#34;&#34;Output&#34;&#34;&#34;</span>
+    id: int
+    is_active: bool
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Config</span>:
+        orm_mode <span style="color:#f92672">=</span> True
+</code></pre></div><h3 id="api-definition-mainpy">API definition (main.py)</h3>
+<p>Define the CRUD API.
+What you need to be careful about is how to pass the session. When you declare a function or class as <code>depends</code>&rsquo; as an argument, the result of calling it (return for function, instance for class) is passed to the argument. By using this, session is created using SessionLocal for each request and the connection with the database is secured. And the query is issued using the session.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> List
+<span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> Depends, FastAPI, HTTPException
+<span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> Session
+<span style="color:#f92672">from</span> .import models, schemas
+<span style="color:#f92672">from</span> .crud <span style="color:#f92672">import</span> (
+    get_user_by_email_query,
+    create_user_query
+)
+<span style="color:#f92672">from</span> .database <span style="color:#f92672">import</span> SessionLocal, engine
+
+<span style="color:#75715e">#table creation</span>
+models<span style="color:#f92672">.</span>Base<span style="color:#f92672">.</span>metadata<span style="color:#f92672">.</span>create_all(bind<span style="color:#f92672">=</span>engine)
+
+app <span style="color:#f92672">=</span> FastAPI()
+
+<span style="color:#75715e"># Dependency</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_db</span>():
+    <span style="color:#66d9ef">try</span>:
+        db <span style="color:#f92672">=</span> SessionLocal() <span style="color:#75715e"># create session</span>
+        <span style="color:#66d9ef">yield</span> db
+    <span style="color:#66d9ef">finally</span>:
+        db<span style="color:#f92672">.</span>close()
+
+<span style="color:#a6e22e">@app.post</span>(<span style="color:#e6db74">&#34;/users/&#34;</span>, response_model<span style="color:#f92672">=</span>schemas<span style="color:#f92672">.</span>User)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_user</span>(user: schemas<span style="color:#f92672">.</span>UserCreate, db: Session <span style="color:#f92672">=</span> Depends(get_db)):
+    db_user <span style="color:#f92672">=</span> get_user_by_email_query(db<span style="color:#f92672">=</span>db, email<span style="color:#f92672">=</span>user<span style="color:#f92672">.</span>email)
+    <span style="color:#66d9ef">if</span> db_user:
+        <span style="color:#66d9ef">raise</span> HTTPException(status_code<span style="color:#f92672">=</span><span style="color:#ae81ff">400</span>, detail<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Email already registered&#34;</span>)
+    <span style="color:#66d9ef">return</span> create_user_query(db<span style="color:#f92672">=</span>db, user<span style="color:#f92672">=</span>user)
+</code></pre></div><p>There is also an implementation that uses middleware as a method of passing the session, but since all APIs make connections with the DB, there are adverse effects such as waste if there are many APIs that do not use the DB. Is not recommended. (<a href="https://fastapi.tiangolo.com/tutorial/sql-databases/#dependencies-with-yield-or-middleware">Reference</a>)</p>
+<h2 id="2-create-a-db-for-each-test-case-and-perform-unit-test-of-api-without-affecting-other-test-cases-or-production-db">2. Create a DB for each test case and perform unit test of API without affecting other test cases or production DB</h2>
+<p>Will begin the main subject.</p>
+<h3 id="api-test-when-using-production-db">API test (when using production DB)</h3>
+<p>With FastAPI, you can test the API simply as follows with <code>starlette.testclient.TestClient</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test_user.py" data-lang="python:test_user.py"><span style="color:#f92672">from</span> starlette.testclient <span style="color:#f92672">import</span> TestClient
+<span style="color:#f92672">from</span> users.main <span style="color:#f92672">import</span> app
+
+client <span style="color:#f92672">=</span> TestClient(app)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_create_user</span>():response <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>post(
+        <span style="color:#e6db74">&#34;/users/&#34;</span>, json<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;email&#34;</span>: <span style="color:#e6db74">&#34;foo&#34;</span>, <span style="color:#e6db74">&#34;password&#34;</span>: <span style="color:#e6db74">&#34;fo&#34;</span>}
+    )
+    <span style="color:#66d9ef">assert</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">200</span>
+</code></pre></div><p>At this point, you can run pytest to run automated tests.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ pytest
+</code></pre></div><p>However, the API connects to the production DB, so when the test is executed, user is added. If you execute the test twice, the email with the same name is already registered in the second time, so the user creation fails and the test fails.</p>
+<p>Therefore, create a Database temporarily at the time of test execution so that the production Database is not affected, and a clean Database is prepared every time the test is executed. In addition, recreate the Database for each function so that it can be used universally so that each test case does not affect each other.</p>
+<h3 id="creating-and-deleting-a-clean-db-for-testing">Creating and deleting a clean DB for testing</h3>
+<p>Here&rsquo;s what you need to do to test with a clean DB:</p>
+<ul>
+<li>Temporarily create Database for each function</li>
+<li>Pass a Sessionmaker instance to the test function that can create a session with that Database</li>
+<li>Delete Database at the end of each test case</li>
+</ul>
+<p>If you can do this, you can use a clean database for each test case and nothing will be left behind at the end.
+This process is required regardless of the test case, so we will define a fixture that does this process in <code>conftest.py</code>.
+The implementation looks like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:conftest.py" data-lang="python:conftest.py"><span style="color:#f92672">import</span> pytest
+<span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> create_engine
+<span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> sessionmaker
+<span style="color:#f92672">from</span> sqlalchemy_utils <span style="color:#f92672">import</span> database_exists, drop_database
+<span style="color:#f92672">from</span> .database <span style="color:#f92672">import</span> Base
+
+<span style="color:#a6e22e">@pytest.fixture</span>(scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;function&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">SessionLocal</span>():
+    <span style="color:#75715e"># settings of test database</span>
+    TEST_SQLALCHEMY_DATABASE_URL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sqlite:///./test_temp.db&#34;</span>
+    engine <span style="color:#f92672">=</span> create_engine(TEST_SQLALCHEMY_DATABASE_URL, connect_args<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;check_same_thread&#34;</span>: False})
+
+    <span style="color:#66d9ef">assert</span> <span style="color:#f92672">not</span> database_exists(TEST_SQLALCHEMY_DATABASE_URL), <span style="color:#e6db74">&#34;Test database already exists. Aborting tests.&#34;</span>
+
+    <span style="color:#75715e"># Create test database and tables</span>
+    Base<span style="color:#f92672">.</span>metadata<span style="color:#f92672">.</span>create_all(engine)
+    SessionLocal <span style="color:#f92672">=</span> sessionmaker(autocommit<span style="color:#f92672">=</span>False, autoflush<span style="color:#f92672">=</span>False, bind<span style="color:#f92672">=</span>engine)
+
+    <span style="color:#75715e"># Run the tests</span>
+    <span style="color:#66d9ef">yield</span> SessionLocal
+
+    <span style="color:#75715e"># Drop the test database</span>
+    drop_database(TEST_SQLALCHEMY_DATABASE_URL)
+</code></pre></div><h3 id="change-the-db-that-the-api-connects-to-during-testing">Change the DB that the API connects to during testing</h3>
+<p>By declaring <code>SessionLocal</code> as an argument, thanks to fixture, a clean Database can be created when the function is executed. After that, it is necessary to forcibly change the DB to which the API connects to the one for testing. I want to complete it with just the test code to reduce the impact.
+With FastAPI, <code>FastAPI.Depends</code> declared in API argument can be forcibly overridden with <code>app.dependency_overrides</code>.
+Therefore, you can change the connection destination by overwriting <code>main.get_db</code> and rewriting it to use the session session instance for testing.
+Therefore, define the following decorator.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test_user.py" data-lang="python:test_user.py"><span style="color:#f92672">from</span> users.main <span style="color:#f92672">import</span> app, get_db
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">temp_db</span>(f):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">func</span>(SessionLocal, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#75715e"># Sessionmaker instance to connect to test DB</span>
+        Receive <span style="color:#75715e"># (SessionLocal) from fixture</span>
+
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">override_get_db</span>():
+            <span style="color:#66d9ef">try</span>:
+                db <span style="color:#f92672">=</span> SessionLocal()
+                <span style="color:#66d9ef">yield</span> db
+            <span style="color:#66d9ef">finally</span>:
+                db<span style="color:#f92672">.</span>close()
+
+        <span style="color:#75715e"># force get_db to use SessionLocal received from fixture</span>
+        app<span style="color:#f92672">.</span>dependency_overrides[get_db] <span style="color:#f92672">=</span> override_get_db
+        <span style="color:#75715e"># Run tests</span>
+        f(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        Undo <span style="color:#75715e"># get_db</span>
+        app<span style="color:#f92672">.</span>dependency_overrides[get_db] <span style="color:#f92672">=</span> get_db
+    <span style="color:#66d9ef">return</span> func
+</code></pre></div><p>By modifying the test code and using the decorator defined earlier, you can create a temporary Database for testing at the time of test execution in each function and test using that Database. In addition, since it uses each independent Database, it does not affect other test cases.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test_user.py" data-lang="python:test_user.py"><span style="color:#f92672">from</span> starlette.testclient <span style="color:#f92672">import</span> TestClient
+<span style="color:#f92672">from</span> users.main <span style="color:#f92672">import</span> app
+
+client <span style="color:#f92672">=</span> TestClient(app)
+
+<span style="color:#a6e22e">@temp_db</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_create_user</span>():
+    response <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>post(
+        <span style="color:#e6db74">&#34;/users/&#34;</span>, json<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;email&#34;</span>: <span style="color:#e6db74">&#34;foo&#34;</span>, <span style="color:#e6db74">&#34;password&#34;</span>: <span style="color:#e6db74">&#34;fo&#34;</span>}
+    )
+    <span style="color:#66d9ef">assert</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">200</span>
+</code></pre></div><h2 id="in-conclusion">in conclusion</h2>
+<p>I have summarized how to create a test DB with FastAPI and perform unit test of API with pytest.
+Recreating the DB for each test case would slow down the processing speed, so I tried and errored the rollback method, but gave up.
+I think this method is also effective when there are few test cases or when the amount of data to test is not large, so I hope this article will be helpful to you!</p>
+<h2 id="refs">Refs</h2>
+<ul>
+<li><a href="https://fastapi.tiangolo.com/tutorial/sql-databases/">SQL (Relational) Databases-FastAPI</a></li>
+<li><a href="https://fastapi.tiangolo.com/tutorial/testing/">Testing-FastAPI</a></li>
+<li><a href="https://fastapi.tiangolo.com/tutorial/dependencies/">Dependencies-FastAPI</a></li>
+<li><a href="https://docs.pytest.org/en/latest/fixture.html#fixture">pytest fixtures: explicit, modular, scalable</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

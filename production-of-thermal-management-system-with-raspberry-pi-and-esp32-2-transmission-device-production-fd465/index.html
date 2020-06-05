@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Production of thermal management system with Raspberry Pi and ESP32 (2) Transmission device production | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Production of thermal management system with Raspberry Pi and ESP32 (2) Transmission device production</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 13, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/arduino"> Arduino</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/electronic-work"> electronic work</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/raspberrypi"> RaspberryPi</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/esp32"> ESP32</a></code></small>
+
+</p>
+<pre><code>Creating a device that sends temperature and humidity data to a Raspberry Pi.
+</code></pre>
+<h3 id="overall-layout">Overall layout</h3>
+<p>Parts are soldered to the universal board.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/361605/f75ad89b-1c8f-c6a6-a00c-f0c40068b683.png" alt="image.png"></p>
+<p>##circuit
+Connect SHT31 and ssd1306 in parallel with i2c.
+That said, just connect the four lines in parallel. Easy easy.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/361605/d1ffeff2-0f7e-8f3b-e97c-785e28f4f0f2.png" alt="image.png"></p>
+<h4 id="confirm-i2c-address">Confirm i2c address</h4>
+<p>Once the wiring is decided, check the address on the breadboard.
+Code referenced <a href="https://leico.github.io/TechnicalNote/Arduino/esp32-i2cscan">this page</a>.</p>
+<p>Run the code and note the address that came out.
+In this case, SHT31 was 0x45 and ssd1306 was 0x3C.</p>
+<p>Write to ####ESP32</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c++" data-lang="c++"><span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========WiFi Config==========
+</span><span style="color:#75715e">*/</span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;WiFi.h&#34;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;AsyncUDP.h&#34;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> ssid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ssid&#34;</span>;
+<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> password <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ssid password&#34;</span>;
+
+<span style="color:#75715e">//Use the same IP address for all ESP32s.
+</span><span style="color:#75715e"></span>AsyncUDP udp;
+IPAddress <span style="color:#a6e22e">ESP32_ip</span>(<span style="color:#ae81ff">192</span>,<span style="color:#ae81ff">168</span>,x,x);
+IPAddress <span style="color:#a6e22e">server_ip</span>(<span style="color:#ae81ff">192</span>,<span style="color:#ae81ff">168</span>,x,x);
+IPAddress <span style="color:#a6e22e">gateway</span>(<span style="color:#ae81ff">192</span>,<span style="color:#ae81ff">168</span>, x, x);
+IPAddress <span style="color:#a6e22e">subnet</span>(<span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">0</span>);
+IPAddress <span style="color:#a6e22e">DNS</span>(<span style="color:#ae81ff">192</span>, <span style="color:#ae81ff">168</span>, x, x);
+
+<span style="color:#75715e">// Assign a unique number to ESP32
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">int</span> deviceNo <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+
+<span style="color:#75715e">#define ssd1306_Address 0x3C </span><span style="color:#75715e">//i2c address of ssd1306
+</span><span style="color:#75715e"></span><span style="color:#75715e">#define SHT31_Address 0x45 </span><span style="color:#75715e">// I2C address of SHT31
+</span><span style="color:#75715e"></span>
+WiFiServer <span style="color:#a6e22e">server</span>(<span style="color:#ae81ff">80</span>);
+
+<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> LEDPIN <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;
+<span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> PORTNO <span style="color:#f92672">=</span> <span style="color:#ae81ff">1234</span>;
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========SHT31 Config==========
+</span><span style="color:#75715e">*/</span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;SPI.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Arduino.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Wire.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;AE_SHT31.h&#34;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Adafruit_GFX.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Adafruit_SSD1306.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#define SCREEN_WIDTH 128 </span><span style="color:#75715e">// OLED display width, in pixels
+</span><span style="color:#75715e"></span><span style="color:#75715e">#define SCREEN_HEIGHT 32 </span><span style="color:#75715e">// OLED display height, in pixels
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+</span><span style="color:#75715e"></span><span style="color:#75715e">#define OLED_RESET 4 </span><span style="color:#75715e">// Reset pin # (or -1 if sharing Arduino reset pin)
+</span><span style="color:#75715e"></span>Adafruit_SSD1306 <span style="color:#a6e22e">display</span>(SCREEN_WIDTH, SCREEN_HEIGHT, <span style="color:#f92672">&amp;</span>Wire, OLED_RESET);
+
+<span style="color:#75715e">#define NUMFLAKES 10 </span><span style="color:#75715e">// Number of snowflakes in the animation example
+</span><span style="color:#75715e"></span>
+
+
+<span style="color:#75715e">// Set SHT31 address
+</span><span style="color:#75715e"></span>AE_SHT31 SHT31 <span style="color:#f92672">=</span> AE_SHT31(SHT31_Address);
+
+<span style="color:#66d9ef">float</span> temp,humi;
+
+
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========SeepSleep Config==========
+</span><span style="color:#75715e">*/</span>
+
+<span style="color:#75715e">#define uS_TO_S_FACTOR 1000000 </span><span style="color:#75715e">/* Conversion factor for micro seconds to seconds */</span><span style="color:#75715e">
+</span><span style="color:#75715e">#define TIME_TO_SLEEP 9 </span><span style="color:#75715e">/* Time ESP32 will go to sleep (in seconds) */</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+RTC_DATA_ATTR <span style="color:#66d9ef">int</span> bootCount <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">print_wakeup_reason</span>(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason <span style="color:#f92672">=</span> esp_sleep_get_wakeup_cause();
+
+  <span style="color:#66d9ef">switch</span>(wakeup_reason)
+  {
+    <span style="color:#66d9ef">case</span> ESP_SLEEP_WAKEUP_EXT0: Serial.println(<span style="color:#e6db74">&#34;Wakeup caused by external signal using RTC_IO&#34;</span>); <span style="color:#66d9ef">break</span>;
+    <span style="color:#66d9ef">case</span> ESP_SLEEP_WAKEUP_EXT1 :Serial.println(<span style="color:#e6db74">&#34;Wakeup caused by external signal using RTC_CNTL&#34;</span>); <span style="color:#66d9ef">break</span>;
+    <span style="color:#66d9ef">case</span> ESP_SLEEP_WAKEUP_TIMER: Serial.println(<span style="color:#e6db74">&#34;Wakeup caused by timer&#34;</span>); <span style="color:#66d9ef">break</span>;
+    <span style="color:#66d9ef">case</span> ESP_SLEEP_WAKEUP_TOUCHPAD: Serial.println(<span style="color:#e6db74">&#34;Wakeup caused by touchpad&#34;</span>); <span style="color:#66d9ef">break</span>;
+    <span style="color:#66d9ef">case</span> ESP_SLEEP_WAKEUP_ULP: Serial.println(<span style="color:#e6db74">&#34;Wakeup caused by ULP program&#34;</span>); <span style="color:#66d9ef">break</span>;
+    <span style="color:#66d9ef">default</span><span style="color:#f92672">:</span> Serial.printf(<span style="color:#e6db74">&#34;Wakeup was not caused by deep sleep: %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,wakeup_reason); <span style="color:#66d9ef">break</span>;
+  }
+}
+
+
+
+
+
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">setup</span>() {
+  <span style="color:#75715e">// Set serial communication to 9600bps
+</span><span style="color:#75715e"></span>  Serial.begin(<span style="color:#ae81ff">9600</span>);
+  
+  <span style="color:#75715e">// output characters serially
+</span><span style="color:#75715e"></span>  <span style="color:#75715e">// Soft reset SHT31
+</span><span style="color:#75715e"></span>  SHT31.SoftReset();
+  <span style="color:#75715e">// Built-in heater 0:OFF 1:ON
+</span><span style="color:#75715e"></span>  SHT31.Heater(<span style="color:#ae81ff">0</span>);
+
+  <span style="color:#66d9ef">if</span>(<span style="color:#f92672">!</span>display.begin(SSD1306_SWITCHCAPVCC,ssd1306_Address )) (
+    Serial.println(F(<span style="color:#e6db74">&#34;SSD1306 allocation failed&#34;</span>));
+    <span style="color:#66d9ef">for</span>(;;); <span style="color:#75715e">// Don&#39;t proceed, loop forever
+</span><span style="color:#75715e"></span>  }
+
+  display.clearDisplay();
+  
+  <span style="color:#75715e">//Display setting of ssd1306
+</span><span style="color:#75715e"></span>  display.drawPixel(<span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>, WHITE);
+  display.setTextSize(<span style="color:#ae81ff">2</span>);
+  display.setTextColor(WHITE);
+  
+   temp <span style="color:#f92672">=</span> SHT31_TEMP();
+   humi <span style="color:#f92672">=</span> SHT31_HUMI();
+   
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========Display Display==========
+</span><span style="color:#75715e">*/</span>
+   
+   display.clearDisplay();
+   display.setCursor(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>);
+   display.print(<span style="color:#e6db74">&#34; &#34;</span>);
+   display.print(temp);
+   display.println(<span style="color:#e6db74">&#34;&#39;C&#34;</span>);
+   
+   display.print(<span style="color:#e6db74">&#34; &#34;</span>);
+   display.print(humi);
+   display.println(<span style="color:#e6db74">&#34; %&#34;</span>);
+     
+   display.display();
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========WiFi Setup==========
+</span><span style="color:#75715e">*/</span>
+
+   pinMode(LEDPIN,OUTPUT);
+    
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+
+    WiFi.config(ESP32_ip, gateway, subnet, DNS);
+    
+    <span style="color:#66d9ef">if</span> (WiFi.waitForConnectResult() <span style="color:#f92672">!=</span> WL_CONNECTED) {
+        Serial.println(<span style="color:#e6db74">&#34;WiFi Failed&#34;</span>);
+        <span style="color:#66d9ef">while</span>(<span style="color:#ae81ff">1</span>) {
+            delay(<span style="color:#ae81ff">1000</span>);
+        }
+    }
+    
+    <span style="color:#66d9ef">if</span>(udp.connect(server_ip, PORTNO)) {
+        Serial.println(<span style="color:#e6db74">&#34;UDP connected&#34;</span>);
+        udp.onPacket([](AsyncUDPPacketpacket) {
+            Serial.print(<span style="color:#e6db74">&#34;UDP Packet Type: &#34;</span>);
+            Serial.print(packet.isBroadcast()<span style="color:#f92672">?</span><span style="color:#e6db74">&#34;Broadcast&#34;</span><span style="color:#f92672">:</span>packet.isMulticast()<span style="color:#f92672">?</span><span style="color:#e6db74">&#34;Multicast&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;Unicast&#34;</span>);
+            Serial.print(<span style="color:#e6db74">&#34;, From: &#34;</span>);
+            Serial.print(packet.remoteIP());
+            Serial.print(<span style="color:#e6db74">&#34;:&#34;</span>);
+            Serial.print(packet.remotePort());
+            Serial.print(<span style="color:#e6db74">&#34;, To: &#34;</span>);
+            Serial.print(packet.localIP());
+            Serial.print(<span style="color:#e6db74">&#34;:&#34;</span>);
+            Serial.print(packet.localPort());
+            Serial.print(<span style="color:#e6db74">&#34;, Length: &#34;</span>);
+            Serial.print(packet.length());
+            Serial.print(<span style="color:#e6db74">&#34;, Data: &#34;</span>);
+            Serial.write(packet.data(), packet.length());
+            Serial.println();
+            <span style="color:#75715e">//reply to the client
+</span><span style="color:#75715e"></span>            packet.printf(<span style="color:#e6db74">&#34;Got %u bytes of data&#34;</span>, packet.length());
+        });
+
+
+    }
+
+}
+
+
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">loop</span>()
+{
+
+   temp <span style="color:#f92672">=</span> SHT31_TEMP();
+   humi <span style="color:#f92672">=</span> SHT31_HUMI();
+   
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========Display Display==========
+</span><span style="color:#75715e">*/</span>display.clearDisplay();
+   display.setCursor(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>);
+   display.print(<span style="color:#e6db74">&#34; &#34;</span>);
+   display.print(temp);
+   display.println(<span style="color:#e6db74">&#34;&#39;C&#34;</span>);
+   
+   display.print(<span style="color:#e6db74">&#34; &#34;</span>);
+   display.print(humi);
+   display.println(<span style="color:#e6db74">&#34; %&#34;</span>);
+     
+   display.display();
+   
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========UDP transmission ==========
+</span><span style="color:#75715e">*/</span>
+<span style="color:#75715e">//dtostrf(value to convert, total number of characters after conversion, number of digits after decimal point, variable to store after conversion);
+</span><span style="color:#75715e"></span>    
+    <span style="color:#66d9ef">char</span> udpStr1[<span style="color:#ae81ff">6</span>];
+    <span style="color:#66d9ef">char</span> udpStr2[<span style="color:#ae81ff">6</span>];
+    <span style="color:#66d9ef">char</span> buf[<span style="color:#ae81ff">10</span>];
+    
+    dtostrf(temp,<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">2</span>,udpStr1);
+    dtostrf(humi,<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">2</span>,udpStr2);
+    
+    sprintf(buf,<span style="color:#e6db74">&#34;%d,%s,%s&#34;</span>,deviceNo,udpStr1,udpStr2);
+    Serial.println(buf);
+    
+    udp.broadcastTo(buf, PORTNO);
+
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========Post-processing ==========
+</span><span style="color:#75715e">*/</span>
+
+   Ltika();
+   ESP32_Sleep(<span style="color:#ae81ff">10</span><span style="color:#f92672">*</span><span style="color:#ae81ff">60</span>);
+}
+
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * ========= Acquisition of temperature and humidity of SHT31 ==========
+</span><span style="color:#75715e">*/</span>
+
+<span style="color:#66d9ef">float</span> <span style="color:#a6e22e">SHT31_TEMP</span>(){
+    <span style="color:#75715e">// Get temperature data from SHT31
+</span><span style="color:#75715e"></span>  SHT31.GetTempHum();
+  <span style="color:#66d9ef">return</span> SHT31.Temperature();
+}
+
+<span style="color:#66d9ef">float</span> <span style="color:#a6e22e">SHT31_HUMI</span>(){
+    <span style="color:#75715e">// Get humidity data from SHT31
+</span><span style="color:#75715e"></span>  SHT31.GetTempHum();
+  <span style="color:#66d9ef">return</span> SHT31.Humidity();
+}
+
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========ESP32 DeepSleep==========
+</span><span style="color:#75715e">*/</span>
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">ESP32_Sleep</span>(<span style="color:#66d9ef">int</span> sleepime){
+  
+  delay(<span style="color:#ae81ff">1000</span>); <span style="color:#75715e">//Take some time to open up the Serial Monitor
+</span><span style="color:#75715e"></span>  <span style="color:#f92672">++</span>bootCount;
+
+  print_wakeup_reason();
+
+  esp_sleep_enable_timer_wakeup(sleepime <span style="color:#f92672">*</span> uS_TO_S_FACTOR);
+  esp_deep_sleep_start();
+
+}
+
+<span style="color:#75715e">/*
+</span><span style="color:#75715e"> * =========L Chika ==========
+</span><span style="color:#75715e">*/</span>
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">Ltika</span>(){
+    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>;i<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">3</span>;i<span style="color:#f92672">++</span>){
+      digitalWrite(LEDPIN,HIGH);
+      delay(<span style="color:#ae81ff">100</span>);
+      digitalWrite(LEDPIN,LOW);
+      delay(<span style="color:#ae81ff">100</span>);
+    }
+}
+</code></pre></div><p>204th line, sprintf(buf,&quot;%d,%s,%s&rdquo;,deviceNo,udpStr1,udpStr2);
+The device No., temperature, and humidity data are sent together, separated by commas.
+This is because after receiving UDP later, data is distributed for each position.</p>
+<p>###Start-up</p>
+<p>The temperature and humidity are displayed on the display when writing to the microcomputer and starting up.
+If communication is successful, the blue LED on the ESP32 board will blink 3 times.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/361605/1e789416-529d-6ffb-e4e5-682df07e060e.png" alt="image.png"></p>
+<p>Next, I will write an article on the Raspberry Pi side.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

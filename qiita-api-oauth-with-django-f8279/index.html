@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Qiita API Oauth with Django | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Qiita API Oauth with Django</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 12, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/qiita">Qiita</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/qiitaapi">QiitaAPI</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/python3">Python3</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>There is a convenient API called QiitaAPI for handling Qiita.
+<a href="https://qiita.com/api/v2/docs">https://qiita.com/api/v2/docs</a></p>
+<p>Here is a sample to try it out with Django.</p>
+<p>Only Oauth is dealt with in this article (other than that, it&rsquo;s just a request)</p>
+<p>Register the application from the following URL.
+<a href="https://qiita.com/settings/applications">https://qiita.com/settings/applications</a></p>
+<p>You will get a <code>Client ID</code> and a <code>Client Secret</code>.</p>
+<h1 id="around-authentication">Around authentication</h1>
+<p>##GET /api/v2/oauth/authorize</p>
+<p>Display the authorization screen for the user.
+If the user authorizes, <code>code </code>is added to the Callback URL specified in the application registration above.</p>
+<p>In addition, specify <code>scope</code> and <code>state</code> with parameters.</p>
+<p>Regarding the scope <a href="https://qiita.com/api/v2/docs#%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97">here</a></p>
+<p>state is that you can specify the value that is included in the redirect URL query for CSRF countermeasures.</p>
+<pre><code class="language-Python:" data-lang="Python:">state = random.randint(1,100000)
+request.session['qiita_state'] = state
+return redirect(QIITA_OAUTH_URL +'?client_id=' + QIITA_CLIENT_ID +'&amp;state=' + str(state) +'&amp;scope=read_qiita+write_qiita')
+</code></pre><p>Since <code>state</code> has no meaning unless it is a random value, it is randomly generated and saved once in the session.</p>
+<p>##POST /api/v2/access_tokens</p>
+<p>Now you have an access token.
+Use the <code>code</code> obtained with <code>GET /api/v2/oauth/authorize</code>.</p>
+<p>At the same time, we will also use the <code>client_id</code> and <code>client_secret</code> that we got when registering the application.</p>
+<pre><code class="language-Python:" data-lang="Python:">@csrf_exempt
+def qiita_oauth(request):
+    if request.method =='GET':
+        state = request.session['qiita_state']
+        if state == int(request.GET.get(&quot;state&quot;)):
+            if &quot;code&quot; in request.GET:
+                code = request.GET.get(&quot;code&quot;)
+                body = {
+                        'client_id': QIITA_CLIENT_ID,
+                        'client_secret': QIITA_CLIENT_SECRET,
+                        'code': code
+                        }
+                header = {
+                        'Content-Type':'application/json',
+                        }
+                req = urllib.request.Request(QIITA_ACCESSTOKEN_URL, json.dumps(body).encode(), header)
+                try:
+                    with urllib.request.urlopen(req) as res:
+                        #Processing after success
+                except urllib.error.HTTPError as err:
+                    #Processing after request failure
+                except urllib.error.URLError as err:
+                    #Processing after request failure
+            else:
+                Processing after #state authentication failure
+</code></pre><p>We check if the state is correct with <code>if state == int(request.GET.get(&quot;state&quot;)):</code>.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

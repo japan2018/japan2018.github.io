@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>How to speed up Pandas apply method with just one sentence (with verification calculation) | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>How to speed up Pandas apply method with just one sentence (with verification calculation)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 14, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/numpy"> numpy</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/pandas"> pandas</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/data-analysis"> data analysis</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/performance"> performance</a></code></small>
+
+</p>
+<pre><code>#Conclusion
+</code></pre>
+<p>Just add swifter method before Pandas apply method</p>
+<h3 id="concrete-example">Concrete example</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> swifter
+
+<span style="color:#75715e"># Create a suitable DataFrame</span>
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;col&#39;</span>: np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(size<span style="color:#f92672">=</span><span style="color:#ae81ff">10000000</span>)})
+
+<span style="color:#75715e"># Add swifter method before apply method.</span>
+<span style="color:#f92672">%</span>time df[<span style="color:#e6db74">&#39;col2&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;col&#39;</span>]<span style="color:#f92672">.</span>swifter<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+<span style="color:#75715e"># Wall time: 50 ms</span>
+
+<span style="color:#75715e"># For comparison (normal pandas apply method)</span>
+<span style="color:#f92672">%</span>time df[<span style="color:#e6db74">&#39;col2&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;col&#39;</span>]<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+<span style="color:#75715e"># Wall time: 3.48 s</span>
+</code></pre></div><h3 id="how-to-install">How to install</h3>
+<pre><code class="language-terminal:pip" data-lang="terminal:pip">$ pip install -U pandas # upgrade pandas
+$ pip install swifter
+</code></pre><p>In case of ```terminal:conda
+$ conda update pandas # upgrade pandas
+$ conda install -c conda-forge swifter</p>
+<pre><code>
+# What swifter is doing
+### Pandas apply is slow
+The complexity of Pandas apply method is O(N). It doesn't matter if the DataFrame is about 10,000 rows,
+Processing a large DataFrame can be quite difficult.
+Fortunately, there are several ways to speed up Pandas processing.
+### Pandas acceleration method
+1. [Vectorization](Whatis#Vectorization)
+2. Use Cython and Numba [^1]
+3. Parallel processing by Dask [^2]
+
+For example, when vectorization cannot be done, parallel processing by Dask is performed.
+However, parallel processing for a DataFrame that does not have many rows may be slower.
+**Swifter** is best for people like me who find it difficult to choose the best speed-up method on a case-by-case basis.
+
+### swifter
+According to the official document [^3], swifter does the following:
+
+1. If vectorization is possible, vectorize.
+2. If vectorization is not possible, either Dask parallel processing or Pandas apply, whichever is faster, is automatically selected.
+
+It is very convenient to automatically select the best method.
+As I show later, swifter is faster than Pandas apply in many cases, so
+Isn't it a bad idea to always use swfiter?
+
+#Verification
+Below, I would like to verify how fast swifter is compared to Dask, Pandas, etc.
+swifter behaves differently depending on whether it is vectorizable or not, so we will verify each case.
+The specifications of the PC used are Intel Core i5-8350U @1.70GHz and the memory is 16GB.
+
+### When vectorizable
+Since swifter will vectorize when it can be vectorized, the calculation time of swifter will be
+It should be about equal. Let's check this.
+
+```python: if vectorizable
+import pandas as pd
+import numpy as np
+import dask.dataframe as dd
+import swifter
+import multiprocessing
+import gc
+
+pandas_time_list = []
+dask_time_list = []
+vector_time_list = []
+swifter_time_list = []
+
+# Vectorizable functions
+def multiple_func(df):
+    return df['col1']*df['col2']
+
+def apply_func_to_df(df):
+    return df.apply(multiple_func, axis=1)
+
+for num in np.logspace(2, 7, num=7-2+1, base=10, dtype='int'):
+    df = pd.DataFrame()
+    df['col1'] = np.random.normal(size=num)
+    df['col2'] = np.random.normal(size=num)
+    ddf = dd.from_pandas(df, npartitions=multiprocessing.cpu_count())
+
+    pandas_time = %timeit -n2 -r1 -o -q df.apply(multiple_func, axis=1)
+    dask_time = %timeit -n2 -r1 -o -q ddf.map_partitions(apply_func_to_df).compute(scheduler='processes')
+    vector_time = %timeit -n2 -r1 -o -q df['col1']*df['col2']
+    swifter_time = %timeit -n2 -r1 -o -q df.swifter.apply(multiple_func, axis=1)
+    
+    pandas_time_list.append(pandas_time.average)
+    dask_time_list.append(dask_time.average)
+    vector_time_list.append(vector_time.average)
+    swifter_time_list.append(swifter_time.average)
+
+    del df, ddf
+    gc.collect()
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/326101/35c65577-02a7-8778-04a4-f634b8fbb284.png" alt="vect.png"></p>
+<p>The horizontal axis of the figure is the number of rows in the DataFrame, and the vertical axis is the elapsed time. Note that it is a log-log graph.</p>
+<p>Since the elapsed time of <font color="Red">swifter</font> is close to the elapsed time of <font color="Green">vectorization</font>, you can see that it is vectorized. ..</p>
+<p>For a DataFrame with less than 100,000 lines, the <font color="Blue">Pandas</font> single core is faster than the <font color="Orange">Dask</font> parallel processing.
+Since the elapsed time of <font color="Orange">Dask</font> of 100,000 lines or less is constant, it can be inferred that this is due to the memory sharing overhead associated with parallel processing. (Function calculation time &lt;Data copy time for memory sharing)</p>
+<h3 id="when-vectorization-is-not-possible">When vectorization is not possible</h3>
+<p>Next, let&rsquo;s look at cases where vectorization is not possible.
+If vectorization is not possible, swifter should choose between parallel processing and single core processing, whichever is better.</p>
+<pre><code class="language-python:" data-lang="python:">pandas_time_list_non_vectorize = []
+dask_time_list_non_vectorize = []
+swifter_time_list_non_vectorize = []
+
+# Functions that cannot be vectorized
+def compare_func(df):
+    if df['col1']&gt; df['col2']:
+        return 1
+    else:
+        return -1
+
+def apply_func_to_df(df):
+    return df.apply(compare_func, axis=1)
+
+for num in np.logspace(2, 7, num=7-2+1, base=10, dtype='int'):
+    df = pd.DataFrame()
+    df['col1'] = np.random.normal(size=num)
+    df['col2'] = np.random.normal(size=num)
+    ddf = dd.from_pandas(df, npartitions=multiprocessing.cpu_count())
+
+    pandas_time = %timeit -n2 -r1 -o -q df.apply(compare_func, axis=1)
+    dask_time = %timeit -n2 -r1 -o -q ddf.map_partitions(apply_func_to_df).compute(scheduler='processes')
+    swifter_time = %timeit -n2 -r1 -o -q df.swifter.apply(compare_func, axis=1)
+    
+    pandas_time_list_non_vectorize.append(pandas_time.average)
+    dask_time_list_non_vectorize.append(dask_time.average)
+    swifter_time_list_non_vectorize.append(swifter_time.average)
+
+    del df, ddf
+    gc.collect()
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/326101/1ec79d91-ace2-2ebc-e449-241758c3f7fd.png" alt="non_vect.png"></p>
+<p><font color="Red">swifter</font> is processed by a single core when parallel processing is not possible,
+If parallel processing has an advantage over single core, you can see that parallel processing is selected.</p>
+<p>#Summary
+swifter is an excellent module that automatically selects the most suitable acceleration method depending on the situation.
+To avoid wasting valuable time, use swifter when using Pandas apply method.</p>
+<h1 id="bonus">bonus</h1>
+<h3 id="what-is-vectorization">What is vectorization?</h3>
+<p>A vectorization function is a function that automatically applies to all elements without writing an explicit for loop.
+I think it&rsquo;s easier to understand by looking at the examples.</p>
+<pre><code class="language-python:" data-lang="python:">array_sample = np.random.normal(size=1000000)
+
+def non_vectorize(array_sample):
+    result = []
+    for i in array_sample:
+        result.append(i*i)
+    return np.array(result)%time non_vectorize_result = non_vectorize(array_sample)
+# Wall time: 350 ms
+</code></pre><pre><code class="language-python:" data-lang="python:">def vectorize(array_sample):
+     return array_sample*array_sample
+
+%time vectorize_result = vectorize(array_sample)
+# Wall time: 4.09 ms
+</code></pre><p>It is 80 times faster due to vectorization. Check that the two results match.</p>
+<pre><code class="language-python:" data-lang="python:">np.allclose(non_vectorize_result, vectorize_result)
+# True
+</code></pre>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Calculation of mutual information (continuous value) with numpy | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Calculation of mutual information (continuous value) with numpy</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 11, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/numpy"> numpy</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/statistics"> statistics</a></code></small>
+
+</p>
+<pre><code>#Motivation
+</code></pre>
+<p>I want to calculate the mutual information $I(X;Y)$ of continuous random variables $X$ and $Y$ with Python.
+$$
+I(X;Y) = \int_Y \int_X p(x, y) \log \frac{p(x,y)}{p(x)p(y)} dx dy
+$$</p>
+<p>#Code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mutual_information</span>(X, Y, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>):
+    <span style="color:#75715e"># Compute joint probability distribution p(x,y)</span>
+    p_xy, xedges, yedges <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>histogram2d(X, Y, bins<span style="color:#f92672">=</span>bins, density<span style="color:#f92672">=</span>True)
+    
+    <span style="color:#75715e">#p(x)p(y) calculation</span>
+    p_x, _ <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>histogram(X, bins<span style="color:#f92672">=</span>xedges, density<span style="color:#f92672">=</span>True)
+    p_y, _ <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>histogram(Y, bins<span style="color:#f92672">=</span>yedges, density<span style="color:#f92672">=</span>True)
+    p_x_y <span style="color:#f92672">=</span> p_x[:, np<span style="color:#f92672">.</span>newaxis] <span style="color:#f92672">*</span> p_y
+    
+    <span style="color:#75715e">#dx and dy</span>
+    dx <span style="color:#f92672">=</span> xedges[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>xedges[<span style="color:#ae81ff">0</span>]
+    dy <span style="color:#f92672">=</span> yedges[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>yedges[<span style="color:#ae81ff">0</span>]
+    
+    <span style="color:#75715e"># Integral element</span>
+    elem <span style="color:#f92672">=</span> p_xy <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>ma<span style="color:#f92672">.</span>log(p_xy <span style="color:#f92672">/</span> p_x_y)
+    <span style="color:#75715e"># Output mutual information and p(x, y), p(x)p(y)</span>
+    <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>sum(elem <span style="color:#f92672">*</span> dx <span style="color:#f92672">*</span> dy), p_xy, p_x_y
+</code></pre></div><h1 id="point">Point</h1>
+<p>If you want to calculate mutual information for the time being, you can use the above function.
+I will leave some important points for implementation.</p>
+<h2 id="nphistogram2ds-density"><code>np.histogram2d``s density</code></h2>
+<p>When I was vaguely thinking that the probability would be returned when <code>density=True</code> was set, <code>np.sum(p_xy)</code> did not become 1 and I was a little impatient.
+The point to note is that <code>p_xy</code> is not a probability but a probability density**.</p>
+<p>Since $X$ and $Y$ are continuous variables, the histogram approximates the probability density.
+Therefore, the width of the bin is taken into consideration and the total is set to 1.</p>
+<p><code>np.histogram</code> and <code>np.histogram2d</code> return probability density and bins (edges in code).
+It is necessary to calculate <code>dx</code> and <code>dy</code> from this bin.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+N <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000</span>
+X <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(loc<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, scale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, size<span style="color:#f92672">=</span>N)
+
+p_x, edges <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>histogram(X, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, density<span style="color:#f92672">=</span>True)
+
+<span style="color:#75715e"># If you take the sum of the probability densities without thinking, it will not be 1 naturally</span>
+<span style="color:#66d9ef">print</span>(np<span style="color:#f92672">.</span>sum(p_x)) <span style="color:#75715e"># Sample output: 1.580769264599771</span>
+
+<span style="color:#75715e"># Considering the bin width, the sum will be 1</span>
+dx <span style="color:#f92672">=</span> edges[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>edges[<span style="color:#ae81ff">0</span>]
+<span style="color:#66d9ef">print</span>(np<span style="color:#f92672">.</span>sum(p_x <span style="color:#f92672">*</span> dx)) <span style="color:#75715e"># Output example: 1.0000000000000002</span>
+</code></pre></div><h2 id="p_x_y-calculation"><code>p_x_y</code> calculation</h2>
+<p>The <code>p_x_y</code> in the code is trying to calculate $p(x)p(y)$.
+Actually, I was using the following code at the beginning and it did not work.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">p_x_y <span style="color:#f92672">=</span> p_x <span style="color:#f92672">*</span> p_y
+</code></pre></div><p>Correctly</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">p_x_y <span style="color:#f92672">=</span> p_x[:, np<span style="color:#f92672">.</span>newaxis] <span style="color:#f92672">*</span> p_y
+</code></pre></div><p>is. In the former, <code>p_x_y</code> is the primary array, and in the latter, <code>p_x_y</code> is the secondary array.</p>
+<p>#Execution example</p>
+<h2 id="execution-example-1-two-sin-waves">Execution example 1 (two sin waves)</h2>
+<p>Since the two are not independent, there is a difference between $p(x, y)$ and $p(x)p(y)$, and the mutual information becomes large.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#75715e"># sin wave and cos wave</span>
+t <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linspace(<span style="color:#f92672">-</span><span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">5</span>, num<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>)
+X <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sin(<span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> t)
+Y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>cos(<span style="color:#ae81ff">3</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> t)
+
+<span style="color:#75715e"># Calculation of mutual information</span>
+mi, p_xy, p_x_y <span style="color:#f92672">=</span> mutual_information(X, Y, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>)
+
+<span style="color:#75715e"># Output result</span>
+plt<span style="color:#f92672">.</span>figure(dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+ax1 <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">121</span>)
+ax2 <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">122</span>)
+ax1<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;$P_{XY}(x, y)$&#39;</span>)
+ax1<span style="color:#f92672">.</span>imshow(p_xy)
+ax2<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;$P_{X}(x) P_{Y}(y)$&#39;</span>)
+ax2<span style="color:#f92672">.</span>imshow(p_x_y)
+plt<span style="color:#f92672">.</span>suptitle(<span style="color:#e6db74">&#39;MI = {}&#39;</span><span style="color:#f92672">.</span>format(mi))
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/118119/2e5d781e-1e50-08f3-4d9e-d84027146da8.png" alt="image.png"></p>
+<h2 id="execution-example-2-independent-normal-distribution">Execution example 2 (independent normal distribution)</h2>
+<p>When two variables are independent, $p(x, y)$ and $p(x)p(y)$ match and mutual information becomes small.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#75715e"># Two independent normal distributions</span>
+N <span style="color:#f92672">=</span> <span style="color:#ae81ff">10000</span>
+X <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(size<span style="color:#f92672">=</span>N)
+Y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(size<span style="color:#f92672">=</span>N)
+
+<span style="color:#75715e"># Calculation of mutual information</span>
+mi, p_xy, p_x_y <span style="color:#f92672">=</span> mutual_information(X, Y, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>)
+Execution example
+<span style="color:#75715e"># Output result</span>
+plt<span style="color:#f92672">.</span>figure(dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+ax1 <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">121</span>)
+ax2 <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">122</span>)
+ax1<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;$P_{XY}(x, y)$&#39;</span>)
+ax1<span style="color:#f92672">.</span>imshow(p_xy)
+ax2<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;$P_{X}(x) P_{Y}(y)$&#39;</span>)
+ax2<span style="color:#f92672">.</span>imshow(p_x_y)
+plt<span style="color:#f92672">.</span>suptitle(<span style="color:#e6db74">&#39;MI = {}&#39;</span><span style="color:#f92672">.</span>format(mi))
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/118119/48b58262-cb82-5f66-01cd-6898c01823f0.png" alt="image.png"></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

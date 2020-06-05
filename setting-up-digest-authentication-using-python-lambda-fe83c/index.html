@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Setting up Digest authentication using Python @Lambda | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Setting up Digest authentication using Python @Lambda</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 17, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/digest%E8%AA%8D%E8%A8%BC">Digest認証</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/awslambda">AWSLambda</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>There was almost no information when I searched for Digest authentication, so I wrote it as a sequel to <a href="https://qiita.com/ijufumi/items/7a141a6528a28f180fb1">Basic authentication setting @ Lambda using Python</a>.
+I have barely touched Digest authentication itself, and I also learned the mechanism.</p>
+<p>#Code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> ctypes
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> base64
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> hashlib
+<span style="color:#f92672">import</span> copy
+<span style="color:#f92672">from</span> Crypto.Cipher <span style="color:#f92672">import</span> AES
+
+accounts <span style="color:#f92672">=</span> [
+    {
+        <span style="color:#e6db74">&#34;user&#34;</span>: <span style="color:#e6db74">&#34;user1&#34;</span>,
+        <span style="color:#e6db74">&#34;pass&#34;</span>: <span style="color:#e6db74">&#34;pass1&#34;</span>
+    },
+    {
+        <span style="color:#e6db74">&#34;user&#34;</span>: <span style="color:#e6db74">&#34;user2&#34;</span>,
+        <span style="color:#e6db74">&#34;pass&#34;</span>: <span style="color:#e6db74">&#34;pass2&#34;</span>
+    }
+    ]
+
+realm <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;sample@test.com&#34;</span>
+qop <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;auth&#34;</span>
+Unlike <span style="color:#75715e">#Basic authentication, I can set a timeout after authentication, so I put it in</span>
+timeout <span style="color:#f92672">=</span> <span style="color:#ae81ff">30</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">10</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">9</span>) <span style="color:#75715e"># 30 seconds</span>
+<span style="color:#75715e">#Preparing information for use with AES encryption</span>
+raw_key <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;password1234567890&#34;</span>
+raw_iv <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;12345678&#34;</span>
+key <span style="color:#f92672">=</span> hashlib<span style="color:#f92672">.</span>sha256(raw_key<span style="color:#f92672">.</span>encode())<span style="color:#f92672">.</span>digest()
+iv <span style="color:#f92672">=</span> hashlib<span style="color:#f92672">.</span>md5(raw_iv<span style="color:#f92672">.</span>encode())<span style="color:#f92672">.</span>digest()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+    request <span style="color:#f92672">=</span> event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;Records&#34;</span>)[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;cf&#34;</span>)<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;request&#34;</span>)
+    
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> check_authorization_header(request):
+        <span style="color:#66d9ef">return</span> {
+            <span style="color:#e6db74">&#39;headers&#39;</span>: {
+                <span style="color:#e6db74">&#39;www-authenticate&#39;</span>: [
+                    {
+                        <span style="color:#e6db74">&#39;key&#39;</span>:<span style="color:#e6db74">&#39;WWW-Authenticate&#39;</span>,
+                        <span style="color:#e6db74">&#39;value&#39;</span>: create_digest_header()
+                    }
+                ]
+            },
+            <span style="color:#e6db74">&#39;status&#39;</span>: <span style="color:#ae81ff">401</span>,
+            <span style="color:#e6db74">&#39;body&#39;</span>:<span style="color:#e6db74">&#39;Unauthorized&#39;</span>
+        }
+            
+        
+    <span style="color:#66d9ef">return</span> request
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">check_authorization_header</span>(request: dict) <span style="color:#f92672">-&gt;</span> bool:
+    headers <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;headers&#34;</span>)
+    authorization_header <span style="color:#f92672">=</span> headers<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;authorization&#34;</span>)
+    
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> authorization_header:
+        <span style="color:#66d9ef">return</span> False
+    
+    data <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#34;method&#34;</span>: request<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;method&#34;</span>),
+        <span style="color:#e6db74">&#34;uri&#34;</span>: request<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;uri&#34;</span>)
+    }
+    header_value <span style="color:#f92672">=</span> authorization_header[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;value&#34;</span>)
+    <span style="color:#75715e">#Digest authentication data comes in a format called &#34;Digest ~&#34;, so first delete unnecessary parts.</span>
+    header_value <span style="color:#f92672">=</span> header_value[len(<span style="color:#e6db74">&#34;Digest &#34;</span>):]
+    
+    <span style="color:#75715e"># Separate each value with commas</span>
+    values <span style="color:#f92672">=</span> header_value<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;,&#34;</span>)
+    data <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#34;method&#34;</span>: request<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;method&#34;</span>),
+        <span style="color:#e6db74">&#34;uri&#34;</span>: request<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;uri&#34;</span>)
+    }
+    <span style="color:#75715e"># Divide each value again to make it easier to handle</span>
+    <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> values:
+        Since <span style="color:#75715e">#nonce is Base64 encoded, it would be strange to simply split it with `=`, so we have such a correspondence.</span>
+        idx <span style="color:#f92672">=</span> v<span style="color:#f92672">.</span>find(<span style="color:#e6db74">&#34;=&#34;</span>)
+        vv <span style="color:#f92672">=</span> [v[<span style="color:#ae81ff">0</span>:idx], v[idx<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>:]]
+        <span style="color:#75715e"># Since there is a space around it, delete it.</span>
+        vv[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> vv[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>strip()
+        vv[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> vv[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>strip()
+        Some values are enclosed <span style="color:#f92672">in</span> double quotes, so delete them<span style="color:#f92672">.</span>
+        <span style="color:#66d9ef">if</span> vv[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">&#34;</span>):
+            vv[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> vv[<span style="color:#ae81ff">1</span>][<span style="color:#ae81ff">1</span>:]
+        <span style="color:#66d9ef">if</span> vv[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>endswith(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">&#34;</span>):
+            vv[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> vv[<span style="color:#ae81ff">1</span>][:len(vv[<span style="color:#ae81ff">1</span>])<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+            
+        data[vv[<span style="color:#ae81ff">0</span>]] <span style="color:#f92672">=</span> vv[<span style="color:#ae81ff">1</span>]
+
+    <span style="color:#66d9ef">for</span> account <span style="color:#f92672">in</span> accounts:
+        <span style="color:#66d9ef">if</span> account<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;user&#34;</span>) <span style="color:#f92672">!=</span> data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;username&#34;</span>):
+            <span style="color:#66d9ef">continue</span>
+        
+        d <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>deepcopy(data)
+        d[<span style="color:#e6db74">&#34;user&#34;</span>] <span style="color:#f92672">=</span> account<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;user&#34;</span>)
+        d[<span style="color:#e6db74">&#34;pass&#34;</span>] <span style="color:#f92672">=</span> account<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;pass&#34;</span>)
+        
+        encoded_value <span style="color:#f92672">=</span> create_validation_data(d)
+
+        <span style="color:#66d9ef">if</span> d<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;response&#34;</span>) <span style="color:#f92672">==</span> encoded_value:
+            <span style="color:#66d9ef">if</span> check_timeout(data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;nonce&#34;</span>)):
+                <span style="color:#66d9ef">return</span> True
+
+    <span style="color:#66d9ef">return</span> False
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">check_timeout</span>(nonce: str) <span style="color:#f92672">-&gt;</span> bool:
+    aes <span style="color:#f92672">=</span> AES<span style="color:#f92672">.</span>new(key, AES<span style="color:#f92672">.</span>MODE_CBC, iv)
+    value <span style="color:#f92672">=</span> aes<span style="color:#f92672">.</span>decrypt(base64<span style="color:#f92672">.</span>b64decode(nonce<span style="color:#f92672">.</span>encode()))<span style="color:#f92672">.</span>decode()
+    Since <span style="color:#e6db74">`_`</span> <span style="color:#f92672">is</span> added by padding when encrypting <span style="color:#66d9ef">with</span> <span style="color:#75715e">#AES, delete that part</span>
+    <span style="color:#66d9ef">while</span> value<span style="color:#f92672">.</span>endswith(<span style="color:#e6db74">&#34;_&#34;</span>):
+        value <span style="color:#f92672">=</span> value[:len(value)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+
+    <span style="color:#66d9ef">return</span> int(value) <span style="color:#f92672">+</span> timeout <span style="color:#f92672">&gt;</span>time<span style="color:#f92672">.</span>time_ns()
+    
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_validation_data</span>(data: dict) <span style="color:#f92672">-&gt;</span> str:
+    v1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{}:{}:{}&#34;</span><span style="color:#f92672">.</span>format(data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;user&#34;</span>), realm, data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;pass&#34;</span>))
+    vv1 <span style="color:#f92672">=</span> hashlib<span style="color:#f92672">.</span>md5(v1<span style="color:#f92672">.</span>encode())<span style="color:#f92672">.</span>hexdigest()
+    v2 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{}:{}&#34;</span><span style="color:#f92672">.</span>format(data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;method&#34;</span>), data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;uri&#34;</span>))
+    vv2 <span style="color:#f92672">=</span> hashlib<span style="color:#f92672">.</span>md5(v2<span style="color:#f92672">.</span>encode())<span style="color:#f92672">.</span>hexdigest()
+    
+    v3 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{}:{}:{}:{}:{}:{}&#34;</span><span style="color:#f92672">.</span>format(vv1, data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;nonce&#34;</span>), data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;nc&#34;</span>), data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;cnonce &#34;</span>), qop, vv2)
+
+    <span style="color:#66d9ef">return</span> hashlib<span style="color:#f92672">.</span>md5(v3<span style="color:#f92672">.</span>encode())<span style="color:#f92672">.</span>hexdigest()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_digest_header</span>() <span style="color:#f92672">-&gt;</span> str:
+    aes <span style="color:#f92672">=</span> AES<span style="color:#f92672">.</span>new(key, AES<span style="color:#f92672">.</span>MODE_CBC, iv)
+    timestamp <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{}&#34;</span><span style="color:#f92672">.</span>format(time<span style="color:#f92672">.</span>time_ns())<span style="color:#f92672">.</span>encode()
+    <span style="color:#75715e"># Padding is padded because the length must be a multiple of 16 when encrypted</span>
+    <span style="color:#66d9ef">while</span> len(timestamp) <span style="color:#f92672">%</span><span style="color:#ae81ff">16</span> <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+        timestamp <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;_&#34;</span><span style="color:#f92672">.</span>encode()
+        
+    header <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Digest &#34;</span>
+    values <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#34;realm&#34;</span>:<span style="color:#e6db74">&#39;&#34;&#39;</span> <span style="color:#f92672">+</span> realm <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;&#34;&#39;</span>,
+        <span style="color:#e6db74">&#34;qop&#34;</span>:<span style="color:#e6db74">&#39;&#34;auth,auth-int&#34;&#39;</span>,
+        <span style="color:#e6db74">&#34;algorithm&#34;</span>:<span style="color:#e6db74">&#39;MD5&#39;</span>,
+        <span style="color:#e6db74">&#34;nonce&#34;</span>:<span style="color:#e6db74">&#39;&#34;&#39;</span> <span style="color:#f92672">+</span> base64<span style="color:#f92672">.</span>b64encode(aes<span style="color:#f92672">.</span>encrypt(timestamp))<span style="color:#f92672">.</span>decode() <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;&#34;&#39;</span>
+    }
+    
+    idx <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">for</span> k, v <span style="color:#f92672">in</span> values<span style="color:#f92672">.</span>items():
+        <span style="color:#66d9ef">if</span> idx <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+            header <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;,&#34;</span>
+        header <span style="color:#f92672">+=</span><span style="color:#e6db74">&#39;{}={}&#39;</span><span style="color:#f92672">.</span>format(k, v)
+        idx <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        
+    <span style="color:#66d9ef">return</span> header
+</code></pre></div><h1 id="getting-ready-to-move">Getting ready to move</h1>
+<p>The settings for Lambda and CloudFront are the same as for Basic authentication, so there is no need to describe them.
+However, the AES encryption library needs to be installed with <code>pip</code>, so a little support is required.</p>
+<h2 id="make-the-library-a-zip-file">Make the library a zip file</h2>
+<p>Since <code>pip</code> cannot be executed on Lambda, it is necessary to create a zip file of <code>pip install</code> on a local PC and upload it.</p>
+<ul>
+<li><a href="https://qiita.com/SHASE03/items/16fd31d3698f207b42c9">[Python] Use an external module with AWS Lambda</a></li>
+</ul>
+<p>In this case, you should be careful that AWS Lambda&rsquo;s OS is Amazon Linux.
+Note that even if you create a zip file on your local Mac, it says &ldquo;Oh, you can simply zip it.&rdquo;</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/lambda-runtimes.html">AWS Lambda Runtime</a></li>
+</ul>
+<p>You can create an EC2 of Amazon Linux and create a zip file, but at most, you can create a zip file, so Docker is sufficient.
+So, created using Docker.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># Pull the image of Amazon Linux 2 and start it</span>
+$ docker run -it amazonlinux:2 bash
+<span style="color:#75715e"># Install required packages on Docker image</span>
+$ yum install -y gcc python3 pip3 python3-devel.x86_64
+<span style="color:#75715e"># Install the package to use on Lambda$ pip install pycrypto -t ./</span>
+<span style="color:#75715e"># create zip file</span>
+$ zip -r pycrypto.zip Crypto/
+</code></pre></div><h2 id="creating-lambda_handler">Creating lambda_handler</h2>
+<p>When you upload the zip file, <code>lambda_function.py</code> is gone, so create <code>lambda_function.py</code> again and describe <code>lambda_handler</code></p>
+<p>#Other referenced sites</p>
+<ul>
+<li><a href="https://qiita.com/Azunyan1111/items/01a4df7a1c162dbb6f08">[Python] Use an external module with AWS Lambda</a></li>
+<li><a href="http://x68000.q-e-d.net/~68user/net/http-auth-2.html">Let&rsquo;s make an HTTP client (6)-Digest authentication -</a></li>
+<li><a href="https://tools.ietf.org/html/rfc7616">RFC 7616-HTTP Digest Access Authentication</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Digest_access_authentication">Digest access authentication</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

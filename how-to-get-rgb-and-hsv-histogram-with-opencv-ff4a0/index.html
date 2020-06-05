@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>How to get RGB and HSV histogram with OpenCV | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>How to get RGB and HSV histogram with OpenCV</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 20, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/opencv">OpenCV</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/histogram">histogram</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/feature-engineering">feature-engineering</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I&rsquo;m working with images, and I wanted to use the RGB and HSV histogram information as features.
+So I tried to extract the histogram using <strong>OpenCV</strong>.
+Leave it as a memo.</p>
+<p>#histogram</p>
+<p>You can think of a <code>histogram as a graph or plot</code> to know the overall distribution of pixel values in an image. Generally, it is a plot with pixel value on the horizontal axis and frequency of pixel value on the vertical axis. Histogram visualization is one way to understand an image.
+`
+What is the difference between #RGB and HSV?</p>
+<p>###RGB</p>
+<p>RGB is an acronym for red, green, and blue, and these three colors are called &ldquo;three primary colors of light&rdquo;. It is a technique for expressing. Since each primary color can be set to 256 different shades, 256 cubes of 16,777,216 colors can be expressed.</p>
+<p>###HSV</p>
+<p>HSV is a method of expressing colors with three elements: hue (Hue), saturation (Saturation), and brightness (Value/Brightness).
+** Hue **: Hue circle (hue circle) It is displayed in the shape of a circle or in the range of 0 degrees to 360 degrees
+<strong>Saturation</strong>: Degree of vividness of color: A low number means low saturation, and a high number means high saturation.
+<strong>Brightness</strong>: Degree of lightness of color: A low value makes it dark, and a high value makes it bright.</p>
+<p>#Load image</p>
+<p>These are points to note when loading images.</p>
+<p>####1. Loading with OpenvCV</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#f92672">import</span> cv2
+
+img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#34;sample.jpg&#34;</span>)
+</code></pre></div><p>In this case, img is <code>BGR</code>.
+If you want to convert to <code>RGB</code>, you can do it by the following method.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py">img_rgb <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_BGR2RGB)
+</code></pre></div><p>####2. Loading with pillow</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+
+img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#34;sample.jpg&#34;</span>)
+</code></pre></div><p>When reading with pillow, you can read with <code>RGB</code>.</p>
+<p>#Function that returns RGB and HSV by specifying image</p>
+<p>I implemented a function that returns an R,G,B,H,S,V histogram when passing an image in Python. I also posted the result of running with jupyter.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py">
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">show_img</span>(path):
+
+    img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(path)
+    b, g, r <span style="color:#f92672">=</span> img[:,:,<span style="color:#ae81ff">0</span>], img[:,:,<span style="color:#ae81ff">1</span>], img[:,:,<span style="color:#ae81ff">2</span>]
+    hist_b <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([b],[<span style="color:#ae81ff">0</span>],None,[<span style="color:#ae81ff">256</span>],[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>])
+    hist_g <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([g],[<span style="color:#ae81ff">0</span>],None,[<span style="color:#ae81ff">256</span>],[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>])
+    hist_r <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([r],[<span style="color:#ae81ff">0</span>],None,[<span style="color:#ae81ff">256</span>],[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>])
+    plt<span style="color:#f92672">.</span>plot(hist_r, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>)
+    plt<span style="color:#f92672">.</span>plot(hist_g, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;g&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;g&#34;</span>)
+    plt<span style="color:#f92672">.</span>plot(hist_b, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;b&#34;</span>)
+    plt<span style="color:#f92672">.</span>legend()
+    plt<span style="color:#f92672">.</span>show()
+    img2 <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_BGR2HSV)
+    h, s, v <span style="color:#f92672">=</span> img2[:,:,<span style="color:#ae81ff">0</span>], img2[:,:,<span style="color:#ae81ff">1</span>], img2[:,:,<span style="color:#ae81ff">2</span>]
+    hist_h <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([h],[<span style="color:#ae81ff">0</span>],None,[<span style="color:#ae81ff">256</span>],[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>])
+    hist_s <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([s],[<span style="color:#ae81ff">0</span>],None,[<span style="color:#ae81ff">256</span>],[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>])
+    hist_v <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([v],[<span style="color:#ae81ff">0</span>],None,[<span style="color:#ae81ff">256</span>],[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>])
+    plt<span style="color:#f92672">.</span>plot(hist_h, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;h&#34;</span>)
+    plt<span style="color:#f92672">.</span>plot(hist_s, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;g&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;s&#34;</span>)
+    plt<span style="color:#f92672">.</span>plot(hist_v, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;v&#34;</span>)
+    plt<span style="color:#f92672">.</span>legend()
+    plt<span style="color:#f92672">.</span>show()
+    
+    <span style="color:#66d9ef">return</span> hist_r,hist_g, hist_b, hist_h, hist_s, hist_v
+</code></pre></div><p>This time I will try with the image of the dog below.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223559/bb44c988-be92-6d67-04fa-31afbf028732.jpeg" alt="dog.jpeg"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py">r,g,b,h,s,v <span style="color:#f92672">=</span> show_img(<span style="color:#e6db74">&#34;dog.jpeg&#34;</span>)
+</code></pre></div><p>![Screenshot from 2020-01-20 08-45-48.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223559/ab71bc79-c56c-f1fc-(bea1-7ce18bc332d8.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223559/ab71bc79-c56c-f1fc-(bea1-7ce18bc332d8.png)</a></p>
+<h4 id="histogram-calculation">Histogram calculation</h4>
+<p>OpenCV uses the following functions to calculate the histogram.</p>
+<p><code>cv2.calcHist(images, channels, mask, histSize, ranges[, hist[, accumulate]])</code></p>
+<p><strong>images</strong>: Input images. The pixel value data type is either uint8 or float32. Specify using the symbol [], such as “[img]”.
+<strong>channels</strong>: Index of the image channels for which the histogram is calculated. If the input image is an image that can be graced, specify [0]. If it is a color image, specify one of the values [0], [1], and [2] corresponding to the hues of B, G, and R for which the histogram is calculated.
+<strong>mask</strong>: Mask image. To calculate the histogram of all pixels in the image, specify “None”. To calculate the histogram of a specific area in the image, specify the mask image that represents the specific area (example is shown below).
+<strong>histSize</strong>: Number of bins. This argument is also specified using the symbol []. If you want to target all pixel values, specify [256].
+<strong>ranges</strong>: RANGE that represents the range of pixel values for which you want to measure the histogram. Normally, specify [0,256].</p>
+<h1 id="references">References</h1>
+<ul>
+<li>
+<p><a href="https://www.sokupuri.jp/archives/366">About RGB and CMYK in color</a></p>
+</li>
+<li>
+<p><a href="https://www.peko-step.com/html/hsv.html">What is HSV color space</a></p>
+</li>
+<li>
+<p><a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_histograms/py_histogram_begins/py_histogram_begins.html">Histogram Part 1: Calculate, plot and analyze!!!</a></p>
+</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

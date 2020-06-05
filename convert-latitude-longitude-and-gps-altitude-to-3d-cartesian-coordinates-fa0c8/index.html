@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Convert latitude, longitude and GPS altitude to 3D Cartesian coordinates | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Convert latitude, longitude and GPS altitude to 3D Cartesian coordinates</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 26, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/gps">GPS</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/gnss">GNSS</a></code></small>
+
+</p>
+<pre><code>There are quite a few situations where you want to convert latitude/longitude to a position in a Cartesian coordinate system, or obtain a linear distance from latitude/longitude** (not available).
+</code></pre>
+<p>In fact, I think many other people have written this kind of article. However, I think that <strong>the coordinate system you want to use may differ</strong> depending on the purpose. So, since I learned how to convert it into a non-moving three-dimensional Cartesian coordinate system with the center of gravity of the earth as the origin, I would like to summarize here with the meaning of memorandum.</p>
+<p>It is a little about, so if you have any suggestions on the way, I would appreciate it.</p>
+<p>#About latitude and longitude expressions
+First of all, I will touch on the expression of latitude and longitude as a premise.
+The following two types of expressions are mainly used to describe latitude and longitude. Be careful not to confuse it.</p>
+<h3 id="degree-minute-second-notation">Degree minute second notation</h3>
+<p>A format such as <code>135° 12' 34.56&quot;</code> in the hexadecimal system.
+The one I often hear. We read as &ldquo;135 degrees 12 minutes 34 seconds 56&rdquo;.</p>
+<p>It may be written as <code>135° 12' 34&quot; 56</code> or read as &ldquo;135° 12&rsquo; 34.56 seconds&rdquo;. Then, it seems that they sometimes write <code>1351234.56</code> or <code>135.12.34.56</code>.
+Personally, it&rsquo;s a word of <strong>it&rsquo;s really confusing, so please stop</strong>, but you can distinguish it from the following decimal notation by the period.</p>
+<h3 id="decimal-notation">Decimal notation</h3>
+<p>As its name implies, this is a decimal notation, such as <code>135.2096</code>. &ldquo;Minutes&rdquo; and &ldquo;Seconds&rdquo; are represented by a small number of &ldquo;Degrees&rdquo;.
+In the above example, <code>135° 12' 34.56&quot;</code> is</p>
+<pre><code>135 + (12 / 60) + (34.56 / 3600)
+</code></pre><p>Is calculated and converted to the decimal notation <code>135.2096</code>. The reading is &ldquo;135.2096 degrees&rdquo;.</p>
+<p>You can see that some degrees, minutes, and seconds notation looks very similar to decimal notation, but you can tell which one is represented by looking at how the decimal point is attached.</p>
+<p>#About the coordinates you want here
+This article explains how to convert the latitude/longitude information measured by GPS into an absolute position in a three-dimensional coordinate system. The important point is that we are explaining the <strong>procedure for obtaining just 3D coordinates</strong>.</p>
+<p>So what I mean is that <strong>it doesn&rsquo;t matter if the earth is actually there</strong>.
+Even if the coordinates of two arbitrary points are obtained by this method, the distance between those two points will be the <strong>straight line distance through the earth</strong>. So the method in this article is useful when thinking about airplanes and spacecraft (since they don&rsquo;t move along the surface of the earth).</p>
+<p>When thinking about buildings and cars on the ground, it would be useful to use a method such as <strong>obtaining the two-dimensional coordinates of a point with an arbitrary point as the origin (and taking into account the earth&rsquo;s phase)</strong>. This article is very helpful.</p>
+<p><a href="https://qiita.com/sw1227/items/e7a590994ad7dcd0e8ab">Implement mutual conversion between latitude and longitude and plane rectangular coordinates in Python-Qiita</a></p>
+<h3 id="what-is-wgs-84-coordinate-system">What is WGS-84 coordinate system?</h3>
+<p>The 3D Cartesian coordinate system called <strong>WGS-84</strong> used by GPS satellites is used for this calculation.
+It is a kind of fixed earth coordinate system whose origin is the center of gravity of the earth. In order to do so, it means to go around with the earth.
+The parameters of the WGS-84 compliant ellipsoid are shown below&hellip; I thought so, but if necessary, please google each one.</p>
+<p>#How to ask
+First, set the variables as shown in the figure below. People who can think of such things are amazing.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/284083/9a05abbf-a907-5fa7-bf49-9ac3f32b1c6d.png" width=70%>
+<code>Latitude Latitude φ</code>, <code>Longitude Longitude λ</code>, <code>Ellipsoidal height h</code>, and coordinates <code>x</code>, <code>y</code>, <code>z</code> of the rear point P. The ellipsoid in the center is the earth. GPS uses WGS-84 for this ellipsoid.</p>
+<p><strong>2020.04.01 edit</strong>
+The English translations of the ellipsoidal height and the elevation seem to fluctuate, so they were deleted. If you have any knowledge, I would appreciate it if you could comment.</p>
+<h3 id="supplement-what-is-ellipsoidal-height">Supplement: What is ellipsoidal height?</h3>
+<p>As its name suggests, it is an altitude measured from the surface of an ellipsoid that looks like the earth. The altitude returned from GPS is this ellipsoidal height.
+It is important to note here that the ellipsoidal height is often called <strong>another thing than the altitude</strong>. Elevation is the <strong>altitude measured from mean sea level. The line that extends the mean sea level to the land is called the geoid, and the <strong>elevation</strong> is the distance between the target and the geoid. So the distance between the ellipsoid and the geoid is called <strong>geoid height</strong>. That is, the ellipsoidal height can be expressed as the sum of the elevation and the geoid height</strong>. It&rsquo;s complicated.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/284083/5cc1845f-ecdf-47c0-1d37-64cce2c73d66.png" width=100%>
+When illustrated, it became a terrific color scheme.
+The geoid height varies depending on the location on the earth and can be obtained from the calculation site of the Japan Meteorological Agency.
+<a href="https://vldb.gsi.go.jp/sokuchi/surveycalc/geoid/calcgh/calc_f.html">https://vldb.gsi.go.jp/sokuchi/surveycalc/geoid/calcgh/calc_f.html</a></p>
+<p>###ceremony
+Since it is difficult to write the whole derivation process, <strong>all the edges are folded</strong>, and the coordinates of the point P can be expressed as follows.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/284083/015511ef-0f19-1e51-0475-ddc43384d87d.png" width=100%>
+Here, <code>a is the major radius</code>, <code>e is the eccentricity</code>, and the following constants are used in the case of WGS-84 compliant ellipsoid (generally, e is calculated from the flatness).</p>
+<p>-<em><strong>a = 6378137 [m]</strong></em>
+-<em><strong>e = 0.0818191908426 [-]</strong></em></p>
+<p>It seems that the above formula is <strong>famous (?)</strong> among those in the road, and I think that various derivations will appear if you search for it. Please google if necessary. Don&rsquo;t use this article as a reference.</p>
+<p>When implemented with #Python
+I decided to make it a function like this.
+Argument: <code>Latitude φ[deg]</code>, <code>Longitude λ[deg]</code>, <code>Ellipsoidal height h[m]</code>
+Return value: <code>x coordinate [m]</code>, <code>y coordinate [m]</code>, <code>z coordinate [m]</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">xyz</span>(phi, lamb, h): The latitude <span style="color:#f92672">and</span> longitude of the <span style="color:#75715e"># argument are expressed in decimal notation.</span>
+    
+    <span style="color:#75715e"># Change latitude and longitude to radians</span>
+    phi <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>deg2rad(phi)
+    lamb <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>deg2rad(lamb)
+
+    <span style="color:#75715e"># Constant (for WGS-84 compliant ellipsoid)</span>
+    a <span style="color:#f92672">=</span> <span style="color:#ae81ff">6378137</span> <span style="color:#75715e"># major radius [m]</span>
+    e <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0818191908426</span> <span style="color:#75715e"># eccentricity [-]</span>
+    
+    N <span style="color:#f92672">=</span> a <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>sqrt(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>(e <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>sin(phi) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>))
+    x <span style="color:#f92672">=</span> (N <span style="color:#f92672">+</span> h) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>cos(phi) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>cos(lamb)
+    y <span style="color:#f92672">=</span> (N <span style="color:#f92672">+</span> h) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>cos(phi) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>sin(lamb)
+    z <span style="color:#f92672">=</span> (N <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>e <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span> h) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>sin(phi)
+    
+    <span style="color:#66d9ef">return</span> x, y, z <span style="color:#75715e">#[m]</span>
+</code></pre></div><p>that&rsquo;s all. please excuse my poor writing.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>I tried using the BigQuery Storage API | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried using the BigQuery Storage API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 22, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/bigquery">BigQuery</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p><a href="https://qiita.com/CraveOwl/items/f1eae0dea959137ef526">Basic machine learning procedure: ②Let&rsquo;s prepare data</a> In the Pytohn environment, the process of importing the table created by BigQuery in Pandas Dataframe format has been started. It was</p>
+<p>However, if the size of the table becomes large, it will take a long time.
+Probably, there were many people who had such troubles. Then, a new service called BigQuery Storage API came out.</p>
+<p>I heard that it is 7 to 8 times faster, but what is it? I would like to try.</p>
+<p>#Analysis environment
+Google BigQuery
+Google Colaboratory</p>
+<h1 id="referenced-site">Referenced site</h1>
+<p><a href="https://cloud.google.com/bigquery/docs/bigquery-storage-python-pandas?hl=ja">Download BigQuery data to pandas using BigQuery Storage API</a></p>
+<h1 id="target-data">Target data</h1>
+<p>The table used is a <code>myproject.mydataset.mytable</code> table of about 100MB.
+We will import it in Pandas Dataframe format by a simple process such as fetching all the items as shown below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">query<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SELECT * FROM `myproject.mydataset.mytable`</span>
+</code></pre></div><h1 id="1-bigquery-standard-api">1. BigQuery standard API</h1>
+<p>First, let&rsquo;s try using the standard BigQuery API that we have been using.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> google.cloud <span style="color:#f92672">import</span> bigquery
+start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+
+client <span style="color:#f92672">=</span> bigquery<span style="color:#f92672">.</span>Client(project<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;myproject&#34;</span>)
+df <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>query(query)<span style="color:#f92672">.</span>to_dataframe()
+
+elapsed_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()<span style="color:#f92672">-</span>start
+</code></pre></div><p>It took about 120 seconds. Well, this is an acceptable range.</p>
+<h1 id="2-pandas-read_gbq">2. Pandas read_gbq</h1>
+<p>You can do it with the Pandas function without using the BigQuery API. So, I&rsquo;ll try that as well.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>gbq<span style="color:#f92672">.</span>read_gbq(query, project_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;myproject&#34;</span>, dialect<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;standard&#34;</span>)
+
+elapsed_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()<span style="color:#f92672">-</span>start
+</code></pre></div><p>Processing is completed in about 135 seconds. It&rsquo;s a bit slower than the BigQuery API.
+Even with the standard API of BigQuery, it seems that something has been devised compared to the functions of Pandas.</p>
+<h1 id="3-bigquery-storage-api">3. BigQuery Storage API</h1>
+<p>This is where the BigQuery Storage API, the theme of this article, comes into play.
+When I tried to import the library with Colab, I was told that there was no library, so first of all, from install.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">pip install <span style="color:#f92672">--</span>upgrade google<span style="color:#f92672">-</span>cloud<span style="color:#f92672">-</span>bigquery<span style="color:#f92672">-</span>storage
+</code></pre></div><p>And when I install, I get a message asking me to restart the runtime. Sometimes it appears in other libraries, but it&rsquo;s a bit troublesome.</p>
+<pre><code>WARNING: The following packages were previously imported in this runtime:
+  [google]
+You must restart the runtime in order to use newly installed versions.
+</code></pre><p>Now, restart the runtime, import the library again, and execute it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> google.cloud <span style="color:#f92672">import</span> bigquery
+<span style="color:#f92672">from</span> google.cloud <span style="color:#f92672">import</span> bigquery_storage
+start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+
+client <span style="color:#f92672">=</span> bigquery<span style="color:#f92672">.</span>Client(project<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;myproject&#34;</span>)
+bqstorageclient <span style="color:#f92672">=</span> bigquery_storage<span style="color:#f92672">.</span>BigQueryStorageClient()
+df3 <span style="color:#f92672">=</span> (
+    client<span style="color:#f92672">.</span>query(query)
+    <span style="color:#f92672">.</span>result()
+    <span style="color:#f92672">.</span>to_dataframe(bqstorage_client<span style="color:#f92672">=</span>bqstorageclient)
+)
+
+elapsed_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()<span style="color:#f92672">-</span>start
+</code></pre></div><p>It takes about 12 seconds to run. Instead of 7 to 8 times as much as the standard API, it is 10 times out.
+I thought it was a coincidence and tried it several times, but there was an error of about 1 to 2 seconds, but it was completed at this speed.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>I was surprised that the result was much faster than I expected.
+If it is 10 times faster than usual, you can import data such as several GB in a short time. (Although the subsequent processing in Python seems to be heavy)</p>
+<p>In addition to turning BigQuery normally, it costs $1.10 per TB, so it can not be messed up, but if the table is too big and you have to wait enough for data acquisition, I would like to use it.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

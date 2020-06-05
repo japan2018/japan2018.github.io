@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>[Model construction] Using the data set of Reuters communication, create a model (MLP) that classifies news into topics with keras (TensorFlow 2 system) | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Model construction] Using the data set of Reuters communication, create a model (MLP) that classifies news into topics with keras (TensorFlow 2 system)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 4, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/nlp"> NLP</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/python3"> Python3</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/hard"> Hard</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/tensorflow2.0"> TensorFlow2.0</a></code></small>
+
+</p>
+<pre><code>## Last pre-processing!
+</code></pre>
+<p>This article is a sequel to [Pre-processing].
+<a href="https://qiita.com/ftnext/items/236145fa41a5e464463e">[Pre-processing] Creating a model (MLP) for classifying news into topics using Reuters communication data set (TensorFlow 2 series)</a></p>
+<p>Please refer to the pre-processing section for the operating environment.</p>
+<h2 id="model-learning">Model learning</h2>
+<p>Create a model using the preprocessed news article text <code>x_train</code> and the news label <code>y_train</code>.</p>
+<p>This time, we will use a two-layer MLP (Multilayer Perceptron) as a simple model.</p>
+<pre><code>Layer (type) Output Shape Param #
+=================================================== ===============
+dense_1 (Dense) (None, 512) 512512
+_________________________________________________________________
+dropout (Dropout) (None, 512) 0
+_________________________________________________________________
+dense_2 (Dense) (None, 46) 23598
+=================================================== ===============
+</code></pre><p>I will build a model <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">92</span>]: <span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+
+In [<span style="color:#ae81ff">93</span>]: <span style="color:#f92672">from</span> tensorflow.keras <span style="color:#f92672">import</span> layers
+
+In [<span style="color:#ae81ff">96</span>]: model <span style="color:#f92672">=</span> keras<span style="color:#f92672">.</span>Sequential(
+    <span style="color:#f92672">...</span>: [
+    <span style="color:#f92672">...</span>: layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">512</span>, input_shape<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1000</span>,), activation<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu),
+    <span style="color:#f92672">...</span>: layers<span style="color:#f92672">.</span>Dropout(<span style="color:#ae81ff">0.5</span>),
+    <span style="color:#f92672">...</span>: layers<span style="color:#f92672">.</span>Dense(number_of_classes, activation<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>softmax),
+    <span style="color:#f92672">...</span>:]
+    <span style="color:#f92672">...</span>:)
+</code></pre></div><ul>
+<li><code>input_shape=(1000,)</code> is because the news articles that are input to the model are preprocessed so that the length is 1000.</li>
+<li>The output layer takes <code>softmax</code> so that it returns the label with the largest number among <code>number_of_classes</code></li>
+</ul>
+<p>It is compile before learning.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">99</span>]: model<span style="color:#f92672">.</span>compile(
+    <span style="color:#f92672">...</span>: loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;categorical_crossentropy&#34;</span>,
+    <span style="color:#f92672">...</span>: optimizer<span style="color:#f92672">=</span>keras<span style="color:#f92672">.</span>optimizers<span style="color:#f92672">.</span>Adam(),
+    <span style="color:#f92672">...</span>: metrics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;accuracy&#34;</span>],
+    <span style="color:#f92672">...</span>:)
+</code></pre></div><p>Since it is a multi-class classification, specify <code>&quot;categorical_crossentropy&quot;</code> for <code>loss</code>, specify <code>Adam</code> for <code>optimizer</code>, and specify <code>accuracy</code> (correct answer rate) for the index.</p>
+<p>Let&rsquo;s train the model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">100</span>]: history <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fit(
+     <span style="color:#f92672">...</span>: x_train,
+     <span style="color:#f92672">...</span>: y_train,
+     <span style="color:#f92672">...</span>: batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">32</span>,
+     <span style="color:#f92672">...</span>: epochs<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>,
+     <span style="color:#f92672">...</span>: verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,
+     <span style="color:#f92672">...</span>: validation_split<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>,
+     <span style="color:#f92672">...</span>:)
+Train on <span style="color:#ae81ff">8083</span> samples, validate on <span style="color:#ae81ff">899</span> samples
+Epoch <span style="color:#ae81ff">1</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5</span>
+<span style="color:#ae81ff">8083</span><span style="color:#f92672">/</span><span style="color:#ae81ff">8083</span> [<span style="color:#f92672">==============================</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>s <span style="color:#ae81ff">192</span>us<span style="color:#f92672">/</span>sample<span style="color:#f92672">-</span>loss: <span style="color:#ae81ff">1.4148</span><span style="color:#f92672">-</span>accuracy: <span style="color:#ae81ff">0.6828</span><span style="color:#f92672">-</span>val_loss : <span style="color:#ae81ff">1.0709</span><span style="color:#f92672">-</span>val_accuracy: <span style="color:#ae81ff">0.7653</span>
+Epoch <span style="color:#ae81ff">2</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5</span>
+<span style="color:#ae81ff">8083</span><span style="color:#f92672">/</span><span style="color:#ae81ff">8083</span> [<span style="color:#f92672">==============================</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>s <span style="color:#ae81ff">104</span>us<span style="color:#f92672">/</span>sample<span style="color:#f92672">-</span>loss: <span style="color:#ae81ff">0.7804</span><span style="color:#f92672">-</span>accuracy: <span style="color:#ae81ff">0.8169</span><span style="color:#f92672">-</span>val_loss : <span style="color:#ae81ff">0.9457</span><span style="color:#f92672">-</span>val_accuracy: <span style="color:#ae81ff">0.7920</span>
+Epoch <span style="color:#ae81ff">3</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5</span>
+<span style="color:#ae81ff">8083</span><span style="color:#f92672">/</span><span style="color:#ae81ff">8083</span> [<span style="color:#f92672">==============================</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>s <span style="color:#ae81ff">102</span>us<span style="color:#f92672">/</span>sample<span style="color:#f92672">-</span>loss: <span style="color:#ae81ff">0.5557</span><span style="color:#f92672">-</span>accuracy: <span style="color:#ae81ff">0.8659</span><span style="color:#f92672">-</span>val_loss : <span style="color:#ae81ff">0.8587</span><span style="color:#f92672">-</span>val_accuracy: <span style="color:#ae81ff">0.8076</span>
+Epoch <span style="color:#ae81ff">4</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5</span>
+<span style="color:#ae81ff">8083</span><span style="color:#f92672">/</span><span style="color:#ae81ff">8083</span> [<span style="color:#f92672">==============================</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>s <span style="color:#ae81ff">100</span>us<span style="color:#f92672">/</span>sample<span style="color:#f92672">-</span>loss: <span style="color:#ae81ff">0.4175</span><span style="color:#f92672">-</span>accuracy: <span style="color:#ae81ff">0.8976</span><span style="color:#f92672">-</span>val_loss : <span style="color:#ae81ff">0.8491</span><span style="color:#f92672">-</span>val_accuracy: <span style="color:#ae81ff">0.8176</span>
+Epoch <span style="color:#ae81ff">5</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5</span>
+<span style="color:#ae81ff">8083</span><span style="color:#f92672">/</span><span style="color:#ae81ff">8083</span> [<span style="color:#f92672">==============================</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>s <span style="color:#ae81ff">103</span>us<span style="color:#f92672">/</span>sample<span style="color:#f92672">-</span>loss: <span style="color:#ae81ff">0.3269</span><span style="color:#f92672">-</span>accuracy: <span style="color:#ae81ff">0.9171</span><span style="color:#f92672">-</span>val_loss : <span style="color:#ae81ff">0.8689</span><span style="color:#f92672">-</span>val_accuracy: <span style="color:#ae81ff">0.8065</span>
+</code></pre></div><p>Of the training data, 10% is used as validation data, which is used for accuracy confirmation without being used for learning.
+5 After epoch learning, the loss for the training data continues to decrease, but the loss for the validation data has started to increase, giving the impression that overlearning has begun.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/82132/c6dc8f27-7049-53c7-5a0e-fe4d9aa663f4.png" alt="Graphing with subsequent script"></p>
+<ul>
+<li>The correct answer rate for learning data is indicated by ◯. As the number of epochs increases and the learning progresses, the accuracy rate also increases.</li>
+<li>The accuracy rate for validation data is shown by the solid line. It has reached a peak at the 4th epoch, and is smaller than the 4th epoch at the 5th epoch</li>
+</ul>
+<h2 id="model-performance-check">Model performance check</h2>
+<p>Use <code>sklearn.metrics.accuracy_score</code>(<a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html">Documents</a>) to calculate the accuracy rate.</p>
+<p>First, check the performance of the data used for training.
+*In order to obtain the <code>accuracy_score</code>, the data before the one-hot expression is read again.
+(The reproducibility is ensured because the default value is specified in the <code>seed</code> argument of the <code>load_data</code> method.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">101</span>]: pred_train <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict_classes(x_train)
+
+In [<span style="color:#ae81ff">109</span>]: <span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> accuracy_score
+
+In [<span style="color:#ae81ff">114</span>]: (_, y_train), (_, y_test) <span style="color:#f92672">=</span> reuters<span style="color:#f92672">.</span>load_data(num_words<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>)
+
+In [<span style="color:#ae81ff">115</span>]: accuracy_score(y_train, pred_train)
+Out[<span style="color:#ae81ff">115</span>]: <span style="color:#ae81ff">0.9380984190603429</span>
+</code></pre></div><p>About the data used for learning, the correct answer rate is 93%, which exceeds 90%, and it seems that learning has been completed.</p>
+<p>Next, check the performance of the data not used for learning (test data).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">116</span>]: pred <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict_classes(x_test)
+
+In [<span style="color:#ae81ff">117</span>]: accuracy_score(y_test, pred)
+Out[<span style="color:#ae81ff">117</span>]: <span style="color:#ae81ff">0.7916295636687445</span>
+</code></pre></div><p>The accuracy rate was 79% in the data that was not used for training.
+The impression is that a simple MLP is acceptable.</p>
+<h3 id="confirmation-of-classification-result">Confirmation of classification result</h3>
+<p>Since there was a bias that there were many 3 and 4 in the news article, check the accuracy rate for each label.</p>
+<p>Use the <code>filter</code> function (<a href="https://docs.python.org/ja/3/library/functions.html#filter">Documents</a>) to extract the corresponding element.
+By converting the return value into a list and then taking <code>len</code>, the corresponding number is obtained.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">In [<span style="color:#ae81ff">126</span>]: <span style="color:#66d9ef">for</span> label <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">46</span>):
+     <span style="color:#f92672">...</span>: train_count <span style="color:#f92672">=</span> len(list(filter(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">==</span>label, y_train)))
+     <span style="color:#f92672">...</span>: pred_train_count <span style="color:#f92672">=</span> len(list(filter(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">==</span>label, pred_train)))
+     <span style="color:#f92672">...</span>: train_correct <span style="color:#f92672">=</span> len(list(filter(<span style="color:#66d9ef">lambda</span> pair: pair[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">==</span>label <span style="color:#f92672">and</span>
+     <span style="color:#f92672">...</span>: pair[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">==</span>pair[<span style="color:#ae81ff">1</span>], zip(y_train, pred_train))))
+     <span style="color:#f92672">...</span>: test_count <span style="color:#f92672">=</span> len(list(filter(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">==</span>label, y_test)))
+     <span style="color:#f92672">...</span>: pred_count <span style="color:#f92672">=</span> len(list(filter(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">==</span>label, pred)))
+     <span style="color:#f92672">...</span>: test_correct <span style="color:#f92672">=</span> len(list(filter(<span style="color:#66d9ef">lambda</span> pair: pair[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">==</span>label <span style="color:#f92672">and</span>
+     <span style="color:#f92672">...</span>: pair[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">==</span>pair[<span style="color:#ae81ff">1</span>], zip(y_test, pred))))
+     <span style="color:#f92672">...</span>: <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{label}, {train_count}, {pred_train_count}, {train_corr</span>
+     <span style="color:#f92672">...</span>: ect}({train_correct<span style="color:#f92672">/</span>train_count:<span style="color:#f92672">.</span><span style="color:#ae81ff">4</span>f}), {test_count}, {pred_count},
+     <span style="color:#f92672">...</span>: {test_correct}({test_correct<span style="color:#f92672">/</span>test_count:<span style="color:#f92672">.</span><span style="color:#ae81ff">4</span>f})<span style="color:#e6db74">&#39;)</span>
+     <span style="color:#f92672">...</span>:<span style="color:#75715e"># Label (*integer), number included in the training data, number predicted by the model in the training data (*includes errors), number of correct answers in the model prediction in the training data (correct answer rate),</span>
+<span style="color:#75715e"># Number included in test data, number predicted by model for test data (*includes errors), number of correct model predictions for test data (correct answer rate)</span>
+<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">55</span>, <span style="color:#ae81ff">58</span>, <span style="color:#ae81ff">52</span>(<span style="color:#ae81ff">0.9455</span>), <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">9</span>(<span style="color:#ae81ff">0.7500</span>)
+<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">432</span>, <span style="color:#ae81ff">426</span>, <span style="color:#ae81ff">397</span>(<span style="color:#ae81ff">0.9190</span>), <span style="color:#ae81ff">105</span>, <span style="color:#ae81ff">104</span>, <span style="color:#ae81ff">78</span>(<span style="color:#ae81ff">0.7429</span>)
+<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">74</span>, <span style="color:#ae81ff">75</span>, <span style="color:#ae81ff">70</span>(<span style="color:#ae81ff">0.9459</span>), <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">13</span>, <span style="color:#ae81ff">10</span>(<span style="color:#ae81ff">0.5000</span>)
+<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3159</span>, <span style="color:#ae81ff">3196</span>, <span style="color:#ae81ff">3072</span>(<span style="color:#ae81ff">0.9725</span>), <span style="color:#ae81ff">813</span>, <span style="color:#ae81ff">837</span>, <span style="color:#ae81ff">765</span>(<span style="color:#ae81ff">0.9410</span>)
+<span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">1949</span>, <span style="color:#ae81ff">2018</span>, <span style="color:#ae81ff">1873</span>(<span style="color:#ae81ff">0.9610</span>), <span style="color:#ae81ff">474</span>, <span style="color:#ae81ff">525</span>, <span style="color:#ae81ff">418</span>(<span style="color:#ae81ff">0.8819</span>)
+<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">17</span>, <span style="color:#ae81ff">14</span>, <span style="color:#ae81ff">13</span>(<span style="color:#ae81ff">0.7647</span>), <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>(<span style="color:#ae81ff">0.2000</span>)
+<span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">48</span>, <span style="color:#ae81ff">46</span>, <span style="color:#ae81ff">46</span>(<span style="color:#ae81ff">0.9583</span>), <span style="color:#ae81ff">14</span>, <span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">11</span>(<span style="color:#ae81ff">0.7857</span>)
+<span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">15</span>, <span style="color:#ae81ff">14</span>(<span style="color:#ae81ff">0.8750</span>), <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>(<span style="color:#ae81ff">0.3333</span>)
+<span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">139</span>, <span style="color:#ae81ff">149</span>, <span style="color:#ae81ff">125</span>(<span style="color:#ae81ff">0.8993</span>), <span style="color:#ae81ff">38</span>, <span style="color:#ae81ff">42</span>, <span style="color:#ae81ff">27</span>(<span style="color:#ae81ff">0.7105</span>)
+<span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">101</span>, <span style="color:#ae81ff">109</span>, <span style="color:#ae81ff">99</span>(<span style="color:#ae81ff">0.9802</span>), <span style="color:#ae81ff">25</span>, <span style="color:#ae81ff">23</span>, <span style="color:#ae81ff">20</span>(<span style="color:#ae81ff">0.8000</span>)
+<span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">124</span>, <span style="color:#ae81ff">121</span>, <span style="color:#ae81ff">113</span>(<span style="color:#ae81ff">0.9113</span>), <span style="color:#ae81ff">30</span>, <span style="color:#ae81ff">30</span>, <span style="color:#ae81ff">27</span>(<span style="color:#ae81ff">0.9000</span>)
+<span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">390</span>, <span style="color:#ae81ff">395</span>, <span style="color:#ae81ff">366</span>(<span style="color:#ae81ff">0.9385</span>), <span style="color:#ae81ff">83</span>, <span style="color:#ae81ff">104</span>, <span style="color:#ae81ff">62</span>(<span style="color:#ae81ff">0.7470</span>)
+<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">49</span>, <span style="color:#ae81ff">42</span>, <span style="color:#ae81ff">42</span>(<span style="color:#ae81ff">0.8571</span>), <span style="color:#ae81ff">13</span>, <span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">5</span>(<span style="color:#ae81ff">0.3846</span>)
+<span style="color:#ae81ff">13</span>, <span style="color:#ae81ff">172</span>, <span style="color:#ae81ff">184</span>, <span style="color:#ae81ff">161</span>(<span style="color:#ae81ff">0.9360</span>), <span style="color:#ae81ff">37</span>, <span style="color:#ae81ff">60</span>, <span style="color:#ae81ff">24</span>(<span style="color:#ae81ff">0.6486</span>)
+<span style="color:#ae81ff">14</span>, <span style="color:#ae81ff">26</span>, <span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">18</span>(<span style="color:#ae81ff">0.6923</span>), <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">15</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">19</span>(<span style="color:#ae81ff">0.9500</span>), <span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>(<span style="color:#ae81ff">0.1111</span>)
+<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">444</span>, <span style="color:#ae81ff">442</span>, <span style="color:#ae81ff">404</span>(<span style="color:#ae81ff">0.9099</span>), <span style="color:#ae81ff">99</span>, <span style="color:#ae81ff">124</span>, <span style="color:#ae81ff">76</span>(<span style="color:#ae81ff">0.7677</span>)
+<span style="color:#ae81ff">17</span>, <span style="color:#ae81ff">39</span>, <span style="color:#ae81ff">36</span>, <span style="color:#ae81ff">36</span>(<span style="color:#ae81ff">0.9231</span>), <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">5</span>(<span style="color:#ae81ff">0.4167</span>)
+<span style="color:#ae81ff">18</span>, <span style="color:#ae81ff">66</span>, <span style="color:#ae81ff">61</span>, <span style="color:#ae81ff">61</span>(<span style="color:#ae81ff">0.9242</span>), <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">10</span>(<span style="color:#ae81ff">0.5000</span>)
+<span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">549</span>, <span style="color:#ae81ff">519</span>, <span style="color:#ae81ff">481</span>(<span style="color:#ae81ff">0.8761</span>), <span style="color:#ae81ff">133</span>, <span style="color:#ae81ff">108</span>, <span style="color:#ae81ff">84</span>(<span style="color:#ae81ff">0.6316</span>)
+<span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">269</span>, <span style="color:#ae81ff">252</span>, <span style="color:#ae81ff">223</span>(<span style="color:#ae81ff">0.8290</span>), <span style="color:#ae81ff">70</span>, <span style="color:#ae81ff">67</span>, <span style="color:#ae81ff">37</span>(<span style="color:#ae81ff">0.5286</span>)
+<span style="color:#ae81ff">21</span>, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">96</span>, <span style="color:#ae81ff">93</span>(<span style="color:#ae81ff">0.9300</span>), <span style="color:#ae81ff">27</span>, <span style="color:#ae81ff">34</span>, <span style="color:#ae81ff">22</span>(<span style="color:#ae81ff">0.8148</span>)
+<span style="color:#ae81ff">22</span>, <span style="color:#ae81ff">15</span>, <span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">10</span>(<span style="color:#ae81ff">0.6667</span>), <span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">23</span>, <span style="color:#ae81ff">41</span>, <span style="color:#ae81ff">33</span>, <span style="color:#ae81ff">33</span>(<span style="color:#ae81ff">0.8049</span>), <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">3</span>(<span style="color:#ae81ff">0.2500</span>)
+<span style="color:#ae81ff">24</span>, <span style="color:#ae81ff">62</span>, <span style="color:#ae81ff">65</span>, <span style="color:#ae81ff">57</span>(<span style="color:#ae81ff">0.9194</span>), <span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">9</span>(<span style="color:#ae81ff">0.4737</span>)
+<span style="color:#ae81ff">25</span>, <span style="color:#ae81ff">92</span>, <span style="color:#ae81ff">93</span>, <span style="color:#ae81ff">87</span>(<span style="color:#ae81ff">0.9457</span>), <span style="color:#ae81ff">31</span>, <span style="color:#ae81ff">26</span>, <span style="color:#ae81ff">22</span>(<span style="color:#ae81ff">0.7097</span>)
+<span style="color:#ae81ff">26</span>, <span style="color:#ae81ff">24</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">20</span>(<span style="color:#ae81ff">0.8333</span>), <span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>(<span style="color:#ae81ff">0.1250</span>)
+<span style="color:#ae81ff">27</span>, <span style="color:#ae81ff">15</span>, <span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">11</span>(<span style="color:#ae81ff">0.7333</span>), <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>(<span style="color:#ae81ff">0.2500</span>)
+<span style="color:#ae81ff">28</span>, <span style="color:#ae81ff">48</span>, <span style="color:#ae81ff">47</span>, <span style="color:#ae81ff">45</span>(<span style="color:#ae81ff">0.9375</span>), <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">2</span>(<span style="color:#ae81ff">0.2000</span>)
+<span style="color:#ae81ff">29</span>, <span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">16</span>(<span style="color:#ae81ff">0.8421</span>), <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">3</span>(<span style="color:#ae81ff">0.7500</span>)
+<span style="color:#ae81ff">30</span>, <span style="color:#ae81ff">45</span>, <span style="color:#ae81ff">43</span>, <span style="color:#ae81ff">40</span>(<span style="color:#ae81ff">0.8889</span>), <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">7</span>(<span style="color:#ae81ff">0.5833</span>)
+<span style="color:#ae81ff">31</span>, <span style="color:#ae81ff">39</span>, <span style="color:#ae81ff">40</span>, <span style="color:#ae81ff">37</span>(<span style="color:#ae81ff">0.9487</span>), <span style="color:#ae81ff">13</span>, <span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">6</span>(<span style="color:#ae81ff">0.4615</span>)
+<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">31</span>(<span style="color:#ae81ff">0.9688</span>), <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">5</span>(<span style="color:#ae81ff">0.5000</span>)
+<span style="color:#ae81ff">33</span>, <span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>(<span style="color:#ae81ff">0.9091</span>), <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">3</span>(<span style="color:#ae81ff">0.6000</span>)
+<span style="color:#ae81ff">34</span>, <span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">48</span>, <span style="color:#ae81ff">47</span>(<span style="color:#ae81ff">0.9400</span>), <span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>(<span style="color:#ae81ff">0.4286</span>)
+<span style="color:#ae81ff">35</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">9</span>(<span style="color:#ae81ff">0.9000</span>), <span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>(<span style="color:#ae81ff">0.3333</span>)
+<span style="color:#ae81ff">36</span>, <span style="color:#ae81ff">49</span>, <span style="color:#ae81ff">39</span>, <span style="color:#ae81ff">37</span>(<span style="color:#ae81ff">0.7551</span>), <span style="color:#ae81ff">11</span>, <span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">4</span>(<span style="color:#ae81ff">0.3636</span>)
+<span style="color:#ae81ff">37</span>, <span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">18</span>, <span style="color:#ae81ff">16</span>(<span style="color:#ae81ff">0.8421</span>), <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">38</span>, <span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">15</span>, <span style="color:#ae81ff">15</span>(<span style="color:#ae81ff">0.7895</span>), <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">39</span>, <span style="color:#ae81ff">24</span>, <span style="color:#ae81ff">17</span>, <span style="color:#ae81ff">17</span>(<span style="color:#ae81ff">0.7083</span>), <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">40</span>, <span style="color:#ae81ff">36</span>, <span style="color:#ae81ff">39</span>, <span style="color:#ae81ff">30</span>(<span style="color:#ae81ff">0.8333</span>), <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">3</span>(<span style="color:#ae81ff">0.3000</span>)
+<span style="color:#ae81ff">41</span>, <span style="color:#ae81ff">30</span>, <span style="color:#ae81ff">25</span>, <span style="color:#ae81ff">23</span>(<span style="color:#ae81ff">0.7667</span>), <span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">42</span>, <span style="color:#ae81ff">13</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>(<span style="color:#ae81ff">0.7692</span>), <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>(<span style="color:#ae81ff">0.0000</span>)
+<span style="color:#ae81ff">43</span>, <span style="color:#ae81ff">21</span>, <span style="color:#ae81ff">22</span>, <span style="color:#ae81ff">20</span>(<span style="color:#ae81ff">0.9524</span>), <span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">6</span>(<span style="color:#ae81ff">1.0000</span>)
+<span style="color:#ae81ff">44</span>, <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>(<span style="color:#ae81ff">0.8333</span>), <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">4</span>(<span style="color:#ae81ff">0.8000</span>)
+<span style="color:#ae81ff">45</span>, <span style="color:#ae81ff">18</span>, <span style="color:#ae81ff">17</span>, <span style="color:#ae81ff">17</span>(<span style="color:#ae81ff">0.9444</span>), <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>(<span style="color:#ae81ff">1.0000</span>)
+</code></pre></div><p>Labels such as 3 and 4, which contain a lot of news, have a high accuracy rate even in the test data.
+On the other hand, for labels that contain a small number of news items, the rate of correct answers to test data was low (as high as 0%), and it seems that there is still room for model improvement.
+You may want to check the text of the corresponding label and consider how to create the feature quantity.</p>
+<h2 id="code-overview">Code overview</h2>
+<p>I also share the code I wrote so that it can be executed in a script.</p>
+<ul>
+<li>The contents written in Qiita are summarized in a function, so they are not exactly the same</li>
+<li>By changing the constant at the beginning of the script, you can try a model with different hyperparameters ([Code seen in &ldquo;Intuition Deep Learning&rdquo;) (https://github.com/oreilly-japan/deep- (Refer to learning-with-keras-ja))</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:keras_mlp.py" data-lang="python:keras_mlp.py"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">from</span> tensorflow <span style="color:#f92672">import</span> keras
+<span style="color:#f92672">from</span> tensorflow.keras <span style="color:#f92672">import</span> layers
+<span style="color:#f92672">from</span> tensorflow.keras.datasets <span style="color:#f92672">import</span> reuters
+<span style="color:#f92672">from</span> tensorflow.keras.preprocessing.text <span style="color:#f92672">import</span> Tokenizer
+
+
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(<span style="color:#ae81ff">42</span>)
+tf<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>set_seed(<span style="color:#ae81ff">1234</span>)
+
+MAX_WORDS <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000</span>
+DROPOUT <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span>
+OPTIMIZER <span style="color:#f92672">=</span> keras<span style="color:#f92672">.</span>optimizers<span style="color:#f92672">.</span>Adam()
+BATCH_SIZE <span style="color:#f92672">=</span> <span style="color:#ae81ff">32</span>
+EPOCHS <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IndexWordMapper</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, index_word_map):
+        self<span style="color:#f92672">.</span>index_word_map <span style="color:#f92672">=</span> index_word_map
+
+    <span style="color:#a6e22e">@staticmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">initialize_index_word_map</span>():
+        word_index <span style="color:#f92672">=</span> reuters<span style="color:#f92672">.</span>get_word_index()
+        index_word_map <span style="color:#f92672">=</span> {
+            index <span style="color:#f92672">+</span> <span style="color:#ae81ff">3</span>: word <span style="color:#66d9ef">for</span> word, index <span style="color:#f92672">in</span> word_index<span style="color:#f92672">.</span>items()
+        }
+        index_word_map[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;[padding]&#34;</span>
+        index_word_map[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;[start]&#34;</span>
+        index_word_map[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;[oov]&#34;</span>
+        <span style="color:#66d9ef">return</span> index_word_map
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">print_original_sentence</span>(self, indices_of_words):
+        <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> indices_of_words:
+            <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>index_word_map[index], end<span style="color:#f92672">=</span><span style="color:#e6db74">&#34; &#34;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TokenizePreprocessor</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, tokenizer):
+        self<span style="color:#f92672">.</span>tokenizer <span style="color:#f92672">=</span> tokenizer
+
+    <span style="color:#a6e22e">@staticmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">initialize_tokenizer</span>(max_words):
+        <span style="color:#66d9ef">return</span> Tokenizer(num_words<span style="color:#f92672">=</span>max_words)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convert_text_to_matrix</span>(self, texts, mode):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>tokenizer<span style="color:#f92672">.</span>sequences_to_matrix(texts, mode<span style="color:#f92672">=</span>mode)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convert_to_onehot</span>(labels, number_of_classes):
+    <span style="color:#66d9ef">return</span> keras<span style="color:#f92672">.</span>utils<span style="color:#f92672">.</span>to_categorical(labels, number_of_classes)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">build_model</span>(number_of_classes, max_words, drop_out, optimizer):
+    model <span style="color:#f92672">=</span> keras<span style="color:#f92672">.</span>Sequential(
+        [
+            layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">512</span>, input_shape<span style="color:#f92672">=</span>(max_words,), activation<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu),
+            layers<span style="color:#f92672">.</span>Dropout(drop_out),
+            layers<span style="color:#f92672">.</span>Dense(number_of_classes, activation<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>softmax),
+        ]
+    )
+    model<span style="color:#f92672">.</span>compile(
+        loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;categorical_crossentropy&#34;</span>,
+        optimizer<span style="color:#f92672">=</span>optimizer,
+        metrics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;accuracy&#34;</span>],
+    )
+    <span style="color:#66d9ef">return</span> model
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_accuracy</span>(history):
+    accuracy <span style="color:#f92672">=</span> history[<span style="color:#e6db74">&#34;accuracy&#34;</span>]
+    val_accuracy <span style="color:#f92672">=</span> history[<span style="color:#e6db74">&#34;val_accuracy&#34;</span>]
+    epochs <span style="color:#f92672">=</span> range(<span style="color:#ae81ff">1</span>, len(accuracy) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)
+
+    plt<span style="color:#f92672">.</span>plot(epochs, accuracy, <span style="color:#e6db74">&#34;bo&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Training accuracy&#34;</span>)
+    plt<span style="color:#f92672">.</span>plot(epochs, val_accuracy, <span style="color:#e6db74">&#34;b&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Validation accuracy&#34;</span>)
+    plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#34;Training and Validation accuracy&#34;</span>)
+    plt<span style="color:#f92672">.</span>legend()
+    plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#34;accuracy.png&#34;</span>)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    index_word_map <span style="color:#f92672">=</span> IndexWordMapper<span style="color:#f92672">.</span>initialize_index_word_map()
+    index_word_mapper <span style="color:#f92672">=</span> IndexWordMapper(index_word_map)(x_train, y_train), (x_test, y_test) <span style="color:#f92672">=</span> reuters<span style="color:#f92672">.</span>load_data(
+        num_words<span style="color:#f92672">=</span>MAX_WORDS
+    )
+    number_of_classes <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>max(y_train) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+
+    tokenizer <span style="color:#f92672">=</span> TokenizePreprocessor<span style="color:#f92672">.</span>initialize_tokenizer(MAX_WORDS)
+    preprocessor <span style="color:#f92672">=</span> TokenizePreprocessor(tokenizer)
+    x_train <span style="color:#f92672">=</span> preprocessor<span style="color:#f92672">.</span>convert_text_to_matrix(x_train, <span style="color:#e6db74">&#34;binary&#34;</span>)
+    x_test <span style="color:#f92672">=</span> preprocessor<span style="color:#f92672">.</span>convert_text_to_matrix(x_test, <span style="color:#e6db74">&#34;binary&#34;</span>)
+
+    y_train <span style="color:#f92672">=</span> convert_to_onehot(y_train, number_of_classes)
+    y_test <span style="color:#f92672">=</span> convert_to_onehot(y_test, number_of_classes)
+
+    model <span style="color:#f92672">=</span> build_model(number_of_classes, MAX_WORDS, DROPOUT, OPTIMIZER)
+
+    history <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fit(
+        x_train,
+        y_train,
+        batch_size<span style="color:#f92672">=</span>BATCH_SIZE,
+        epochs<span style="color:#f92672">=</span>EPOCHS,
+        verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,
+        validation_split<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>,
+    )
+    score <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>evaluate(x_test, y_test, batch_size<span style="color:#f92672">=</span>BATCH_SIZE, verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+    <span style="color:#66d9ef">print</span>(score)
+
+    plot_accuracy(history<span style="color:#f92672">.</span>history)
+</code></pre></div><pre><code>$ python keras_mlp.py
+Train on 8083 samples, validate on 899 samples
+Epoch 1/5
+8083/8083 [==============================] - 1s 161us/sample - loss: 1.4255 - accuracy: 0.6828 - val_loss: 1.0781 - val_accuracy: 0.7631
+Epoch 2/5
+8083/8083 [==============================] - 1s 102us/sample - loss: 0.7915 - accuracy: 0.8122 - val_loss: 0.9229 - val_accuracy: 0.7942
+Epoch 3/5
+8083/8083 [==============================] - 1s 99us/sample - loss: 0.5530 - accuracy: 0.8689 - val_loss: 0.8850 - val_accuracy: 0.8042
+Epoch 4/5
+8083/8083 [==============================] - 1s 99us/sample - loss: 0.4072 - accuracy: 0.8983 - val_loss: 0.8857 - val_accuracy: 0.8087
+Epoch 5/5
+8083/8083 [==============================] - 1s 99us/sample - loss: 0.3336 - accuracy: 0.9150 - val_loss: 0.9134 - val_accuracy: 0.8053
+[0.9012499411830069, 0.7907391]
+</code></pre><p>Sequentialモデルの<code>evaluate</code>メソッド(<a href="https://www.tensorflow.org/api_docs/python/tf/keras/Sequential?version=stable#evaluate">ドキュメント</a>)をテスト用データに適用した結果を出力しています。</p>
+<blockquote>
+<p>Returns the loss value &amp; metrics values for the model in test mode.</p>
+</blockquote>
+<p>ですので、1つ目（<code>score[0]</code>）がlossの値で、2つ目（<code>score[1]</code>）がaccuracyです（コンパイルで指定したメトリクス）。</p>
+<h3 id="再現性の確保">再現性の確保</h3>
+<p>スクリプトにまとめるに当たり、再現性確保のためのシードの固定にハマりました。
+TensorFlow 2系でのシードの固定の情報が少ない<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>ように思われます。</p>
+<p>結論としては、以下の2点を行いました。</p>
+<ul>
+<li><code>numpy</code>のシードの固定</li>
+<li><code>tensorflow.random.set_seed</code>(<a href="https://www.tensorflow.org/api_docs/python/tf/random/set_seed?version=stable">ドキュメント</a>)のシードの固定<sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(<span style="color:#ae81ff">42</span>)
+tf<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>set_seed(<span style="color:#ae81ff">1234</span>)
+</code></pre></div><h2 id="今後手を動かしたい事項">今後手を動かしたい事項</h2>
+<ul>
+<li>モデルを変える</li>
+<li>手を動かす中で「Embedding layer」を見つけたので試してみたい</li>
+<li>ref: <a href="https://machinelearningmastery.com/use-word-embedding-layers-deep-learning-keras/">https://machinelearningmastery.com/use-word-embedding-layers-deep-learning-keras/</a></li>
+<li>ハイパーパラメタのグリッドサーチ
+<ul>
+<li>optimizerやドロップアウト率、バッチサイズ、エポック数</li>
+<li>取り出すのは上位1000語でいいか</li>
+</ul>
+</li>
+<li>前処理深堀り（count, tfidf, freqを試す）</li>
+<li>記事間での数の偏りへの対処が必要かデータを確認</li>
+</ul>
+<p>今回のアウトプットを下地に色々と試していこうと思います。</p>
+<h2 id="本記事のまとめ">本記事のまとめ</h2>
+<ul>
+<li>シンプルなモデルとして2層のMLPを構築</li>
+<li>性能を確認したところ、テスト用データに対して79%の正解率。ラベルに含まれるニュースの数により正解率にはムラがある</li>
+<li>スクリプトにした際、<code>TensorFlow</code>2系向けの再現性の確保（2行）が必要だった</li>
+</ul>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>After creating this model, if you execute <code>model.summary()</code>, you can check the layers of the above model. <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>再現性の確保からは脱線ですが、短時間で学習が終わるならシードを固定するのではなく繰り返して、統計的な値で評価するという方法も見つかりました ref: <a href="https://machinelearningmastery.com/reproducible-results-neural-networks-keras/">https://machinelearningmastery.com/reproducible-results-neural-networks-keras/</a> <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>ref: <a href="https://stackoverflow.com/a/58639060">https://stackoverflow.com/a/58639060</a> 。<code>tensorflow.set_random_seed</code>は2系ではなくなったようです <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>I tried to get data from AS/400 quickly using pypyodbc | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to get data from AS/400 quickly using pypyodbc</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 12, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/odbc">ODBC</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/as400">AS400</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/ibmi">IBMi</a></code></small>
+
+</p>
+<pre><code>For a long time (about 3 months), I was using the &quot;execute SQL script&quot; of IBM client solution to issue SQL and acquire data, but since the number of data exceeded 5000, to acquire all Since it has become troublesome to scroll endlessly, I tried an experiment of batch acquisition using Python and ODBC.
+</code></pre>
+<p>Since it is an experimental code, I do not care about error checking and output format.</p>
+<h1 id="experiment-environment">Experiment environment</h1>
+<p>PC environment</p>
+<ul>
+<li>Windows10</li>
+<li>python 3.8</li>
+<li>pypyodbc 1.3.4</li>
+<li>IBM i Access Client Solutions 1.1.0 (ODBC driver)</li>
+</ul>
+<p>Connection environment</p>
+<ul>
+<li>AS400 V7R3</li>
+</ul>
+<p>#Preparation</p>
+<h2 id="get-python">Get Python</h2>
+<p>Get and install the latest stable version from <a href="https://www.python.org">python.org</a>.
+After installation, put the path to the folder containing &ldquo;python.exe&rdquo;.</p>
+<h2 id="get-pypyodbc">Get pypyodbc</h2>
+<p>The reason why I chose pypyodbc instead of general pyodbc is because the installation with pip failed. I also tried IBM&rsquo;s recommended ibm_db, but this time it&rsquo;s a pass because both required Microsoft Visual C++14.</p>
+<p>Install using &ldquo;pip&rdquo; attached to python.</p>
+<pre><code>pip install pypyodbc
+</code></pre><h2 id="obtaining-ibm-i-access-client-solutions">Obtaining IBM i Access Client Solutions</h2>
+<p>I set it up a few months ago, so I remember the contents.
+Go to <a href="https://www.ibm.com/support/pages/ibm-i-access-client-solutions">https://www.ibm.com/support/pages/ibm-i-access-client-solutions</a>.
+Follow the link that says &ldquo;Downloads for IBM i Access Client Solutions&rdquo;. You will be asked to authenticate your IBM ID on the way. If you have an ID, enter it.
+Click &ldquo;ACS Windows App Pkg English (64bit)&rdquo; to download.</p>
+<p>The installer format is used, so follow the installer&rsquo;s instructions to install.</p>
+<p>#Test code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:odbctest.py" data-lang="python:odbctest.py"><span style="color:#f92672">import</span> pypyodbc
+
+<span style="color:#75715e"># Get connection information</span>
+config <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#34;connection_config.txt&#34;</span>,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8&#34;</span>) <span style="color:#66d9ef">as</span> conf:
+    <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> conf<span style="color:#f92672">.</span>read()<span style="color:#f92672">.</span>splitlines():
+        key_, val_ <span style="color:#f92672">=</span> line<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34; &#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>)<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;=&#34;</span>)
+        config[ key_ ]<span style="color:#f92672">=</span> val_
+
+<span style="color:#75715e"># DB connection</span>
+connection <span style="color:#f92672">=</span> pypyodbc<span style="color:#f92672">.</span>connect(
+    driver<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{iSeries Access ODBC Driver}&#39;</span>,
+    system <span style="color:#f92672">=</span> config[<span style="color:#e6db74">&#34;system&#34;</span>],
+    uid <span style="color:#f92672">=</span> config[<span style="color:#e6db74">&#34;uid&#34;</span>],
+    pwd <span style="color:#f92672">=</span> config[<span style="color:#e6db74">&#34;pwd&#34;</span>] )<span style="color:#f92672">.</span>
+cur <span style="color:#f92672">=</span> connection<span style="color:#f92672">.</span>cursor()
+
+<span style="color:#75715e"># Execute SQL</span>
+statement <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#34;statement.sql&#34;</span>,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8&#34;</span>)<span style="color:#f92672">.</span>read()
+cur<span style="color:#f92672">.</span>execute( statement)
+<span style="color:#66d9ef">for</span> row <span style="color:#f92672">in</span> cur:
+    <span style="color:#66d9ef">print</span>( row)
+</code></pre></div><p>The source is roughly divided into 3 parts.</p>
+<p>In &ldquo;Get connection information&rdquo;, the connection information to the database is fetched from an external file and stored in a dictionary. The external file &ldquo;connection_config.txt&rdquo; is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text:connection_config.txt" data-lang="text:connection_config.txt">system = xxx.xxx.xxx.xxx
+uid = USER
+pwd = PASWORD
+</code></pre></div><p>&ldquo;DB connection&rdquo; tries to connect to the database using the read connection information and gets the cursor.</p>
+<p>&ldquo;Execute SQL&rdquo; reads the SQL written in the external file and passes it to execute() of the cursor to issue the SQL.
+The for loop below it throws line by line to the print() function and writes it to standard output.</p>
+<h1 id="execution-result">Execution result</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql:statement.sql" data-lang="sql:statement.sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> QSYS2.LIBLIST
+</code></pre></div><p>Let&rsquo;s write the above SQL in statement.sql and execute it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">&gt;python testodbc.py
+(1,&#39;QSYS&#39;,&#39;QSYS&#39;,&#39;SYSTEM&#39;, 0,&#39;\x0eäýäþämäwäáäÝäbä JäÝäÞäì\x0f&#39;)
+(2,&#39;QSYS2&#39;,&#39;QSYS2&#39;,&#39;SYSTEM&#39;, 0,&#39;CPI\x0eá¶àªäýäþämäwäáäÝäbä JäÝäÞäì\x0f&#39;)
+(3,&#39;QHLPSYS&#39;,&#39;QHLPSYS&#39;,&#39;SYSTEM&#39;, 0, None)
+(4,&#39;QUSRSYS&#39;,&#39;QUSRSYS&#39;,&#39;SYSTEM&#39;, 0,&#39;S MOHO HOTE L CHANNEL ENERGY U HE ONE HO&#39;)
+(5,&#39;QIWS&#39;,&#39;QIWS&#39;,&#39;PRODUCT&#39;, 0, None)
+(6,&#39;QGPL&#39;,&#39;QGPL&#39;,&#39;USER&#39;, 0,&#39;GENERAL PURPOSE LIBRARY&#39;)
+(7,&#39;QTEMP&#39;,&#39;QTEMP&#39;,&#39;USER&#39;, 0, None)
+</code></pre></div><p>Garbled characters are specifications&hellip;
+Some IBM-supplied object labels don&rsquo;t seem to translate nicely, but if it&rsquo;s a table I&rsquo;ve created normally, whether using SQL or using AS/400-specific features, Will convert it into a readable character.</p>
+<p>Redirecting to a file should take seconds to tens of seconds, regardless of the tens of thousands of results.
+Although it depends on the performance of the server, when I tried to execute SQL with 15 columns x 10000 cases and a little more calculation amount, writing was completed in about 5 seconds (output file size 1MB).</p>
+<p>This frees you from the penalties of pressing the page down key endlessly to get the entire result set.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

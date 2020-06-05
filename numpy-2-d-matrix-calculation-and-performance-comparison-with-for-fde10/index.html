@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Numpy 2-D matrix calculation and performance comparison with for | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Numpy 2-D matrix calculation and performance comparison with for</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 21, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/numpy">numpy</a></code></small>
+
+</p>
+<pre><code>How does this article write the following two-dimensional matrix calculation in Python numpy? That is.
+</code></pre>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, ni<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, nj<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+</code></pre></div><p>Later, we will compare the performance. The Python version is 3.7.4. You are using anaconda3-2019.10.</p>
+<h2 id="preface">Preface</h2>
+<p>COVID-19 + With the change of job, I decided to learn a new language because I had a lot of spare time as I was stuck in my home in Tokyo. Python seems to be the main thing in my next workplace, so I&rsquo;ll use Python. I couldn&rsquo;t get really serious if I didn&rsquo;t cut money, so I took a course at Udemy and spent about a week learning the basics. Python has been around for a long time, but Python is a beginner with about two weeks of experience.</p>
+<p>After going through all the way, I feel like I can do web development with Python, but I will do Python, so I would like to do data analysis and machine learning. So I rewrote the solution of the one-dimensional advection equation that I did a long time ago in Python.</p>
+<p>▶ <a href="https://github.com/kurab/cfd_1d">1 Dimensional Flow Calculation by Python</a></p>
+<p>I didn&rsquo;t check the details, and it was a lot of omissions, but the desired result was obtained, so I was satisfied with it for the first time. But what is the sense of accomplishment? I didn&rsquo;t feel something like that, so I tried to do two-dimensional calculation, but the matrix calculation was extremely dull. My Ghost whispers that it shouldn&rsquo;t be written any further. And
+In Python,</p>
+<ul>
+<li>lose if you write for</li>
+<li>Execution speed becomes slow when for is nested. By cruelty.</li>
+</ul>
+<p>It&rsquo;s just a rumor.
+As a solution, it was said that numpy etc. would be used, so I tried using it, but it is confusing, and it seems that it will not be learned soon, so I will leave it as a memo.</p>
+<p>The only thing you&rsquo;ll get from reading this article is that you don&rsquo;t have to read &ldquo;Use numpy to compute matrices (don&rsquo;t use for)&rdquo;. Other than that, I don&rsquo;t think it&rsquo;s easy to read, so if you want to understand it, you can actually move your hand to check it and repeat until you feel comfortable with it.</p>
+<h2 id="comparison-of-writing-list-and-numpy-array">Comparison of writing list and numpy array</h2>
+<p>In Python, there are <code>list, tuple, dict</code>, etc. to represent an array, and in the case of a two-dimensional array, <code>list</code> is as if it came from another language, It is easy to understand if it becomes <code>x[i][j]</code>. However, from a mathematical notation, <code>x[i, j]</code> is easier to understand. An array of <code>numpy</code> has the latter syntax. As you can see by actually writing it, it is troublesome to write <code>x[i][j]</code> many times, and it is hard to see, so you can write it like <code>x[i, j]</code>. I am grateful to be able to write.</p>
+<p>Then immediately. For example, if you have an expression that computes <code>x, y</code> of the form <code>ndarray</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+</code></pre></div><p>This is not a meaningful formula, but you should see this kind of calculation often in numerical calculation processing, not limited to mathematical systems. If you try nesting this with a loop of <code>i</code> and <code>j</code>,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+</code></pre></div><p>Becomes Very easy to understand. If the maximum number of divisions is <code>ni</code>, <code>nj</code>, etc.,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, ni<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, nj<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+</code></pre></div><p>Means</p>
+<p>Now, in numpy, it seems smart to write this calculation as:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">y[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> x[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>x[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">1</span>:] <span style="color:#f92672">*</span> x[<span style="color:#ae81ff">0</span>: <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>:]
+</code></pre></div><p>e? What?</p>
+<p>If you take a closer look, what is it? Does the sliced range correspond to the formula? I feel like that.
+I don&rsquo;t feel like writing freely.</p>
+<h2 id="try">Try</h2>
+<p>Let&rsquo;s check if it really matches.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+
+x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">10</span>, size<span style="color:#f92672">=</span>(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">50</span>))
+y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">50</span>))
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+
+z <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros_like(y)
+z[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> x[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>x[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">1</span>:] <span style="color:#f92672">*</span> x[<span style="color:#ae81ff">0</span>: <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>:]
+
+<span style="color:#66d9ef">if</span> (z <span style="color:#f92672">==</span> y)<span style="color:#f92672">.</span>all():
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;matches&#39;</span>)
+<span style="color:#66d9ef">else</span>:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;no&#39;</span>)
+</code></pre></div><p>The execution results are&hellip; Zero in range is not necessary, but for the sake of understanding, dare.
+Other</p>
+<ul>
+<li><code>0</code> to <code>ni, nj</code> (<code>x.shape[0], x.shape[1]</code>)</li>
+<li><code>1</code> to <code>ni, nj</code> (<code>x.shape[0], x.shape[1]</code>)</li>
+<li><code>1</code> to <code>ni-1, nj-1</code> (<code>x.shape[0]-1, x.shape[1]-1</code>)</li>
+<li><code>2</code> to <code>ni-3, nj-3</code> (<code>x.shape[0]-3, x.shape[1]-3</code>)</li>
+</ul>
+<p>And so on.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#0 to ni, nj (x.shape[0], x.shape[1])</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i, j]
+
+z[<span style="color:#ae81ff">0</span>:, <span style="color:#ae81ff">0</span>:] <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">0</span>:, <span style="color:#ae81ff">0</span>:] <span style="color:#f92672">+</span> x[<span style="color:#ae81ff">0</span>:, <span style="color:#ae81ff">0</span>:]
+
+<span style="color:#75715e">#1 to ni, nj (x.shape[0], x.shape[1])</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+
+z[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">1</span>:] <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">1</span>:] <span style="color:#f92672">+</span> x[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>:]<span style="color:#f92672">-</span>x[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[<span style="color:#ae81ff">1</span>:, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>]
+
+<span style="color:#75715e"># 1 to ni-1, nj-1 (x.shape[0]-1, x.shape[1]-1)</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+
+z[<span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> x[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>x[<span style="color:#ae81ff">2</span>:, <span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">*</span> x[<span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>:]
+
+<span style="color:#75715e">#2 to ni-3, nj-3 (x.shape[0]-3, x.shape[1]-3)</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">2</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">2</span>, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]
+
+z[<span style="color:#ae81ff">2</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>] <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">2</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>] <span style="color:#f92672">+</span> x[<span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">2</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>]<span style="color:#f92672">-</span>x[<span style="color:#ae81ff">3</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">4</span> ] <span style="color:#f92672">*</span> x[<span style="color:#ae81ff">2</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+</code></pre></div><h2 id="summary-of-writing">Summary of writing</h2>
+<p>Hmm, that&rsquo;s what this means?</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#i, j loop from n to ni-m, nj-m</span>
+<span style="color:#75715e"># computes x[i, j], x[i-ln, j], x[i+ln, j-ln], x[i, j+ln], etc.</span>
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(n, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>m):
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(n, x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>m):
+        y[i, j] <span style="color:#f92672">=</span> x[i, j] <span style="color:#f92672">+</span> x[i<span style="color:#f92672">-</span>ln, j]<span style="color:#f92672">-</span>x[i<span style="color:#f92672">+</span>ln, j<span style="color:#f92672">-</span>ln] <span style="color:#f92672">*</span> x[i, j<span style="color:#f92672">+</span>ln]
+
+z[n:<span style="color:#f92672">-</span>m, n:<span style="color:#f92672">-</span>m] <span style="color:#f92672">=</span> x[n:<span style="color:#f92672">-</span>m, n:<span style="color:#f92672">-</span>m] <span style="color:#f92672">+</span> x[n<span style="color:#f92672">-</span>ln:<span style="color:#f92672">-</span>m<span style="color:#f92672">-</span>ln, n:<span style="color:#f92672">-</span>m]<span style="color:#f92672">-</span>\
+    x[n<span style="color:#f92672">+</span>ln:<span style="color:#f92672">-</span>m<span style="color:#f92672">+</span>ln, n<span style="color:#f92672">-</span>ln:<span style="color:#f92672">-</span>m<span style="color:#f92672">-</span>ln] <span style="color:#f92672">*</span> x[n:<span style="color:#f92672">-</span>m, n<span style="color:#f92672">+</span>ln:<span style="color:#f92672">-</span>m<span style="color:#f92672">+</span>ln
+</code></pre></div><p>Plenty of summary. It&rsquo;s hard to read, so I&rsquo;ll make a table.</p>
+<table>
+<thead>
+<tr>
+<th align="center">start</th>
+<th align="center">end</th>
+<th align="center">i</th>
+<th align="center">i-1</th>
+<th align="center">i+1</th>
+<th align="center">i-ln</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">ni</td>
+<td align="center"><code>0:</code></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">0</td>
+<td align="center">ni-1</td>
+<td align="center"><code>0:-1</code></td>
+<td align="center">-</td>
+<td align="center"><code>1:</code></td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">ni</td>
+<td align="center"><code>1:</code></td>
+<td align="center"><code>0:-1</code></td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">ni-1</td>
+<td align="center"><code>1:-1</code></td>
+<td align="center"><code>0:-2</code></td>
+<td align="center"><code>2:</code></td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">n</td>
+<td align="center">ni-m</td>
+<td align="center"><code>n:-m</code></td>
+<td align="center"><code>n-1:-m-1</code></td>
+<td align="center"><code>n+1:-m+1</code></td>
+<td align="center"><code>n-ln:-m-ln</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>ni = x.shape[0]</code></li>
+</ul>
+<p>Is it right? It is hard to understand how to write it. As a beginner to Python, my honest opinion is that it shouldn&rsquo;t be used in terms of maintainability. I thought so, at least at this point.</p>
+<h2 id="comparison-of-processing-speed">Comparison of processing speed</h2>
+<p>I tried to measure it in a loop so that the calculation would turn 100 million times. In the first one-dimensional calculation, we made the mesh fine and calculated about 20 million times, so it seems that there are 100 million times, and there are not many in actual calculation.
+It was troublesome to match the fractions, so leave it as it is. The measurement results are the average of 10 times each.</p>
+<p>loop | for<br>(sec) | slice<br>(sec) | ave:<br> s/f% | max:<br> s/f% | min:<br> s/f% | median :<br> s/f% |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:||100,007,840| 148.3013 | 1.3558 | 0.91% | 0.95% | 0.88% | 0.91% |
+|10,020,160 | 13.4111 | 0.1179 | 0.88% | 1.00% | 0.72% | 0.86% |
+|1,024,160 | 1.4228 | 0.0146 | 1.03% | 1.20% | 0.84% | 1.04% |
+|110,720 | 0.1536 | 0.0017 | 1.10% | 1.35% | 0.96% | 1.08% |</p>
+<p>Overwhelming child! ! ! Peppe</p>
+<p>It is not at the level of maintainability. Roughly about 1% means that if it takes 1 hour, it will be completed in 36 seconds. Is it a day? For a week? ? 1 month? ? ? For readability, there is absolutely no option to use for. Please write it in the comments.</p>
+<p>However, whether numpy is fast is another story. numpy seems to be implemented in C and Fortran, but it&rsquo;s faster to nest do loops in Fortran! I think there is Not verified.</p>
+<p>that&rsquo;s all. I wonder if there is a better way to do it, but with this once.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

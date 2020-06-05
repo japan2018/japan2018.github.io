@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>[For beginners] I tried using the Tensorflow Object Detection API | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[For beginners] I tried using the Tensorflow Object Detection API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 8, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/machinelearning">MachineLearning</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/androidstudio">AndroidStudio</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/tensorflow">TensorFlow</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/tensorflowlite">TensorflowLite</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This is IchiLab from RHEMS Giken.</p>
+<p>This time using the Object Detection API of TensorFlow,
+Let me detect the object I want to recognize,
+I finally tried it on an Android device.</p>
+<p>Many helpful sites have helped me,
+Still, I had a lot of points that I couldn&rsquo;t solve with just one or two pages.</p>
+<p>In this article, I will pick up the parts that I stumbled upon to make a difference,
+I hope that the number of people who do the same will be reduced.
+#Environment
+TensorFlow 1.15</p>
+<ol>
+<li>
+<p>MacBook Pro
+OS: Catalina 10.15
+CPU: Intel Core i5 2.3GHz
+Memory: 8GB 2133MHz</p>
+</li>
+<li>
+<p>MacBook Pro
+OS: Catalina 10.15
+CPU: Intel Core i7 3.5GHz
+Memory: 16GB 2133MHz</p>
+</li>
+</ol>
+<p>I changed from 1 to 2 for some reason on the way.</p>
+<h1 id="environment">Environment</h1>
+<p>Basically it is as written in the following formula.</p>
+<p><a href="https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md">TensorFlow Object Detection-Installation</a></p>
+<p>For Object Detection API, get the latest source with the following command.</p>
+<pre><code class="language-console" data-lang="console">$ git clone --depth 1 https://github.com/tensorflow/models.git
+</code></pre><p>Where PYTHONPATH is set, it is explained in <code>pwd</code>, but if you write without omitting it, it is as follows.
+(Confirm that there is a container whose root directory is <code>tf</code> instead of <code>tensorflow</code>.)</p>
+<pre><code class="language-console" data-lang="console">$ export PYTHONPATH=$PYTHONPATH:/tensorflow/models/research:/tensorflow/models/research/slim
+</code></pre><h2 id="notes-on-building-the-environment">Notes on building the environment</h2>
+<p>If you use Docker in a container, there are various types as below official page,
+Be careful if you use <code>latest</code> (latest version).</p>
+<p><a href="https://www.tensorflow.org/install/docker?hl=ja">Tensorflow-Docker</a></p>
+<p>Because, as of November 2019 at the time of writing, <strong>Object Detection API is
+This is because it does not support TensorFlow 2.0</strong>.</p>
+<p>When installing with the <code>pip</code> command, it is necessary to check the version of TensorFlow as well.
+If you want to check it, you can type the following command.</p>
+<pre><code class="language-console" data-lang="console">$ pip list | grep tensor
+tensorboard 1.15.0
+tensorflow 1.15.0rc3
+tensorflow-estimator 1.15.1
+</code></pre><p>If you want to change the version from 2.0 to 1.X, run the following command.
+(Changed to 1.15 in this example)</p>
+<pre><code class="language-console" data-lang="console">$ pip install tensorflow==1.15.0rc3
+</code></pre><p>By the way, I will supplement because the difference in this version is quite important,
+TensorFlow officially prepares a script that automatically converts even if the version is 2.0.
+However, it is described as <code>except for contrib</code> (excluding contrib).</p>
+<p><a href="https://www.tensorflow.org/guide/migrate">Migrate your TensorFlow 1 code to TensorFlow 2</a></p>
+<p>If you execute <code>model_builder_test.py</code> of Object Detection API with TensorFlow 2.0,
+It fails like this:</p>
+<pre><code class="language-console" data-lang="console">AttributeError: module'tensorflow' has no attribute'contrib'
+</code></pre><p>I&rsquo;m getting an error with contrib.
+In other words, the automatic conversion script cannot be used for now.</p>
+<p>By the way, was the <code>model_builder_test.py</code> safely executed and displayed OK?
+<code>model_builder_test.py</code> executes the following in the <code>models/research</code> directory.</p>
+<pre><code class="language-console" data-lang="console">$python object_detection/builders/model_builder_test.py
+</code></pre><p>If successful, OK will be displayed as shown below. (Partly omitted because it is long)</p>
+<pre><code class="language-console" data-lang="console">Running tests under Python 3.6.8: /usr/local/bin/python
+[RUN]ModelBuilderTest.test_create_faster_rcnn_model_from_config_with_example_miner
+...
+
+[RUN] ModelBuilderTest.test_unknown_ssd_feature_extractor
+[OK] ModelBuilderTest.test_unknown_ssd_feature_extractor
+- ------------------------------------------------- --------------------
+Ran 16 tests in 0.313s
+</code></pre><p>By the way, except TensorFlow<b></b>, I didn&rsquo;t have to worry about the version, so I wasn&rsquo;t affected.
+I think you can install the latest version.
+That is all for building the environment.
+#Preparing teacher data
+To detect the object you want to recognize, create teacher data.
+In order to create teacher data, we have to prepare many images to be detected.</p>
+<p>If you find it difficult to collect by yourself, there is also a useful tool called <code>google-images-download</code>,
+If you are interested, please check it out and use it.</p>
+<p>Now, let me explain the teacher data.
+Prepare the teacher data in TensorFlow recommended <b>TFRecord format</b>.
+TFRecord is a simple form for storing a series of binary records,
+The data is serialized (stored as array data) and can be read continuously.
+There are roughly two ways to create TFRecord format data.</p>
+<ol>
+<li>Use annotation tools</li>
+<li>Make yourself from the source</li>
+</ol>
+<p>Annotation is what is called tagging.
+While displaying photos and videos, it is a task to teach that &ldquo;this part is this&rdquo;.
+For this I used a tool from Microsoft called <b>VoTT</b>.
+<a href="https://github.com/Microsoft/VoTT/releases">VoTT</a></p>
+<h2 id="notes-on-using-vott">Notes on using VoTT</h2>
+<p>Select <strong>Tensorflow Records</strong> in *Export Settings</p>
+<ul>
+<li>In Asset State, set to Only visited Assets other than <b></b></li>
+<li>Active Learning (a mark like a hat) may lose the tagging that you put on it when you press it, so we do not recommend using it so much.</li>
+<li>If a large number of tags are attached to one image, the processing will be heavy, so in that case it is better to cut it into several pieces and divide them.</li>
+</ul>
+<p>In this way, it is a tool that stands out for various points that are difficult to use,
+It is recommended in that respect as it will save you the trouble of converting to TFRecord format.</p>
+<h2 id="when-making-from-source">When making from source</h2>
+<p>It is possible to generate a TFRecord format file from an image with the library provided by TensorFlow.
+However, with the TFRecord generated in the official tutorial below,
+The TFRecord generated by VoTT has slightly different element names, so it was not possible to mix them together for learning.
+<a href="https://www.tensorflow.org/tutorials/load_data/tfrecord">How to use TFRecords and tf.Example</a></p>
+<p>This document may be more useful.
+<a href="https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/using_your_own_dataset.md">using_your_own_dataset.md</a></p>
+<p>The story around here will be long, so I have summarized it in another article, so please have a look.
+<a href="https://qiita.com/IchiLab/items/8ad0cdb9c2006f416c3b">Memorandum of creating TFRecord file for object detection</a></p>
+<p>#Learning
+All explanations below are based on the assumption that all directories are based on <code>models/research</code>.</p>
+<p>Once the TFRecord format file is ready, it is time to start learning.
+Here, based on an existing learning model called &ldquo;transfer learning&rdquo;, you learn your own original,
+We will proceed with the method of creating a more customized learning model.
+Transfer learning uses weights learned in advance with large-scale data,
+It is expected that sufficient performance can be obtained with a small amount of training data.</p>
+<h2 id="download-learning-model">Download learning model</h2>
+<p>First, download the trained model for transfer learning.
+I didn&rsquo;t see it being used in other Japanese articles, since it was a big deal this time,
+Let&rsquo;s proceed using the new <code>MobileNet v3</code>.</p>
+<p>The trained model can be downloaded from the following page.
+<a href="https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md">Tensorflow detection model zoo</a>
+In this, download the one called <code>ssd_mobilenet_v3_large_coco</code>.
+Please note that this model will only work if you have the latest sources updated around mid-October 2019.</p>
+<p>Put the downloaded model in the <code>object_detection</code> directory.
+If you want to execute it with a command, do the following.</p>
+<pre><code class="language-console$" data-lang="console$">$ tar zxvf ssd_mobilenet_v3_large_coco_2019_08_14.tar.gz
+</code></pre><h2 id="learning-model-file-structure">Learning model file structure</h2>
+<p>The file structure of the learning model is basically as follows.</p>
+<ul>
+<li>checkpoint</li>
+<li>frozen_inference_graph.pb</li>
+<li>model.ckpt.data-00000-of-00001</li>
+<li>model.ckpt.index</li>
+<li>model.ckpt.meta</li>
+<li>pipeline.config</li>
+<li>saved_model /
+-saved_model.pb</li>
+<li>variables/</li>
+</ul>
+<p>To start transfer learning, edit the contents of the file called <code>pipeline.config</code> in this file and use it.</p>
+<h2 id="directory-structure-and-filenames-for-training-and-assessment">Directory structure and filenames for training and assessment</h2>
+<p>This section describes the prepared TFRecord file directory.
+The TFRecord file has separate directories for training (teacher) and verification.
+It is generally said that the ratio is 8:2 for training: validation, that is, 80% of the data is for training and the remaining 20% is for validation.
+(Book [&ldquo;Practical machine learning with scikit-learn and TensorFlow&rdquo;) (https://www.oreilly.co.jp/books/9784873118345/) From P30)
+Of course, learning is possible even if you do not divide it properly.
+Below is the directory structure. (Train is training and val is validation)</p>
+<ul>
+<li>test0001 /
+-label_map (.pbtxt) label file
+-train /
+-TFRecord file (.tfrecord) training file
+-val /
+-TFRecord file (.tfrecord) verification file
+-save /
+-Directory prepared for saving learned data (Empty at first)</li>
+</ul>
+<p>TFRecord file names should be serialized, not separated.
+For example, here we name it:</p>
+<ul>
+<li>hoge0000.tfrecord</li>
+<li>hoge0001.tfrecord</li>
+<li>hoge0002.tfrecord</li>
+<li>&hellip; (same below)</li>
+</ul>
+<p>The file naming method used here is related to the following config file settings.</p>
+<h2 id="editing-the-config-file">Editing the config file</h2>
+<p>Open <code>pipeline.config</code> in the trained model you downloaded earlier.
+Here you can adjust various parameters such as batch size, weighting, image expansion, etc., but we will explain the items that you will often edit.
+(Extracted from actual config for explanation)</p>
+<pre><code class="language-json:pipeline.config" data-lang="json:pipeline.config">model {
+    ssd {
+        num_classes: 1
+</code></pre><p><code>num_classes</code>:
+It is a setting of the number to be classified.
+It is written at the top of the config file.</p>
+<pre><code class="language-json:pipeline.config" data-lang="json:pipeline.config">train_config: {
+    batch_size: 32
+    num_steps: 10000
+    optimizer {
+        momentum_optimizer: {
+            learning_rate: {
+                cosine_decay_learning_rate {
+                    total_steps: 10000
+                    warmup_steps: 10000
+    fine_tune_checkpoint: &quot;./object_detection/ssd_mobilenet_v3_large_coco/model.ckpt&quot;
+}
+</code></pre><p><code>batch_size</code>:
+When using the stochastic gradient descent method, in order to reduce the effect of outliers,
+Train the dataset by dividing it into several subsets.
+The number of data contained in each subset is called the batch size.
+This value is often a power of 2n as a convention in the field of machine learning.
+And, the larger this value is, the more the load will be at the time of learning, and the process may die and not learn depending on the environment.</p>
+<p><code>num_steps</code>:
+The number of steps to learn.
+The number of steps can also be specified in the command when performing learning,
+As far as I&rsquo;ve tried, the command specification has priority.</p>
+<p><code>total_steps</code> and <code>warmup_steps</code>:
+It is under investigation because it is an item that was not in the config of other models,
+total_steps must be greater than or equal to warmup_steps.
+(If this condition is not met, an error will occur and learning will not start)</p>
+<p><code>fine_tune_checkpoint</code>:
+Specify a model for transfer learning.
+It is OK if you write the directory containing the downloaded learning model to &ldquo;~.ckpt&rdquo;.
+This item was not included when ssd_mobilenet_v3 was downloaded.
+So I added it myself.
+Most models already have this item.
+This line is not required if transfer learning is not used.</p>
+<pre><code class="language-json:pipeline.config" data-lang="json:pipeline.config">train_input_reader: {
+    tf_record_input_reader {
+        input_path: &quot;./object_detection/test0001/train/hoge????.tfrecord&quot;
+    }
+    label_map_path: &quot;./object_detection/test0001/tf_label_map.pbtxt&quot;
+}
+eval_input_reader: {
+    tf_record_input_reader {
+        input_path: &quot;./object_detection/test0001/val/hoge????.tfrecord&quot;
+    }
+    label_map_path: &quot;./object_detection/test0001/tf_label_map.pbtxt&quot;
+}
+</code></pre><p><code>input_path</code>:
+Specify the directory for the prepared TFRecord files for training and verification.
+For example, in this case, we named them with the serial number <code>hoge0000.tfrecord</code>, so write it as <code>hoge????.tfrecord</code>.</p>
+<p><code>label_map_path</code>:
+Specify the prepared label. There is no problem if train and eval are specified in the same way.</p>
+<h2 id="start-learning">Start learning</h2>
+<p>After writing the config file, it is finally time to start learning.
+For learning, use the file <code>model_main.py</code> in the <code>object_detection</code> directory.
+A description of the run-time arguments.</p>
+<ul>
+<li>
+<p><code>--model_dir</code>:
+Specify the destination to save the training data.
+A file called &ldquo;.ckpt~&rdquo; will be created in the specified directory during learning.</p>
+</li>
+<li>
+<p><code>--pipeline_config_path</code>:
+Specify the config file to use.
+Let&rsquo;s specify the config file that we just edited.</p>
+</li>
+<li>
+<p><code>--num_train_steps</code>:
+Specify the learning frequency.
+This option is not necessary if you want to execute the number specified in config,
+If you want to learn the number of times different from config, the number specified here will take precedence. (Results of actual trial)</p>
+</li>
+</ul>
+<p>The following is an execution example.</p>
+<pre><code class="language-console" data-lang="console">$python object_detection/model_main.py\
+- -pipeline_config_path=&quot;object_detection/ssd_mobilenet_v3_large_coco/pipeline.config&quot; \
+- -model_dir=&quot;./object_detection/test0001/save&quot; \
+- -alsologtostderr
+</code></pre><p>Since there are many options and it is troublesome to enter each one, it is easier to execute if you make it a shell script.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e">#! /bin/bash
+</span><span style="color:#75715e"></span>
+PIPELINE_CONFIG_PATH<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./object_detection/ssd_mobilenet_v3_large_coco.config&#34;</span>
+MODEL_DIR<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./object_detection/test0001/save&#34;</span>
+NUM_TRAIN_STEPS<span style="color:#f92672">=</span><span style="color:#ae81ff">10000</span>
+
+cd<span style="color:#e6db74">&#39;/tensorflow/models/research&#39;</span>
+
+python object_detection/model_main.py <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --pipeline_config_path<span style="color:#f92672">=</span>$PIPELINE_CONFIG_PATH <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --model_dir<span style="color:#f92672">=</span>$MODEL_DIR <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span><span style="color:#75715e"># --num_train_steps=$NUM_TRAIN_STEPS \</span>
+    --alsologtostderr
+</code></pre></div><p>&ldquo;Oh, the shell I made can&rsquo;t be executed&hellip;?&rdquo;
+Did you forget to change the permissions?</p>
+<pre><code class="language-console" data-lang="console">$ chmod 775 hoge.sh
+</code></pre><h3 id="when-the-process-starts-but-the-process-dies-in-the-middle">When the process starts but the process dies in the middle</h3>
+<p>If you think that learning has begun, it may happen as follows.</p>
+<pre><code class="language-console" data-lang="console">~ session_manager.py:500] Running local_init_op.
+~ session_manager.py:502] Done running local_init_op.
+~ basic_session_run_hooks.py:606] Saving checkpoints for 0 into {Save specified checkpoint directory/file name}.ckpt
+Killed
+</code></pre><p>There are several reasons why a process may die,
+It is highly possible that both are running out of operating environment resources.</p>
+<p>Here are the solutions I solved when I encountered this phenomenon.</p>
+<h4 id="-solution-1-try-changing-docker-engine-settings-">~ Solution #1. Try changing Docker Engine settings ~</h4>
+<p>This is a method that may be useful if you are doing it inside a Docker container.
+First open the settings.
+Select <b>Preferences&gt;Advanced tab</b> to add more resources.</p>
+<h4 id="-solution-2-try-reducing-the-batch-size-">~ Solution #2. Try reducing the batch size ~</h4>
+<p>This is solved by setting pipeline.config.</p>
+<p>What combination of parameters will kill the process
+I think it depends on the operating environment and the amount and size of the teacher data used.
+First of all, it may be possible to solve by reducing the batch size value, so
+If you&rsquo;re worried here, try it.</p>
+<h3 id="check-learning-datathe-learning-data-will-be-saved-at-any-time-in-the-save-destination-directory-specified-when-executing-model_mainpy">Check learning dataThe learning data will be saved at any time in the save destination directory specified when executing <code>model_main.py</code>.</h3>
+<p>During learning, the data will be saved when the following <code>Saving</code> is displayed.
+At this stage, you can visualize the situation you are learning with the <code>Tensorboard</code> described below.</p>
+<pre><code class="language-console" data-lang="console">INFO:tensorflow:Saving'checkpoint_path' summary for global step 500: object_detection/test0001/save/model.ckpt-500
+I1012 08:29:56.544728 139877141301056 estimator.py:2109] Saving'checkpoint_path' summary for global step 500: object_detection/test0001/save/model.ckpt-500
+</code></pre><h1 id="tensorboard-visualization-of-learning">Tensorboard ~Visualization of learning~</h1>
+<p>Visualization of learning data is essential and Tensorboard can be very useful for that.</p>
+<h2 id="launch-tensorboard">Launch Tensorboard</h2>
+<p>You can start tensorboard with the following command.</p>
+<pre><code class="language-console" data-lang="console">$ tensorboard --logdir=object_detection/test0001/save
+</code></pre><ul>
+<li><code>--logdir</code>:
+Specify the directory where the learning data was saved, which was specified at the start of learning here**.
+If you specify the save destination of the learning results you have done in the past, you can see it again after the learning.</li>
+</ul>
+<p>To see Tensorboard in your web browser, go to your local host.
+By default, the port number is 6006.</p>
+<pre><code class="language-console" data-lang="console">http://localhost:6006/
+</code></pre><p>If you are running in a Docker container environment, make sure you have access to <code>-p 6006:6006</code> when you <code>docker run</code>.
+I have set the port settings in <code>docker-compose.yml</code>.</p>
+<h2 id="how-to-read-tensorboard">How to read Tensorboard</h2>
+<p>Even if you can visualize learning, it&rsquo;s painful if you don&rsquo;t understand the point of view.
+I have summarized the contents I have examined, so I hope you can refer to it.</p>
+<h3 id="graphs">GRAPHS</h3>
+<p>A graph is automatically generated from the processing of the source code.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Run</td>
+<td>You can switch the subdirectory where the log is placed.</td>
+</tr>
+<tr>
+<td>Upload</td>
+<td>Upload Tensorflow model file</td>
+</tr>
+<tr>
+<td>Trace inputs</td>
+<td>Tracks node dependencies</td>
+</tr>
+<tr>
+<td>Color</td>
+<td>Select the color coding method <br>- Structure: Model (network) configuration <br>- Device: Processed device (CPU vs GPU) <br>- Compute time: Processing time <br>- Memory: Memory Usage<br>- TPU Compatibility: Run on tensor processing unit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scalars">SCALARS</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Show data download links</td>
+<td>Show links to save graphs. You can choose CSV or JSON format.</td>
+</tr>
+<tr>
+<td>ignore outliners in chart scaling</td>
+<td>Whether to scale the chart avoiding outliers (check to avoid)</td>
+</tr>
+<tr>
+<td>Tooltip sorting method</td>
+<td>Tooltip sorting order <br>- default: Alphabetical order <br>- descending: Largest value <br>- ascending: Smallest value <br>- nearest: Nearest mouse cursor &lt; br&gt;</td>
+</tr>
+<tr>
+<td>Smoothing</td>
+<td>Graph Smoothing</td>
+</tr>
+<tr>
+<td>Horizontal Axis</td>
+<td>Specify the horizontal axis (X-axis) of a line graph <br>- STEP: Step (number of executions) <br>- RELATIVE: Execution time (difference from the first time) <br>- WALL: Time <br> -Runs: Graph display/non-display <br></td>
+</tr>
+</tbody>
+</table>
+<p>Reference: [Visualization of learning by TensorBoard](
+(<a href="https://www.slideshare.net/aitc_jp/20180127-tensorboard">https://www.slideshare.net/aitc_jp/20180127-tensorboard</a>)
+Next is a description of each major graph.
+Before that, I will give you an explanation of the words you need to know.</p>
+<ul>
+<li><strong>IOU</strong>:
+IOU is an abbreviation for Intersection (common area of regions) over Union (union of regions), which is an index that indicates how much two regions overlap.
+The closer this value is to 1, the more accurate the inference and the inference are.</li>
+<li><strong>Recall</strong>:
+Recall. Percentage of things that should be found correctly that should be found. Also called Sensitivity.</li>
+</ul>
+<p>Reference: <a href="https://mathwords.net/iou">Meaning and severity of IoU (evaluation index)</a>
+Reference: <a href="https://qiita.com/FukuharaYohei/items/be89a99c53586fa4e2e4">[For beginners] Machine learning classification problem evaluation index explanation (correct answer rate, precision rate, recall rate, etc.)</a></p>
+<p>The following is an excerpt based on the description of the items written in <code>object_detection/metrics/coco_tools.py</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Precision/mAP</td>
+<td>Average accuracy of the class averaged over 5 to 95 IOU thresholds in 5 steps.</td>
+</tr>
+<tr>
+<td>Precision/mAP@.50IOU</td>
+<td>Average accuracy of 50% IOU</td>
+</tr>
+<tr>
+<td>Precision/mAP@.75IOU</td>
+<td>Average accuracy of 75% IOU</td>
+</tr>
+<tr>
+<td>Precision/mAP (small)</td>
+<td>Average accuracy of small objects (less than 32×32 px)</td>
+</tr>
+<tr>
+<td>Precision/mAP (medium)</td>
+<td>Average accuracy of medium size objects (32×32 px ~ 96×96 px)</td>
+</tr>
+<tr>
+<td>Precision/mAP (large)</td>
+<td>Average accuracy of large objects (96×96 px ~ 10000×10000 px)</td>
+</tr>
+<tr>
+<td>Recall/AR@1</td>
+<td>Percentage of averages found correctly in one detection</td>
+</tr>
+<tr>
+<td>Recall/AR@10</td>
+<td>Percentage of averages found correctly in 10 detections</td>
+</tr>
+<tr>
+<td>Recall/AR@100</td>
+<td>Percentage of averages found correctly in 100 detections</td>
+</tr>
+<tr>
+<td>Recall/AR@100 (small)</td>
+<td>Average recall of small objects detected 100 times</td>
+</tr>
+<tr>
+<td>Recall/AR@100 (medium)</td>
+<td>Average recall of medium objects detected 100 times</td>
+</tr>
+</tbody>
+</table>
+<h3 id="images">IMAGES</h3>
+<p>Display the image data.
+You can check the difference between the correct answer and the inference result of the verification data in .ckpt file (checkpoint) units.</p>
+<p>#Conversion to inference graph
+After learning, we finally convert the data into an inference graph.
+Specifically, the .ckpt file created by learning is converted into a .pb file.</p>
+<p>In addition, multiple sources for conversion are prepared in the <code>object_detection</code> directory.</p>
+<ul>
+<li><code>export_inference_graph.py</code></li>
+<li><code>export_tflite_ssd_graph.py</code></li>
+</ul>
+<p>**To try it on Android, convert it to the format **.tflite, so <strong>use the latter one</strong>.</p>
+<h4 id="for-export_inference_graphpy">For <code>export_inference_graph.py</code></h4>
+<p>A description of the run-time arguments.</p>
+<ul>
+<li>
+<p><code>--input_type</code>:
+Specify one of the following three inference graphs, depending on the user</p>
+<ul>
+<li><code>image_tensor</code>:
+4-dimensional tensor [None, None, None, 3]
+Normally you should specify this.</li>
+<li><code>encoded_image_string_tensor</code>: 1-dimensional tensor [None]
+Contains encoded PNG or JPEG images.
+If multiple images are provided, it is assumed that the images have the same resolution.</li>
+<li><code>tf_example</code>: One-dimensional string tensor [None]
+If multiple images are provided, including serialized TFExample protos, it is assumed that the images have the same resolution.</li>
+</ul>
+</li>
+<li>
+<p><code>--pipeline_config_path</code>:
+Specify the config file used during learning.</p>
+</li>
+<li>
+<p><code>--trained_checkpoint_prefix</code>:
+Specify the &ldquo;model.ckpt-XXXX&rdquo; file created as the saving destination of the learning data.
+For XXXX, specify the latest (largest) number of learning steps performed.
+For example, if it is executed 10000 times, it becomes &ldquo;model.ckpt-10000&rdquo;.</p>
+</li>
+<li>
+<p><code>--output_directory</code>:
+Specify the directory you want to write.
+In the specified directory, a file with the exact same structure as the file structure of the first downloaded model will be finally created.</p>
+</li>
+</ul>
+<p>The following is an execution example.</p>
+<pre><code class="language-console" data-lang="console">$python object_detection/export_inference_graph.py \
+- -input_type image_tensor \
+- -pipeline_config_path object_detection/ssd_mobilenet_v3_large_coco/pipeline.config \
+- -trained_checkpoint_prefix object_detection/test0001/save/model.ckpt-10000 \
+- -output_directory object_detection/test0001/output
+</code></pre><h4 id="export_tflite_ssd_graphpy"><code>export_tflite_ssd_graph.py</code></h4>
+<p>A program that transforms a trained model into a .tflite compatible model.
+The arguments are basically the same as in <code>export_inference_graph.py</code>.
+(There is no <code>--input_type</code>)</p>
+<p>The following is an execution example.</p>
+<pre><code class="language-console" data-lang="console">$python object_detection/export_tflite_ssd_graph.py \
+- -pipeline_config_path=object_detection/ssd_mobilenet_v3_large_coco/pipeline.config \
+- -trained_checkpoint_prefix=object_detection/test0001/save/model.ckpt-10000 \
+- -output_directory=object_detection/test0001/tflite \
+- -add_postprocessing_op=true
+</code></pre><p>There are two files, <code>tflite_graph.pb</code> and <code>tflite_graph.pbtxt</code>, in the directory specified by <code>--output_directory</code>.</p>
+<h1 id="convert-to-tensorflow-lite-format">Convert to TensorFlow Lite format</h1>
+<p>To convert to tflite format, use <code>tflite_convert</code>.This converter should already be included.</p>
+<p>If you hit <code>tflite_convert --help</code>, usage will come out.
+Since I have a lot of options to add, I&rsquo;ve put together a shell script like this:
+Change the directory to suit you.
+I know that <code>--input_shapes</code> is probably a value that matches the <code>image_resizer</code> of the config at the time of learning, but there is no confirmation&hellip;
+The numbers mean (batch size, input image height, input image width, input image depth (RGB channels)).</p>
+<p><a href="https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/g3doc/r1/convert/cmdline_reference.md">Converter command line reference</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#75715e">#! /bin/bash
+</span><span style="color:#75715e"></span>
+OUTPUT_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;object_detection/test0001/tflite/test.tflite&#34;</span>
+GRAPH_DEF_FILE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;object_detection/test0001/tflite/tflite_graph.pb&#34;</span>
+INTERFACE_TYPE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FLOAT&#34;</span>
+INPUT_ARRAY<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;normalized_input_image_tensor&#34;</span>
+OUTPUT_ARRAYS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3&#34;</span>
+INPUT_SHAPES<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;1,300,300,3&#34;</span>
+
+cd<span style="color:#e6db74">&#39;/tensorflow/models/research&#39;</span>
+
+tflite_convert <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --output_file<span style="color:#f92672">=</span>$OUTPUT_FILE <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --graph_def_file<span style="color:#f92672">=</span>$GRAPH_DEF_FILE <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --inference_type<span style="color:#f92672">=</span>$INTERFACE_TYPE <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --input_arrays<span style="color:#f92672">=</span>$INPUT_ARRAY <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --input_shapes<span style="color:#f92672">=</span>$INPUT_SHAPES <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --output_arrays<span style="color:#f92672">=</span>$OUTPUT_ARRAYS <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --default_ranges_min<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --default_ranges_max<span style="color:#f92672">=</span><span style="color:#ae81ff">6</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --mean_values<span style="color:#f92672">=</span><span style="color:#ae81ff">128</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --std_dev_values<span style="color:#f92672">=</span><span style="color:#ae81ff">127</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --allow_custom_ops
+</code></pre></div><p>In addition, when I checked on other sites, I found multiple instructions to install <code>bazel</code> and <code>toco</code>, but it was possible only with this command line without doing them.
+(I tried those methods to be exact, but they gave the same result)</p>
+<p>At this time, TensorFlow failed <strong>1.12.0rc0</strong>,
+<strong>1.15.0rc3</strong> works exactly the same with the same command.</p>
+<p>Officially, there was a description recommending the Python API.
+<a href="https://www.tensorflow.org/lite/convert/cmdline">Converter command line reference</a></p>
+<h1 id="try-it-on-android">Try it on Android</h1>
+<p>It&rsquo;s been a long time, but it&rsquo;s finally live.</p>
+<h3 id="install-android-studio">Install Android Studio</h3>
+<p>First, install &ldquo;<a href="https://developer.android.com/studio/">Android Studio</a>&rdquo;.
+You can use other tools if they are easier to use.</p>
+<h3 id="download-sample-from-official">Download sample from official</h3>
+<p>Next, download the sample collection from the official.</p>
+<pre><code class="language-console" data-lang="console">$ git clone --depth 1 https://github.com/tensorflow/examples.git
+</code></pre><h3 id="modify-the-sample">Modify the sample</h3>
+<p>After starting Android Studio, open <code>examples/lite/examples/object_detection/android</code>.</p>
+<h4 id="insert-your-tflite-file">Insert your tflite file</h4>
+<p>Put your <code>test.tflite</code> and <code>labelmap.txt</code> in the <code>examples/lite/examples/object_detection/android/app/src/main/assets</code> directory.
+<code>labelmap.txt</code> is a text file in which the tag names that you have tagged are listed.</p>
+<p>For example, if you have prepared two types of tag names &ldquo;apple&rdquo; and &ldquo;orange&rdquo;, the text file will be as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt:labelmap.txt" data-lang="txt:labelmap.txt">???
+apple
+orange
+</code></pre></div><p>The important thing is that the first line is <code>???</code>.</p>
+<h4 id="editing-detectoractivityjava">Editing DetectorActivity.java</h4>
+<p>Long, edit the <code>DetectorActivity.java</code> in the <code>examples/lite/examples/object_detection/android/app/src/main/java/org/tensorflow/lite/examples/detection/</code> directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java:DetectorActivity.java" data-lang="java:DetectorActivity.java"><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> <span style="color:#66d9ef">boolean</span> TF_OD_API_IS_QUANTIZED <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">;</span> <span style="color:#75715e">//true-&gt;false
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String TF_OD_API_MODEL_FILE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;test.tflite&#34;</span><span style="color:#f92672">;</span> <span style="color:#75715e">//detect.tflite -&gt; my tflite
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">private</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">final</span> String TF_OD_API_LABELS_FILE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;file:///android_asset/labelmap.txt&#34;</span><span style="color:#f92672">;</span> <span style="color:#75715e">//my txt
+</span></code></pre></div><p>Next, edit the <code>build.gradle</code> in the <code>examples/lite/examples/object_detection/android/app/</code> directory.</p>
+<p>Comment out the following around line 40:
+(If you do not comment out here, it will be replaced with the default sample data when building)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy:build.gradle" data-lang="groovy:build.gradle">apply from:<span style="color:#e6db74">&#39;download_model.gradle&#39;</span> <span style="color:#75715e">// comment out
+</span></code></pre></div><h4 id="build">build</h4>
+<p>Once you have done this far, all you have to do is build it and run it on your device!
+Congratulations if you could try it successfully.</p>
+<p>Below, reference site about Android</p>
+<p><a href="https://medium.com/tensorflow/training-and-serving-a-realtime-mobile-object-detector-in-30-minutes-with-cloud-tpus-b78971cf1193">Training and serving a realtime mobile object detector in 30 minutes with Cloud TPUs</a>
+<a href="https://medium.com/datadriveninvestor/how-to-train-your-own-custom-model-with-tensorflow-object-detection-api-and-deploy-it-into-android-aeacab7fa76f">How to Train Your Own Custom Model with Tensorflow Object Detection API and Deploy It into Android with TF Lite</a>
+<a href="https://towardsdatascience.com/detecting-pikachu-on-android-using-tensorflow-object-detection-15464c7a60cd">Detecting Pikachu on Android using Tensorflow Object Detection</a></p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>What did you think?
+It was finished like the summary page of other sites,
+At least I think I have covered all the information that is necessary to use TensorFlow&rsquo;s Object Detection API.</p>
+<p>In particular, TensorFlow has different detailed behavior due to different versions,
+The various reference sites use different versions at the time, so I think that many people may have had the same trouble.</p>
+<p>There are many things I still don&rsquo;t understand, but I hope it helps.
+Thank you for reading the long article.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

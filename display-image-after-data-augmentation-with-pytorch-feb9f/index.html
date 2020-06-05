@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Display image after Data Augmentation with Pytorch | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Display image after Data Augmentation with Pytorch</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 10, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/deeplearning">DeepLearning</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/dataloader">DataLoader</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/pytorch">PyTorch</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/dataaugmentation">dataaugmentation</a></code></small>
+
+</p>
+<pre><code>##background
+</code></pre>
+<p>**I want to display the image after data augmentation! **</p>
+<p>I decided to implement it.</p>
+<p>Data Augmentation is a technology to inflate one image, and the following operations are added.</p>
+<ul>
+<li>Random Crop</li>
+<li>Random Horizontal Flip (the image is horizontally flipped with a certain probability)</li>
+<li>Random Erasing (randomly add noise to a part of the image)</li>
+<li>Random Affine (scales images randomly)</li>
+</ul>
+<p>There are many other things.</p>
+<p>##Implementation</p>
+<p>This time, I read the training image dataset of CIFAR-10 and incorporated RandomHorizontalFlip and RandomErasing into transforms.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-test.py" data-lang="test.py"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> torchvision
+<span style="color:#f92672">import</span> torchvision.transforms <span style="color:#f92672">as</span> transforms
+<span style="color:#f92672">from</span> torch.utils.data <span style="color:#f92672">import</span> Dataset,DataLoader
+<span style="color:#f92672">import</span> torchvision.datasets <span style="color:#f92672">as</span> dsets
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#75715e">#Load image</span>
+batch_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+train_data <span style="color:#f92672">=</span> dsets<span style="color:#f92672">.</span>CIFAR10(root<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./tmp/cifar-10&#39;</span>, train<span style="color:#f92672">=</span>True, download<span style="color:#f92672">=</span>False, transform<span style="color:#f92672">=</span>transforms<span style="color:#f92672">.</span>Compose((transforms<span style="color:#f92672">.</span>RandomHorizontalFlip(p<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>), transforms<span style="color:#f92672">.</span>ToTensor(), transforms<span style="color:#f92672">.</span> RandomErasing(p<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>, scale<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0.02</span>, <span style="color:#ae81ff">0.4</span>), ratio<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0.33</span>, <span style="color:#ae81ff">3.0</span>))]))
+train_loader <span style="color:#f92672">=</span> DataLoader(train_data,batch_size<span style="color:#f92672">=</span>batch_size,shuffle<span style="color:#f92672">=</span>True)
+test_data <span style="color:#f92672">=</span> dsets<span style="color:#f92672">.</span>CIFAR10(root<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./tmp/cifar-10&#39;</span>, train<span style="color:#f92672">=</span>False, download<span style="color:#f92672">=</span>False, transform<span style="color:#f92672">=</span>transforms<span style="color:#f92672">.</span>Compose((transforms<span style="color:#f92672">.</span>ToTensor(),]))
+test_loader <span style="color:#f92672">=</span> DataLoader(test_data,batch_size<span style="color:#f92672">=</span>batch_size,shuffle<span style="color:#f92672">=</span>False)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">image_show</span>(data_loader,n):
+
+  <span style="color:#75715e">#Augmentation image data is read</span>
+  tmp <span style="color:#f92672">=</span> iter(data_loader)
+  images,labels <span style="color:#f92672">=</span> tmp<span style="color:#f92672">.</span>next()
+
+  <span style="color:#75715e"># Convert image from tensor to numpy</span>
+  images <span style="color:#f92672">=</span> images<span style="color:#f92672">.</span>numpy()
+
+  Extract <span style="color:#f92672">and</span> display <span style="color:#75715e">#n images one by one</span>
+  <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(n):
+    image <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>transpose(images[i],[<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">0</span>])
+    plt<span style="color:#f92672">.</span>imshow(image)
+    plt<span style="color:#f92672">.</span>show()
+
+image_show(train_loader,<span style="color:#ae81ff">10</span>)
+
+</code></pre></div><p>The image_show function displays the image after Augmentation.</p>
+<p>Use iter() to get one mini-batch from DataLoader.</p>
+<p>Then, use .next() to store the image data in images and the labels in labels.</p>
+<p>images = images.numpy() converts the image data from tensor to numpy.</p>
+<p>At this point images have the structure <strong>[Batch size, number of channels, width, height]</strong>, but to display an image with pyplot of matplotlib **[width, height, number of channels] Must be **.</p>
+<p>Therefore, it is transformed using np.transpose.</p>
+<h2 id="execution-result-example">Execution result example</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/459175/c02cb797-6931-6fe7-3fb2-e63d55fade47.png" alt="1.png">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/459175/0c42129f-95e9-fc01-68ac-94e8badd8ad9.png" alt="02.png"></p>
+<p>It was confirmed that the image was flipped horizontally and noise was added by Random Erasing.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

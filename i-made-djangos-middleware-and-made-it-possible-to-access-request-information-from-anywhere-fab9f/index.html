@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>I made Django&#39;s Middleware and made it possible to access request information from anywhere | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I made Django&rsquo;s Middleware and made it possible to access request information from anywhere</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 10, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/middleware">middleware</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/request">request</a></code></small>
+
+</p>
+<pre><code>I started thinking about whether the login user could be stored in the user_created (creator) and user_updated (updater) of the model by common processing.
+</code></pre>
+<p>Until then, I wrote the process to pass user information from view to form and store it in user_created or user_updated.</p>
+<h1 id="what-is-django-middleware">What is Django middleware?</h1>
+<p>From <a href="https://docs.djangoproject.com/ja/3.0/topics/http/middleware/">Official</a></p>
+<blockquote>
+<p>Middleware is a framework for adding hooks to Django&rsquo;s request/response handling.</p>
+</blockquote>
+<p>You can define the process to be performed when sending a request or before returning a response.</p>
+<h1 id="middleware-implementation">middleware implementation</h1>
+<h3 id="define-a-function-to-operate-threadlocal">Define a function to operate threadlocal</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-common/middlewares/threadlocals.py" data-lang="common/middlewares/threadlocals.py"><span style="color:#f92672">from</span> threading <span style="color:#f92672">import</span> local
+
+
+THREAD_LOCAL <span style="color:#f92672">=</span> local()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_thread_variable</span>(key, value):
+    <span style="color:#e6db74">&#34;&#34;&#34; Store value in thread local data
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    setattr(THREAD_LOCAL, key, value)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_thread_variable</span>(key, default<span style="color:#f92672">=</span>None):
+    <span style="color:#e6db74">&#34;&#34;&#34; Get value from thread-local data
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">return</span> getattr(THREAD_LOCAL, key, default)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_request</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34; Get request information from thread local data
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">return</span> get_thread_variable(<span style="color:#e6db74">&#39;request&#39;</span>)
+
+</code></pre></div><h3 id="define-middleware-class">define middleware class</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-common/middlewares/request_store_middleware.py" data-lang="common/middlewares/request_store_middleware.py"><span style="color:#f92672">from</span> common.middlewares.threadlocals <span style="color:#f92672">import</span> set_thread_variable
+<span style="color:#f92672">from</span> django.utils.deprecation <span style="color:#f92672">import</span> MiddlewareMixin
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">RequestStoreMiddleware</span>(MiddlewareMixin):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process_request</span>(self, reuqest):
+        set_thread_variable(<span style="color:#e6db74">&#39;request&#39;</span>, reuqest)
+
+</code></pre></div><p>Since I want request information this time, I will define only <code>process_request</code>.</p>
+<h3 id="added-to-middleware-in-settingspy">Added to MIDDLEWARE in settings.py</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-settings.py" data-lang="settings.py"><span style="color:#f92672">.</span>
+<span style="color:#f92672">..</span>
+<span style="color:#f92672">...</span>
+MIDDLEWARE <span style="color:#f92672">=</span> [
+    <span style="color:#f92672">.</span>
+    <span style="color:#f92672">..</span>
+    <span style="color:#f92672">...</span>
+    <span style="color:#e6db74">&#39;common.middlewares.request_store_middleware.RequestStoreMiddleware&#39;</span>, <span style="color:#75715e"># add</span>
+]
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">..</span>
+<span style="color:#f92672">.</span>
+</code></pre></div><h1 id="just-call-get_request-wherever-you-like">Just call get_request wherever you like</h1>
+<p>I&rsquo;ve decided to use it in models.py because the purpose is to store user information when saving it to the DB.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-common/models.py" data-lang="common/models.py"><span style="color:#f92672">.</span>
+<span style="color:#f92672">..</span>
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">from</span> common.middlewares.threadlocals <span style="color:#f92672">import</span> get_request
+<span style="color:#f92672">from</span> django.db.models.signals <span style="color:#f92672">import</span> pre_save
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">..</span>
+<span style="color:#f92672">.</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Company</span>(BaseModel):
+    <span style="color:#e6db74">&#34;&#34;&#34; Company model class
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#f92672">...</span>
+    <span style="color:#f92672">..</span>
+    <span style="color:#f92672">.</span>
+    created_user <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>ForeignKey(User, on_delete<span style="color:#f92672">=</span>models<span style="color:#f92672">.</span>DO_NOTHING, null<span style="color:#f92672">=</span>True, blank<span style="color:#f92672">=</span>True)
+    updated_user <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>ForeignKey(User, on_delete<span style="color:#f92672">=</span>models<span style="color:#f92672">.</span>DO_NOTHING, null<span style="color:#f92672">=</span>True, blank<span style="color:#f92672">=</span>True)
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">..</span>
+<span style="color:#f92672">.</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_user_receiver</span>(sender, instance, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+    request <span style="color:#f92672">=</span> get_request() <span style="color:#75715e"># It may be possible to perform authentication check before storing user information</span>
+    instance<span style="color:#f92672">.</span>created_user <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span>user
+    instance<span style="color:#f92672">.</span>updated_user <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span>user
+
+
+pre_save<span style="color:#f92672">.</span>connect(set_user_receiver, sender<span style="color:#f92672">=</span>Company) <span style="color:#75715e"># pre_save can be used to register the function you want to call before executing save().</span>
+</code></pre></div><p>end</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Flask-Create Web Service with SQLAlchemy &#43; PostgreSQL | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Flask-Create Web Service with SQLAlchemy + PostgreSQL</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 12, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/flask">Flask</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/postgresql">PostgreSQL</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/flask-sqlalchemy">Flask-SQLAlchemy</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/flask-migrate">flask-migrate</a></code></small>
+
+</p>
+<pre><code># Flask-Create a web service with SQLAlchemy + PostgreSQL
+</code></pre>
+<h2 id="introduction">Introduction</h2>
+<p>We will introduce using a sample application (Feedback).</p>
+<p><code>This article is for Mac environment, but the procedure is the same for Windows environment. Please read the environment-dependent part and try again. </code></p>
+<h3 id="purpose">Purpose</h3>
+<p>After reading this article, you&rsquo;ll be able to:</p>
+<p>| No. | Overview | Keywords |
+| :&mdash; | :&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; | :&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; &mdash;&ndash; |
+| 1 | Flask-SQLAlchemy Development | Flask-SQLAlchemy, psycopg2 |
+| 2 | PostgreSQL settings | psql, Flask-Migrate |</p>
+<h3 id="execution-environment">Execution environment</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Environment</th>
+<th align="left">Ver.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">macOS Catalina</td>
+<td align="left">10.15.2</td>
+</tr>
+<tr>
+<td align="left">Python</td>
+<td align="left">3.7.3</td>
+</tr>
+<tr>
+<td align="left">Flask-Migrate</td>
+<td align="left">2.5.2</td>
+</tr>
+<tr>
+<td align="left">Flask-SQLAlchemy</td>
+<td align="left">2.4.1</td>
+</tr>
+<tr>
+<td align="left">Flask</td>
+<td align="left">1.1.1</td>
+</tr>
+<tr>
+<td align="left">psycopg2</td>
+<td align="left">2.8.4</td>
+</tr>
+<tr>
+<td align="left">requests</td>
+<td align="left">2.22.0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="source-code">Source code</h3>
+<p>I think that understanding will be deepened if you read it while following the implementation contents and source code. Please use it by all means.</p>
+<p><a href="https://github.com/nsuhara/python-flask-postgresql.git">GitHub</a></p>
+<h3 id="related-articles">Related articles</h3>
+<ul>
+<li><a href="https://qiita.com/nsuhara/items/449835bc94f0fb3bbcbd">Create RESTful Web Service with Flask</a></li>
+</ul>
+<h2 id="0-development-environment-configuration">0. Development environment configuration</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-tree.sh" data-lang="tree.sh">/
+├── app
+│  ├── __init__.py
+│  ├── config.py
+│  ├── feedback
+│ │ ├── __init__.py
+│ │ ├── common/
+│ │ ├── models
+│ │ │ ├── __init__.py
+│ │ │ └── feedback.py
+│ │ ├── static/
+│ │ ├── templates/
+│ │ └── views/
+│  ├── run.py
+│  └── tests/
+└── instance
+    ├── postgresql.py
+    ├── sqlite3.py
+  └── config.py
+</code></pre></div><h2 id="1-flask-development-of-sqlalchemy">1. Flask-Development of SQLAlchemy</h2>
+<h3 id="package-installation">Package installation</h3>
+<ol>
+<li>
+<p>Install the package.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ pip install Flask-Migrate
+~$ pip install Flask-SQLAlchemy
+~$ pip install Flask
+~$ pip install psycopg2
+</code></pre></div></li>
+<li>
+<p>If you get an error during the installation of <code>psycopg2</code>, execute the command by specifying the environment variable (macOS + venv environment).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ xcode-select --install
+~$ env LDFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;-I/usr/local/opt/openssl/include -L/usr/local/opt/openssl/lib&#34;</span> pip install psycopg2
+</code></pre></div></li>
+</ol>
+<h3 id="sqlalchemy-settings">SQLAlchemy settings</h3>
+<ol>
+<li>
+<p>Set the development environment config.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-config.py" data-lang="config.py"><span style="color:#e6db74">&#34;&#34;&#34;instance/config.py
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">from</span> instance.postgresql <span style="color:#f92672">import</span> SQLALCHEMY_DATABASE_URI <span style="color:#66d9ef">as</span> DATABASE_URI
+
+DEBUG <span style="color:#f92672">=</span> True
+<span style="color:#75715e"># SECRET_KEY is generated by os.urandom(24).</span>
+SECRET_KEY <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\xf7\xf4\x9b</span><span style="color:#e6db74">b</span><span style="color:#ae81ff">\xd7\xa8\xdb\xee\x9f\xe3\x98</span><span style="color:#e6db74">SR</span><span style="color:#ae81ff">\xda\xb0</span><span style="color:#e6db74">@</span><span style="color:#ae81ff">\xb7\x12\xa4</span><span style="color:#e6db74">uB</span><span style="color:#ae81ff">\xda\xa3\x1b</span><span style="color:#e6db74">&#39;</span>
+STRIPE_API_KEY <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+
+SQLALCHEMY_DATABASE_URI <span style="color:#f92672">=</span> DATABASE_URI
+SQLALCHEMY_TRACK_MODIFICATIONS <span style="color:#f92672">=</span> True
+SQLALCHEMY_ECHO <span style="color:#f92672">=</span> True
+</code></pre></div></li>
+<li>
+<p>Set up PostgreSQL.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-postgresql.py" data-lang="postgresql.py"><span style="color:#e6db74">&#34;&#34;&#34;instance/postgresql.py
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+SQLALCHEMY_DATABASE_URI <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;postgresql+psycopg2://{user}:{password}@{host}/{name}&#39;</span><span style="color:#f92672">.</span>format(<span style="color:#f92672">**</span>{
+    <span style="color:#e6db74">&#39;user&#39;</span>:<span style="color:#e6db74">&#39;nsuhara&#39;</span>,
+    <span style="color:#e6db74">&#39;password&#39;</span>:<span style="color:#e6db74">&#39;nsuhara&#39;</span>,
+    <span style="color:#e6db74">&#39;host&#39;</span>: <span style="color:#e6db74">&#39;127.0.0.1&#39;</span>,
+    <span style="color:#e6db74">&#39;name&#39;</span>:<span style="color:#e6db74">&#39;db.postgresql&#39;</span>
+})
+</code></pre></div></li>
+<li>
+<p>Set SQLite3 (bonus).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sqlite3.py" data-lang="sqlite3.py"><span style="color:#e6db74">&#34;&#34;&#34;instance/sqlite3.py
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">import</span> os
+
+SQLALCHEMY_DATABASE_URI <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sqlite:///{host}/{name}&#39;</span><span style="color:#f92672">.</span>format(<span style="color:#f92672">**</span>{
+    <span style="color:#e6db74">&#39;host&#39;</span>: os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__)),
+    <span style="color:#e6db74">&#39;name&#39;</span>:<span style="color:#e6db74">&#39;db.sqlite3&#39;</span>
+})
+</code></pre></div></li>
+</ol>
+<h3 id="model-creation">Model Creation</h3>
+<ol>
+<li>
+<p>Create an instance of SQLAlchemy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-__init__.py" data-lang="__init__.py"><span style="color:#e6db74">&#34;&#34;&#34;app/feedback/models/__init__.py
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">from</span> flask_sqlalchemy <span style="color:#f92672">import</span> SQLAlchemy
+
+db <span style="color:#f92672">=</span> SQLAlchemy()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">init</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;init
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    db<span style="color:#f92672">.</span>create_all()
+</code></pre></div></li>
+<li>
+<p>Create Model by inheriting SQLAlchemy class (<code>db.Model</code>).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-feedback.py" data-lang="feedback.py"><span style="color:#e6db74">&#34;&#34;&#34;app/feedback/models/feedback.py
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime
+
+<span style="color:#f92672">from</span> feedback.models <span style="color:#f92672">import</span> db
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Feedback</span>(db<span style="color:#f92672">.</span>Model):
+    <span style="color:#e6db74">&#34;&#34;&#34;Feedback
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    __tablename__ <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;feedback&#39;</span>
+
+    id <span style="color:#f92672">=</span> db<span style="color:#f92672">.</span>Column(db<span style="color:#f92672">.</span>Integer, primary_key<span style="color:#f92672">=</span>True, autoincrement<span style="color:#f92672">=</span>True)
+    service <span style="color:#f92672">=</span> db<span style="color:#f92672">.</span>Column(db<span style="color:#f92672">.</span>String(<span style="color:#ae81ff">255</span>), nullable<span style="color:#f92672">=</span>False)
+    title <span style="color:#f92672">=</span> db<span style="color:#f92672">.</span>Column(db<span style="color:#f92672">.</span>String(<span style="color:#ae81ff">255</span>), nullable<span style="color:#f92672">=</span>False)
+    detail <span style="color:#f92672">=</span> db<span style="color:#f92672">.</span>Column(db<span style="color:#f92672">.</span>String(<span style="color:#ae81ff">255</span>), nullable<span style="color:#f92672">=</span>False)
+    created_date <span style="color:#f92672">=</span> db<span style="color:#f92672">.</span>Column(
+        db<span style="color:#f92672">.</span>DateTime, nullable<span style="color:#f92672">=</span>False, default<span style="color:#f92672">=</span>datetime<span style="color:#f92672">.</span>utcnow)
+
+    <span style="color:#66d9ef">def</span> __init__(self, service, title, detail):
+        self<span style="color:#f92672">.</span>service <span style="color:#f92672">=</span> service
+        self<span style="color:#f92672">.</span>title <span style="color:#f92672">=</span> title
+        self<span style="color:#f92672">.</span>detail <span style="color:#f92672">=</span> detail
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">to_dict</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34;to_dict
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> {
+            <span style="color:#e6db74">&#39;id&#39;</span>: self<span style="color:#f92672">.</span>id,
+            <span style="color:#e6db74">&#39;service&#39;</span>: self<span style="color:#f92672">.</span>service,
+            <span style="color:#e6db74">&#39;title&#39;</span>: self<span style="color:#f92672">.</span>title,
+            <span style="color:#e6db74">&#39;detail&#39;</span>: self<span style="color:#f92672">.</span>detail,
+            <span style="color:#e6db74">&#39;created_date&#39;</span>: self<span style="color:#f92672">.</span>created_date
+        }
+</code></pre></div></li>
+</ol>
+<h2 id="2-postgresql-settings">2. PostgreSQL settings</h2>
+<p>This is an example of executing <code>Homebrew</code>.</p>
+<h3 id="service-confirmation">Service confirmation</h3>
+<ol>
+<li>
+<p>Check the service.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ brew services list
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-result.sh" data-lang="result.sh">Name Status User Plist
+postgresql started nsuhara /Users/nsuhara/Library/LaunchAgents/homebrew.mxcl.postgresql.plist
+</code></pre></div></li>
+</ol>
+<h3 id="startend-of-service">Start/end of service</h3>
+<ol>
+<li>
+<p>Start the service.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ brew services start postgresql
+</code></pre></div></li>
+<li>
+<p>Terminate the service.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ brew services stop postgresql
+</code></pre></div></li>
+</ol>
+<h3 id="check-the-database">Check the database</h3>
+<ol>
+<li>
+<p>Check the database.</p>
+<p><code>Three databases are created by default. Also, the Mac user name is set as Owner. </code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ psql -l
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-result.sh" data-lang="result.sh">                            List of databases
+    Name | Owner | Encoding | Collate | Ctype | Access privileges
+--------------+---------+----------+---------+---- ---+---------------------postgres | nsuhara | UTF8 | C | C |
+template0 | nsuhara | UTF8 | C | C | <span style="color:#f92672">=</span>c/nsuhara +
+              | | | | | nsuhara<span style="color:#f92672">=</span>CTc/nsuhara
+template1 | nsuhara | UTF8 | C | C | <span style="color:#f92672">=</span>c/nsuhara +
+              | | | | | nsuhara<span style="color:#f92672">=</span>CTc/nsuhara
+</code></pre></div></li>
+</ol>
+<h3 id="database-connectiondisconnection">Database connection/disconnection</h3>
+<ol>
+<li>
+<p>Connect to the database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ psql -h <span style="color:#e6db74">&#34;&lt;host_name&gt;&#34;</span> -p &lt;port_number&gt; -U <span style="color:#e6db74">&#34;&lt;role_name&gt;&#34;</span> -d <span style="color:#e6db74">&#34;&lt;database_name&gt;&#34;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-example.sh" data-lang="example.sh">~$ psql -h <span style="color:#e6db74">&#34;127.0.0.1&#34;</span> -p <span style="color:#ae81ff">5432</span> -U <span style="color:#e6db74">&#34;nsuhara&#34;</span> -d <span style="color:#e6db74">&#34;postgres&#34;</span>
+</code></pre></div></li>
+<li>
+<p>Disconnect the database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># \q</span>
+</code></pre></div></li>
+</ol>
+<h3 id="create-role-user">Create role (user)</h3>
+<ol>
+<li>
+<p>Connect to the database.</p>
+</li>
+<li>
+<p>Check the role (user).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># \du</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-result.sh" data-lang="result.sh">                                List of roles
+Role name | Attributes | Member of
+----------+--------------------------------------- ---------------------+-----------
+nsuhara | Superuser, Create role, Create DB, Replication, Bypass RLS | <span style="color:#f92672">{}</span>
+</code></pre></div></li>
+<li>
+<p>Create a role (user).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># CREATE ROLE &#34;&lt;role_name&gt;&#34; LOGIN PASSWORD &#34;password&#34;;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-example.sh" data-lang="example.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># CREATE ROLE &#34;nsuhara&#34; LOGIN PASSWORD &#34;nsuhara&#34;;</span>
+</code></pre></div></li>
+<li>
+<p>Delete the role (user).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># DROP ROLE &#34;&lt;role_name&gt;&#34;;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-example.sh" data-lang="example.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># DROP ROLE &#34;nsuhara&#34;;</span>
+</code></pre></div></li>
+</ol>
+<h3 id="creating-a-database">Creating a database</h3>
+<ol>
+<li>
+<p>Connect to the database.</p>
+</li>
+<li>
+<p>Check the database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># \l</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-result.sh" data-lang="result.sh">                        List of databases
+    Name | Owner | Encoding | Collate | Ctype | Access privileges
+--------------+---------+----------+---------+---- ---+---------------------
+db.postgresql | nsuhara | UTF8 | C | C |
+postgres | nsuhara | UTF8 | C | C |
+template0 | nsuhara | UTF8 | C | C | <span style="color:#f92672">=</span>c/nsuhara +
+              | | | | | nsuhara<span style="color:#f92672">=</span>CTc/nsuhara
+template1 | nsuhara | UTF8 | C | C | <span style="color:#f92672">=</span>c/nsuhara +
+              | | | | | nsuhara<span style="color:#f92672">=</span>CTc/nsuhara
+</code></pre></div></li>
+<li>
+<p>Create the database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># CREATE DATABASE &#34;&lt;database_name&gt;&#34; OWNER &#34;&lt;role_ name&gt;&#34;;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-example.sh" data-lang="example.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># CREATE DATABASE &#34;db.postgresql&#34; OWNER &#34;nsuhara&#34;;</span>
+</code></pre></div></li>
+<li>
+<p>Delete the database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># DROP DATABASE &#34;&lt;database_name&gt;&#34;;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-example.sh" data-lang="example.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># DROP DATABASE &#34;db.postgresql&#34;;</span>
+</code></pre></div></li>
+</ol>
+<h3 id="database-migration">Database migration</h3>
+<ol>
+<li>
+<p>Set Flask environment variables.</p>
+</li>
+<li>
+<p>Migrate the database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">~$ flask db init
+~$ flask db migrate
+~$ flask db upgrade
+</code></pre></div></li>
+</ol>
+<h3 id="delete-record">Delete record</h3>
+<ol>
+<li>
+<p>Connect to the database.</p>
+</li>
+<li>
+<p>Delete the record.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># delete from &lt;table_name&gt;;</span>
+</code></pre></div></li>
+<li>
+<p>Initialize automatic numbering.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-procedure.sh" data-lang="procedure.sh">postgresql<span style="color:#f92672">=</span><span style="color:#75715e"># select setval (&#39;&lt;table_name&gt;_id_seq&#39;, 1, false);</span>
+</code></pre></div></li>
+</ol>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

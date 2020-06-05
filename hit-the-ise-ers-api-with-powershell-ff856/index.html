@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Hit the ISE ERS API with PowerShell | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Hit the ISE ERS API with PowerShell</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 23, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/windows">Windows</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/api">api</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/powershell">PowerShell</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/rest-api">REST-API</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>If you want to operate the API easily, I think that you often use cURL, Postman, HTTP Client provided in various programming languages, etc., but there are cases where such an environment cannot be prepared due to various restrictions. Is it not?</p>
+<p>In this post, we will introduce the API of Cisco Identity Services Engine (ISE) as a minimum to operate the REST API with a Windows terminal (PowerShell).</p>
+<p>*PowerShell It&rsquo;s confusing but not related to ISE (Integrated Scripting Environment).</p>
+<p>Both use the <code>Invoke-WebRequest</code> command, which is available by default in PowerShell. For reference, an example of implementing the same operation in Python is also shown.</p>
+<p>#Environment
+・Windows 10 Pro
+・PowerShell version 5.1 (default setting after Windows installation)
+• Cisco ISE version 2.6</p>
+<p>#Preparation</p>
+<p>See <a href="https://qiita.com/naixia/items/5c521183c2b606a891b1">Qiita article</a>or<a href="https://developer.cisco.com/docs/identity-services-engine/">DevNetarticle</a>.</p>
+<h1 id="what-you-want-to-do--get-information-by-get">What you want to do ① Get information by GET</h1>
+<h2 id="powershell-implementation-example">PowerShell implementation example</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-powershell" data-lang="powershell">
+<span style="color:#75715e"># Process for avoiding SSL error</span>
+add-type <span style="color:#e6db74">@&#34;
+</span><span style="color:#e6db74">  using System.Net;
+</span><span style="color:#e6db74">  using System.Security.Cryptography.X509Certificates;
+</span><span style="color:#e6db74">  public class TrustAllCertsPolicy :ICertificatePolicy {
+</span><span style="color:#e6db74">      public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate,
+</span><span style="color:#e6db74">                                        WebRequest request, int certificateProblem) {
+</span><span style="color:#e6db74">          return true;
+</span><span style="color:#e6db74">      }
+</span><span style="color:#e6db74">   }
+</span><span style="color:#e6db74">&#34;@</span>
+ 
+<span style="color:#66d9ef">[System.Net.ServicePointManager]</span>::CertificatePolicy = New-Object TrustAllCertsPolicy
+
+
+<span style="color:#75715e">#Define variable</span>
+$username =<span style="color:#e6db74">&#39;ersadmin&#39;</span> <span style="color:#75715e"># ERS Admin Username</span>
+$password =<span style="color:#e6db74">&#39;XXXX&#39;</span> <span style="color:#75715e"># ERS Admin Password</span>
+$url =<span style="color:#e6db74">&#39;https://X.X.X.X:9060/ers/config/internaluser/&#39;</span> <span style="color:#75715e"># X.X.X.X =&gt; ISE&#39;s IP address</span>
+$credPair = <span style="color:#e6db74">&#34;</span>$($username)<span style="color:#e6db74">:</span>$($password)<span style="color:#e6db74">&#34;</span>
+ 
+$encodedCredentials = <span style="color:#66d9ef">[System.Convert]</span>::ToBase64String(<span style="color:#66d9ef">[System.Text.Encoding]</span>::ASCII.GetBytes($credPair))
+ hu
+$headers = @{
+<span style="color:#e6db74">&#39;Authorization&#39;</span>= <span style="color:#e6db74">&#34;Basic $encodedCredentials&#34;</span>;
+<span style="color:#e6db74">&#39;Accept&#39;</span>=<span style="color:#e6db74">&#39;application/json&#39;</span>;
+<span style="color:#e6db74">&#39;cache-control&#39;</span>=<span style="color:#e6db74">&#39;no-cache&#39;</span>
+ }
+
+<span style="color:#75715e"># API call</span>
+$responseData = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -UseBasicParsing
+
+<span style="color:#75715e">#Example of confirmation method</span>
+<span style="color:#66d9ef">return</span> $responseData
+<span style="color:#66d9ef">return</span> $responseData.StatusCode
+<span style="color:#66d9ef">return</span> $responseData.Header
+<span style="color:#66d9ef">return</span> $responseData.RawContent
+<span style="color:#66d9ef">return</span> $responseData.Content
+</code></pre></div><p>By default, PowerShell provides <code>Invoke-WebRequest</code> as well as <code>Invoke-RestMethod</code> command as HTTP client.
+To display the response headers and contents in a form that is easy for humans to see, it is better to add <code>-UserBasicParsing</code> to <code>Invoke-WebRequest</code>. If you want to handle the return value directly, do something like <code>Invoke -RestMethod</code> seems convenient.
+What is the difference between <a href="https://qiita.com/startPG/items/7b37c527667fa43ab173">here</a>and<a href="https://www.it-swarm.dev/ja/windows/invokewebrequestandinvokerestmethod?/944432281/">here</a> is also helpful.</p>
+<h2 id="reference-python-implementation-example">Reference Python implementation example</h2>
+<p>Use Requests library for API calls with python3.7 (mac) (this is simpler)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">import</span> requests
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> base64
+
+host <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;X.X.X.X&#34;</span> <span style="color:#75715e"># ISE&#39;s IP address</span>
+user <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ersadmin&#34;</span> <span style="color:#75715e"># ERS Admin Username</span>
+password <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;XXXXXX&#34;</span> <span style="color:#75715e"># ERS Admin Password</span>
+
+creds <span style="color:#f92672">=</span> str<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;:&#39;</span><span style="color:#f92672">.</span>join((user, password)))
+encodedAuth <span style="color:#f92672">=</span> bytes<span style="color:#f92672">.</span>decode(base64<span style="color:#f92672">.</span>b64encode(creds))
+
+headers <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;accept&#39;</span>: <span style="color:#e6db74">&#34;application/json&#34;</span>,
+    <span style="color:#e6db74">&#39;authorization&#39;</span>: <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#34;Basic&#34;</span>,encodedAuth)),
+    <span style="color:#e6db74">&#39;cache-control&#39;</span>: <span style="color:#e6db74">&#34;no-cache&#34;</span>,
+    }
+
+url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://{}:9060&#34;</span><span style="color:#f92672">.</span>format(host) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;/ers/config/internaluser/&#34;</span>
+
+r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(url, headers<span style="color:#f92672">=</span>headers,verify<span style="color:#f92672">=</span>False) <span style="color:#75715e"># SSL error avoidance option is enabled because ISE uses a self-signed certificate this time</span>
+
+data <span style="color:#f92672">=</span> r<span style="color:#f92672">.</span>json()
+
+<span style="color:#66d9ef">print</span>(json<span style="color:#f92672">.</span>dumps(data, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>))
+</code></pre></div><h1 id="what-you-want-to-do-2-update-information-with-put">What you want to do (2) Update information with PUT</h1>
+<h2 id="powershell-implementation-example-1">PowerShell implementation example</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-powershell" data-lang="powershell">
+<span style="color:#75715e"># Process for avoiding SSL error</span>
+add-type <span style="color:#e6db74">@&#34;
+</span><span style="color:#e6db74">  using System.Net;
+</span><span style="color:#e6db74">  using System.Security.Cryptography.X509Certificates;
+</span><span style="color:#e6db74">  public class TrustAllCertsPolicy :ICertificatePolicy {
+</span><span style="color:#e6db74">      public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate,
+</span><span style="color:#e6db74">                                        WebRequest request, int certificateProblem) {
+</span><span style="color:#e6db74">          return true;
+</span><span style="color:#e6db74">      }
+</span><span style="color:#e6db74">   }
+</span><span style="color:#e6db74">&#34;@</span>
+ 
+<span style="color:#66d9ef">[System.Net.ServicePointManager]</span>::CertificatePolicy = New-Object TrustAllCertsPolicy
+
+
+<span style="color:#75715e">#Define variable</span>
+$username =<span style="color:#e6db74">&#39;ersadmin&#39;</span> <span style="color:#75715e"># ERS Admin Username</span>
+$password =<span style="color:#e6db74">&#39;XXXX&#39;</span> <span style="color:#75715e"># ERS Admin Password</span>
+$url =<span style="color:#e6db74">&#39;https://X.X.X.X:9060/ers/config/internaluser/&#39;</span> + <span style="color:#e6db74">&#34;57d1fada-3ab6-4d62-94eb-9b77be36dc7e&#34;</span> <span style="color:#75715e"># X.X.X.X =&gt; ISE&#39;s IP address + Target user ID is the URL</span>
+
+$credPair = <span style="color:#e6db74">&#34;</span>$($username)<span style="color:#e6db74">:</span>$($password)<span style="color:#e6db74">&#34;</span>
+ 
+$encodedCredentials = <span style="color:#66d9ef">[System.Convert]</span>::ToBase64String(<span style="color:#66d9ef">[System.Text.Encoding]</span>::ASCII.GetBytes($credPair))
+ 
+
+Add Content-type to <span style="color:#75715e"># header</span>
+$headers = @{
+<span style="color:#e6db74">&#39;Authorization&#39;</span>= <span style="color:#e6db74">&#34;Basic $encodedCredentials&#34;</span>;
+<span style="color:#e6db74">&#39;Accept&#39;</span>=<span style="color:#e6db74">&#39;application/json&#39;</span>;
+<span style="color:#e6db74">&#39;cache-control&#39;</span>=<span style="color:#e6db74">&#39;no-cache&#39;</span>;
+<span style="color:#e6db74">&#39;content-type&#39;</span>=<span style="color:#e6db74">&#39;application/json&#39;</span>
+ }
+
+<span style="color:#75715e"># Definition of body. The parameters require at least the id, name, and password of the account you want to change.</span>
+$body = @{
+<span style="color:#e6db74">&#34;InternalUser&#34;</span> = @{
+<span style="color:#e6db74">&#34;id&#34;</span> = <span style="color:#e6db74">&#34;57d1fada-3ab6-4d62-94eb-9b77be36dc7e&#34;</span>;
+<span style="color:#e6db74">&#34;name&#34;</span> = <span style="color:#e6db74">&#34;user1&#34;</span>;
+<span style="color:#e6db74">&#34;password&#34;</span>=<span style="color:#e6db74">&#34;Password123&#34;</span>
+}
+} | convertTo-Json
+
+<span style="color:#75715e"># API request</span>
+$responseData = Invoke-WebRequest -Uri $url -Method PUT -Headers $headers -Body $body -UseBasicParsing
+
+<span style="color:#75715e"># Confirmation method</span>
+<span style="color:#66d9ef">return</span> $responseData.RawContent
+<span style="color:#66d9ef">return</span> $responseData
+<span style="color:#66d9ef">return</span> $responseData.StatusCode
+<span style="color:#66d9ef">return</span> $responseData.Header
+<span style="color:#66d9ef">return</span> $responseData.Content
+
+</code></pre></div><h2 id="reference-python-implementation-example-1">Reference Python implementation example</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">import</span> requests
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> base64
+
+host <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;X.X.X.X&#34;</span> <span style="color:#75715e"># ISE&#39;s IP address</span>
+user <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ersadmin&#34;</span> <span style="color:#75715e"># ERS Admin Username</span>
+password <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;XXXXXX&#34;</span> <span style="color:#75715e"># ERS Admin Password</span>
+user_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;57d1fada-3ab6-4d62-94eb-9b77be36dc7e&#34;</span> <span style="color:#75715e"># Update target user ID</span>
+
+creds <span style="color:#f92672">=</span> str<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;:&#39;</span><span style="color:#f92672">.</span>join((user, password)))
+encodedAuth <span style="color:#f92672">=</span> bytes<span style="color:#f92672">.</span>decode(base64<span style="color:#f92672">.</span>b64encode(creds))
+
+headers <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;accept&#39;</span>: <span style="color:#e6db74">&#34;application/json&#34;</span>,<span style="color:#e6db74">&#39;content-type&#39;</span>: <span style="color:#e6db74">&#34;application/json&#34;</span>,
+    <span style="color:#e6db74">&#39;authorization&#39;</span>: <span style="color:#e6db74">&#34; &#34;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#34;Basic&#34;</span>,encodedAuth)),
+    <span style="color:#e6db74">&#39;cache-control&#39;</span>: <span style="color:#e6db74">&#34;no-cache&#34;</span>,
+    }
+
+req_body_json <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;&#34;  {{
+</span><span style="color:#e6db74">    &#34;InternalUser&#34; : {{
+</span><span style="color:#e6db74">        &#34;id&#34; : &#34;{}&#34;,
+</span><span style="color:#e6db74">        &#34;name&#34; : &#34;user1&#34;,
+</span><span style="color:#e6db74">        &#34;password&#34; : &#34;Password123&#34;,
+</span><span style="color:#e6db74">        &#34;customAttributes&#34; : {{
+</span><span style="color:#e6db74">        }}
+</span><span style="color:#e6db74">    }}
+</span><span style="color:#e6db74">}}
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span><span style="color:#f92672">.</span>format(user_id,user_name,new_passwd)
+
+
+url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://{}:9060&#34;</span><span style="color:#f92672">.</span>format(host) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;/ers/config/internaluser/{}&#34;</span><span style="color:#f92672">.</span>format(id)
+
+r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>put(url, headers<span style="color:#f92672">=</span>headers, data<span style="color:#f92672">=</span>req_body_json, verify<span style="color:#f92672">=</span>False) 
+
+data <span style="color:#f92672">=</span> r<span style="color:#f92672">.</span>json()
+
+<span style="color:#66d9ef">print</span>(json<span style="color:#f92672">.</span>dumps(data, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>))
+
+</code></pre></div><h1 id="参照">参照</h1>
+<p>PowerShell における Basic 認証のやりかた
+<a href="https://pallabpain.wordpress.com/2016/09/14/rest-api-call-with-basic-authentication-in-powershell/">https://pallabpain.wordpress.com/2016/09/14/rest-api-call-with-basic-authentication-in-powershell/</a></p>
+<p>DevNet Cisco ISE ERS API Reference Guide
+<a href="https://developer.cisco.com/docs/identity-services-engine/">https://developer.cisco.com/docs/identity-services-engine/</a></p>
+<p>ERS API (External RESTful Services API)
+<a href="https://www.cisco.com/c/en/us/td/docs/security/ise/2-6/api_ref_guide/api_ref_book/ise_api_ref_ers1.html">https://www.cisco.com/c/en/us/td/docs/security/ise/2-6/api_ref_guide/api_ref_book/ise_api_ref_ers1.html</a></p>
+<p>Python初心者が、ISE ERS API を利用してスクリプトを書いてみた
+<a href="https://qiita.com/naixia/items/5c521183c2b606a891b1">https://qiita.com/naixia/items/5c521183c2b606a891b1</a></p>
+<p>Invoke-WebRequestとInvoke-RestMethodの違いは何ですか？
+<a href="https://www.it-swarm.dev/ja/windows/invokewebrequest">https://www.it-swarm.dev/ja/windows/invokewebrequest</a>とinvokerestmethodの違いは何ですか？/944432281/</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

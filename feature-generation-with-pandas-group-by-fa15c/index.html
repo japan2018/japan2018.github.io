@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Feature generation with pandas group by | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Feature generation with pandas group by</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 11, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/pandas">pandas</a></code></small>
+
+</p>
+<pre><code>I want to create features with group by #pandas
+</code></pre>
+<p>When you want to add a statistic for each attribute of a column to a feature, you may not need to create a dict with collections or groupby and merge it.
+Although it is easy to simply output statistics, I left it as a memo because I struggled with how to use pandas.DataFrame.groupby when I wanted to add it to a record as a feature.</p>
+<p>Groupby.transform is convenient.</p>
+<h2 id="sample-data">Sample data</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({
+     <span style="color:#e6db74">&#34;site&#34;</span>:[<span style="color:#e6db74">&#34;A&#34;</span>,<span style="color:#e6db74">&#34;A&#34;</span>,<span style="color:#e6db74">&#34;A&#34;</span>,<span style="color:#e6db74">&#34;B&#34;</span>,<span style="color:#e6db74">&#34;B&#34;</span>,<span style="color:#e6db74">&#34;C&#34;</span>],
+     <span style="color:#e6db74">&#34;dat&#34;</span>:[<span style="color:#ae81ff">15</span>,<span style="color:#ae81ff">30</span>,<span style="color:#ae81ff">30</span>,<span style="color:#ae81ff">30</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">50</span>]
+})
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">site</th>
+<th align="center">dat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">A</td>
+<td align="center">15</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">A</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">A</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">B</td>
+<td align="center">30</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">B</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">C</td>
+<td align="center">50</td>
+</tr>
+</tbody>
+</table>
+<h2 id="basic-statistics-such-as-average-maximum-and-minimum-for-each-attribute">Basic statistics such as average, maximum and minimum for each attribute</h2>
+<p>If you change the argument of transform to np.max or np.min, you can generate features directly.
+The same applies to median, var, etc.
+The code for calculating the average value for each site is shown below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+df[<span style="color:#e6db74">&#34;site_mean&#34;</span>] <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>groupby(<span style="color:#e6db74">&#34;site&#34;</span>)<span style="color:#f92672">.</span>transform(np<span style="color:#f92672">.</span>mean)
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">site</th>
+<th align="center">dat</th>
+<th align="center">site_mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">A</td>
+<td align="center">15</td>
+<td align="center">25</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">A</td>
+<td align="center">30</td>
+<td align="center">25</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">A</td>
+<td align="center">30</td>
+<td align="center">25</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">B</td>
+<td align="center">30</td>
+<td align="center">20</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">B</td>
+<td align="center">10</td>
+<td align="center">20</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">C</td>
+<td align="center">50</td>
+<td align="center">50</td>
+</tr>
+</tbody>
+</table>
+<h2 id="count-encoding">Count Encoding</h2>
+<p>The method of making the appearance frequency of the (category) feature of a certain column a new feature is called count encoding. By combining with groupby, you can characterize something like a rarity in an attribute.
+You can do it with collections.Counter, but also end it with transform.</p>
+<p>The code for converting the number of appearances of a site/dat pair is shown below.
+(30 occurrences on site A is 2)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df[<span style="color:#e6db74">&#34;count_site_dat&#34;</span>] <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>groupby([<span style="color:#e6db74">&#34;site&#34;</span>,<span style="color:#e6db74">&#34;dat&#34;</span>])<span style="color:#f92672">.</span>transform(np<span style="color:#f92672">.</span>size)
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">site</th>
+<th align="center">dat</th>
+<th align="center">site_mean</th>
+<th align="center">count_size_dat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">A</td>
+<td align="center">15</td>
+<td align="center">25</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">A</td>
+<td align="center">30</td>
+<td align="center">25</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">A</td>
+<td align="center">30</td>
+<td align="center">25</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">B</td>
+<td align="center">30</td>
+<td align="center">20</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">B</td>
+<td align="center">10</td>
+<td align="center">20</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">C</td>
+<td align="center">50</td>
+<td align="center">50</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rank">Rank</h2>
+<p>Among the data that has a certain feature, the largest data of a certain feature is calculated.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df[<span style="color:#e6db74">&#34;site_rank&#34;</span>] <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>groupby(<span style="color:#e6db74">&#34;site&#34;</span>)[<span style="color:#e6db74">&#34;dat&#34;</span>]<span style="color:#f92672">.</span>rank(method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;dense&#34;</span>)
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">site</th>
+<th align="center">dat</th>
+<th align="center">site_mean</th>
+<th align="center">count_size_dat</th>
+<th align="center">site_rank</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">A</td>
+<td align="center">15</td>
+<td align="center">25</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">A</td>
+<td align="center">30</td>
+<td align="center">25</td>
+<td align="center">2</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">A</td>
+<td align="center">30</td>
+<td align="center">25</td>
+<td align="center">2</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">B</td>
+<td align="center">30</td>
+<td align="center">20</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">B</td>
+<td align="center">10</td>
+<td align="center">20</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">C</td>
+<td align="center">50</td>
+<td align="center">50</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
+<p>When the argument of rank is changed, the expression method of the same value (same rank) mainly changes.
+For details, refer to the method of <a href="https://note.nkmk.me/python-pandas-rank/">rank for ranking pandas.DataFrame, Series</a>.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Call Excel VBA macro from Python using xlwings | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Call Excel VBA macro from Python using xlwings</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 25, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/excel">Excel</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/excel-vba">Excel VBA</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/xlwings">xlwings</a></code></small>
+
+</p>
+<pre><code>As a practical use of xlwings UDF, I will explain how to call Excel VBA macro from Python. For those who wonder &quot;what is xlwings?&quot;, I have posted the following from installation of Python to basic usage of xlwings UDF, so please see that.
+</code></pre>
+<p><a href="https://qiita.com/k_maki/items/9efdb70f69d6f3b00f80">Introduction to Python for VBA users -Calling Python from Excel with xlwings-</a></p>
+<h1 id="1-background">1. Background</h1>
+<p>Even if we started to make in-house EUC tools in Python aiming to get rid of Excel VBA, I think that there are a ton of Excel VBA tools made by our predecessors in-house, and that we also have to use them. I will. I can&rsquo;t just throw it away because I hate VBA, but I&rsquo;m too busy to rewrite it in Python, and I can&rsquo;t do it too much. After all, I wonder if I can escape from VBA.</p>
+<p>And when using multiple Excel VBA tools in a series of work, I usually open a file each time, execute a macro, and when it is finished, the next file will flow. Then, it may be good to create a program in VBA that automatically executes VBA macros one after another.</p>
+<p>No, let&rsquo;s stop VBA. You can do it in Python.</p>
+<p>This article will show you how to run Excel VBA macros from Python. This way, you will be able to use existing VBA assets and still be comfortable coding in Python.</p>
+<h1 id="2-environment">2. Environment</h1>
+<p>I am trying in the following environment.</p>
+<ul>
+<li>OS: Windows 10 version 1909</li>
+<li>Python: version 3.7.5</li>
+<li>xlwings: version 0.18.0</li>
+<li>Editor: VSCode version 1.45.1 &amp; Python extension version 2020.5.80290</li>
+</ul>
+<h1 id="3-basic">3. Basic</h1>
+<p>Try to call Excel VBA macro from Python with reference to <a href="https://docs.xlwings.org/ja/latest/api.html?highlight=macro#xlwings.Book.macro">official document (Python API)</a> Let&rsquo;s</p>
+<p>Create a file called <code>VBA_example.xlsm</code> in an appropriate folder and open the VBA editor with <code>Alt+F11</code>. Add an appropriate module (call it Module1 for the time being) and describe the following.</p>
+<pre><code class="language-VB:VBA_example.xlsm!Module1" data-lang="VB:VBA_example.xlsm!Module1">Sub hello_VBA()
+    MsgBox &quot;Hello VBA from Python.&quot;
+End Sub
+</code></pre><p>Next, open the same folder with Visual Studio Code and create a file called <code>call_VBA.ipynb</code>. In <code>call_VBA.ipynb</code>, do the following (preferably line by line):</p>
+<pre><code class="language-python:call_VBA.ipynb" data-lang="python:call_VBA.ipynb">import xlwings as xw # 1. Import xlwings
+wb = xw.Book('VBA_example.xlsm') # 2. Open the book
+macro = wb.macro('hello_VBA') # 3. Get the macro
+macro() # 4. Execute macro
+</code></pre><p>To explain the code,</p>
+<ol>
+<li>Import xlwings. Since it is called <code>as xw</code>, call xlwings with <code>xw</code> below.</li>
+<li>Books in the same folder can be opened with <code>xw.Book</code>.</li>
+<li>Store the macro <code>hello_VBA</code> in the book in the variable <code>macro</code>. If you&rsquo;re a VBA user this might be something like ??, but Python can also store functions in variables.</li>
+<li>Run <code>macro</code>. With VBA, it may be a <code>Call macro</code>, but <code>Call</code> is not necessary. For macros that require arguments, put the arguments in parentheses.</li>
+</ol>
+<p>Will be.</p>
+<p>Here is the screen when running this in VS Code:
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239172/aa3c3acb-4656-c0d6-37fc-32484a23cef1.png" alt="ipynb execution screen.png"></p>
+<p>It stops when I run the last cell, but when I activate the window in Excel I get the following screen:
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239172/ac404a2b-0e95-e372-3254-f440cf569872.png" alt="Hello VBA.png"></p>
+<p>The VBA macro is running properly.</p>
+<h1 id="4-application-continuous-execution-of-vba-macro">4. Application (continuous execution of VBA macro)</h1>
+<p>A practical example using UDF. Let&rsquo;s try to execute VBA macros of other Excel files continuously from the button of one Excel file.</p>
+<p>Create <code>VBA_caller.xlsm</code> in an appropriate folder. The contents of the worksheet should look like this:
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239172/becc72fe-c983-5573-21d8-89a6fbc1b39f.png" alt="VBA_caller.png"></p>
+<ul>
+<li>Sheet name is <code>VBA_caller</code></li>
+<li>Create table <code>T.VBA_caller</code> (from formatting as table on Home tab. Location is OK anywhere)</li>
+<li>The table should contain columns <code>folders</code>, <code>files</code>, and <code>macro</code>s.</li>
+</ul>
+<p>Open the VBA editor screen with <code>Alt+F11</code> and check xlwing in the reference settings. Create Module1 and paste the following:</p>
+<pre><code class="language-VB:VBA_caller.xlsm!Module1" data-lang="VB:VBA_caller.xlsm!Module1">Sub main()
+  Dim rg_target As Range
+  Set rg_target = Worksheets(&quot;VBA_caller&quot;).ListObjects(&quot;T.VBA_caller&quot;).Range
+  
+  Application.DisplayAlerts = False
+  var_log = xlwings_udfs.call_vba(rg_target)
+  Application.DisplayAlerts = True
+End Sub
+
+</code></pre><p>Prepare a Python script. Create a file <code>VBA_caller.py</code> with the following contents in the same folder.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:VBA_caller.py" data-lang="python:VBA_caller.py"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> xlwings <span style="color:#f92672">as</span> xw
+
+
+os<span style="color:#f92672">.</span>chdir(Path(__file__)<span style="color:#f92672">.</span>parent<span style="color:#f92672">.</span>absolute()<span style="color:#f92672">.</span>resolve())
+
+<span style="color:#a6e22e">@xw.sub</span>
+<span style="color:#a6e22e">@xw.arg</span>(<span style="color:#e6db74">&#39;df_target&#39;</span>, pd<span style="color:#f92672">.</span>DataFrame, index<span style="color:#f92672">=</span>False, header<span style="color:#f92672">=</span>True)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">call_vba</span>(df_target: pd<span style="color:#f92672">.</span>DataFrame):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">call_vba_single</span>(row):
+        <span style="color:#75715e">#Read settings</span>
+        wb_path, wb_name, macro_name <span style="color:#f92672">=</span> row[<span style="color:#e6db74">&#39;folder&#39;</span>], row[<span style="color:#e6db74">&#39;file&#39;</span>], row[<span style="color:#e6db74">&#39;macro&#39;</span>]
+
+        <span style="color:#75715e">#Create Excel instance for macro execution and open workbook</span>
+        app <span style="color:#f92672">=</span> xw<span style="color:#f92672">.</span>apps<span style="color:#f92672">.</span>add()
+        xl_path <span style="color:#f92672">=</span> (Path() <span style="color:#f92672">/</span> wb_path <span style="color:#f92672">/</span> wb_name)<span style="color:#f92672">.</span>resolve()
+        wb <span style="color:#f92672">=</span> app<span style="color:#f92672">.</span>books<span style="color:#f92672">.</span>open(str(xl_path))
+
+        <span style="color:#75715e"># Run macro</span>
+        app<span style="color:#f92672">.</span>display_alerts <span style="color:#f92672">=</span> False <span style="color:#75715e">#Because during execution of the macro, Excel displays the message &#34;Wait until OLE operation is completed in another program.&#34; and execution stops.</span>
+        wb<span style="color:#f92672">.</span>macro(macro_name)()
+        app<span style="color:#f92672">.</span>display_alerts <span style="color:#f92672">=</span> False <span style="color:#75715e"># It may be returned to True at the call destination, so set it to False again</span>
+
+        <span style="color:#75715e"># Save the workbook and kill the Excel instance for macro execution</span>
+        wb<span style="color:#f92672">.</span>save()
+        wb<span style="color:#f92672">.</span>close()
+        app<span style="color:#f92672">.</span>kill()
+
+    <span style="color:#66d9ef">for</span> _, row <span style="color:#f92672">in</span> df_target<span style="color:#f92672">.</span>iterrows():
+        call_vba_single(row)
+
+<span style="color:#a6e22e">@xw.sub</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">kill_excel</span>():
+    os<span style="color:#f92672">.</span>system(<span style="color:#e6db74">&#39;taskkill /f /im excel.exe&#39;</span>)
+
+<span style="color:#75715e">#For debugging</span>
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    xw<span style="color:#f92672">.</span>serve()
+</code></pre></div><p>After creating <code>VBA_caller.py</code>, return to <code>VBA_caller.xlsm</code>, press the <code>Import Functions</code> button on the xlwings tab, and import the contents of <code>VBA_caller.py</code> as a UDF. This completes the caller&rsquo;s preparation.</p>
+<p>Let&rsquo;s prepare an Excel file to be called for the experiment.</p>
+<pre><code class="language-:" data-lang=":">┌example1
+│ └example1.xlsm
+├ example2
+│ ├ example2.xlsm
+│ └ example3
+│ └ example3.xlsm
+├ VBA_caller.py
+└VBA_caller.xlsm
+</code></pre><p>Save the following in a standard module from <code>example1.xlsm</code> to <code>example3.xlsm</code>:</p>
+<pre><code class="language-VB:example1.slsm~example3.xlsm!Module1" data-lang="VB:example1.slsm~example3.xlsm!Module1">'Procedure-Name and MsgBox string are changed accordingly
+Sub example1()
+    MsgBox &quot;example1&quot;
+End Sub
+</code></pre><p>Now you&rsquo;re ready.</p>
+<p>I will try it. Press <code>Alt+F8</code> on <code>VBA_caller.xlsm</code>, select <code>main</code> and press the execute button. If <code>example1.xlsm</code> is opened in a new Excel instance and <code>example1</code> is displayed in the message box, it is successful. When you press the OK button, the macros example2.xlsm and example3.xlsm will be executed one after another.</p>
+<h1 id="5-further-application-simultaneous-continuous-execution-of-vba-macros">5. Further application (simultaneous continuous execution of VBA macros)</h1>
+<p>With the contents so far, you can do almost the same with VBA. However, if you rewrite <code>VBA_caller.py</code> a little, you will be able to execute multiple macros simultaneously.</p>
+<p>Fix #1: Add the following to the end of the imoprt statement.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:VBA_caller.py" data-lang="python:VBA_caller.py"><span style="color:#f92672">import</span> joblib
+</code></pre></div><p>Fix 2: Remove the following for loop,</p>
+<pre><code class="language-python:VBA_caller.pyfor" data-lang="python:VBA_caller.pyfor">        call_vba_single(row)
+</code></pre><p>Change to the call using joblib.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:VBA_caller.py" data-lang="python:VBA_caller.py">    joblib<span style="color:#f92672">.</span>Parallel(n_jobs<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>, verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>)((
+        joblib<span style="color:#f92672">.</span>delayed(call_vba_single)(row) <span style="color:#66d9ef">for</span> _, row <span style="color:#f92672">in</span> df_target<span style="color:#f92672">.</span>iterrows()
+    ])
+</code></pre></div><p>Fix (?) Part 3: (Try if 2 doesn&rsquo;t work) Enter the path of python.exe in <code>Interpreter</code> of xlwings tab. If you have installed Anaconda with default settings, it will be <code>C:\ProgramData\Anaconda3\python.exe</code>.</p>
+<p>Let&rsquo;s go back to <code>VBA_caller.xlsm</code> and run <code>main</code> from <code>Alt+F8</code> again. This time, multiple Excel files will be launched at the same time and macros will be executed simultaneously. This is (probably) something VBA cannot do, and by running multiple macros simultaneously, the overall processing time can be reduced.</p>
+<p>joblib is a library that enables easy parallel processing in Python. For details, see <a href="https://qiita.com/Yuhsak/items/1e8533343cf5458e2e08">here</a>.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>Thank you for reading to the end.
+This time, I didn&rsquo;t write about calling a VBA macro that requires an argument because it is a basic usage, but I would like to comment on that if necessary.</p>
+<p>#Reference</p>
+<ul>
+<li><a href="https://docs.xlwings.org/en/latest/api.html#xlwings.Book.macro">Official document</a></li>
+<li><a href="https://qiita.com/k_maki/items/9efdb70f69d6f3b00f80">Introduction to Python for VBA users ~Calling Python from Excel with xlwings~</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

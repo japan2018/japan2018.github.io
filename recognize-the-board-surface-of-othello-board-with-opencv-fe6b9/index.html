@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Recognize the board surface of Othello board with OpenCV | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Recognize the board surface of Othello board with OpenCV</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 18, 2019
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/othello"> Othello</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This year, Othello Advent Calendar was planned and invited, so I decided to write an article. Actually, I wrote another article on <a href="https://qiita.com/lavox/items/e21d32d2931a24cfdc97">Day 1</a>, but I didn&rsquo;t know what I was doing and I suddenly entered the article, so this time It is a little self-introduction.</p>
+<p>I&rsquo;m developing an app for iOS called <a href="https://itunes.apple.com/jp/app/Gokibox/id1434692901?mt=8">Goki Box</a>. As one of its functions, we have incorporated a function that images the Othello board with a camera and overlays the evaluation value on the board with AR. Click the image below to see the introduction video.
+<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/3fe29a77-32c1-1aa6-d3b7-bac1a10a985a.png">![AR function of game box]</a>]((<a href="https://www.youtube.com/watch?v=eeNnP87FifI">https://www.youtube.com/watch?v=eeNnP87FifI</a>)
+There is also a function of taking a picture of the board (or selecting the picture taken) and recognizing the arrangement of stones on the board. This also has an introduction video.
+<a href="https://www.youtube.com/watch?v=n8Ns7LmuWok"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/ab3aa10a-595c-c1fc-f313-56f9177fc0d0.png" alt="Board box box recognition function"></a></p>
+<p>In this article, I would like to explain how these functions recognize the surface of the Othello board. When inputting the image on the left side below, the goal is to recognize the positions of black stones and white stones and the situation of empty squares like the image on the right side.
+<img width="240" alt="recognition result" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/7fc97ede-9937-9fda-3b3f-8b8a904298f6.png"><img width="240" alt="recognition result" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/98efceda-df85-7c1b-aef3-e7e107fe1fb4.png"></p>
+<p>#Prerequisite environment</p>
+<ul>
+<li>Python 3.7.1</li>
+<li>OpenCV 4.1.0</li>
+</ul>
+<p>Since it is iOS in the actual application, I implemented it with Objective C + OpenCV, but in this article, I will explain with Python version. The content itself is almost the same as the app version.</p>
+<p>Please refer to the entire Python version source code below.
+<a href="https://github.com/lavox/reversi_recognition">https://github.com/lavox/reversi_recognition</a></p>
+<p>#Policy
+There are two main approaches to image recognition.</p>
+<ul>
+<li>How to use machine learning</li>
+<li>How to create an algorithm yourself</li>
+</ul>
+<p>As for the former, it seemed difficult to collect a large amount of teacher images for learning, and because tuning seemed to be difficult when things went wrong, I decided to use the latter method.
+Image recognition is performed by the following steps.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/efa98dd9-3b63-3784-bc24-6a6463f29d6b.png" alt="image.png"></p>
+<ol>
+<li>Identify the range of the board</li>
+<li>Convert to square</li>
+<li>Locate the stone</li>
+<li>Determine the color of stone</li>
+</ol>
+<p>With the function that takes a picture with the camera and captures the surface of the board, after performing step 1, the range confirmation screen is displayed and then steps 2 through 4, but with the AR function, steps 1 through 4 are executed at once.</p>
+<p>#Preparation</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> cv2
+image <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#34;./sample.jpg&#34;</span>)
+image <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>blur(image,(<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">3</span>))
+</code></pre></div><p>The image is read and smoothed (blurred) with a size of 3x3. It seems that it is a common theory to perform smoothing in advance when performing image analysis, so I did so.</p>
+<p>In Python, the read image will be an array of NumPy with 3 elements for each pixel, but note that the order of 3 elements is BGR instead of RGB. When displaying using matplotlib etc., the hue will be strange if the format (color order) is not changed.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">rgbImage <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(image, cv2<span style="color:#f92672">.</span>COLOR_BGR2RGB)
+</code></pre></div><h1 id="step1-specification-of-board-range">Step1. Specification of board range</h1>
+<p>Since the surface of the Othello board is green, I decided to proceed in the direction of extracting the green area. Since it is difficult to extract the color range in BGR format, convert it to HSV format.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">hsv <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(image, cv2<span style="color:#f92672">.</span>COLOR_BGR2HSV)
+</code></pre></div><p>Since it became HSV format, I decided to specify the range of the color area with H, and regarding S and V, the area with a certain value or more was regarded as green.
+<img width="360" alt="green area" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/8bd9b9bf-e6b4-7a2e-31a2-04a3a1379eec.png"></p>
+<p>Actually I wanted to make it curved, but since the process becomes troublesome, the area that combines the upper right side of the two areas is set as &ldquo;green&rdquo;. The boundary value was decided by trial and error while actually looking at the image.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">lower <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">45</span>,<span style="color:#ae81ff">89</span>,<span style="color:#ae81ff">30</span>])
+upper <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">90</span>,<span style="color:#ae81ff">255</span>,<span style="color:#ae81ff">255</span>])
+green1 <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>inRange(hsv,lower,upper)
+
+lower <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">45</span>,<span style="color:#ae81ff">64</span>,<span style="color:#ae81ff">89</span>])
+upper <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">90</span>,<span style="color:#ae81ff">255</span>,<span style="color:#ae81ff">255</span>])
+green2 <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>inRange(hsv,lower,upper)
+
+green <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>bitwise_or(green1,green2)
+</code></pre></div><p>In OpenCV, you can specify the range with <code>inRange</code>. <code>bitwise_or</code> is literally an OR of areas.
+<img width="480" alt="Green area extraction" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/34dfef8d-c58a-ea8e-0e9f-3882702e7d11.png">
+The green area has been extracted. I would like to find the coordinates of the vertices of the four corners of the board from here, but I will talk about how to find the coordinates from this binarized image. I&rsquo;m also worried that multiple boards are shown. After searching variously, I found a function called <code>findContours</code> that detects contours, so I will use it.
+*This function used to return three return values in the V3 era, but please note that it seems to have changed from V4 to two.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">contours, hierarchy <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>findContours(green, cv2<span style="color:#f92672">.</span>RETR_EXTERNAL, cv2<span style="color:#f92672">.</span>CHAIN_APPROX_SIMPLE)
+</code></pre></div><p>As a result of executing this, more than 2000 contours were extracted. What happened? I drew some large outlines.
+<img width="360" alt="Green area extraction" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/004df4fe-271d-e288-afe5-33fc06a00226.png">
+They were separated by black lines and stones. Looking at the finer contours, I found that the contours consisted of only 1 pixel, and that this <code>findContours</code> determines the contours quite severely. I searched online for a technique to remove obstacles such as black lines, and found that <a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV">morphological conversion</a>Ifound/html/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html).Themethodistodilatetheareaoncetomakeitlarge,andthentocontractit(erode) to erase fine lines and dust.</p>
+<p>So how much should it expand and contract? When I made a trial calculation in the case where the board is full of images, the thickness of the line seems to be about 0.6 to 0.7% of the long side, so 0.35 of the long side in order to expand and erase this from both sides. I decided to use %.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">kernelSize <span style="color:#f92672">=</span> max(<span style="color:#ae81ff">1</span>, int(<span style="color:#ae81ff">0.0035</span> <span style="color:#f92672">*</span> max(width, height))) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+kernel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones((kernelSize, kernelSize), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>int)
+
+green <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>dilate(green, kernel) <span style="color:#75715e"># expansion</span>
+green <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>erode(green, kernel) <span style="color:#75715e"># contraction</span>
+</code></pre></div><p>There is <code>*2+1</code> that does not make a lot of sense, but it seems that the size of expansion and contraction must be an odd number, so it is a correction to make it an odd number.
+<img width="480" alt="Expansion/contraction" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/3d041535-e2dc-67b3-3ef5-9c1822ad2611.png">
+You have successfully erased the line. However, when the number of stones increases, it is likely to be divided by stones, which is a bit dangerous. Since there is no help for it, I decided to consider not only the green part but also the white part as part of the board. (Since the black part is really black, the frame of the board is too wide, so I stopped it.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">lower <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">128</span>])
+upper <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(([<span style="color:#ae81ff">180</span>, <span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">255</span>])
+white <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>inRange(hsv, lower, upper)
+greenWhite <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>bitwise_or(green, white)
+</code></pre></div><img width="360" alt="green + white" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/669e5b6c-1ffb-22ea-fa7f-e1e7f83f05ea.png">
+The table is white, so I'm a little worried, but the risk of division has dropped considerably, and the range of the board is clear, so I decided to proceed with this. Now try re-extracting the contour.
+<pre><code class="language-pythoncontours," data-lang="pythoncontours,"></code></pre><img width="360" alt="Outline (re)" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/290c78c8-2a84-7741-9b79-ddd21c34b6d5.png">
+The stone near the side has a dent, but it is no longer divided. Another thing I want to do is
+<ul>
+<li>How can the recess not work?</li>
+<li>How to select the contour of the board you are paying attention to, with many contours extracted</li>
+</ul>
+<p>Such a place. When I tried to find out what could be done about the first dent, <a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contoursTherewasamethodcalled/py_contour_features/py_contour_features.html#convex-hull">Convex hull</a>.</p>
+<p>If it can be made convex, the one that includes the center point of the image in the extracted contour (it was supposed to be in the center because it was taken to recognize the board), then the second It seems that we can clear which contour was the task to choose.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> i, c <span style="color:#f92672">in</span> enumerate(contours):
+    hull <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>convexHull(c) <span style="color:#75715e"># convex hull</span>
+    <span style="color:#66d9ef">if</span> cv2<span style="color:#f92672">.</span>pointPolygonTest(hull,(width <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>, ,height <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>), False)<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>: <span style="color:#75715e"># Judge whether center is included</span>
+        mask <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((height, width),dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>uint8)
+        cv2<span style="color:#f92672">.</span>fillPoly(mask, pts<span style="color:#f92672">=</span>[hull], color<span style="color:#f92672">=</span>(<span style="color:#ae81ff">255</span>)) <span style="color:#75715e"># Image filled in the contour range</span>
+        <span style="color:#66d9ef">break</span>
+</code></pre></div><img width="360" alt="Panel mask" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/0818478a-1d4c-28ed-485e-4893c2da0007.png">
+<p>Now the area of the board is obtained. However, since I added a white part as a measure against division, I am a little worried whether an extra area is involved. So I tried to extract the green part in this area and take the outline to connect them all together.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">green <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>bitwise_and(green, green, mask<span style="color:#f92672">=</span>mask)
+contours, hierarchy <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>findContours(green, cv2<span style="color:#f92672">.</span>RETR_EXTERNAL, cv2<span style="color:#f92672">.</span>CHAIN_APPROX_SIMPLE)
+greenContours <span style="color:#f92672">=</span> functools<span style="color:#f92672">.</span>reduce(<span style="color:#66d9ef">lambda</span> x, y: np<span style="color:#f92672">.</span>append(x, y,axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>),contours)
+hull <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>convexHull(greenContours)
+</code></pre></div><img width="360" alt="Outline" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/1f6448a5-10d5-8160-2b21-904be05ad828.png">
+I thought that I was able to extract the contour safely, but when I displayed the value, it was a hexagon.
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">print</span>(hull<span style="color:#f92672">.</span>shape)
+(<span style="color:#ae81ff">26</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>)
+</code></pre></div><p>It seems that there are vertices between the places that look almost straight. OpenCV also had a countermeasure against this situation. This is a function that approximates a polygon called <code>approxPolyDP</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">epsilon <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.004</span> <span style="color:#f92672">*</span> cv2<span style="color:#f92672">.</span>arcLength(hull, True)
+approx <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>approxPolyDP(hull, epsilon, True)
+</code></pre></div><p>As a result of trial and error, an error of 0.4% of the length of the circumference seems to give a square shape with a good feeling in most cases.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">print</span>(approx)
+[[[<span style="color:#ae81ff">2723</span> <span style="color:#ae81ff">2702</span>]]
+ [[ <span style="color:#ae81ff">675</span> <span style="color:#ae81ff">2669</span>]]
+ [[<span style="color:#ae81ff">1045</span> <span style="color:#ae81ff">1639</span>]]
+ [[<span style="color:#ae81ff">2418</span> <span style="color:#ae81ff">1613</span>]]]
+</code></pre></div><p>With this, I was able to find the four vertices of the board, but I would like to touch on a few small points that could not be written here.</p>
+<ul>
+<li>If there is a stone near the corner or if the area near the corner is cut off from the image, the corner may be missing and become a pentagon or hexagon
+-Even in such a case, the edges should match, so I decided to select four edges in the longest order from the extracted polygons and regard the intersections as vertices. Since this is a math problem rather than OpenCV, if you are interested in <a href="https://github.com/lavox/reversi_recognition/blob/master/board_recognition.py">Source Code</a>, lines 371 to 396 Look around lines 99 to 107.</li>
+<li>You may select an area that is not a board
+-This is unavoidable in itself, but when it is decided that the original is not a square, it is considered a failure. This is also a math problem, so if you are interested, <a href="https://github.com/lavox/reversi_recognition/blob/master/board_recognition.py">source code</a> line 438-485, line 125 Please refer to around line 197. As a by-product of this, the relative positional relationship between the board and the camera can be obtained, which we will use later.</li>
+<li>Board orientation correction
+-The vertices are retaken clockwise from the upper left of the image</li>
+<li>Check if the board is not completely cut off</li>
+<li>The border of the Othello board is slightly thicker on the outer circumference, so it is corrected</li>
+<li>If the image size is too large, it will take time to process, so resize first</li>
+</ul>
+<h1 id="step2-convert-board-part-to-square">Step2. Convert board part to square</h1>
+<p>The board obtained in Step 1 is converted to a square, but for the convenience of later processing, I will give a margin (blue frame) around it. The purpose of the margin is as follows.</p>
+<ul>
+<li>When checking the stone color later, make sure that the check range does not extend from the image</li>
+<li>In case of an image where the corner of the board is cut off, it can be treated the same as the cut-out part.</li>
+</ul>
+<img width="480" alt="Outline" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/46b3ab31-682f-3585-2893-c602066780da.png">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">margin <span style="color:#f92672">=</span> <span style="color:#ae81ff">13</span> <span style="color:#75715e"># margin width</span>
+cell_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">42</span> <span style="color:#75715e"># 1 size of cell</span>
+size <span style="color:#f92672">=</span> cell_size <span style="color:#f92672">*</span> <span style="color:#ae81ff">8</span> <span style="color:#f92672">+</span> margin <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#75715e"># side length after conversion</span>
+outer <span style="color:#f92672">=</span> (<span style="color:#ae81ff">254</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>) <span style="color:#75715e"># margin color</span>
+</code></pre></div><p>Converting to a square is actually easy, and if you know the source and destination vertices, you can do it in a projective transformation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># 4 vertices to move from</span>
+src <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([[<span style="color:#ae81ff">1045</span>,<span style="color:#ae81ff">1639</span>], [<span style="color:#ae81ff">2418</span>,<span style="color:#ae81ff">1613</span>], [<span style="color:#ae81ff">2723</span>,<span style="color:#ae81ff">2702</span>], [<span style="color:#ae81ff">675</span>,<span style="color:#ae81ff">2669</span>]], dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+<span style="color:#75715e"># 4 vertices to move to</span>
+dst <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([
+    [margin, margin],
+    [size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>margin, margin],
+    [size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>margin, size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>margin],
+    [margin, size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>margin]
+], dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+<span style="color:#75715e">#Transform matrix</span>
+trans <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>getPerspectiveTransform(src, dst)
+<span style="color:#75715e"># Projective transformation</span>
+board <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>warpPerspective(image, trans, (int(size), int(size)), flags<span style="color:#f92672">=</span>cv2<span style="color:#f92672">.</span>INTER_LINEAR, borderMode<span style="color:#f92672">=</span>cv2<span style="color:#f92672">.</span>BORDER_CONSTANT, borderValue<span style="color:#f92672">=</span>outer)
+</code></pre></div><p>As a precaution, the outer of the above projective transformation is a color to supplement the protruding part when 4 vertices are protruding from the image. It does not fill the margin. So, I will also paint the margin part.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cv2<span style="color:#f92672">.</span>rectangle(board, (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), (size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, margin), outer, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+cv2<span style="color:#f92672">.</span>rectangle(board, (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), (margin, size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>), outer, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+cv2<span style="color:#f92672">.</span>rectangle(board, (size<span style="color:#f92672">-</span>margin, <span style="color:#ae81ff">0</span>), (size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>), outer, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+cv2<span style="color:#f92672">.</span>rectangle(board, (<span style="color:#ae81ff">0</span>, size<span style="color:#f92672">-</span>margin), (size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, size<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>), outer, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><p>Now you have a square board.</p>
+<h1 id="step3-specify-the-stone-position">Step3. Specify the stone position</h1>
+<p>In locating the stone, the question was whether to assume that the stone was in the center of the trout. Since it is an actual board, there are cases where stones are placed in a place that is offset from the center, and in the case of an image taken from an angle, there are cases where the center will shift due to the thickness of the stone in the image after being converted into a square. So I decided to proceed without assuming that the stone is in the center of the trout.</p>
+<p>Then, how to identify the position of the stone, but at first I thought that it would be better to use a Hough transform that detects a circle because the stone is circular. However, when I actually tried it, a large number of mysterious circles that could not be seen by human eyes were detected, and there were many parameters, so the adjustment was frustrated. *In addition, in the app <a href="http://scorenow.mystrikingly.com">ScoreNow</a>, I heard from the developer that it uses the Hough transform to detect stones, so it adjusts well. I think you can do it. *</p>
+<p>When I was at a loss and did various searches, I decided to try this method by arriving at the article <a href="https://qiita.com/ysdyt/items/5972c9520acf6a094d90">Details on the object segmentation algorithm &ldquo;watershed&rdquo;</a>. did. In this case, rather than finding the exact contour of the stone, we are looking for the center of the stone, so we are only doing part of the linked article.</p>
+<p>First, in order to separate the board and stones, extract the board part with the green part as in Step 1.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">hsv <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(board, cv2<span style="color:#f92672">.</span>COLOR_BGR2HSV)
+lower <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">45</span>,<span style="color:#ae81ff">89</span>,<span style="color:#ae81ff">30</span>])upper <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">90</span>,<span style="color:#ae81ff">255</span>,<span style="color:#ae81ff">255</span>])
+green1 <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>inRange(hsv,lower,upper)
+
+lower <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">45</span>,<span style="color:#ae81ff">64</span>,<span style="color:#ae81ff">89</span>])
+upper <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">90</span>,<span style="color:#ae81ff">255</span>,<span style="color:#ae81ff">255</span>])
+green2 <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>inRange(hsv,lower,upper)
+
+green <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>bitwise_or(green1,green2)
+</code></pre></div><img width="480" alt="Disc Extraction" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/4daf8f0f-7778-d904-b3ce-7c5f98d4e658.png">
+The stone part can be extracted by adding the blue part of the margin and then inverting it.
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">outer <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>inRange(board, (<span style="color:#ae81ff">254</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), (<span style="color:#ae81ff">254</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>))
+green <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>bitwise_or(green, outer)
+disc <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>bitwise_not(green)
+</code></pre></div><img width="240" alt="stone part" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/ee02ec6d-b40c-6605-f7de-901732ac3eec.png">
+<p>The lines of squares remain, but this does not affect the subsequent processing, so leave this as it is.</p>
+<p>Also, in consideration of the possibility that people&rsquo;s hands are actually reflected, there is a process to treat parts that are not green, white or black as &ldquo;unknown&rdquo; squares, but I will omit them as they are long ..</p>
+<p>Now, according to Qiita&rsquo;s article above, find the distance from the outside of the stone to each point.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dist <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>distanceTransform(disc, cv2<span style="color:#f92672">.</span>DIST_L2, <span style="color:#ae81ff">5</span>)
+</code></pre></div><img width="240" alt="distance" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/cce52364-b204-7e03-2448-f10252c2f966.png">
+The point with the maximum value on each island (?) is likely to be the center of the stone. However, since some islands are now connected, points above a certain value will be extracted and separated. If the "some value" is too large, unrecognizable stones may occur, while if it is too small, it may not be possible to disconnect the connection, so we set 13.0 as the threshold as a result of trial and error.
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">_, distThr <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(dist, <span style="color:#ae81ff">13.0</span>, <span style="color:#ae81ff">255.0</span>, cv2<span style="color:#f92672">.</span>THRESH_BINARY)
+</code></pre></div><img width="240" alt="Stone separation" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/710d8da0-8bed-2639-db10-4c7f45ccda87.png">
+The maximum point of each connected area should be the center of the stone. Find it.
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">distThr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>uint8(distThr) <span style="color:#75715e"># need type conversion</span>
+<span style="color:#75715e"># Get connected component</span>
+labelnum, labelimg, data, center <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>connectedComponentsWithStats(distThr)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, labelnum): <span style="color:#75715e">#i = 0 is background so excluded</span>
+    x, y, w, h, s <span style="color:#f92672">=</span> data[i]
+    distComponent <span style="color:#f92672">=</span> dist[y:y<span style="color:#f92672">+</span>h, x:x<span style="color:#f92672">+</span>w]
+    maxCoord <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>unravel_index(distComponent<span style="color:#f92672">.</span>argmax(), distComponent<span style="color:#f92672">.</span>shape) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>array([y, x])
+</code></pre></div><p>In addition, since the islands are not completely separated and become bimodal, in the actual source I am doing a little complicated thing to loop while deleting around the maximum value, but here it is simple It has turned into.
+<img width="240" alt="Separation of stones" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/876b1aa7-adfb-58e6-37a6-deecfbace294.png">
+I was able to find the center of the stone with reasonable accuracy.
+I&rsquo;m afraid that the photo taken from an angle is forced to be a square, so the stone has a drum-like shape instead of a circle, and if possible, the color of the stone is near the center of the top surface, and the position of the stone is at the center of the bottom surface. This is where you want to make a decision. In order to manage this, based on the camera position obtained when extracting the board, we shift the stone center to the far side and the near side from the camera and regard it as the center of the top and bottom, but it will be longer. So (although it&rsquo;s already long enough&hellip;) I will omit the explanation this time.</p>
+<h1 id="step4-judgment-of-stone-color">Step4. Judgment of stone color</h1>
+<p>Now it&rsquo;s time to judge the color of the stone. Basically, it seems to be good to judge by the brightness of the color near the center of the stone, but when I actually tried it, there were some problems.</p>
+<ul>
+<li>Since the accuracy of the center point is not perfect, widening the judgment range will pick up the color of the stone next to it or the side of the stone and cause false detection.</li>
+<li>It is difficult to judge the black stone in a bright environment and the white stone in a dim environment only by the V (brightness) of HSV.</li>
+<li>Black stone sometimes looks like white stone due to light reflection. This is as white as a true white stone.</li>
+</ul>
+<p>Regarding the second point, at first I made the condition by comparing the brightness with the surroundings, but then I found a way to judge more easily using OpenCV. That is the process of binarization based on the surrounding situation called adaptive threshold. If you use this, white stones will become white regardless of the brightness of the surroundings.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">grayBoard <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(board, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+binBoardWide <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>adaptiveThreshold(grayBoard, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>ADAPTIVE_THRESH_GAUSSIAN_C, cv2<span style="color:#f92672">.</span>THRESH_BINARY, <span style="color:#ae81ff">127</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">20</span>)
+</code></pre></div><p>After changing to grayscale, adaptive threshold is executed.
+<img width="600" alt="adaptive threshold" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/6f19e4cb-fb43-94e1-d88e-5fdeac3dd1c7.png">
+Now the white stones have become quite white, but there are still black stones that are whitish, so I would like to devise a little more. It is difficult to judge the stones that are completely reflected, but if you look closely at the image, it has become clear that black stones that are somewhat reflective have some &ldquo;color unevenness&rdquo;. It was found that this unevenness in color can be picked up by narrowing the range considered as &ldquo;surroundings&rdquo; in the adaptive threshold processing. A block is a range that is considered &ldquo;surrounding&rdquo;.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">binBoardWide <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>adaptiveThreshold(grayBoard, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>ADAPTIVE_THRESH_GAUSSIAN_C, cv2<span style="color:#f92672">.</span>THRESH_BINARY, <span style="color:#ae81ff">127</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">20</span>)
+
+binBoardNarrow <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>adaptiveThreshold(grayBoard, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>ADAPTIVE_THRESH_GAUSSIAN_C, cv2<span style="color:#f92672">.</span>THRESH_BINARY, <span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">2</span>)
+<span style="color:#75715e"># As a result of trial and error, after blurring, binarized with a threshold</span>
+binBoardNarrow <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>blur(binBoardNarrow, (<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>))
+_, binBoardNarrow <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(binBoardNarrow, <span style="color:#ae81ff">168</span>, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>THRESH_BINARY)
+</code></pre></div><img width="480" alt="Color unevenness" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/c81c42ed-c0d7-eeb8-800c-b3afd335aee7.png">
+When block=127 is wide, a wide range becomes white, but when it is narrow like block=7, uneven color appears. Moreover, it is good that Shiraishi remains white.
+<p>Therefore, I decided the color of the stone as follows depending on how many black pixels are in the area of radius 10 from the center point (top surface) of the stone obtained in Step 3.</p>
+<ul>
+<li>10 or more for &ldquo;wide&rdquo; or 26 or more for &ldquo;narrow&rdquo; → Kuroishi</li>
+<li>Other than that → Shiraishi</li>
+</ul>
+<p>This threshold was also determined from the tendency of the distribution by plotting the number of black pixels from the actual image with black stone and white stone.</p>
+<h1 id="complete-how-accurate">Complete! &hellip;How accurate?</h1>
+<p>Now that you can recognize the Othello board, how accurate is it? When I recognized the 76 images I had, the results were as follows.</p>
+<ul>
+<li>67 sheets: All stones are judged correctly</li>
+<li>1 sheet: Detection of the range of the board failed (the board was not in the center)</li>
+<li>8 sheets: 14 stones in total</li>
+</ul>
+<p>However, since many images used for trial and error when developing the recognition logic are included, I think that the practical accuracy is a little lower.</p>
+<p>Here are some cases that I couldn&rsquo;t recognize well.
+<img width="360" alt="NG1" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/844eb402-118c-60fe-13e8-328652789171.png">
+I decided that a5 is an empty space and h3 is a white stone, but the correct answers are both black stones. In the case of out-of-focus photographs, it seems that they cannot be recognized well.</p>
+<img width="360" alt="NG2" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/ab357ce2-32a4-557d-b05a-b00c5e9a6379.png">
+The stone of e3 was judged as black, but the correct answer is Shiroishi, as you can see. Depending on the material of the board, there are cases where the board itself is reflected, but it seems that it is weak to the reflection of the board because it is judged as green.
+<img width="360" alt="NG3" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/202945/e0e5dfb0-cbee-67cc-86fd-65deb6ed3084.png">
+The stones of e7, e8, and f8 were judged to be white stones, but all of them are correct reflections of black stones. The reflection is so strong that it is difficult for the human eye to make a decision, but this algorithm could not make a correct decision.As for the recognition performance, there is a reasonable performance by recognizing after resizing the long side to 1024px, and it seems that recognition can be performed several times per second as long as it is running on iPhone 8.
+<h1 id="story-that-i-could-not-explain-this-time">Story that I could not explain this time</h1>
+<p>The above is the story of recognizing the actual Othello board, but if you implement the function to recognize the Othello board surface in the application,</p>
+<ul>
+<li>I also want the ability to recognize screen shots of other apps</li>
+<li>I want a function to recognize the board surface of black and white printed books</li>
+</ul>
+<p>It means that. For the screenshot, the algorithm can be used to some extent with the actual board, but there were cases where it could not be recognized well without specific consideration.
+For black-and-white printing books, the strategy of judging the board by green color cannot be used fundamentally, so it is useless unless it is reviewed from there.</p>
+<p>I&rsquo;ve implemented these methods in another way, but since the lengthy articles are getting longer, I will leave them here. <a href="https://github.com/lavox/reversi_recognition/blob/master/board_recognition.py">Source code</a> is also implemented with screenshots and books, so if you are interested, please see that.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

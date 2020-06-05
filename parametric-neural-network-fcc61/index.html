@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://japan2018.github.io/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://japan2018.github.io/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://japan2018.github.io/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://japan2018.github.io/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://japan2018.github.io/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://japan2018.github.io/css/bootstrap.min.css" />
+
+  
+  <title>Parametric Neural Network | Some Title</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Parametric Neural Network</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 6, 2020
+  </small>
+  
+
+<small><code><a href="https://japan2018.github.io/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://japan2018.github.io/tags/hard"> Hard</a></code></small>
+
+</p>
+<pre><code># About neural networks
+</code></pre>
+<h2 id="original-flow">Original flow</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/137120/922a241d-9c23-c8de-0aaf-1bc3f293952e.png" alt="image.png"></p>
+<ol>
+<li>Pass the value of the activation function to the next node according to the input information</li>
+<li>Linearly combine all the received information based on weight $w$ and bias $b$.</li>
+<li>Input the linearly combined value to the activation function and pass the value to the next node</li>
+<li>Repeat steps 2 and 3 to output the value from the final node</li>
+<li>Compute the loss function from the final output (although the last layer has only one node in the PNN): steps 1-6 are forward propagation</li>
+<li>Next, calculate the weight at each branch using the loss function: back propagation</li>
+<li>One training is completed in steps 1-7. After that, this is repeated a specified number of times to create a set of weights that better describe the correct answer = neural network.</li>
+</ol>
+<p>In step 6, a gradient descent method (a method of updating weights by using a differential coefficient of a loss function) is generally used. Therefore, the loss function needs to have a differentiable distribution. The activation function, loss function, and gradient descent method will be briefly described below.</p>
+<h2 id="about-activation-function">About activation function</h2>
+<p>The input values calculated in the previous layer are first linearly combined according to each weight and bias. Then, machine learning is to repeat them endlessly, passing the output value of the activation function to the next layer as an argument to the activation function. So, the important meaning of the activation function is not the form of the mathematical expression (&ldquo;Why exponential, why is it a fraction xxx&hellip;&rdquo; is not a very meaningful argument), but what kind of value does it have? It is important to output across. The two types of activation functions used this time are summarized.</p>
+<h3 id="relu-ramp-function">relu (ramp function)</h3>
+<p>When x is 0 or more, the shape is directly proportional. The sigmoid function, the more the distance from the origin, the more the gradient disappears (the differential coefficient approaches 0), so there was a problem that learning stagnated once the unit had a large value. It is known that the ramp disappearance problem is empirically solved by the ramp function.</p>
+<pre><code class="language-math" data-lang="math">f(x) = x~~(x&gt;0)
+</code></pre><h3 id="sigmoid-sigmoid-function">sigmoid (sigmoid function)</h3>
+<p>The output value of the function is between 0 and 1.</p>
+<pre><code class="language-math" data-lang="math">f(x) = \frac{1}{1-e^x}
+</code></pre><h2 id="loss-function--error-function">Loss function (= error function)</h2>
+<p>Evaluate the $n$-dimensional output of the neural network using the loss function. As a concept, the value of the loss function is smaller if the difference is smaller than the correct value in the $n$ dimension. Therefore, the output value of the loss function of a good neural network becomes small.</p>
+<ul>
+<li>binary_crossentropy
+-Used for 2-class classification (often used in high energy such as 0 or 1, background event or signal event)</li>
+</ul>
+<pre><code class="language-math" data-lang="math">E(w) = -\sum_n^{N} \left( d_n\log y_n + (1-d_n)\log(1-y_n) \right)
+</code></pre><h2 id="gradient-method">Gradient method</h2>
+<p>How to update the weights using the loss function, which is the key to the neural network. Here, a general SDG will be described. In SDG, the weights used for the next training are calculated using the derivative of the loss function. The parameters used at this time</p>
+<ul>
+<li>$\eta$: learning coefficient, learning rate, learning rate</li>
+<li>$\alpha$: momentum</li>
+<li>$h$: decay rate, learning decay rate</li>
+</ul>
+<pre><code class="language-math" data-lang="math">w^{t+1} = w^{t}-\eta\frac{1}{\sqrt{h}}\frac{\partial E(w^{t})}{\partial w^{t} } + \alpha\Delta w
+</code></pre><p>Calculate according to the above formula. Here as a high level knowledge about the gradient method</p>
+<ul>
+<li>If the learning coefficient is too large, the weight value will be significantly different between $t$ and $t+1$, and it will be difficult for the training to converge.</li>
+<li>If the learning coefficient is too small, the degree of weight update will be small and learning will take time.</li>
+<li>By introducing the damping rate, the learning coefficient is also updated according to the training.</li>
+</ul>
+<p>Is mentioned.</p>
+<h2 id="learning-method">Learning method</h2>
+<p>Generally, the learning method of the neural network is described with &ldquo;mini-batch learning&rdquo; in mind. Here, the timing at which the parameter is updated (=weight update=model update) using the loss function will be described.</p>
+<ul>
+<li>Online learning
+-A method to update the model every time based on the loss function calculated from the input information.
+-For example, if you have 1000 images, you will experience 1000 parameter updates.</li>
+<li>Batch learning
+-A method to update the model in batch units (= all data at once).
+-For example, if you have 1000 images, you will experience one parameter update. The loss function used at this time is the average of the loss functions for each of the 1000 images.</li>
+</ul>
+<pre><code class="language-math" data-lang="math">L=\frac{1}{N}\sum_{i=1}^{N} l_i
+</code></pre><ul>
+<li>Mini batch learning
+-Method of dividing all data into mini batches and updating the model for each mini batch processing
+-The loss function is averaged and calculated for each processing of the number of data (= batch size) included in the mini-batch, and the model is updated. Then, according to the updated model, the learning in the next mini-batch is started.
+-Let&rsquo;s say you have 1000 images and divide them into 100 batch sizes. At this time, since there are 10 subsets, the parameter is updated 10 times.</li>
+</ul>
+<p>As mentioned above, the mini-batch learning method is generally widely used. At the stage where 10 subsets have been processed in the previous example, counting is done as one epoch end.</p>
+<p>#PNN
+BDT is often used in high energy. It has a lot of merits, such as being strong in small statistics, and basically not having to become a black box because it is DT. Since DNN has already been used in particle identification, I decided to use a neural network to improve the S/N ratio in the form of &ldquo;use and loss&rdquo; as in ProfileLL. The model proposed in 2016 is Parametrised Neural Network (PNN), which is built by using a general python library. The library used this time is</p>
+<ul>
+<li>uproot
+-The ROOT format used in the high-energy neighborhood is made into a data frame with python.</li>
+<li>sklearn (scikit-learn)
+-Python machine learning library</li>
+<li>keras
+-Neural network library running on TensorFlow</li>
+</ul>
+<h2 id="read-root-file-high-energy-pre-processing">Read ROOT file (high energy pre-processing)</h2>
+<h3 id="uproot">uproot</h3>
+<p>CERN library Python module for reading ROOT format data. Just changing ROOT Ntuple to python <code>DataFrame</code> does not change the structure. Rows correspond to events, columns correspond to variables.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> uproot
+f <span style="color:#f92672">=</span> uproot<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#34;data.root&#34;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#f92672">.</span>keys())
+<span style="color:#75715e"># [&#39;data;1&#39;,&#39;background;1&#34;, ....]</span>
+
+f[<span style="color:#e6db74">&#39;data&#39;</span>]<span style="color:#f92672">.</span>pandas<span style="color:#f92672">.</span>df()
+<span style="color:#75715e"># Btag EventFlavour EventNumber FourBodyMass Jet0CorrTLV ... mass mass_scaled sT sTNoMet signal weight weight_scaled</span>
+<span style="color:#75715e">#entry ...</span>
+<span style="color:#75715e">#9 2.0 8.0 560044.0 1666.098145 542.301636 ... 900 0.352941 #1566.298340 1404.298218 1 0.003898 0.028524</span>
+<span style="color:#75715e">#10 1.0 5.0 560480.0 1606.993896 241.007111 ... 900 0.352941 #1841.925049 1434.105713 1 0.004255 0.031135</span>
+<span style="color:#75715e">#11 2.0 0.0 561592.0 1857.901245 721.780457 ... 900 0.352941 #2444.058105 1910.263306 1 0.002577 0.018855</span>
+<span style="color:#75715e">#15 2.0 5.0 561088.0 1348.327515 174.501556 ... 900 0.352941 #1328.051147 1029.908447 1 0.003360 0.024585</span>
+
+f[<span style="color:#e6db74">&#39;data&#39;</span>]<span style="color:#f92672">.</span>pandas<span style="color:#f92672">.</span>df(<span style="color:#e6db74">&#39;EventNumber&#39;</span>)
+<span style="color:#75715e"># EventNumber</span>
+<span style="color:#75715e">#entry</span>
+<span style="color:#75715e">#0 2.148751e+08</span>
+<span style="color:#75715e">#1 2.143515e+08</span>
+<span style="color:#75715e">#2 6.018242e+07</span>
+<span style="color:#75715e">#3 2.868989e+07</span>
+<span style="color:#f92672">...</span>
+</code></pre></div><p>The above is a data frame immediately after reading, and a data frame is created by picking up only necessary information values (input information to be used) from here. A data frame slicing method used in the next step will be briefly described.
+The original data frame read by uproot has <code>mass_scaled</code> at the end, so slice it with <code>X[:, :-1]</code>. This is a slicing method that means &ldquo;all rows, columns from the beginning to the last one before&rdquo;. Based on the above, we will move to the core from the next.</p>
+<ul>
+<li><code>from sklearn.utils import shuffle</code>
+-Method to split test/training data after randomly sorting
+-If you do nothing, the data will be divided in order from the beginning</li>
+</ul>
+<h2 id="actual-training-process">Actual training process</h2>
+<h3 id="pre-processing-scale-conversion">Pre-processing (scale conversion)</h3>
+<p>It is necessary to make the scale (= number of digits) of the handled data uniform. The method used there is the sclearn method, and this time, we use the <code>RobustSclaer</code> that is strong against outliers. In the first place, if there is an outlier, the average/variance of the feature amount is greatly affected by the outlier, and the standardization does not work well. Let&rsquo;s think that the nature of the data has been rewritten into information that is easy for the machine to handle.</p>
+<ul>
+<li>StandardScaler
+-Standardize the distribution of data</li>
+<li>RobustScaler
+-The processing used this time is this-With fit_transform, perform fit (calculate mean and variance of array X) and transform () and store the array (X)</li>
+</ul>
+<h3 id="created-nn-model">Created NN model</h3>
+<ul>
+<li>keras.layers: define the properties of layers
+-Input
+-Dense
+-Fully connected neural network layer. All perceptrons (nodes) are connected to the next layer perceptron
+-An NN layer that is commonly drawn in punch drawings</li>
+<li>keras.model
+-Keras has two ways to define models (in Python)
+-Sequential model and Functional API Model</li>
+</ul>
+<h4 id="actual-coding">Actual coding</h4>
+<ol>
+<li>First, define the number of dimensions of input information with Input</li>
+<li>Define Dense (fully connected neural network) for each layer. The activation function (avitivation function) used at this timing is defined.</li>
+<li>The hidden layer is output to the next layer as it is, so it is output in 32 dimensions (this time, the neural network is defined by 32 dimensions 3 layers of [32,32,32]). And the last layer is one node that outputs [0,1].
+<ol>
+<li>The activation function of hidden layer is <code>relu</code>, and the activation function of the last layer is <code>sigmoid</code>.</li>
+</ol>
+</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">x <span style="color:#f92672">=</span> Input(shape<span style="color:#f92672">=</span>(n_input_vars,))
+d <span style="color:#f92672">=</span> x
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>layer_size:
+    d <span style="color:#f92672">=</span> Dense(n, activation<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>activation)(d)
+
+y <span style="color:#f92672">=</span> Dense(<span style="color:#ae81ff">1</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sigmoid&#34;</span>)(d)
+Model(x, y)
+</code></pre></div><h3 id="the-gradient-method-used">The gradient method used</h3>
+<p>The gradient method used this time is a very orthodox SGD (Stochastic Gradient Descent). Each weight is updated using the loss function $E(w)$ in the following formula.</p>
+<pre><code class="language-math" data-lang="math">w^{t+1} ← w^{t}-\eta \frac{\partial E(w^{t})}{\partial w^{t}} + \alpha \Delta w^{t}
+</code></pre><p>Here, $\eta$ represents the learning rate (learning coefficient) and $\alpha$ represents the momentum.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">sgd <span style="color:#f92672">=</span> SGD(lr<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>learning_rate, momentum<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>momentum, nesterov<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>nesterov, decay<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>learning_rate_decay)
+</code></pre></div><h2 id="training-with-keras">Training with Keras</h2>
+<h3 id="compile">compile</h3>
+<p>Using the knowledge described above (and more background knowledge), we can take the following steps to train a neural network with keras. First you need to &ldquo;compile&rdquo; the model</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">model<span style="color:#f92672">.</span>compile(<span style="color:#f92672">...</span>)
+</code></pre></div><h3 id="fit">fit</h3>
+<p>Then after compiling, do fit = actual training.</p>
+<ul>
+<li>batch_size
+-The number of data contained in each subset is called batch size.
+-ex) If the data of 10000 events is divided into batch sizes of 10, 1000 subsets will be created.</li>
+<li>verbose
+-0: No output
+-1: There is a progress bar
+-2: No progress bar</li>
+<li>callbacks
+-Pass the list of functions you want to call at the end of the epoch. ex. Your own function that prints certain information for each epoch.</li>
+</ul>
+<h3 id="by-the-way">By the way</h3>
+<p>The feature of PNN is that it takes theoretical parameters as input information in addition to the mechanical input information used. There are correct theoretical parameters in the simulation of signal events, but what about the theoretical parameters of background events? For example, if a mass parameter is used as input information, a random value is selected for training when training a background event.</p>
+<h1 id="reference-url">Reference URL</h1>
+<p>I greatly referred to the following sites. Thank you very much.</p>
+<ul>
+<li><a href="https://aizine.ai/preprocessing0614/">https://aizine.ai/preprocessing0614/</a></li>
+<li><a href="https://qiita.com/tokkuman/items/1944c00415d129ca0ee9">https://qiita.com/tokkuman/items/1944c00415d129ca0ee9</a></li>
+<li><a href="https://note.nkmk.me/python-tensorflow-keras-basics/">https://note.nkmk.me/python-tensorflow-keras-basics/</a></li>
+<li><a href="https://products.sint.co.jp/aisia/blog/vol1-4">https://products.sint.co.jp/aisia/blog/vol1-4</a></li>
+<li><a href="https://qiita.com/kenta1984/items/bad75a37d552510e4682">https://qiita.com/kenta1984/items/bad75a37d552510e4682</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>
