@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Create a new corona infection site map [FastAPI/PostGIS/deck.gl(React)] (Data processing) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Create a new corona infection site map [FastAPI/PostGIS/deck.gl(React)] (Data processing)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 31, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/postgresql">PostgreSQL</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/postgis">PostGIS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fastapi">FastAPI</a></code></small>
+
+</p>
+<pre><code>New Corona... The spread of infection is not stopping...
+</code></pre>
+<p>I was thinking that I would like to put some data on a map and visualize it as a fledgling GIS shop, but I was afraid that most of the open data was collected in PDF format.</p>
+<p>But! ! ! ! ! !</p>
+<p>For non-profit purposes, sites that provide wonderful data with free data duplication, quotation, and reprint (<a href="https://gis.Ifound(jag-japan.com/covid19jp/)">https://gis.jag-japan.com/covid19jp/</a>, so I would like to use this data to express it on the map! ! xf</p>
+<p>This time, after studying, the configuration is somewhat redundant (starting the application server and DB server with docker-compose, and purposely delivering GeoJSON with API).</p>
+<h1 id="get-data">Get data</h1>
+<p>Let&rsquo;s take a look at the data!</p>
+<p>Access the above site and click the <code>csv</code> link in the upper left.</p>
+<p>![Screenshot 2020-03-30 7.40.44.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203944/7d6bfbfd-7fd1-1e60-d223-(194c749dbb9d.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203944/7d6bfbfd-7fd1-1e60-d223-(194c749dbb9d.png)</a></p>
+<p>Then you can download the following csv.</p>
+<pre><code class="language-COVID-19.csv" data-lang="COVID-19.csv">Throughout, Ministry of Health, Labor and Welfare NO, Asymptomatic pathogen carrier, Domestic, Charter flight, Age, Gender, Confirmation date, Onset date, Medical examination prefecture, Residence prefecture, Residence jurisdiction, Residence city, Key, Announcement, Within prefecture Case number, status, remarks, source, source 2, source 3, number of people, cumulative total, day-to-day comparison, total deaths, total number of discharges, number of discharges, number of onsets, number of PCR tests performed, day before PCR test, occupation_correction check ,Work_correction confirmation, Hospital Pref,Residential Pref,Release,Gender,X,Y,Confirmed date YYYYMMDD,Prefecture code,Resident prefecture code,Updated date,Field2,Field4,Field5,Field6,Field7,Field8,Field9,Field10
+1 ,1 ,,A-1,,30 ,Men, 1/15/2020,1/3/2020, Kanagawa prefecture, Kanagawa prefecture ,,, Kanagawa prefecture, Kanagawa prefecture, 1, discharge, ,https://www .mhlw.go.jp/stf/newpage_08906.html,https://www.pref.kanagawa.jp/docs/ga4/bukanshi/occurrence.html,,1 ,1 ,1 ,0 ,1 ,1 ,0, ,,,,Kanagawa,Kanagawa,Kanagawa Prefecture,Male,139.642347,35.447504,2020/1/15,14,14,3/29/2020 18:50,,,,,,,,
+2 ,2 ,,A-2,,40 ,Male, 1/24/2020, 1/14/2020, Tokyo, China, People's Republic of China, Tokyo, 1, Discharge,, https:/ /www.mhlw.go.jp/stf/newpage_09079.html,https://www.metro.tokyo.lg.jp/tosei/hodohappyo/press/2020/01/24/20.html,, 1, 2, 1 ,0 ,,,2 ,,,,,Tokyo,China(Mainland),Tokyo Metropolitan Government,Male,116.409685,39.903832,2020/1/24,13,NA,,,,,,,,,
+
+</code></pre><p>csv is the best.</p>
+<p>The number of infected people is equal to the number of records, and it provides quite detailed data, but I can not handle it, so let&rsquo;s focus on only the data you want to use and process it!</p>
+<p>#Create virtual environment before processing data</p>
+<p>Let&rsquo;s create a working directory and a data processing directory for the time being! (The directory name (covid_sample this time) is optional)</p>
+<p>You can create the covid_sample directory and the script directory under it at once with the following command.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$mkdir -p covid_sample/script
+</code></pre><p>For the time being, I just want to display the data on the map for the time being. <code>[&quot; Through&quot;, &quot;Age&quot;, &quot;Gender&quot;, &quot;Determined date&quot;, &quot;Date of onset&quot;, &quot;Prefecture prefecture&quot;, &quot;Resident prefecture&quot;, &quot; Let's take out only around &quot;X&quot;, &quot;Y&quot;]</code>!</p>
+<p>I don&rsquo;t want to pollute the environment of the main machine, so I will create a virtual environment using <code>pipenv</code> etc. and edit it quickly using pandas.</p>
+<p>For information on how to use pipenv, I think the article here [https://qiita.com/y-tsutsu/items/54c10e0b2c6b565c887a] will be very helpful!</p>
+<p>If you have pipenv installed, move the script directory with <code>$cd covid_sample/script</code> and create a Pipfile like the one below.</p>
+<pre><code class="language-ini:Pipfile" data-lang="ini:Pipfile">[[source]]
+name = &quot;pypi&quot;
+url = &quot;https://pypi.org/simple&quot;
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+pandas = &quot;==0.24.2&quot;
+requests = &quot;*&quot;
+
+[requires]
+python_version = &quot;3.8&quot;
+</code></pre><p>The above file is a file that specifies how to create a virtual environment.In the above example, Python version is 3.8 and pandas and requests are installed.</p>
+<p>Create the virtual environment with the <code>$pipenv install</code> command and enter the virtual environment with the <code>$pipenv shell</code>.</p>
+<p>Then, I think that a character like (script) appears at the left end of the shell, but if it appears, it is put in the virtual environment.</p>
+<p>If you check the installed libraries with <code>$pip list</code> in this state, you can confirm that pandas, requests and their dependencies are installed.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">(script) hogehoge:script$pip list
+Package Version
+- -------------- ----------
+certifi 2019.11.28
+chardet 3.0.4
+idna 2.9
+numpy 1.18.2
+pandas 0.24.2
+pip 20.0.2
+python-dateutil 2.8.1
+pytz 2019.3
+requests 2.23.0
+setuptools 46.1.3
+six 1.14.0
+urllib3 1.25.8
+wheel 0.34.2
+
+</code></pre><p>This completes the virtual environment creation!</p>
+<p>#Data processing</p>
+<p>Let&rsquo;s create a Python script like the one below! The name was changed to <code>format.py</code>!</p>
+<p>This script will download and process csv at once!</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-format.py" data-lang="format.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime <span style="color:#66d9ef">as</span> dt
+<span style="color:#f92672">import</span> requests
+
+<span style="color:#75715e"># csv URL</span>
+csv_url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://dl.dropboxusercontent.com/s/6mztoeb6xf78g5w/COVID-19.csv&#34;</span>
+
+<span style="color:#66d9ef">try</span>:
+    Specify <span style="color:#75715e">#url and make http request with GET method</span>
+    r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(csv_url)
+    Save <span style="color:#66d9ef">as</span> <span style="color:#75715e">#COVID-19.csv</span>
+    <span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#34;COVID-19.csv&#34;</span>,<span style="color:#e6db74">&#39;wb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        f<span style="color:#f92672">.</span>write(r<span style="color:#f92672">.</span>content)
+<span style="color:#66d9ef">except</span> requests<span style="color:#f92672">.</span>exceptions<span style="color:#f92672">.</span>RequestException <span style="color:#66d9ef">as</span> err:
+    <span style="color:#66d9ef">print</span>(err)
+
+<span style="color:#75715e"># Specify the name of the column to use</span>
+column_names <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#34;Through&#34;</span>, <span style="color:#e6db74">&#34;age&#34;</span>, <span style="color:#e6db74">&#34;sex&#34;</span>, <span style="color:#e6db74">&#34;confirmation date&#34;</span>, <span style="color:#e6db74">&#34;onset date&#34;</span>,
+    <span style="color:#e6db74">&#34;Medical examination prefecture&#34;</span>, <span style="color:#e6db74">&#34;Resident prefecture&#34;</span>, <span style="color:#e6db74">&#34;X&#34;</span>, <span style="color:#e6db74">&#34;Y&#34;</span>,
+]
+
+<span style="color:#75715e"># Change column name</span>
+changed_column_name <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#34;Through&#34;</span>: <span style="color:#e6db74">&#34;id&#34;</span>,
+    <span style="color:#e6db74">&#34;Age&#34;</span>: <span style="color:#e6db74">&#34;age&#34;</span>,
+    <span style="color:#e6db74">&#34;Gender&#34;</span>: <span style="color:#e6db74">&#34;gender&#34;</span>,
+    <span style="color:#e6db74">&#34;Final date&#34;</span>: <span style="color:#e6db74">&#34;fixed_data&#34;</span>,
+    <span style="color:#e6db74">&#34;Onset date&#34;</span>: <span style="color:#e6db74">&#34;onset_data&#34;</span>,
+    <span style="color:#e6db74">&#34;Prefecture&#34;</span>: <span style="color:#e6db74">&#34;consultation&#34;</span>,
+    <span style="color:#e6db74">&#34;Prefecture&#34;</span>: <span style="color:#e6db74">&#34;prefectures&#34;</span>,
+    <span style="color:#e6db74">&#34;X&#34;</span>: <span style="color:#e6db74">&#34;lng&#34;</span>,
+    <span style="color:#e6db74">&#34;Y&#34;</span>: <span style="color:#e6db74">&#34;lat&#34;</span>,
+}
+
+Array format specification of column names used <span style="color:#f92672">in</span> <span style="color:#75715e"># usecols</span>
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;COVID-19.csv&#39;</span>, usecols<span style="color:#f92672">=</span>column_names)
+<span style="color:#75715e"># Specify the column name to change in dictionary format</span>
+rename_df <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>rename(columns<span style="color:#f92672">=</span>changed_column_name)
+
+Create a list by deleting the specified character string <span style="color:#f92672">from</span> the <span style="color:#75715e"># age column</span>
+rename_df[<span style="color:#e6db74">&#34;age&#34;</span>] <span style="color:#f92672">=</span> [string<span style="color:#f92672">.</span>strip(<span style="color:#e6db74">&#39;&#39;</span>) <span style="color:#66d9ef">for</span> string <span style="color:#f92672">in</span> list(rename_df[<span style="color:#e6db74">&#34;age&#34;</span>])]
+<span style="color:#75715e"># Convert time to date type</span>
+rename_df[<span style="color:#e6db74">&#34;fixed_data&#34;</span>] <span style="color:#f92672">=</span> [dt<span style="color:#f92672">.</span>strptime(data_string, <span style="color:#e6db74">&#34;%m/</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">/%Y&#34;</span>)<span style="color:#f92672">.</span>date() <span style="color:#66d9ef">for</span> data_string <span style="color:#f92672">in</span> list(rename_df[<span style="color:#e6db74">&#34;fixed_data&#34;</span>])]
+Replace NaN <span style="color:#f92672">in</span> <span style="color:#75715e">#onset_data</span>
+rename_df<span style="color:#f92672">.</span>fillna({<span style="color:#e6db74">&#39;onset_data&#39;</span>: <span style="color:#e6db74">&#39;1/1/0001&#39;</span>}, inplace<span style="color:#f92672">=</span>True)
+rename_df[<span style="color:#e6db74">&#34;onset_data&#34;</span>] <span style="color:#f92672">=</span> [dt<span style="color:#f92672">.</span>strptime(data_string, <span style="color:#e6db74">&#34;%m/</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">/%Y&#34;</span>)<span style="color:#f92672">.</span>date() <span style="color:#66d9ef">for</span> data_string <span style="color:#f92672">in</span> list(rename_df[<span style="color:#e6db74">&#34;onset_data&#34;</span>])]
+
+<span style="color:#75715e"># Replace specified value in specified column</span>
+Change the original df <span style="color:#66d9ef">with</span> <span style="color:#75715e"># inplace=True</span>
+rename_df<span style="color:#f92672">.</span>replace(
+    {
+        <span style="color:#e6db74">&#34;age&#34;</span>: {<span style="color:#e6db74">&#34;unknown&#34;</span>: <span style="color:#e6db74">&#34;999&#34;</span>, <span style="color:#e6db74">&#34;0-10&#34;</span>: <span style="color:#e6db74">&#34;10&#34;</span>}
+    }
+    , inplace<span style="color:#f92672">=</span>True)
+
+Export to <span style="color:#75715e">#csv</span>
+rename_df<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#34;../docker/postgis/custom_COVID-19.csv&#34;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><p>When this command is executed, csv will be downloaded, stored in the same directory as the script, and the necessary data will be extracted and processed, and it will be output to the specified directory.</p>
+<p>The details are described in the code comment, so I think you can understand it if you have a look there!Specify the new directory created in the docker environment construction described in the item for the csv discharge location (<code>covid_sample/fastAPI/docker/postgis/custom_COVID-19.csv</code>), and specify the same directory in the docker settings. Be careful when running the script!</p>
+<h1 id="build-environment-with-docker-compose">Build environment with docker-compose</h1>
+<p>Once you have finished processing the csv, press <code>control + D</code> once to exit the virtual environment, and use <code>cd ../</code> to return to the root directory (covid_sample).</p>
+<p>Let&rsquo;s convert the data into a geospatial information format called GeoJSON that is easy to use on the web!</p>
+<p>Any method can be used, but in the future we want to play data as an API, so let&rsquo;s register it in the DB and start the API server using the backend as well!</p>
+<p>In that case, we will use Docker, which is very convenient for setting up a server individually!</p>
+<p>Since we will proceed with the assumption that it is installed, if you are using mac, refer to <a href="https://qiita.com/zembutsu/items/dd2209a663cae37dfa81">Docker Compose-Installation</a>etc.andDockerPleaseinstalldocker-compose.(EvenifyouuseotherOS,itwillcomeoutsoonifyougoogle!)</p>
+<p>Once created, create the API directory as follows!</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$mkdir -p docker/fastapi
+$mkdir -p docker/postgis/init
+$mkdir docker/postgis/sql
+</code></pre><p>The current directory structure should look like this!</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">covid_sample
+├── docker
+│  ├── fastapi
+│  └── postgis
+│  ├── init
+│  └── sql
+└── script
+ ├── COVID-19.csv
+ ├── Pipfile
+ ├── Pipfile.lock
+ └── format.py
+</code></pre></div><p>In addition, since there are quite a lot of files necessary to start docker, I have described it in a rough manner below, so please copy and use it! Lol</p>
+<ul>
+<li>Main configuration file for docker-compose: Set up the container to start up, the connection between containers, and the mount directory with the host machine</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker/docker-compose.yml" data-lang="docker/docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#39;3.7&#39;</span>
+<span style="color:#66d9ef">services</span>:
+    <span style="color:#66d9ef">fastapi</span>:
+<span style="color:#75715e"># Container name</span>
+        <span style="color:#66d9ef">container_name</span>: fastapi
+<span style="color:#75715e"># Directory containing the docker file to build</span>
+        <span style="color:#66d9ef">build</span>: fastapi
+        <span style="color:#66d9ef">volumes</span>:
+<span style="color:#75715e"># Directory to mount</span>
+            -./fastapi:/usr/src/app/
+        <span style="color:#66d9ef">ports</span>:
+<span style="color:#75715e"># Host side port: Container side port</span>
+            -<span style="color:#ae81ff">8000</span>:<span style="color:#ae81ff">8000</span>
+        <span style="color:#66d9ef">env_file</span>:
+<span style="color:#75715e"># File to be set in environment variable</span>
+            -fastapi/.env
+        <span style="color:#66d9ef">depends_on</span>:
+<span style="color:#75715e"># Service to connect</span>
+            -postgis
+
+    <span style="color:#66d9ef">postgis</span>:
+        <span style="color:#66d9ef">container_name</span>: postgis
+        <span style="color:#66d9ef">build</span>: postgis
+        <span style="color:#66d9ef">volumes</span>:
+            -covid_postgis_data:/var/lib/postgresql/data
+<span style="color:#75715e"># down -v Specify the file to be executed at the first startup including when there is no volume etc.</span>
+            -./postgis/init:/docker-entrypoint-initdb.d
+<span style="color:#75715e"># Directory to mount</span>
+            -./postgis:/home
+        <span style="color:#66d9ef">env_file</span>: postgis/.env_db
+        <span style="color:#66d9ef">ports</span>:
+<span style="color:#75715e"># Port on the host side bats with local psql, so it seems better than 5432</span>
+            -<span style="color:#ae81ff">5433</span>:<span style="color:#ae81ff">5432</span>
+
+<span style="color:#66d9ef">volumes</span>:
+    <span style="color:#66d9ef">covid_postgis_data</span>:
+</code></pre></div><ul>
+<li>Environment variable setting file for fastapi container</li>
+</ul>
+<pre><code class="language-docker/fastapi/.env" data-lang="docker/fastapi/.env">DATABASE_HOST=localhost
+DATABASE_PORT=5433
+</code></pre><ul>
+<li>Dockerfile for starting fastapi container (docker/fastapi/Dockerfile)</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker:docker/fastapi/Dockerfile" data-lang="docker:docker/fastapi/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> python:3.8</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get update -y --fix-missing <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y -q --no-install-recommends<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># install</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip install pipenv<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> Pipfile Pipfile.lock /<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pipenv install --system<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># add to application</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> app.py /<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;uvicorn&#34;</span>, <span style="color:#e6db74">&#34;app:app&#34;</span>, <span style="color:#e6db74">&#34;--host&#34;</span>, <span style="color:#e6db74">&#34;0.0.0.0&#34;</span>, <span style="color:#e6db74">&#34;--port&#34;</span>, <span style="color:#e6db74">&#34;8000&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><ul>
+<li>Python module to install with fastapi container (docker/fastapi/Pipfile)</li>
+</ul>
+<pre><code class="language-ini:docker/fastapi/Pipfile" data-lang="ini:docker/fastapi/Pipfile">[[source]]
+name = &quot;pypi&quot;
+url = &quot;https://pypi.org/simple&quot;
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+fastapi = &quot;*&quot;
+uvicorn = &quot;*&quot;
+psycopg2-binary = &quot;*&quot;
+
+[requires]
+python_version = &quot;3.8.0&quot;
+</code></pre><ul>
+<li>Application file for fastapi</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker/fastapi/app.py" data-lang="docker/fastapi/app.py"><span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> FastAPI
+
+app <span style="color:#f92672">=</span> FastAPI()
+
+<span style="color:#75715e"># Start with `uvicorn app:app --reload`</span>
+<span style="color:#a6e22e">@app.get</span>(<span style="color:#e6db74">&#34;/&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>():
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;hello&#34;</span>}
+</code></pre></div><ul>
+<li>environment variable setting file of postgis container</li>
+</ul>
+<p>Specify any password for <code>docker/postgis/.env_db</code>.</p>
+<pre><code class="language-docker/postgis/.env_db" data-lang="docker/postgis/.env_db">In the #postgres container, if you write it in env, DB will be created automatically
+POSTGRES_USER=covid_user
+POSTGRES_PASSWORD=hogehoge
+POSTGRES_DB=covid_db
+</code></pre><ul>
+<li>Dockerfile for starting postgis container (docker/postgis/Dockerfile)</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker:docker/postgis/Dockerfile" data-lang="docker:docker/postgis/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> mdillon/postgis:9.6</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># locale settings.</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> localedef -i ja_JP -c -f UTF-8 -A /usr/share/locale/locale.alias ja_JP.UTF-8<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> LANG ja_JP.UT<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><ul>
+<li>Shell script that is loaded when the postgis container is first started</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker/postgis/init/init.sh" data-lang="docker/postgis/init/init.sh"><span style="color:#75715e">#!/bin/sh
+</span><span style="color:#75715e"></span>
+psql -U covid_user -d covid_db -f /home/sql/init.sql
+
+psql -U covid_user -d covid_db -c <span style="color:#e6db74">&#34;COPY covid_data FROM&#39;/home/custom_COVID-19.csv&#39; WITH CSV HEADER DELIMITER&#39;,&#39;;&#34;</span>
+
+psql -U covid_user -d covid_db -f /home/sql/create_geom.sql
+</code></pre></div><ul>
+<li>Sql file executed by the above shell script</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql:docker/postgis/sql/init.sql" data-lang="sql:docker/postgis/sql/init.sql"><span style="color:#66d9ef">CREATE</span> EXTENSION postgis;
+
+<span style="color:#66d9ef">create</span> <span style="color:#66d9ef">table</span> <span style="color:#a6e22e">covid_data</span>
+(
+    id <span style="color:#66d9ef">smallint</span> <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">null</span>,
+    age <span style="color:#66d9ef">int</span>,
+    gender <span style="color:#66d9ef">text</span>,
+    fixed_data <span style="color:#66d9ef">date</span>,
+    onset_data <span style="color:#66d9ef">date</span>,
+    consultation <span style="color:#66d9ef">text</span>,
+    prefectures <span style="color:#66d9ef">text</span>,
+    lng <span style="color:#66d9ef">float</span>,
+    lat <span style="color:#66d9ef">float</span>
+);
+</code></pre></div><ul>
+<li>Sql file executed by the above shell script</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql:docker/postgis/sql/create_geom.sql" data-lang="sql:docker/postgis/sql/create_geom.sql"><span style="color:#66d9ef">alter</span> <span style="color:#66d9ef">table</span> covid_data
+<span style="color:#66d9ef">add</span> geom <span style="color:#a6e22e">geometry</span>(point, <span style="color:#ae81ff">4326</span>);
+
+<span style="color:#66d9ef">UPDATE</span> covid_data <span style="color:#66d9ef">SET</span> geom <span style="color:#f92672">=</span> <span style="color:#a6e22e">ST_GeogFromText</span>(<span style="color:#e6db74">&#39;SRID=4326;POINT(&#39;</span> <span style="color:#f92672">||</span> lng <span style="color:#f92672">||</span><span style="color:#e6db74">&#39;&#39;</span> <span style="color:#f92672">||</span> lat <span style="color:#f92672">||</span><span style="color:#e6db74">&#39;)&#39;</span>)::GEOMETRY;
+</code></pre></div><p>Once you have a csv that has been processed with the above files and script, let&rsquo;s build it with <code>$docker-compose up -d --build</code> and start it!</p>
+<p>This time we are launching a container for <code>FastAPI</code>, a micro-web framework for Python and <code>PostGIS</code>, a geospatial extension of PostgreSQL.</p>
+<p>When the container starts, the csv data is registered in the DB, and the geometry type geom column is automatically generated from that data by init.sh and the data is input.</p>
+<p>At this stage, you should be able to see the data by some means (pgadmin or <code>$psql -U covid_user -d covid_db -h localhost -p 5433</code>) by connecting to the DB in the postgis container.</p>
+<p>Also, if you access <code>localhost:8000</code> from the browser and the display of <code>{&quot;text&quot;: &quot;hello&quot;}</code> is returned, docker-compose environment construction is complete!</p>
+<p>#Create API</p>
+<p>Once you have an environment, let&rsquo;s create an API!</p>
+<p>Specifically, edit <code>docker/fastapi/app.py</code> as follows!</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker/fastapi/app.py" data-lang="docker/fastapi/app.py"><span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> FastAPI
+<span style="color:#f92672">import</span> psycopg2from starlette.middleware.cors import CORSMiddleware
+
+app <span style="color:#f92672">=</span> FastAPI()
+
+<span style="color:#75715e"># Added for setting CORS</span>
+app<span style="color:#f92672">.</span>add_middleware(
+    CORSMiddleware,
+    allow_origins<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;*&#34;</span>],
+    allow_credentials<span style="color:#f92672">=</span>True,
+    allow_methods<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;*&#34;</span>],
+    allow_headers<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;*&#34;</span>]
+)
+
+<span style="color:#75715e"># Start with `uvicorn app:app --reload`</span>
+<span style="color:#a6e22e">@app.get</span>(<span style="color:#e6db74">&#34;/&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>():
+    <span style="color:#75715e"># connect to postgreSQL</span>
+    connection <span style="color:#f92672">=</span> psycopg2<span style="color:#f92672">.</span>connect(
+        <span style="color:#75715e"># host=&#34;localhost&#34;,</span>
+        host<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;postgis&#34;</span>,
+        user<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;covid_user&#34;</span>,
+        password<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;hogehoge&#34;</span>,
+        dbname<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;covid_db&#34;</span>,
+        port<span style="color:#f92672">=</span><span style="color:#ae81ff">5432</span>
+    )
+
+    <span style="color:#75715e"># Set client program encoding (automatically converts from DB character code)</span>
+    connection<span style="color:#f92672">.</span>set_client_encoding(<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+
+    <span style="color:#75715e"># Get cursor</span>
+    cursor <span style="color:#f92672">=</span> connection<span style="color:#f92672">.</span>cursor()
+
+    generate <span style="color:#75715e"># geojson</span>
+    sql <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    SELECT jsonb_build_object(
+</span><span style="color:#e6db74">        &#39;type&#39;,&#39;FeatureCollection&#39;,
+</span><span style="color:#e6db74">        &#39;features&#39;, jsonb_agg(features.feature)
+</span><span style="color:#e6db74">    )
+</span><span style="color:#e6db74">    FROM (
+</span><span style="color:#e6db74">      SELECT jsonb_build_object(
+</span><span style="color:#e6db74">        &#39;type&#39;,&#39;Feature&#39;,
+</span><span style="color:#e6db74">        &#39;id&#39;, id,
+</span><span style="color:#e6db74">        &#39;geometry&#39;, ST_AsGeoJSON(geom)::jsonb,
+</span><span style="color:#e6db74">        &#39;properties&#39;, to_jsonb(inputs) -&#39;gid&#39; -&#39;geom&#39;
+</span><span style="color:#e6db74">      ) AS feature
+</span><span style="color:#e6db74">      FROM (SELECT * FROM covid_data) inputs) features;
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+
+    <span style="color:#75715e"># Execute SQL</span>
+    cursor<span style="color:#f92672">.</span>execute(sql)
+
+    <span style="color:#75715e"># Output the acquisition result</span>
+    results <span style="color:#f92672">=</span> cursor<span style="color:#f92672">.</span>fetchall()[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>]
+
+    <span style="color:#75715e"># Close the cursor</span>
+    cursor<span style="color:#f92672">.</span>close()
+
+    <span style="color:#75715e">#Disconnect</span>
+    connection<span style="color:#f92672">.</span>close()
+
+    <span style="color:#66d9ef">return</span> results
+</code></pre></div><p>In this application, first, we need to access the API from React with Ajax to acquire and display data, so we have made settings for CORS (this time we allow all hosts and methods, Please stop as much as possible as it is dangerous).</p>
+<p>If you do not set it, you cannot access the API from the JavaScript side (application for map display), so be sure to set it! (For more information, go to <code>CORS</code> and googling!)</p>
+<p>In the <code>@app.get(&quot;/&quot;)</code> part, it means that the process when / is accessed by the GET method will be written below it. This time, write the processing here.</p>
+<p>After that, access the DB using <code>psycopg2</code>, a module for connecting to PostgreSQL from Python.</p>
+<p>In the SQL part, the JSONB type function of PostgreSQL is used to forcibly convert the data to GeoJSON.</p>
+<p>After rewriting, stop the group of containers with <code>$docker-compose down</code> and restart it with <code>$docker-compose up -d --build</code>!</p>
+<p>Let&rsquo;s connect to <code>localhost:8000</code> again after the startup is completed.</p>
+<p>If all goes well you should get a GeoJSON like below!</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;FeatureCollection&#34;</span>,
+    <span style="color:#f92672">&#34;features&#34;</span>: [
+        {
+            <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">1</span>,
+            <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;Feature&#34;</span>,
+            <span style="color:#f92672">&#34;geometry&#34;</span>: {
+                <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;Point&#34;</span>,
+                <span style="color:#f92672">&#34;coordinates&#34;</span>: [
+                    <span style="color:#ae81ff">139.642347</span>,
+                    <span style="color:#ae81ff">35.447504</span>
+                ]
+            },
+            <span style="color:#f92672">&#34;properties&#34;</span>: {
+                <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">1</span>,
+                <span style="color:#f92672">&#34;age&#34;</span>: <span style="color:#ae81ff">30</span>,
+                <span style="color:#f92672">&#34;lat&#34;</span>: <span style="color:#ae81ff">35.447504</span>,
+                <span style="color:#f92672">&#34;lng&#34;</span>: <span style="color:#ae81ff">139.642347</span>,
+                <span style="color:#f92672">&#34;gender&#34;</span>: <span style="color:#e6db74">&#34;male&#34;</span>,
+                <span style="color:#f92672">&#34;fixed_data&#34;</span>: <span style="color:#e6db74">&#34;2020-01-15&#34;</span>,
+                <span style="color:#f92672">&#34;onset_data&#34;</span>: <span style="color:#e6db74">&#34;2020-01-03&#34;</span>,
+                <span style="color:#f92672">&#34;prefectures&#34;</span>: <span style="color:#e6db74">&#34;Kanagawa&#34;</span>,
+                <span style="color:#f92672">&#34;consultation&#34;</span>: <span style="color:#e6db74">&#34;Kanagawa&#34;</span>
+            }
+        },
+        {
+            <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">2</span>,
+            <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;Feature&#34;</span>,
+            <span style="color:#f92672">&#34;geometry&#34;</span>: {
+                <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;Point&#34;</span>,
+                <span style="color:#f92672">&#34;coordinates&#34;</span>: [
+                    <span style="color:#ae81ff">116.409685</span>,
+                    <span style="color:#ae81ff">39.903832</span>
+                ]
+            },
+            <span style="color:#f92672">&#34;properties&#34;</span>: {
+                <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">2</span>,
+                <span style="color:#f92672">&#34;age&#34;</span>: <span style="color:#ae81ff">40</span>,
+                <span style="color:#f92672">&#34;lat&#34;</span>: <span style="color:#ae81ff">39.903832</span>,
+                <span style="color:#f92672">&#34;lng&#34;</span>: <span style="color:#ae81ff">116.409685</span>,
+                <span style="color:#f92672">&#34;gender&#34;</span>: <span style="color:#e6db74">&#34;male&#34;</span>,
+                <span style="color:#f92672">&#34;fixed_data&#34;</span>: <span style="color:#e6db74">&#34;2020-01-24&#34;</span>,
+                <span style="color:#f92672">&#34;onset_data&#34;</span>: <span style="color:#e6db74">&#34;2020-01-14&#34;</span>,
+                <span style="color:#f92672">&#34;prefectures&#34;</span>: <span style="color:#e6db74">&#34;China&#34;</span>,
+                <span style="color:#f92672">&#34;consultation&#34;</span>: <span style="color:#e6db74">&#34;Tokyo&#34;</span>
+            }
+        },
+        <span style="color:#960050;background-color:#1e0010">...</span>
+<span style="color:#960050;background-color:#1e0010">}</span>
+</code></pre></div><p>Now the data is ready! !</p>
+<p>Next time let&rsquo;s display this data on the map!</p>
+<p>→Continue here: [Create a new corona infection site map <a href="datadisplay">FastAPI/PostGIS/deck.gl(React)</a>](<a href="https://qiita.com/nokonoko_1203/items/23ee1ffb6880f6acdda9">https://qiita.com/nokonoko_1203/items/23ee1ffb6880f6acdda9</a>)</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[BigQuery] How to use BigQuery&#39;s API for Python -Table creation- | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[BigQuery] How to use BigQuery&rsquo;s API for Python -Table creation-</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 13, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas">pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlecloudplatform">GoogleCloudPlatform</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/bigquery">BigQuery</a></code></small>
+
+</p>
+<pre><code># In line 5
+</code></pre>
+<ul>
+<li>Data scientists usually analyze with Jupyter</li>
+<li>Therefore, there is a desire to process DB as well on Jupyter</li>
+<li>Therefore it is more convenient to use BigQuery on Jupyter via library instead of WebUI or REST API.</li>
+<li>I decided to investigate the function of the official library <code>google.cloud.bigquery</code> to achieve the above</li>
+<li>Below is a summary of how to create tables in BigQuery</li>
+</ul>
+<p>#Preparation</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> google.cloud <span style="color:#f92672">import</span> bigquery
+
+<span style="color:#75715e"># Specify your own GCP Project ID</span>
+project_id <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;YourProjectID&#39;</span>
+client <span style="color:#f92672">=</span> bigquery<span style="color:#f92672">.</span>Client(project<span style="color:#f92672">=</span>project_id)
+
+</code></pre></div><p>If you don&rsquo;t know how to pass authentication in Colaboratory, I&rsquo;ve written the article before, so please refer to it.</p>
+<p>If you run in GCE environment, authentication should be passed by default in the first place.</p>
+<p>If you want to access in other environment, create JSON for authentication according to the official API reference below and load it.</p>
+<p><a href="https://qiita.com/Hyperion13fleet/items/a77ca93a61cb39d50138">Three ways to access BigQuery with Colaboratory</a>
+<a href="https://googleapis.dev/python/bigquery/latest/index.html">Official API Reference</a></p>
+<h2 id="assumption">Assumption</h2>
+<p><code>google.cloud.bigquery</code>: Ver. 1.20.0</p>
+<ul>
+<li>Described on the assumption that it will be executed with Jupyter built on GCE</li>
+</ul>
+<p>Needless to say, please install it like this</p>
+<p><code>pip install google-cloud-bigquery==1.20.0</code></p>
+<p>DataSet is assumed to be created in US region</p>
+<h1 id="dataset-operation">DataSet operation</h1>
+<p><strong>If the PJ already has a DataSet, skip this part completely OK</strong>.
+Even if you do not have a DataSet yet, it is basically not possible to recreate it, so once you have processed it, you can forget about the functions around here.</p>
+<p>By the way, BigQuery DataSet corresponds to the &ldquo;schema&rdquo; in other DBs. But BQ gives a different meaning to the schema, so here <font color="OrangeRed">DataSet is not called a schema</font>.</p>
+<h2 id="creating-a-dataset">Creating a DataSet</h2>
+<pre><code class="language-create" data-lang="create">Create a DataSet with the name # [demo]
+dataset_name = &quot;demo&quot;
+dataset_id = &quot;{}.{}&quot;.format(client.project, dataset_name)
+
+dataset = bigquery.Dataset(dataset_id)
+# location is always the lowest in the US, so I always use this. Please change if you are particular about the region.
+dataset.location = &quot;US&quot;
+
+client.create_dataset(dataset)
+
+</code></pre><p><a href="https://googleapis.dev/python/bigquery/latest/usage/datasets.html">Reference: Managing Datasets</a></p>
+<p>#Table operation
+About the process of creating a table and loading data into the table</p>
+<ul>
+<li>Create table</li>
+<li>Check table</li>
+<li>Data Import to table</li>
+<li>Data Export from table</li>
+<li>Drop table</li>
+</ul>
+<p>Basically ↓ If you read the official reference, everything is written, but well. .. .. Yup. .. .. It&rsquo;s okay to write in Qiita. .. ..</p>
+<ul>
+<li>reference-
+<a href="https://googleapis.dev/python/bigquery/latest/usage/tables.html">Managing Tables</a>
+<a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language?hl=ja">Use data definition language statement</a></li>
+</ul>
+<h2 id="create-table">Create table</h2>
+<p>Here, the code example will be described assuming that a purchase history table for the following products will be created.</p>
+<table>
+<thead>
+<tr>
+<th align="left">#</th>
+<th align="left">Column name</th>
+<th align="center">Type</th>
+<th align="center">Mode</th>
+<th align="left">Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">1</td>
+<td align="left">TRANSACTION_ID</td>
+<td align="center">STRING</td>
+<td align="center">REQUIRED</td>
+<td align="left">Purchase History ID</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">ORDER_TS</td>
+<td align="center">TIMESTAMP</td>
+<td align="center">REQUIRED</td>
+<td align="left">Purchase time</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">ORDER_DT</td>
+<td align="center">DATE</td>
+<td align="center">REQUIRED</td>
+<td align="left">Purchase date</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">ITEM_CODE</td>
+<td align="center">STRING</td>
+<td align="center">REQUIRED</td>
+<td align="left">Product ID</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">ITEM_NAME</td>
+<td align="center">STRING</td>
+<td align="center">NULLABLE</td>
+<td align="left">Product name</td>
+</tr>
+<tr>
+<td align="left">6</td>
+<td align="left">QUANTITY</td>
+<td align="center">INTEGER</td>
+<td align="center">NULLABLE</td>
+<td align="left">Purchase Quantity</td>
+</tr>
+<tr>
+<td align="left">7</td>
+<td align="left">AMOUNT</td>
+<td align="center">FLOAT</td>
+<td align="center">NULLABLE</td>
+<td align="left">Purchase Price</td>
+</tr>
+<tr>
+<td align="left">8</td>
+<td align="left">DISCOUNT</td>
+<td align="center">FLOAT</td>
+<td align="center">NULLABLE</td>
+<td align="left">Discount amount</td>
+</tr>
+<tr>
+<td align="left">9</td>
+<td align="left">CUSTOMER_ID</td>
+<td align="center">STRING</td>
+<td align="center">REQUIRED</td>
+<td align="left">Customer ID</td>
+</tr>
+<tr>
+<td align="left">10</td>
+<td align="left">ITEM_TAG</td>
+<td align="center">RECORD</td>
+<td align="center">REPEATED</td>
+<td align="left">Product tag list</td>
+</tr>
+<tr>
+<td align="left">10.1</td>
+<td align="left">TAG_ID</td>
+<td align="center">STRING</td>
+<td align="center">NULLABLE</td>
+<td align="left">Tag ID</td>
+</tr>
+<tr>
+<td align="left">10.2</td>
+<td align="left">TAG_NAME</td>
+<td align="center">STRING</td>
+<td align="center">NULLABLE</td>
+<td align="left">Tag name</td>
+</tr>
+</tbody>
+</table>
+<p>*If you don&rsquo;t want to handle the nested information, ignore the #10 field.</p>
+<h3 id="create-table-definition-create-schema">Create table definition (create schema)</h3>
+<p>BigQuery reads the definition of a table as a schema</p>
+<p>Therefore, various definitions will be inserted into the method of <code>bigquery.SchemaField</code>.</p>
+<p>Field name and type cannot be omitted</p>
+<p>Tag information is defined in a nested format</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> google.cloud <span style="color:#f92672">import</span> bigquery
+
+<span style="color:#75715e">#Define Schema</span>
+schema <span style="color:#f92672">=</span> [
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;TRANSACTION_ID&#39;</span>,<span style="color:#e6db74">&#39;STRING&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;REQUIRED&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Purchase History ID&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;ORDER_TS&#39;</span>,<span style="color:#e6db74">&#39;TIMESTAMP&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;REQUIRED&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Purchase time&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;ORDER_DT&#39;</span>,<span style="color:#e6db74">&#39;DATE&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;REQUIRED&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Purchase date&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;ITEM_CODE&#39;</span>,<span style="color:#e6db74">&#39;STRING&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;REQUIRED&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Product ID&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;ITEM_NAME&#39;</span>,<span style="color:#e6db74">&#39;STRING&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;product name&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;QUANTITY&#39;</span>,<span style="color:#e6db74">&#39;INTEGER&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Purchase quantity&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;AMOUNT&#39;</span>,<span style="color:#e6db74">&#39;FLOAT&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Purchase amount&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;DISCOUNT&#39;</span>,<span style="color:#e6db74">&#39;FLOAT&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Discount amount&#39;</span>),
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;CUSTOMER_ID&#39;</span>,<span style="color:#e6db74">&#39;STRING&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Customer ID&#39;</span>),
+    
+    bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;ITEM_TAG&#39;</span>,<span style="color:#e6db74">&#39;RECORD&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;REPEATED&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Tag info&#39;</span>,
+                         fields<span style="color:#f92672">=</span> [
+                         bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;TAG_ID&#39;</span>,<span style="color:#e6db74">&#39;STRING&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Tag ID&#39;</span>),
+                         bigquery<span style="color:#f92672">.</span>SchemaField(<span style="color:#e6db74">&#39;TAG_NAME&#39;</span>,<span style="color:#e6db74">&#39;STRING&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NULLABLE&#39;</span>, description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Tag name&#39;</span>),
+                         ]
+                         )
+]
+
+</code></pre></div><h3 id="actually-create-the-table">actually create the table</h3>
+<p>After creating the schema, the next step is actually creating the table</p>
+<p>Elements that should be considered other than the schema</p>
+<ul>
+<li>Make a partitioned table (If you plan to put more than 2000 days of data, it is better not to be a partitioned table)</li>
+<li>Cluster table (note that it can be applied only to partitioned table)</li>
+</ul>
+<p><a href="https://qiita.com/Hyperion13fleet/items/2b65d60233a22e3703eb">What I was addicted to when creating a partitioned table with BigQuery</a></p>
+<p>This time create a table as a split &amp; cluster table</p>
+<pre><code class="language-python:" data-lang="python:">from google.cloud import bigquery
+
+# project_id ='YourProjectID'
+# client = bigquery.Client(project=project_id)
+# dataset_name = &quot;demo&quot;
+# dataset_id = &quot;{}.{}&quot;.format(client.project, dataset_name)
+
+# Decide table name
+table_name = &quot;demo_transaction&quot;
+table_id = &quot;{}.{}.{}&quot;.format(client.project, dataset_id, table_name)
+
+# Use the schema defined above
+table = bigquery.Table(table_id, schema=schema)
+
+# Split table setting (here ORDER_DT)
+table.time_partitioning = bigquery.TimePartitioning(
+    type_=bigquery.TimePartitioningType.DAY,
+    field=&quot;ORDER_DT&quot;
+)
+# Setting up the cluster table
+table.clustering_fields = [&quot;ITEM_CODE&quot;, &quot;CUSTOMER_ID&quot;]
+table.description = &quot;Demo Data&quot;
+
+# Execute table creation
+table = client.create_table(table)
+
+</code></pre><p>If you check it on the console on the Web, you can see that it is defined like this![Screenshot 2019-11-30 15.51.17.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/55225/aa1b96bf-2577-1f84-6595-(ce8280b7848d.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/55225/aa1b96bf-2577-1f84-6595-(ce8280b7848d.png)</a></p>
+<h2 id="check-table-list">Check table list</h2>
+<p>To confirm the table list, confirm the DataSet name or specify the DataSet object.
+Can be confirmed with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Check the table in [demo]DataSet</span>
+
+Pattern to confirm the table name by specifying <span style="color:#75715e">#DataSet name</span>
+dataset_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;demo&#34;</span>
+<span style="color:#66d9ef">for</span> table <span style="color:#f92672">in</span> client<span style="color:#f92672">.</span>list_tables(dataset<span style="color:#f92672">=</span>dataset_id):
+  <span style="color:#66d9ef">print</span>(table<span style="color:#f92672">.</span>table_id)
+
+Pattern to confirm by specifying <span style="color:#75715e">#DataSet object</span>
+dataset_object <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>get_dataset(<span style="color:#e6db74">&#34;demo&#34;</span>)
+<span style="color:#66d9ef">for</span> table <span style="color:#f92672">in</span> client<span style="color:#f92672">.</span>list_tables(dataset<span style="color:#f92672">=</span>dataset_object):
+  <span style="color:#66d9ef">print</span>(table<span style="color:#f92672">.</span>table_id)
+
+</code></pre></div><h2 id="load-data-to-table">Load data to table</h2>
+<p>Data scientists often repeat import/export of data, so I would like to understand properly about this as well.</p>
+<ul>
+<li>Import a local file
+-Read CSV
+-Read JSON</li>
+<li>Import GCS file</li>
+</ul>
+<h3 id="import-local-files">Import local files</h3>
+<p>Describe the pattern that stores the file in CSV and the two patterns that store in JSON.</p>
+<h4 id="read-csv-file">Read CSV file</h4>
+<p>I think that I often store data in CSV files, so I will follow this pattern.
+However, CSV cannot support nested information in a table with nested fields, so CSV cannot support it.</p>
+<p>Try loading a table name that does not contain nested information as <code>demo_transaciton</code></p>
+<pre><code class="language-Import" data-lang="Import"># Specify local file
+filename ='demo_transaction.csv'
+
+#Dataset name
+detaset_id = &quot;demo&quot;
+# Table name to be imported
+table_id = &quot;demo_transaction_csv&quot;
+dataset_ref = client.dataset(dataset_id)
+table_ref = dataset_ref.table(table_id)
+
+# Import settings
+job_config = bigquery.LoadJobConfig()
+#Specify that CSV is the source
+job_config.source_format = bigquery.SourceFormat.CSV
+#Skip first line if file contains header
+job_config.skip_leading_rows = 1
+
+with open(filename, &quot;rb&quot;) as source_file:
+    job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
+
+# Execute
+job.result()
+
+</code></pre><p>By the way, if an error occurs for some reason, check the contents of the error with <code>job.errors</code> and reload it.</p>
+<h4 id="read-json-file">Read JSON file</h4>
+<p>Import table with nested data with json</p>
+<p>The format that can be imported by json is fixed, and it is necessary to include the data in the form of judging one record by line feed as follows.</p>
+<pre><code class="language-json:json" data-lang="json:json">{&quot;TRANSACTION_ID&quot;:&quot;t0001&quot;,&quot;ORDER_TS&quot;:&quot;2019-11-02 12:00:00 UTC&quot;,&quot;ORDER_DT&quot;:&quot;2019-11-02&quot;,&quot;ITEM_CODE&quot;:&quot;ITEM001&quot;,&quot;ITEM_NAME&quot; :&quot;YYYYY1&quot;,&quot;QUANTITY&quot;:&quot;29&quot;,&quot;AMOUNT&quot;:2200,&quot;DISCOUNT&quot;:0,&quot;CUSTOMER_ID&quot;:&quot;F0002&quot;,&quot;ITEM_TAG&quot;:[{&quot;TAG_ID&quot;:&quot;XXX1&quot;, &quot;TAG_NAME&quot; :&quot;XYZ1&quot;},{&quot;TAG_ID&quot;:&quot;XXX2&quot;, &quot;TAG_NAME&quot;:&quot;XYZ2&quot;}]}
+{&quot;TRANSACTION_ID&quot;:&quot;t0002&quot;,&quot;ORDER_TS&quot;:&quot;2019-11-03 12:00:00 UTC&quot;,&quot;ORDER_DT&quot;:&quot;2019-11-03&quot;,&quot;ITEM_CODE&quot;:&quot;ITEM002&quot;,&quot;ITEM_NAME&quot; :&quot;YYYYY2&quot;,&quot;QUANTITY&quot;:&quot;35&quot;,&quot;AMOUNT&quot;:5700,&quot;DISCOUNT&quot;:0,&quot;CUSTOMER_ID&quot;:&quot;F0002&quot;,&quot;ITEM_TAG&quot;:[]}
+{&quot;TRANSACTION_ID&quot;:&quot;t0003&quot;,&quot;ORDER_TS&quot;:&quot;2019-11-04 12:00:00 UTC&quot;,&quot;ORDER_DT&quot;:&quot;2019-11-04&quot;,&quot;ITEM_CODE&quot;:&quot;ITEM003&quot;,&quot;ITEM_NAME&quot; :&quot;YYYYY3&quot;,&quot;QUANTITY&quot;:&quot;48&quot;,&quot;AMOUNT&quot;:4200,&quot;DISCOUNT&quot;:0,&quot;CUSTOMER_ID&quot;:&quot;F0002&quot;,&quot;ITEM_TAG&quot;:[{&quot;TAG_ID&quot;:&quot;XXX3&quot;, &quot;TAG_NAME&quot; :&quot;XYZ3&quot;}]}
+</code></pre><p>If there is jsonized data in this state, the local file can be imported like this</p>
+<pre><code class="language-Import" data-lang="Import">
+# Specify local file name
+filename ='demo_transaction.json'
+
+#Dataset name
+detaset_id = &quot;demo&quot;
+#Table name with nesting information
+table_id = &quot;demo_transaction&quot;
+dataset_ref = client.dataset(dataset_id)
+table_ref = dataset_ref.table(table_id)
+
+job_config = bigquery.LoadJobConfig()
+I will tell you that #json is the original file
+job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+
+with open(filename, &quot;rb&quot;) as source_file:
+    job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
+
+# Execute
+job.result()
+
+</code></pre><p>By the way, since it is nested data, it looks like this when viewed on the console</p>
+<p>![Screenshot 2019-11-30 15.46.54.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/55225/72cbbe39-fb60-d427-145a-(d5fb01d4babd.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/55225/72cbbe39-fb60-d427-145a-(d5fb01d4babd.png)</a></p>
+<ul>
+<li>reference-
+<a href="https://gist.github.com/isdyy/5072792">gist: Lightly try Google BigQuery JSON injection</a></li>
+</ul>
+<h3 id="import-gcs-file">Import GCS file</h3>
+<p>Although there are cases where data is imported to BigQuery with a local file, it is better to make full use of GCS because it uses GCP.</p>
+<p>So, I will also check the method of importing the data stored in GCS</p>
+<p>It&rsquo;s nice that you don&rsquo;t need to call the GCS related library if you know the path of the file stored in GCS.</p>
+<p>Example assuming importing CSV file into <code>demo_transaction_csv</code> table ↓</p>
+<pre><code class="language-python:" data-lang="python:">#Specify data set and table name
+detaset_id = &quot;demo&quot;
+table_id = &quot;demo_transaction_csv&quot;
+dataset_ref = client.dataset(dataset_id)
+table_ref = dataset_ref.table(table_id)
+
+# Various settings because CSV is loaded
+job_config = bigquery.LoadJobConfig()
+job_config.skip_leading_rows = 1
+job_config.source_format = bigquery.SourceFormat.CSV
+
+# Specify the path where the GCS file is located
+uri = &quot;gs://{yourbacketname}/demo_transaction.csv&quot;
+
+#Create job
+load_job = client.load_table_from_uri(
+    uri, table_ref, job_config=job_config
+)
+
+# Run load
+load_job.result()
+</code></pre><h3 id="maybe-hell-push-the-dataframe-into-bq-with-the-pandas-feature">(Maybe hell) Push the DataFrame into BQ with the pandas feature</h3>
+<p>Although it is not a function of the official API, you can also insert the data of <code>pd.DataFrame</code> into the table of BigQuery by using the function of pandas side.</p>
+<p>You can insert it into an existing table additionally, but I think that there are many people who use it to write out a DataFrame after processing variously as a new table and write it out.</p>
+<p>As an example, try pulling out some data of <code>demo.demo_transaction_csv</code> created earlier and writing it out as another table</p>
+<pre><code class="language-Write" data-lang="Write"># Prepare a query that fetches some data
+query = &quot;&quot;&quot;
+    SELECT
+        TRANSACTION_ID
+        , ORDER_TS
+        , ITEM_CODE
+        , QUANTITY
+        , AMOUNT
+        
+    FROM
+        `{YourProjectID}.demo.demo_transaction_csv`
+    LIMIT 200
+    ;
+    &quot;&quot;&quot;
+# Generate query job
+query_job = client.query(
+    query, location='US'
+)
+
+# Receive results in data frame
+df = query_job.to_dataframe()
+
+# Export the data frame with the name [demo_transaciton_csv_extracted]
+# if_exists:append -&gt; Append if table already exists, create new if not
+# if_exists:fail -&gt; Fail if the table already exists, create new if not
+# if_exists:replace -&gt; replace table if it already exists, create new if not
+
+detaset_id = &quot;demo&quot;
+table_id = &quot;demo_transaciton_csv_extracted&quot;df.to_gbq(destination_table='{dataset}.{table}'.format(dataset=dataset_id, table=table_id),project_id=project_id, if_exists='append')
+</code></pre><p>Make sure Import is working</p>
+<pre><code class="language-python:" data-lang="python:">detaset_id = &quot;demo&quot;
+dataset_ref = client.dataset(dataset_id)
+
+table_id = &quot;demo_transaciton_csv_extracted&quot;
+table_ref = dataset_ref.table(table_id)
+table = client.get_table(table_ref)
+print(&quot;Table has {} rows&quot;.format(table.num_rows))
+
+&gt; Table has 200 rows
+</code></pre><h3 id="import-pddataframe-data-with-api-native-function">Import pd.DataFrame data with API native function</h3>
+<p>I wrote the evil method first, but it is possible to put a DataFrame in the API as well</p>
+<p>Can be executed even if Schema is not defined in the sample code</p>
+<pre><code class="language-Import" data-lang="Import">import pandas as pd
+
+detaset_id = &quot;demo&quot;
+dataset_ref = client.dataset(dataset_id)
+
+table_id = &quot;demo_pandas_data&quot;
+table_ref = dataset_ref.table(table_id)
+
+# Create pd.DataFrame data appropriately
+rows = [
+    {&quot;item_id&quot;: &quot;xx1&quot;, &quot;quantity&quot;: 1},
+    {&quot;item_id&quot;: &quot;xx2&quot;, &quot;quantity&quot;: 2},
+    {&quot;item_id&quot;: &quot;xx3&quot;, &quot;quantity&quot;: 3},
+]
+
+dataframe = pd.DataFrame(
+    rows,
+    columns=[&quot;item_id&quot;, &quot;quantity&quot;]
+)
+
+#Define the schema (Import is possible without it, but it is safer to write it)
+job_config = bigquery.LoadJobConfig(
+    schema=[
+        bigquery.SchemaField(&quot;item_id&quot;, &quot;STRING&quot;),
+        bigquery.SchemaField(&quot;quantity&quot;, &quot;INTEGER&quot;),
+    ],
+)
+
+# pd.DataFrame Store data in table
+job = client.load_table_from_dataframe(
+    dataframe,
+    table_ref,
+    job_config=job_config,
+    location=&quot;US&quot;,
+)
+# Execute
+job.result()
+</code></pre><h3 id="import-existing-table-data">Import existing table data</h3>
+<p>I abusively pull out the data from the existing table via DataFrame and write it as a new table, but basically I want to implement it with the official function</p>
+<ul>
+<li>Extract the information of the existing table and newly write it using the function of API</li>
+<li>Write new directly with query</li>
+</ul>
+<h4 id="write-query-result-with-api-native-function">Write query result with API native function</h4>
+<p>When writing using API function, just specify a new table name in <code>QueryJobConfig.destination</code>.</p>
+<p>**simple! ! ! **</p>
+<pre><code class="language-python:" data-lang="python:">#Create Job Config
+job_config = bigquery.QueryJobConfig()
+
+detaset_id = &quot;demo&quot;
+dataset_ref = client.dataset(dataset_id)
+
+# Define the table name to write to
+table_id = &quot;demo_transaciton_csv_direct_extracted&quot;
+table_ref = dataset_ref.table(table_id)
+
+# (Important) Specify the write destination table
+job_config.destination = table_ref
+
+#Define the query to write
+query = &quot;&quot;&quot;
+    SELECT
+        TRANSACTION_ID
+        , ORDER_TS
+        , ITEM_CODE
+        , QUANTITY
+        , AMOUNT
+    FROM
+        `{YourProjectID}.demo.demo_transaction_csv`
+    LIMIT 300
+    ;
+    &quot;&quot;&quot;
+
+# Generate query job
+query_job = client.query(
+    query,
+    location=&quot;US&quot;,
+    job_config=job_config,
+)
+
+# Execute
+query_job.result()
+</code></pre><h4 id="pattern-created-by-query-create-table-table_name-as-select">Pattern created by query (CREATE TABLE [TABLE_NAME] AS SELECT)</h4>
+<p>I think that the pattern to define a new table in <code>QueryJobConfig.destination</code> is sufficient, but follow the familiar method (CREATE TABLE ~ AS SELECT).</p>
+<p>After all, I use it unexpectedly. .. ..</p>
+<pre><code class="language-python:" data-lang="python:">detaset_id = &quot;demo&quot;
+# Define the table name to write to
+table_id = &quot;demo_transaciton_csv_as_select&quot;
+
+#Define the query to write
+query = &quot;&quot;&quot;
+    DROP TABLE IF EXISTS {dataset}.{table};
+    CREATE TABLE {dataset}.{table} AS
+    SELECT
+        TRANSACTION_ID
+        , ORDER_TS
+        , ITEM_CODE
+        , QUANTITY
+        , AMOUNT
+        
+    FROM
+        `{YourProjectID}.demo.demo_transaction_csv`
+    LIMIT 400
+    ;
+    &quot;&quot;&quot;.format(dataset=dataset_id, table=table_id)
+
+# Generate query job
+job_config = bigquery.QueryJobConfig()
+query_job = client.query(
+    query,
+    location=&quot;US&quot;,
+    job_config=job_config,
+)
+
+# Execute (Of course nothing is returned but it is written properly)
+query_job.result()
+</code></pre><p>This should have covered all the way to import data. .. ..</p>
+<h2 id="creating-a-partitioned-table">Creating a partitioned table</h2>
+<p>Since BigQuery is a pay-as-you-go form for each column,</p>
+<ol>
+<li>Even if you set <code>Limit</code>, the charge amount does not change</li>
+<li>Even if the conditions are narrowed down with <code>Where</code>, the charge amount does not change</li>
+<li>You will be charged for each additional column</li>
+</ol>
+<p>There is a service feature</p>
+<p>It doesn&rsquo;t matter as long as the data volume is small (1TB per month is free of queries), but if you handle more than tens of TBs of data, you need to be careful.</p>
+<p>Then what should I do?</p>
+<ol>
+<li><strong>Set a split table</strong></li>
+<li><strong>Configure the cluster table</strong></li>
+</ol>
+<p>Is the basic solution</p>
+<p>Tables with several TB of data must contain some kind of time series information, so create that table by setting that information as the field to be split.</p>
+<p>Note that you cannot change it later unless you define it as a partitioned table when creating the table.</p>
+<ul>
+<li>reference-
+<a href="https://cloud.google.com/bigquery/docs/partitioned-tables?hl=ja">Overview of Partitioned Table</a></li>
+</ul>
+<h3 id="pattern-to-include-split-option-in-table-definition">Pattern to include split option in table definition</h3>
+<p>First, describe the pattern to set the split option at the stage of creating the table.</p>
+<pre><code class="language-python:" data-lang="python:"># Describe the table definition (time series columns are required)
+schema = [
+    bigquery.SchemaField('TRANSACTION_ID','STRING', mode='REQUIRED', description='Purchase History ID'),
+    bigquery.SchemaField('ORDER_TS','TIMESTAMP', mode='REQUIRED', description='Purchase time'),
+    bigquery.SchemaField('ORDER_DT','DATE', mode='REQUIRED', description='Purchase date'),
+]
+
+detaset_id = &quot;demo&quot;
+table_id = &quot;demo_transaction_time_partition1&quot;
+dataset_ref = client.dataset(dataset_id)
+table_ref = dataset_ref.table(table_id)
+
+#Table object generation
+table = bigquery.Table(table_ref, schema=schema)
+
+# Set split options
+table.time_partitioning = bigquery.TimePartitioning(
+    # Split by day
+    type_=bigquery.TimePartitioningType.DAY,
+    # Set target field
+    field=&quot;ORDER_DT&quot;
+)
+table.description = &quot;Time Partition Data&quot;
+
+# Create split table
+table = client.create_table(table)
+
+</code></pre><h3 id="pattern-created-by-query-create-table-table_name-as-select-1">Pattern created by query (CREATE TABLE [TABLE_NAME] AS SELECT)</h3>
+<p>You can also create a partitioned table from an existing table with <code>CREATE TABLE [TABLE_NAME] AS SELECT</code></p>
+<p>The most useful thing is to recreate a bloated table that is not set as a partitioned table **</p>
+<p>Put <code>PARTITION BY [Time Partition Field]</code> before <code>AS SELECT</code>.</p>
+<pre><code class="language-python:" data-lang="python:">detaset_id = &quot;demo&quot;
+# Define the table name to write to
+table_id = &quot;demo_transaciton_csv_as_select_time_partition&quot;
+
+query = &quot;&quot;&quot;
+    DROP TABLE IF EXISTS {dataset}.{table};
+    CREATE TABLE {dataset}.{table}
+    PARTITION BYORDER_DT
+    AS
+    SELECT
+        TRANSACTION_ID
+        , ORDER_TS
+        , ORDER_DT
+        , ITEM_CODE
+        , QUANTITY
+        , AMOUNT
+        
+    FROM
+        `{YourProjectID}.demo.demo_transaction_csv`
+    LIMIT 500
+    ;
+    &quot;&quot;&quot;.format(dataset=dataset_id, table=table_id)
+
+# Generate query job
+query_job = client.query(
+    query,
+    location=&quot;US&quot;
+)
+# Execute
+query_job.result()
+</code></pre><p>Easy! !</p>
+<h2 id="creating-a-cluster-table">Creating a cluster table</h2>
+<p>Additional cluster fields can be set in the partitioned table</p>
+<p>Since only the cluster field is specified in the option of the partitioned table, it is described as an excerpt</p>
+<ul>
+<li>reference-
+<a href="https://cloud.google.com/bigquery/docs/creating-clustered-tables?hl=ja">Create and use clustered tables</a></li>
+</ul>
+<p>Please refer to the following for the effect of setting the cluster option.</p>
+<p><a href="https://qiita.com/tmonoi/items/7fab1ba2ef1c88a2fd71">[BigQuery] Clustered Table Survey</a></p>
+<h3 id="pattern-to-include-cluster-option-in-table-definition">Pattern to include cluster option in table definition</h3>
+<pre><code class="language-python:" data-lang="python:">&quot;&quot;&quot; cluster table must be a partitioned table
+table = bigquery.Table(table_ref, schema=schema)
+table.time_partitioning = bigquery.TimePartitioning(
+    type_=bigquery.TimePartitioningType.DAY,
+    field=&quot;ORDER_DT&quot;
+)
+&quot;&quot;&quot;
+table.clustering_fields = [&quot;ITEM_CODE&quot;, &quot;CUSTOMER_ID&quot;]
+
+</code></pre><h3 id="pattern-created-by-query-create-table-table_name-as-select-2">Pattern created by query (CREATE TABLE [TABLE_NAME] AS SELECT)</h3>
+<p>When specifying with SQL, just add the cluster option <code>CLUSTER BY</code></p>
+<pre><code class="language-python:" data-lang="python:">query =
+    &quot;&quot;&quot;
+    DROP TABLE IF EXISTS {dataset}.{table};
+    CREATE TABLE {dataset}.{table}
+    PARTITION BY
+    ORDER_DT
+    CLUSTER BY
+    ITEM_CODE, CUSTOMER_ID
+    AS
+    SELECT
+        *
+    FROM
+        `{YourProjectID}.demo.demo_transaction_csv`
+    LIMIT 500
+    ;
+    &quot;&quot;&quot;.format(dataset=dataset_id, table=table_id)
+
+</code></pre><h2 id="export-table-data">Export table data</h2>
+<p>Whew. .. .. Finally, the part to enter the data is over. .. ..</p>
+<p>Next is the Export part, but the method to export the table itself is basically to spit out to GCS</p>
+<h3 id="export-to-gcs">Export to GCS</h3>
+<p>Export the contents of the table by specifying the GCS bucket
+Unless you specify <code>job_config</code>, it will be written as a csv file.</p>
+<p>Normally it will be csv, so tables containing nested columns cannot be written out with csv</p>
+<pre><code class="language-write" data-lang="write">
+# Specify table to export
+detaset_id = &quot;demo&quot;
+dataset_ref = client.dataset(dataset_id)
+
+table_id = &quot;demo_transaciton_csv&quot;
+table_ref = dataset_ref.table(table_id)
+
+# Store file in specified bucket
+bucket_name = &quot;{Your Bucket Name}&quot;
+output_name = &quot;{}.csv&quot;.format(table_id)
+destination_uri = &quot;gs://{}/{}&quot;.format(bucket_name, output_name)
+
+#Create export job
+extract_job = client.extract_table(
+    table_ref,
+    destination_uri,
+    location=&quot;US&quot;,
+)
+# Execute
+extract_job.result()
+</code></pre><h3 id="compress-the-file-and-export">Compress the file and export</h3>
+<p>If you export the table as it is, the amount of data will increase accordingly, so you should set the compression option.</p>
+<p>Compress by setting output options with <code>ExtractJobConfig</code></p>
+<p>You can control whether to print the header by setting the <code>print_header</code> option (default is True)</p>
+<pre><code class="language-py:" data-lang="py:">destination_uri = &quot;gs://{YourBucket}/{filename}.gz&quot;
+job_config = bigquery.ExtractJobConfig(
+  compression=&quot;GZIP&quot;,
+  print_header=True
+)
+
+#Create export job
+extract_job = client.extract_table(
+    table_ref,
+    destination_uri,
+    job_config=job_config,
+    location=&quot;US&quot;,
+)
+
+# Execute
+extract_job.result()
+</code></pre><h3 id="export-a-table-containing-nested-data-with-jsonavro">Export a table containing nested data with json(avro)</h3>
+<p>If there is a nested column, you can not write it out with csv, so write it out with json or avro</p>
+<p>Compressable if json, but avro does not support compression option</p>
+<pre><code class="language-py:" data-lang="py:">output_name = &quot;{}.json&quot;.format(table_id)
+destination_uri = &quot;gs://{}/{}&quot;.format(bucket_name, output_name)
+
+Export with #json (header is not output)
+job_config = bigquery.ExtractJobConfig(
+  destination_format = &quot;NEWLINE_DELIMITED_JSON&quot;,
+  print_header = False
+)
+
+# Execute
+extract_job = client.extract_table(
+    table_ref,
+    destination_uri,
+    job_config=job_config,
+)
+
+extract_job.result()
+</code></pre><h3 id="export-with-tsv">Export with tsv</h3>
+<p>By the way, the default is csv, but you can also export with tsv</p>
+<pre><code class="language-Set" data-lang="Set"># add delimiter option to job_config
+job_config = bigquery.ExtractJobConfig(
+    field_delimiter=&quot;\t&quot;
+)
+</code></pre><h1 id="drop-table">Drop table</h1>
+<p>If you want to delete the table, just specify the table name.</p>
+<pre><code class="language-py:" data-lang="py:"># from google.cloud import bigquery
+# project_id ='YourProjectID'
+# client = bigquery.Client(project=project_id)
+
+detaset_id = &quot;{YourDataSetId}&quot;
+dataset_ref = client.dataset(dataset_id)
+
+table_id = &quot;{YourTableId}&quot;
+table_ref = dataset_ref.table(table_id)
+
+# Drop table
+client.delete_table(table_ref)
+</code></pre><p>This is the end of the story around table creation</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Build an application with Clean Architecture while using DI&#43;Mock in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Build an application with Clean Architecture while using DI+Mock in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 11, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/flask">Flask</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/di">DI</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cleanarchitecture">CleanArchitecture</a></code></small>
+
+</p>
+<pre><code>When implementing a web application using Python in business, we decided to introduce the Clean Architecture to develop while separating the concerns for each layer.
+</code></pre>
+<p>We&rsquo;ve put together a set of practices for developing testable applications, using progressive typing and Dependency Injection to share knowledge with team members.</p>
+<h2 id="clean-architecture">Clean Architecture</h2>
+<p>This time, since the purpose is a sample using Python, the explanation of Clean Architecture will be simple.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/17370/e7aa4890-0251-ccc8-26e9-3ede166b3aa3.jpeg" alt="CleanArchitecture (1).jpg">
+(Quoted from <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">The Clean Architecture</a>)</p>
+<p>Clean Architecture is of interest in <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">Architecture Proposed in 2012 by Robert C. Martin</a>Adesigntechniqueforachievingisolation.Architectureswiththesameaimincludehexagonalarchitecture(proposedin2005)andonionarchitecture(proposedin2008).</p>
+<p>The main advantages (although not unique to the Clean Architecture) are clarification of business logic, independence from UI, DB/framework, and improvement of testability.</p>
+<p>As stated in the original text, it is not necessary to cut into the same layers as the concentric sample, and you can increase or decrease the layers as needed, but this time I decided to cut the layers according to the textbook.</p>
+<h2 id="incremental-typing-using-typing">Incremental typing using typing</h2>
+<p>Gradual Typing has become popular in dynamic typing languages these days, but Python can also benefit from types at development time by using <code>typing</code>.</p>
+<p>Although type errors are not detected at build time like TypeScript, you can use a IDE like PyCharm (IntelliJ IDEA) to develop while benefiting from types, so you can achieve a development experience comparable to static typing.</p>
+<p>Clean Architecture incorporates the Dependency Inversion Principle, so using <code>typing</code> is indispensable for realizing operations through the interface.</p>
+<h2 id="dependency-injection-using-abstract-class">Dependency injection using abstract class</h2>
+<p>Python has no interfaces, but it has abstract classes. Abstract classes can have implementations, but the key to dependency inversion is that they depend on abstraction, so abstract classes can also fulfill that requirement.</p>
+<p>Let&rsquo;s perform dependency inversion on the Repository layer that is actually called by the Usecase layer through an abstract class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SampleRepository</span>(metaclass<span style="color:#f92672">=</span>ABCMeta):
+    <span style="color:#a6e22e">@abstractmethod</span>
+    async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, resource_id: str) <span style="color:#f92672">-&gt;</span> dict:
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">NotImplementedError</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SampleRepositoryImpl</span>(SampleRepository):
+    async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, resource_id: str) <span style="color:#f92672">-&gt;</span> dict:
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;id&#34;</span>: id}
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SampleUsecase</span>:
+    sample_repository: SampleRepository
+
+    <span style="color:#66d9ef">def</span> __init__(self, repository: SampleRepository):
+        self<span style="color:#f92672">.</span>sample_repository <span style="color:#f92672">=</span> repository
+
+   <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, resource_id: str) <span style="color:#f92672">-&gt;</span> dict:
+        <span style="color:#66d9ef">return</span> asyncio<span style="color:#f92672">.</span>run(self<span style="color:#f92672">.</span>sample_repository<span style="color:#f92672">.</span>get(resource_id))
+
+
+SampleUsecase(repository<span style="color:#f92672">=</span>SampleRepositoryImpl())<span style="color:#f92672">.</span>get()
+</code></pre></div><p>At this time, the Repository that the Usecase layer knows is an abstract class and does not know its implementation. Although it is possible to have an implementation in an abstract class, doing so violates the law of dependency inversion, so by attaching <code>@abstractmethod</code>, the concrete class has an implementation.</p>
+<p>Also, Dependency Injection, which is the key to Clean Architecture, can be used to inject dependencies with so-called vanilla DI without using a DI container. (Of course, DI container is not required)</p>
+<p>Type checking by typing is powerful when injecting dependencies, and with the support of the IDE, you should hardly feel the inconvenience of dynamically typed languages.</p>
+<h2 id="unit-test-using-mock">Unit test using mock</h2>
+<p>One of the advantages of Clean Architecture is testability. Partial mocking can be done easily with the fact that Dependency Injection is used. Also take advantage of the powerful features of the Python standard <code>unittest</code> module.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test_sample.py" data-lang="python:test_sample.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SampleRepositoryMock</span>(SampleRepository):
+    async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, resource_id: str) <span style="color:#f92672">-&gt;</span> dict:
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">NotImplementedError</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TestSampleUsecase</span>(TestCase):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_get</span>(self):
+        get_mock <span style="color:#f92672">=</span> AsyncMock(return_value<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;0002&#34;</span>})
+
+        repository <span style="color:#f92672">=</span> SampleRepositoryMock()
+        repository<span style="color:#f92672">.</span>get <span style="color:#f92672">=</span> get_mock
+        usecase <span style="color:#f92672">=</span> SampleUsecase(repository<span style="color:#f92672">=</span>repository)
+
+        self<span style="color:#f92672">.</span>assertEqual(usecase<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;0002&#34;</span>), {<span style="color:#e6db74">&#34;id&#34;</span>: <span style="color:#e6db74">&#34;0002&#34;</span>})
+        get_mock<span style="color:#f92672">.</span>assert_called_with(<span style="color:#e6db74">&#34;0002&#34;</span>)
+</code></pre></div><p><a href="https://docs.python.org/ja/3/library/unittest.mock.html#calling">MagicMock</a> is provided as a partial mock, and if you use this, you can easily replace the method. You can also run verify to verify that it was called.</p>
+<p>Furthermore, <code>AsyncMock</code> is prepared as a return value that is awaitable, and if you use this, you do not need to create a temporary <code>async def</code> for returning a native coroutine or a low-level <code>Future</code> type variable. .. When communicating to the outside, Python often uses a native coroutine using <code>async/await</code>, but this can also be supported only by the standard module.</p>
+<p>At the time of testing, Dependency Injection is used to insert a dummy Repository for testing into the Usecase layer and verify the operation of only the layer to be tested.</p>
+<p>By the way, the same thing can be achieved even if you do not prepare a dummy class, inject the class instance that is actually used, and then replace it using partial mock. Which one is not the correct answer, if you want to focus only on the layer to be tested, it is better to inject a dummy class, if you want to test across layers, you do not need a dummy.</p>
+<p>The reason why it is preferable to be a dummy in the former case is that the test passes if you forget the mock depends on the layer that depends on it, and a dummy class that raises an exception if you do not use the mock is more reliable. Because it can be detected.</p>
+<h2 id="use-dataclass-in-entity-layer">Use dataclass in Entity layer</h2>
+<p>In Clean Architecture, business logic is included in the Entity layer. Entity reminds me of DDD, but it is not exactly the same as Entity in DDD, nor is it the same as Value Object.</p>
+<p>According to the original text, &ldquo;Entity is an encapsulation of business rules and is a collection of data structures and functions.&rdquo;</p>
+<blockquote>
+<p>Entities encapsulate Enterprise wide business rules.An entity can be an object with methods, or it can be a set of data structures and functions.It doesn&rsquo;t matter so long as the entities could be used by many different applications in the enterprise.</p>
+</blockquote>
+<p>(Quoted from <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">The Clean Architecture</a>)</p>
+<p>There is no strict stipulation as to what kind of property the entity has, but personally, <a href="https://docs.python.org/ja/3/library/dataclasses.html">dataclass introduced from Python 3.7</a> I think it goes well with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#a6e22e">@dataclass</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Article</span>(frozen<span style="color:#f92672">=</span>True, eq<span style="color:#f92672">=</span>True)
+  id: str
+  body: str
+
+article1 <span style="color:#f92672">=</span> Article(id<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;1&#34;</span>, body<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;test&#34;</span>)
+article2 <span style="color:#f92672">=</span> Article(id<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;1&#34;</span>, body<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;test&#34;</span>)
+
+<span style="color:#75715e"># True for identity verification by value (eq=True set by default)</span>
+article1 <span style="color:#f92672">==</span> article2
+
+Since it <span style="color:#f92672">is</span> an immutable object <span style="color:#f92672">in</span> <span style="color:#75715e"># frozen, an error occurs</span>
+article1<span style="color:#f92672">.</span>id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;2&#34;</span>
+</code></pre></div><p>Although the function of <code>dataclass</code> itself is convenient by itself, the properties such as <code>frozen</code> to have an invariant condition and <code>eq</code> to verify the identity by value are the behaviors expected in the Entity layer. (Of course, it is not always required to be invariant or to be able to compare values)Also, not only in Entity layer, it is troublesome to define <code>__eq__</code> method one by one when verifying the identity of an object in unit test, and the advantage of using <code>dataclass</code> will be great.</p>
+<h2 id="sample-has-been-published-on-github">Sample has been published on Github</h2>
+<p>I posted the source of a simple web application that actually works on Github because it would be redundant if all the sample code was posted in the article.</p>
+<ul>
+<li><a href="https://github.com/t-tiger/Python-CleanArchitecture-Example">https://github.com/t-tiger/Python-CleanArchitecture-Example</a></li>
+</ul>
+<p>I use Flask as a web framework, but according to the idea of Clean Architecture, only the Rest layer depends on the library, and the rest is almost vanilla Python code.</p>
+<p>Unit test code is also included, so check it out if you are interested.</p>
+<h2 id="finally">Finally</h2>
+<p>Python has become one of the most popular languages in recent years due to the increasing popularity of machine learning, and it seems that its use in the web area is also increasing.</p>
+<p>With the advent of gradual typing and dataclass, the development experience of dynamic typing languages was originally covered well, and the high productivity of the past has been added, making it an attractive option for web applications. It has become.</p>
+<p>I myself have been writing Python at the production level for a few months, but I would like to use it as a reference for those who would like to try Python in the future because I can make use of the experience I have accumulated in other languages.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

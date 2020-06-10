@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Visualize railway line data and solve shortest route problems (Python&#43;Pandas&#43;NetworkX) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Visualize railway line data and solve shortest route problems (Python+Pandas+NetworkX)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 2, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas">pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/networkx">networkx</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>The route map and the graph network are compatible, and we will touch on the shortest path problem that anyone can think of when trying to think about something on the route map.</p>
+<p>Convert the railway route map into a simple graph problem, and use the Dijkstra method to find the shortest route. The Python library NetworkX has a built-in Dijkstra method, so this time we will use it.</p>
+<p>Since the program is uploaded to Google Colaboratory, it can be executed on the browser. Here
+<a href="https://nbviewer.jupyter.org/github/galileo15640215/train/blob/master/train_dijkstra.ipynb">https://nbviewer.jupyter.org/github/galileo15640215/train/blob/master/train_dijkstra.ipynb</a></p>
+<p>##flow
+Even if it is a route map, it is too large to handle data nationwide suddenly, so first consider the route of Tokyo Metro as a small problem before considering the route nationwide and create it.</p>
+<p>Turn
+・Data processing
+・Route map within Tokyo Metro area
+・The shortest route within the Tokyo metro area
+・Nationwide route map
+・The shortest route in Japan</p>
+<h2 id="required-data">Required data</h2>
+<p>Station data.jp From <a href="https://ekidata.jp/">https://ekidata.jp/</a>
+Business data company20200309.csv
+Route data line20200306free.csv
+Station data station20200316free.csv
+Connection station data join20200306.csv
+Download (CSV file name as of May 1, 2020)</p>
+<p>We will create the necessary data based on this.</p>
+<p>##program</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e"># Required module</span>
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> japanize_matplotlib
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> networkx <span style="color:#f92672">as</span> nx
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py">Create table <span style="color:#f92672">in</span> pandsa format <span style="color:#f92672">from</span> <span style="color:#75715e">#csv file</span>
+station <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;station20200316free.csv&#34;</span>)
+join <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;join20200306.csv&#34;</span>)
+<span style="color:#75715e">#pref = pd.read_csv(&#34;pref.csv&#34;)</span>
+line <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;line20200306free.csv&#34;</span>)
+company <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#34;company20200309.csv&#34;</span>)
+</code></pre></div><p>So far, we&rsquo;ve put the data we need into the Pandas table.</p>
+<h3 id="tokyo-metro-version">Tokyo Metro version</h3>
+<p>Next, extract the data for Tokyo Metro only.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e">#Extract only Tokyo Metro stations from stations nationwide Tokyo Metro... company_cd == 18</span>
+metro <span style="color:#f92672">=</span> station[[<span style="color:#e6db74">&#34;station_cd&#34;</span>, <span style="color:#e6db74">&#34;station_name&#34;</span>, <span style="color:#e6db74">&#34;line_cd&#34;</span>, <span style="color:#e6db74">&#34;lon&#34;</span>, <span style="color:#e6db74">&#34;lat&#34;</span>]]
+metro <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>merge(metro, line, on <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;line_cd&#39;</span>)
+metro <span style="color:#f92672">=</span> metro[metro[<span style="color:#e6db74">&#34;company_cd&#34;</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">18</span>]
+metro <span style="color:#f92672">=</span> metro[[<span style="color:#e6db74">&#34;station_cd&#34;</span>, <span style="color:#e6db74">&#34;station_name&#34;</span>, <span style="color:#e6db74">&#34;line_cd&#34;</span>, <span style="color:#e6db74">&#34;lon_x&#34;</span>, <span style="color:#e6db74">&#34;lat_x&#34;</span>, <span style="color:#e6db74">&#34;line_name&#34;</span>, <span style="color:#e6db74">&#34;line_color_c&#34;</span>, <span style="color:#e6db74">&#34;line_color_t&#34;</span>]]
+lon <span style="color:#f92672">=</span> metro[<span style="color:#e6db74">&#34;lon_x&#34;</span>]
+lat <span style="color:#f92672">=</span> metro[<span style="color:#e6db74">&#34;lat_x&#34;</span>]
+metro[<span style="color:#e6db74">&#34;lon&#34;</span>] <span style="color:#f92672">=</span> lon
+metro[<span style="color:#e6db74">&#34;lat&#34;</span>] <span style="color:#f92672">=</span> lat
+metro <span style="color:#f92672">=</span> metro[[<span style="color:#e6db74">&#34;station_cd&#34;</span>, <span style="color:#e6db74">&#34;station_name&#34;</span>, <span style="color:#e6db74">&#34;line_cd&#34;</span>, <span style="color:#e6db74">&#34;lon&#34;</span>, <span style="color:#e6db74">&#34;lat&#34;</span>, <span style="color:#e6db74">&#34;line_name&#34;</span>]]
+
+<span style="color:#75715e">#Routes to extract the connection side of Tokyo Metro ...line_cd == 28001---28010</span>
+metro_join <span style="color:#f92672">=</span> join[(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28001</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28002</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28003</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28004</span> )<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28005</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28006</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28007</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28008</span>)<span style="color:#f92672">|</span> (join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28009</span>)<span style="color:#f92672">|</span>(join[<span style="color:#e6db74">&#34;line_cd&#34;</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">28010</span>)]
+metro_join <span style="color:#f92672">=</span> metro_join[[<span style="color:#e6db74">&#34;station_cd1&#34;</span>, <span style="color:#e6db74">&#34;station_cd2&#34;</span>]]
+</code></pre></div><p>From here, create a graph of the Tokyo Metro route map.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e">#Graph declaration</span>
+G <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+<span style="color:#75715e">#Set the station name at the top</span>
+G<span style="color:#f92672">.</span>add_nodes_from(metro[<span style="color:#e6db74">&#34;station_name&#34;</span>])
+Set <span style="color:#75715e">#plot coordinates</span>
+pos<span style="color:#f92672">=</span>{}
+<span style="color:#66d9ef">for</span> i, j, k <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_name&#34;</span>], metro[<span style="color:#e6db74">&#34;lon&#34;</span>], metro[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+  pos[i] <span style="color:#f92672">=</span> (j, k)
+<span style="color:#75715e"># Store station_name and station_cd in list e and link</span>
+e <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_name&#34;</span>], metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>]):
+  e<span style="color:#f92672">.</span>append([i, j])
+<span style="color:#75715e">#Add edge information to graph</span>
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(metro_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>], metro_join[<span style="color:#e6db74">&#34;station_cd2&#34;</span>]):
+    <span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> e:
+      <span style="color:#66d9ef">if</span> k[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> i:
+        <span style="color:#66d9ef">for</span> l <span style="color:#f92672">in</span> e:
+          <span style="color:#66d9ef">if</span> l[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> j:
+            G<span style="color:#f92672">.</span>add_edge(k[<span style="color:#ae81ff">0</span>], l[<span style="color:#ae81ff">0</span>])
+<span style="color:#75715e">#Graph output settings</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">10</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Tokyo Metro&#39;</span>, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>axes()<span style="color:#f92672">.</span>set_aspect(<span style="color:#e6db74">&#39;equal&#39;</span>,<span style="color:#e6db74">&#39;datalim&#39;</span>)
+nx<span style="color:#f92672">.</span>draw_networkx(G, pos, node_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.8</span>, node_size<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, font_size<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, font_family<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;IPAexGothic&#39;</span>)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/315028/6f8f31a0-ce89-0a92-fe61-cefb6e8c93d5.png" alt="image.png"></p>
+<p>We were able to visualize the Tokyo Metro route map. From here we give the graph the necessary information to solve the shortest path problem.</p>
+<h3 id="give-information-to-the-graph">give information to the graph</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e">#Data creation to give the distance between stations as a weight on the side</span>
+dist <span style="color:#f92672">=</span> []
+cd1_lat <span style="color:#f92672">=</span> []
+cd1_lon <span style="color:#f92672">=</span> []
+cd2_lat <span style="color:#f92672">=</span> []
+cd2_lon <span style="color:#f92672">=</span> []
+not_exist <span style="color:#f92672">=</span> [] <span style="color:#75715e"># store a station_cd that exists in the table but not in the station table</span>
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(metro_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>], metro_join[<span style="color:#e6db74">&#34;station_cd2&#34;</span>]):
+  flag <span style="color:#f92672">=</span> True
+  <span style="color:#66d9ef">for</span> k, l, m <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>], metro[<span style="color:#e6db74">&#34;lat&#34;</span>], metro[<span style="color:#e6db74">&#34;lon&#34;</span>]):
+    <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> k:
+      cd1_x <span style="color:#f92672">=</span> l
+      cd1_y <span style="color:#f92672">=</span> m
+      cd1_lat<span style="color:#f92672">.</span>append(l)
+      cd1_lon<span style="color:#f92672">.</span>append(m)
+      flag <span style="color:#f92672">=</span> False
+    <span style="color:#66d9ef">if</span> j <span style="color:#f92672">==</span> k:
+      cd2_x <span style="color:#f92672">=</span> l
+      cd2_y <span style="color:#f92672">=</span> m
+      cd2_lat<span style="color:#f92672">.</span>append(l)
+      cd2_lon<span style="color:#f92672">.</span>append(m)
+  <span style="color:#66d9ef">if</span> flag:
+    not_exist<span style="color:#f92672">.</span>append([i, j])
+    <span style="color:#75715e">#print(i, j)</span>
+  <span style="color:#66d9ef">else</span>:
+    dist<span style="color:#f92672">.</span>append(((cd1_x<span style="color:#f92672">-</span>cd2_x)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> (cd1_y<span style="color:#f92672">-</span>cd2_y)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">**</span><span style="color:#ae81ff">0.5</span>)
+<span style="color:#75715e">#Error if executed as it is ValueError: Length of values does not match length of index</span>
+<span style="color:#75715e">#Apparently &#34;station_cd&#34; == 2800701 and 2800702 are not present in the station table and are not needed from the join table and are deleted</span>
+The following <span style="color:#ae81ff">2</span> lines are equivalent to <span style="color:#f92672">...</span> metro_join <span style="color:#f92672">=</span> metro_join[metro_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">2800701</span>]<span style="color:#f92672">...</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(not_exist)):
+  metro_join <span style="color:#f92672">=</span> metro_join[metro_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>] <span style="color:#f92672">!=</span> not_exist[i][<span style="color:#ae81ff">0</span>]]
+Add column to <span style="color:#75715e">#join table</span>
+metro_join[<span style="color:#e6db74">&#34;cd1_lat&#34;</span>] <span style="color:#f92672">=</span> cd1_lat
+metro_join[<span style="color:#e6db74">&#34;cd1_lon&#34;</span>] <span style="color:#f92672">=</span> cd1_lon
+metro_join[<span style="color:#e6db74">&#34;cd2_lat&#34;</span>] <span style="color:#f92672">=</span> cd2_lat
+metro_join[<span style="color:#e6db74">&#34;cd2_lon&#34;</span>] <span style="color:#f92672">=</span> cd2_lon
+metro_join[<span style="color:#e6db74">&#34;distance&#34;</span>] <span style="color:#f92672">=</span> dist
+</code></pre></div><p>Give edge weights to the graph</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e">#nodes is station_name</span>
+<span style="color:#75715e"># Give edge weight to graph</span>
+<span style="color:#66d9ef">for</span> i, j, m <span style="color:#f92672">in</span> zip(metro_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>], metro_join[<span style="color:#e6db74">&#34;station_cd2&#34;</span>], metro_join[<span style="color:#e6db74">&#34;distance&#34;</span>]):
+    <span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> e:
+      <span style="color:#66d9ef">if</span> k[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> i:
+        <span style="color:#66d9ef">for</span> l <span style="color:#f92672">in</span> e:
+          <span style="color:#66d9ef">if</span> l[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> j:
+            G<span style="color:#f92672">.</span>add_edge(k[<span style="color:#ae81ff">0</span>], l[<span style="color:#ae81ff">0</span>], weight<span style="color:#f92672">=</span>m)
+</code></pre></div><p>The NetworkX library, Networkx.dijkstra_path(), which is necessary to solve the shortest path problem, does not seem to support Japanese vertices. Change the vertex from station_name to station_cd and declare a new graph.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e">#nodes is station_cd</span>
+G <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G<span style="color:#f92672">.</span>add_nodes_from(metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>])
+pos<span style="color:#f92672">=</span>{}
+<span style="color:#66d9ef">for</span> i, j, k <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>], metro[<span style="color:#e6db74">&#34;lon&#34;</span>], metro[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+  pos[i] <span style="color:#f92672">=</span> (j, k)
+<span style="color:#66d9ef">for</span> i, j, m <span style="color:#f92672">in</span> zip(metro_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>], metro_join[<span style="color:#e6db74">&#34;station_cd2&#34;</span>], metro_join[<span style="color:#e6db74">&#34;distance&#34;</span>]):
+  G<span style="color:#f92672">.</span>add_edge(i, j, weight<span style="color:#f92672">=</span>m)
+When <span style="color:#75715e">#station_cd is at the top, station_cd is set for each line even with the same name station_name, so it does not have a connection side with other lines as it is.</span>
+<span style="color:#75715e">#There, connect stations of the same name with weight 0for i, j in zip(metro[&#34;station_name&#34;], metro[&#34;station_cd&#34;]):</span>
+  <span style="color:#66d9ef">for</span> k, l <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_name&#34;</span>], metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>]):
+    <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> k <span style="color:#f92672">and</span> j <span style="color:#f92672">!=</span> l:
+      G<span style="color:#f92672">.</span>add_edge(j, l, weight<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#75715e"># Set start and finish stations</span>
+st_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ogikubo&#34;</span>
+go_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Nishi-Funabashi&#34;</span>
+Search station_cd <span style="color:#f92672">from</span> <span style="color:#75715e">#station_name</span>
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_name&#34;</span>], metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>]):
+  <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> st_name:
+    st <span style="color:#f92672">=</span> j
+  <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> go_name:
+    go <span style="color:#f92672">=</span> j
+<span style="color:#75715e">#Find the shortest path</span>
+dij <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>dijkstra_path(G, st, go)
+out <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> range(len(dij)):
+  <span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_name&#34;</span>], metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>]):
+    <span style="color:#66d9ef">if</span> j <span style="color:#f92672">==</span> dij[k]:
+      out<span style="color:#f92672">.</span>append(i)
+<span style="color:#66d9ef">print</span>(out)
+<span style="color:#75715e">#Declare graph for shortest path</span>
+G_root <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G_root<span style="color:#f92672">.</span>add_nodes_from(dij)
+pos_root <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> l <span style="color:#f92672">in</span> dij:
+  <span style="color:#66d9ef">for</span> i, j, k <span style="color:#f92672">in</span> zip(metro[<span style="color:#e6db74">&#34;station_cd&#34;</span>], metro[<span style="color:#e6db74">&#34;lon&#34;</span>], metro[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+    <span style="color:#66d9ef">if</span> l <span style="color:#f92672">==</span> i:
+      pos_root[l] <span style="color:#f92672">=</span> (j, k)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(dij)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+  G_root<span style="color:#f92672">.</span>add_edge(dij[i], dij[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>])
+
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">10</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Tokyo Metro&#39;</span>, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>axes()<span style="color:#f92672">.</span>set_aspect(<span style="color:#e6db74">&#39;equal&#39;</span>,<span style="color:#e6db74">&#39;datalim&#39;</span>)
+nx<span style="color:#f92672">.</span>draw_networkx(G, pos, node_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>, node_size<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, with_labels<span style="color:#f92672">=</span> False)
+c <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;green&#39;</span> <span style="color:#66d9ef">if</span> n<span style="color:#f92672">==</span>st <span style="color:#66d9ef">else</span><span style="color:#e6db74">&#39;red&#39;</span> <span style="color:#66d9ef">if</span> n<span style="color:#f92672">!=</span>go <span style="color:#66d9ef">else</span><span style="color:#e6db74">&#39;yellow&#39;</span> <span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> G_root<span style="color:#f92672">.</span>nodes()]
+n_size <span style="color:#f92672">=</span> [<span style="color:#ae81ff">30</span> <span style="color:#66d9ef">if</span> n<span style="color:#f92672">==</span>st <span style="color:#66d9ef">else</span> <span style="color:#ae81ff">10</span> <span style="color:#66d9ef">if</span> n<span style="color:#f92672">!=</span>go <span style="color:#66d9ef">else</span> <span style="color:#ae81ff">30</span> <span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> G_root<span style="color:#f92672">.</span>nodes()]
+nx<span style="color:#f92672">.</span>draw_networkx(G_root, pos_root, node_color<span style="color:#f92672">=</span>c, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>, node_size<span style="color:#f92672">=</span>n_size, with_labels<span style="color:#f92672">=</span> False)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p>Execution result
+[&lsquo;Ogikubo&rsquo;,&lsquo;Minami Asagaya&rsquo;,&lsquo;Shin Koenji&rsquo;,&lsquo;Higashi Koenji&rsquo;,&lsquo;Shin Nakano&rsquo;,&lsquo;Nakano Sakaue&rsquo;,&lsquo;Nishi Shinjuku&rsquo;,&lsquo;Shinjuku&rsquo;,&lsquo;Shinjuku Sanchome&rsquo;,&lsquo;Shinjuku Gyoenmae&rsquo;, &lsquo;Yotsuya 3-chome&rsquo;,&lsquo;Yotsuya&rsquo;,&lsquo;Akasaka Mitsuke&rsquo;,&lsquo;National Diet Building&rsquo;,&lsquo;National Diet Building&rsquo;,&lsquo;Kasumigaseki&rsquo;,&lsquo;Hibiya&rsquo;,&lsquo;Hibiya&rsquo;,&lsquo;Ginza&rsquo;,&lsquo;Ginza&rsquo;,&lsquo;Kyobashi&rsquo; ,&lsquo;Nihonbashi&rsquo;,&lsquo;Nihonbashi&rsquo;,&lsquo;Kayabacho&rsquo;,&lsquo;Monzennakacho&rsquo;,&lsquo;Kiba&rsquo;,&lsquo;Toyocho&rsquo;,&lsquo;Minamisuna&rsquo;,&lsquo;Nishi Kasai&rsquo;,&lsquo;Kasai&rsquo;,&lsquo;Urayasu&rsquo;,&lsquo;Minami Gyotoku&rsquo;, &ldquo;Gyotoku&rdquo;, &ldquo;Myenori&rdquo;, &ldquo;Baraki Nakayama&rdquo;, &ldquo;Nishifunabashi&rdquo;]</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/315028/5b61d99c-0712-12d8-d6bc-0527b4afc627.png" alt="image.png"></p>
+<p>I was able to draw the shortest route on Tokyo Metro.
+How does it compare to the actual excellent transfer guidance app?
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/315028/fc499760-7715-fe4d-3082-abe53092a13e.png" alt="image.png"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/315028/1deb886f-889a-45b9-16b9-4b26d35045d8.png" alt="image.png"></p>
+<p>There are many transfers for the program.
+However, the routes are almost the same when it is a small one like Tokyo Metro.</p>
+<h2 id="next-the-national-version">Next, the national version</h2>
+<p>The same thing is done nationwide.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py">zen_join <span style="color:#f92672">=</span> join
+zen <span style="color:#f92672">=</span> station[[<span style="color:#e6db74">&#34;station_cd&#34;</span>, <span style="color:#e6db74">&#34;station_name&#34;</span>, <span style="color:#e6db74">&#34;line_cd&#34;</span>, <span style="color:#e6db74">&#34;lon&#34;</span>, <span style="color:#e6db74">&#34;lat&#34;</span>]]
+zen <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>merge(zen, line, on<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;line_cd&#39;</span>)
+zen <span style="color:#f92672">=</span> zen[[<span style="color:#e6db74">&#34;station_cd&#34;</span>, <span style="color:#e6db74">&#34;station_name&#34;</span>, <span style="color:#e6db74">&#34;line_cd&#34;</span>, <span style="color:#e6db74">&#34;lon_x&#34;</span>, <span style="color:#e6db74">&#34;lat_x&#34;</span>, <span style="color:#e6db74">&#34;line_name&#34;</span>]]
+lon <span style="color:#f92672">=</span> zen[<span style="color:#e6db74">&#34;lon_x&#34;</span>]
+lat <span style="color:#f92672">=</span> zen[<span style="color:#e6db74">&#34;lat_x&#34;</span>]
+zen[<span style="color:#e6db74">&#34;lon&#34;</span>] <span style="color:#f92672">=</span> lon
+zen[<span style="color:#e6db74">&#34;lat&#34;</span>] <span style="color:#f92672">=</span> lat
+zen <span style="color:#f92672">=</span> zen[[<span style="color:#e6db74">&#34;station_cd&#34;</span>, <span style="color:#e6db74">&#34;station_name&#34;</span>, <span style="color:#e6db74">&#34;line_cd&#34;</span>, <span style="color:#e6db74">&#34;lon&#34;</span>, <span style="color:#e6db74">&#34;lat&#34;</span>, <span style="color:#e6db74">&#34;line_name&#34;</span>]]
+cd1_lat <span style="color:#f92672">=</span> []
+cd1_lon <span style="color:#f92672">=</span> []
+cd2_lat <span style="color:#f92672">=</span> []
+cd2_lon <span style="color:#f92672">=</span> []
+dist <span style="color:#f92672">=</span> []
+not_exist <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(zen_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>], zen_join[<span style="color:#e6db74">&#34;station_cd2&#34;</span>]):
+  flag <span style="color:#f92672">=</span> True
+  <span style="color:#66d9ef">for</span> k, l, m <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>], zen[<span style="color:#e6db74">&#34;lat&#34;</span>], zen[<span style="color:#e6db74">&#34;lon&#34;</span>]):
+    <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> k:
+      cd1_x <span style="color:#f92672">=</span> l
+      cd1_y <span style="color:#f92672">=</span> m
+      cd1_lat<span style="color:#f92672">.</span>append(l)
+      cd1_lon<span style="color:#f92672">.</span>append(m)
+      flag <span style="color:#f92672">=</span> False
+    <span style="color:#66d9ef">if</span> j <span style="color:#f92672">==</span> k:
+      cd2_x <span style="color:#f92672">=</span> l
+      cd2_y <span style="color:#f92672">=</span> m
+      cd2_lat<span style="color:#f92672">.</span>append(l)
+      cd2_lon<span style="color:#f92672">.</span>append(m)
+  <span style="color:#66d9ef">if</span> flag:
+    not_exist<span style="color:#f92672">.</span>append([i, j])
+    <span style="color:#75715e">#print(i, j)</span>
+  <span style="color:#66d9ef">else</span>:
+    dist<span style="color:#f92672">.</span>append(((cd1_x<span style="color:#f92672">-</span>cd2_x)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> (cd1_y<span style="color:#f92672">-</span>cd2_y)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">**</span><span style="color:#ae81ff">0.5</span>)
+Deleted because it does <span style="color:#f92672">not</span> exist <span style="color:#f92672">in</span> the <span style="color:#75715e">#station table and unnecessary from the join table</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(not_exist)):
+  zen_join <span style="color:#f92672">=</span> zen_join[zen_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>] <span style="color:#f92672">!=</span> not_exist[i][<span style="color:#ae81ff">0</span>]]<span style="color:#75715e"># &amp; zen_join[&#34;station_cd2&#34;] != not_exist[i][1]]</span>
+zen_join[<span style="color:#e6db74">&#34;cd1_lat&#34;</span>] <span style="color:#f92672">=</span> cd1_lat
+zen_join[<span style="color:#e6db74">&#34;cd1_lon&#34;</span>] <span style="color:#f92672">=</span> cd1_lon
+zen_join[<span style="color:#e6db74">&#34;cd2_lat&#34;</span>] <span style="color:#f92672">=</span> cd2_lat
+zen_join[<span style="color:#e6db74">&#34;cd2_lon&#34;</span>] <span style="color:#f92672">=</span> cd2_lon
+zen_join[<span style="color:#e6db74">&#34;distance&#34;</span>] <span style="color:#f92672">=</span> dist
+
+<span style="color:#75715e">#nodes is station_cd</span>
+G <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G<span style="color:#f92672">.</span>add_nodes_from(zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>])
+pos<span style="color:#f92672">=</span>{}
+<span style="color:#66d9ef">for</span> i, j, k <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>], zen[<span style="color:#e6db74">&#34;lon&#34;</span>], zen[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+  pos[i] <span style="color:#f92672">=</span> (j, k)
+<span style="color:#66d9ef">for</span> i, j, m <span style="color:#f92672">in</span> zip(zen_join[<span style="color:#e6db74">&#34;station_cd1&#34;</span>], zen_join[<span style="color:#e6db74">&#34;station_cd2&#34;</span>], zen_join[<span style="color:#e6db74">&#34;distance&#34;</span>]):
+  G<span style="color:#f92672">.</span>add_edge(i, j, weight<span style="color:#f92672">=</span>m)
+<span style="color:#66d9ef">for</span> i, j, m <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_name&#34;</span>], zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>], zen[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+  <span style="color:#66d9ef">for</span> k, l, n <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_name&#34;</span>], zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>], zen[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+    <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> k <span style="color:#f92672">and</span> j <span style="color:#f92672">!=</span> l <span style="color:#f92672">and</span> m <span style="color:#f92672">==</span> n:
+      <span style="color:#75715e">#print(i, j, k, l)</span>
+      G<span style="color:#f92672">.</span>add_edge(j, l, weight<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">10</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;All Japan&#39;</span>, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>axes()<span style="color:#f92672">.</span>set_aspect(<span style="color:#e6db74">&#39;equal&#39;</span>,<span style="color:#e6db74">&#39;datalim&#39;</span>)
+nx<span style="color:#f92672">.</span>draw_networkx(G, pos, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, with_labels<span style="color:#f92672">=</span>False)
+nx<span style="color:#f92672">.</span>draw_networkx_edges(G, pos)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/315028/78da2dc2-062f-9287-798c-577d91e15cd9.png" alt="image.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py">st_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Nemuro&#34;</span>
+go_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Kagoshima&#34;</span>
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_name&#34;</span>], zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>]):
+  <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> st_name:
+    st <span style="color:#f92672">=</span> j
+  <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> go_name:
+    go <span style="color:#f92672">=</span> j
+dij <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>dijkstra_path(G, st, go)
+out <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> range(len(dij)):
+  <span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_name&#34;</span>], zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>]):
+    <span style="color:#66d9ef">if</span> j <span style="color:#f92672">==</span> dij[k]:
+      out<span style="color:#f92672">.</span>append(i)
+<span style="color:#66d9ef">print</span>(out)
+
+<span style="color:#75715e">#nodes is station_cd</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">50</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+G_root <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G_root<span style="color:#f92672">.</span>add_nodes_from(dij)
+pos_root <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> l <span style="color:#f92672">in</span> dij:
+  <span style="color:#66d9ef">for</span> i, j, k <span style="color:#f92672">in</span> zip(zen[<span style="color:#e6db74">&#34;station_cd&#34;</span>], zen[<span style="color:#e6db74">&#34;lon&#34;</span>], zen[<span style="color:#e6db74">&#34;lat&#34;</span>]):
+    <span style="color:#66d9ef">if</span> l <span style="color:#f92672">==</span> i:
+      pos_root[l] <span style="color:#f92672">=</span> (j, k)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(dij)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+  G_root<span style="color:#f92672">.</span>add_edge(dij[i], dij[i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>])
+
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">10</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;All Japan&#39;</span>, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>axes()<span style="color:#f92672">.</span>set_aspect(<span style="color:#e6db74">&#39;equal&#39;</span>,<span style="color:#e6db74">&#39;datalim&#39;</span>)nx<span style="color:#f92672">.</span>draw_networkx(G, pos, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, with_labels<span style="color:#f92672">=</span>False)
+nx<span style="color:#f92672">.</span>draw_networkx_edges(G, pos, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>)
+nx<span style="color:#f92672">.</span>draw_networkx(G_root, pos_root, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, with_labels<span style="color:#f92672">=</span>False)
+nx<span style="color:#f92672">.</span>draw_networkx_edges(G_root, pos_root, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span>, edge_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/315028/b70e12e7-405b-f1ed-6d92-f81b25f3e532.png" alt="image.png"></p>
+<p>Complete. It is unrealistic to actually transfer, and it&rsquo;s hell unless you like a lot of trains.
+I&rsquo;m done. Thanks to the Hokkaido Shinkansen, you can reach Honshu through the Seikan Tunnel.
+In terms of the shortest time, it is common to connect to the Tohoku Shinkansen and Tokaido Shinkansen, but if the route is shortest, it seems that you can go to the Sea of Japan side using the conventional line without using the Tohoku Shinkansen.</p>
+<h2 id="summary">Summary</h2>
+<p>The edge information this time was distance, but if you set it as time, you can create something like the shortest time for transfer guidance. I would like to do it if I can create time data.
+To be continued&hellip;</p>
+<h4 id="referenced-site">Referenced site</h4>
+<p>Visualize railway line data as a graph with Cytoscape 1
+<a href="https://qiita.com/keiono/items/29286f49b15a5b13c987">https://qiita.com/keiono/items/29286f49b15a5b13c987</a>
+Refer to here for processing station data.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

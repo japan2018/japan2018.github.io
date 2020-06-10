@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Japanese text preprocessing without for statement in pandas | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Japanese text preprocessing without for statement in pandas</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 27, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas">pandas</a></code></small>
+
+</p>
+<pre><code>A memorandum for pandas, when you process text, you will not be asked &quot;Do you use a for statement because you are not sure?&quot;
+</code></pre>
+<p>Information is compiled for the purpose of preprocessing Japanese text.</p>
+<p>I would appreciate if you could tell me if there is a better processing method.</p>
+<p>Execution environment</p>
+<ul>
+<li>macOS Catalina</li>
+<li>Python 3.7.4</li>
+</ul>
+<blockquote>
+<p>pandas 0.25.3</p>
+</blockquote>
+<h1 id="tldr">TL;DR</h1>
+<ul>
+<li>Simple processing is implemented in the method of <code>df[&quot;column name&quot;].str</code></li>
+<li>If you want to do the processing that is not implemented in pandas <code>df[&quot;column name&quot;].apply()</code></li>
+</ul>
+<p>#Sample data</p>
+<p>Ladies fashion brand store information scraped from HP.
+The csv stores the company name, brand name, store name, and address.</p>
+<p>Since it is scraping from multiple HP, it is not uniform such as half-width, full-width or blank. The zip code may or may not be included.</p>
+<p>The table below is an example of data.
+Using this data as an example, the execution results are also shown.</p>
+<p>| company | brand | location | address |
+|&mdash;&mdash;&mdash;&ndash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;|
+pal | BONbazaar | Bon Bazaar Tokyo Dome City LaQua Store | 1-1 Kusuga, Bunkyo-ku, Tokyo LaQua Building 2F |
+| world | index | Emio Style | 1-35-3 Takadanobaba, Shinjuku-ku, Tokyo Emio Style 1F |
+pal | Whim Gazette | Marunouchi Store | 2-4-1 Marunouchi, Chiyoda-ku, Tokyo 100-6390 Marunouchi Building B1F |
+stripe | SEVENDAYS=SUNDAY | AEON MALL Urawamisono 2F | 5-50 Misono, Midori-ku, Saitama-shi, Saitama 1 AEON MALL Urawamisono |
+pal | mystic | Funabashi Store | 2-1-1 Hamacho, Funabashi, Chiba 273-0012, Japan LaLaport TOKYO-BAY LaLaport 3 |
+pal | pual ce cin | Ofuna LUMINE wing shop | 1-4-1, Ofuna, Kumakura-shi, Kanagawa 247-0056
+stripe | Green Parks | sara Shapo Koiwa Store | Shapo Koiwa 1F, 7-24-15 Minamikoiwa, Edogawa-ku, Tokyo |
+pal | Discoat | Discoat Petit Ikebukuro Shopping Park | 1-29-1 Minamiikebukuro, Toshima-ku, Tokyo 171-8532 Ikebukuro SP B1F |
+adastoria | niko and&hellip; | Atre Kawagoe | 105 Wakitacho, Kawagoe-shi, Saitama Atre Kawagoe 4F |
+pal | CIAOPANIC TYPY | Kameari Store | Ario Kameari 2F, 3-49-3 Kameari, Katsushika-ku, Tokyo 125-0061, Japan</p>
+<p>Since only one column (<code>address</code> column) is used for the explanation, almost Series processing is introduced, but DataFrame processing is also described as much as possible.</p>
+<p>#Process</p>
+<p>Basically, in <code>Series.str</code>, <a href="https://docs.python.org/ja/3/library/stdtypes.html#string-methods">python string methods</a>and<a href="https://docs.python.org/ja/3/library/re.html">regularexpressionoperation</a> can be called, so use these.</p>
+<ul>
+<li>Excerpts of only the frequently used ones</li>
+<li>If you want to check all methods, refer to the official document.</li>
+<li>Reference: <a href="https://pandas.pydata.org/pandas-docs/stable/search.html?q=Series.str">Search results of Series.str</a></li>
+<li><a href="https://pandas.pydata.org/pandas-docs/stable/user_guide/text.html">Working with text data — pandas 1.0.1 documentation</a></li>
+</ul>
+<h2 id="string-method-system">String method system</h2>
+<h4 id="strip">strip</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.strip.html">Series.str.strip</a></p>
+<p>Delete the blank characters at the beginning and end of the character string.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;strip&#39;</span>]<span style="color:#f92672">=</span>df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>strip()
+</code></pre></div><p>Of course, <code>Series.str.rstrip</code> that deletes only the beginning and <code>lstrip</code> that deletes only the end are also implemented.</p>
+<h4 id="split-rsplit">split, rsplit</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.split.html">Series.str.split</a></p>
+<ul>
+<li>Split a string with a specified separator and return as a <em>list</em></li>
+<li>can be split into multiple columns by setting <code>expand=True</code></li>
+<li>Be careful because the number matches the most split column</li>
+<li>In the example below, it is divided into three columns, but if the text cannot be divided into three, <code>None</code> is inserted.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>split(expand<span style="color:#f92672">=</span>True)
+</code></pre></div><p>| 0 | 1 | 2 |
+|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;-|&ndash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;-|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash;|
+| 1-1, Kasuga, Bunkyo-ku, Tokyo | LaQua Building | 2F |
+| 1-35-3 Takadanobaba, Shinjuku-ku, Tokyo | Emio Style | 1F |
+〒100-6390 | 2-4-1 Marunouchi, Chiyoda-ku, Tokyo | Marunouchi Building B1F |
+1-5-50 Misono, Midori-ku, Saitama City, Saitama Prefecture | AEON MALL Urawamisono | None |
+2-1-1, Hamacho, Funabashi, Chiba 273-0012, Japan | LaLaport TOKYO-BAY LaLaport 3 | None |
+〒247-0056 | 1-4-1 Ofuna, Kamakura-shi, Kanagawa | LUMINE wing 4F |
+| Shapo Koiwa 7-24-15 Minamikoiwa, Edogawa-ku, Tokyo | 1F | None |
+Ikebukuro SP 1-29-1 Minamiikebukuro, Toshima-ku, Tokyo 171-8532, Japan SP | B1F | None |
+| Wakita Town, Kawagoe City, Saitama Prefecture | 105 | Atre Kawagoe 4F |
+Ario Kameari 2F, 3-49-3 Kameari, Katsushika-ku, Tokyo 125-0061 | None | None |</p>
+<ul>
+<li><code>rsplit</code></li>
+<li>Split from right</li>
+<li>You can adjust the number of splits by specifying <code>n</code></li>
+<li>For example, if you set <code>n=1</code>, the number of columns will be fixed because it is only split once.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>rsplit(expand<span style="color:#f92672">=</span>True, n<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><p>| 0 | 1 |
+|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;-|&ndash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;-|
+| 1-1, Kasuga, Bunkyo-ku, Tokyo LaQua Building | 2F |
+Emiostyle 1-35-3 Takadanobaba, Shinjuku-ku, Tokyo | 1F |
+2-4-1 Marunouchi, Chiyoda-ku, Tokyo 100-6390, Japan | Marunouchi Building B1F |
+1-5-50 Misono, Midori-ku, Saitama City, Saitama Prefecture | AEON MALL Urawamisono |
+2-1-1, Hamacho, Funabashi City, Chiba 273-0012, Japan | LaLaport TOKYO-BAY LaLaport 3 |
+| 1-4-1 Ofuna, Kamakura-shi, Kanagawa 247-0056 | LUMINE wing 4F |
+| Shapo Koiwa 7-24-15 Minamikoiwa, Edogawa-ku, Tokyo | 1F |
+Ikebukuro SP 1-29-1 Minamiikebukuro, Toshima-ku, Tokyo 171-8532, Japan | B1F |
+| 105 Wakitacho, Kawagoe City, Saitama Prefecture | Atre Kawagoe 4F |Ari Kameari 2F, 3-49-3 Kameari, Katsushika-ku, Tokyo 125-0061 | None |</p>
+<h4 id="find">find</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.find.html">Series.str.find</a></p>
+<ul>
+<li>same function as <code>str.find</code></li>
+<li>Returns the string position if included, <strong>-1</strong> if not</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>find(<span style="color:#e6db74">&#39;Tokyo&#39;</span>)
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+Ten
+<span style="color:#ae81ff">2</span> <span style="color:#ae81ff">10</span>
+<span style="color:#ae81ff">3</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">4</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">5</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">6</span> <span style="color:#ae81ff">0</span>
+<span style="color:#ae81ff">7</span> <span style="color:#ae81ff">9</span>
+<span style="color:#ae81ff">8</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">9</span> <span style="color:#ae81ff">9</span>
+</code></pre></div><ul>
+<li>Since the return value is not a bool value, it is not possible to narrow down the data by using the following method <strong>Not</strong></li>
+<li><code>df[df['address'].str.find('Tokyo')]</code></li>
+<li><code>df.query('address.str.find(&quot;Tokyo&quot;&quot;)')</code></li>
+<li>Use <code>contains</code> if you just want to determine if a string is included, like <code>hoge in hogehoge</code>.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># It is possible to specify a column that does not include &#34;Tokyo&#34;</span>
+df<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;address.str.find(&#34;Tokyo&#34;&#34;!=-1&#39;</span>)
+</code></pre></div><h4 id="normalize">normalize</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.normalize.html">Series.str.normalize</a></p>
+<ul>
+<li>Character normalization</li>
+<li>Equivalent to <a href="https://docs.python.org/ja/3/library/unicodedata.html#unicodedata.normalize"><code>unicodedata.normalize</code></a></li>
+</ul>
+<p>Mainly, full-width numbers and symbols are converted to half-width, and half-width katakana is converted to full-width. Specify&rsquo;NFKC&rsquo; (normal form KC) for form.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># string</span>
+<span style="color:#f92672">import</span> unicodedata
+unicodedata<span style="color:#f92672">.</span>normalize(<span style="color:#e6db74">&#39;NFKC&#39;</span>, <span style="color:#e6db74">&#39;123!?@# Hankaku Kata Kana&#39;</span>)
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#e6db74">&#39;123!?@#Handkerk Katakana&#39;</span>
+
+<span style="color:#75715e"># pandas</span>
+df[<span style="color:#e6db74">&#39;normalize&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>normalize(form<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;NFKC&#39;</span>)
+</code></pre></div><p>Reference: <a href="https://expectorate.hatenadiary.org/entry/20131230/1388433282">List of characters normalized by Python&rsquo;s unicodedata.normalize(&lsquo;NFKC&rsquo;, x)</a></p>
+<p><em>For Japanese text, it is easier to use neologdn (see below)</em></p>
+<h2 id="regular-expression-system">Regular expression system</h2>
+<h4 id="findall">findall</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.findall.html">Series.str.findall</a></p>
+<ul>
+<li>Equivalent to <code>re.findall()</code></li>
+<li>Unlike <code>str.find()</code>, you can use regular expressions here</li>
+<li>Return all matching words</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>findall(<span style="color:#e6db74">&#39;(.{2} ward)&#39;</span>)
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> [Bunkyo<span style="color:#f92672">-</span>ku]
+<span style="color:#ae81ff">1</span> [Shinjuku Ward]
+<span style="color:#ae81ff">2</span> [Shirota<span style="color:#f92672">-</span>ku]
+<span style="color:#ae81ff">3</span> [Midori City]
+Four       []
+Five       []
+<span style="color:#ae81ff">6</span> [Togawa Ward]
+<span style="color:#ae81ff">7</span> [Toshima Ward]
+<span style="color:#ae81ff">8</span> []
+<span style="color:#ae81ff">9</span> [Katsushika City]
+</code></pre></div><h4 id="contains">contains</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.contains.html">Series.str.contains</a></p>
+<ul>
+<li>Be careful because it contains <strong>s</strong></li>
+<li>Functionally <code>re.match()</code></li>
+<li>bool value is returned, so it can be used for data narrowing</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>contains(<span style="color:#e6db74">&#39;.{2} ward&#39;</span>)
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> True
+<span style="color:#ae81ff">1</span> True
+<span style="color:#ae81ff">2</span> True
+<span style="color:#ae81ff">3</span> True
+<span style="color:#ae81ff">4</span> False
+<span style="color:#ae81ff">5</span> False
+<span style="color:#ae81ff">6</span> True
+<span style="color:#ae81ff">7</span> True
+<span style="color:#ae81ff">8</span> False
+<span style="color:#ae81ff">9</span> True
+
+<span style="color:#75715e">#Display only data including &#34;○○ Ward&#34;</span>
+df<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;address.str.contains(&#34;.{2} area&#34;)&#39;</span>)[<span style="color:#e6db74">&#39;address&#39;</span>]
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Kasuga, Bunkyo<span style="color:#f92672">-</span>ku, Tokyo LaQua Building <span style="color:#ae81ff">2</span>F
+<span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">35</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Takadanobaba, Shinjuku<span style="color:#f92672">-</span>ku, Tokyo Emiostyle <span style="color:#ae81ff">1</span>F
+<span style="color:#ae81ff">2</span> <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Marunouchi, Chiyoda<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">100</span><span style="color:#f92672">-</span><span style="color:#ae81ff">6390</span> Marunouchi Building B1F, Marunouchi
+<span style="color:#ae81ff">3</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">5</span><span style="color:#f92672">-</span><span style="color:#ae81ff">50</span> Misono, Midori<span style="color:#f92672">-</span>ku, Saitama City, Saitama <span style="color:#ae81ff">1</span> AEON MALL Urawamisono
+<span style="color:#ae81ff">6</span> <span style="color:#ae81ff">1</span>F, Shapo Koiwa, <span style="color:#ae81ff">7</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> Minamikoiwa, Edogawa<span style="color:#f92672">-</span>ku, Tokyo
+<span style="color:#ae81ff">7</span> Ikebukuro SP B1F <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Minamiikebukuro, Toshima<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">171</span><span style="color:#f92672">-</span><span style="color:#ae81ff">8532</span>
+<span style="color:#ae81ff">9</span> Ario Kameari <span style="color:#ae81ff">2</span>F, <span style="color:#ae81ff">3</span><span style="color:#f92672">-</span><span style="color:#ae81ff">49</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Kameari, Katsushika<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">125</span><span style="color:#f92672">-</span><span style="color:#ae81ff">0061</span>
+</code></pre></div><h5 id="flag-columns-containing-strings">Flag columns containing strings</h5>
+<p>By converting the bool value to an int value, you can create a column in which <code>1</code> is set for the data containing a certain character string.
+Convenient when creating a feature quantity and performing feature quantity engineering.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Create data flag tokyo_flg including Tokyo</span>
+df[<span style="color:#e6db74">&#39;tokyo_flg&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>contains(<span style="color:#e6db74">&#34;Tokyo&#34;</span>)<span style="color:#f92672">.</span>astype(int)
+df[<span style="color:#e6db74">&#39;tokyo_flg&#39;</span>]
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span>
+twenty one
+<span style="color:#ae81ff">30</span>
+<span style="color:#ae81ff">40</span>
+<span style="color:#ae81ff">5</span> <span style="color:#ae81ff">0</span>
+<span style="color:#ae81ff">6</span> <span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">7</span> <span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">8</span> <span style="color:#ae81ff">0</span>
+<span style="color:#ae81ff">9</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><h4 id="extract">extract</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.extract.html">Series.str.extract</a></p>
+<ul>
+<li>Return the matched pattern.</li>
+<li>Returns <code>None</code> if there is no pattern, so do <code>dropna()</code> if not needed</li>
+<li>If you set a named group name, that name becomes the column name as it is</li>
+<li>What is a named group name is <code>(?P&lt;name&gt;...)</code></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>extract(<span style="color:#e6db74">&#39;(Tokyo | Kanagawa) ([^ku]+[ku]]&#39;</span>)<span style="color:#f92672">.</span>dropna()
+
+df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>extract(<span style="color:#e6db74">&#39;(?P&lt;pref&gt;Tokyo|Kanagawa)(?P&lt;city&gt;[^ward city]+[ward city])&#39;</span>)<span style="color:#f92672">.</span>dropna()
+</code></pre></div><table>
+<thead>
+<tr>
+<th></th>
+<th>pref</th>
+<th>city</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Tokyo</td>
+<td>Bunkyo Ward</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Tokyo</td>
+<td>Shinjuku Ward</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Tokyo</td>
+<td>Chiyoda-ku</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Kanagawa Prefecture</td>
+<td>Kamakura City</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Tokyo</td>
+<td>Edogawa Ward</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Tokyo</td>
+<td>Toshima Ward</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Tokyo</td>
+<td>Katsushika-ku</td>
+</tr>
+</tbody>
+</table>
+<p>You can create tables for XX wards of Tokyo and XX city of Kanagawa prefecture.</p>
+<h4 id="replace">replace</h4>
+<p><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.replace.html">Series.str.replace</a></p>
+<ul>
+<li>Equivalent to <code>re.sub()</code></li>
+<li>Convert strings matching <code>pat</code> to <code>repl</code> with <code>Series.str.replace(pat, repl)</code></li>
+<li>Frequently used when you want to delete extra strings in the rule base</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Delete postal code</span>
+df[<span style="color:#e6db74">&#39;address&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>str<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;〒[0-9]{3}\-[0-9]{4}&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>)
+</code></pre></div><p>By the way, <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html">Series.replace</a> differs from <code>Series.str.replace</code> in dictionary format. Can pass</p>
+<h2 id="do-processing-not-found-in-pandas">Do processing not found in pandas</h2>
+<p>If you want to use your own functions or package functions (neologdn, mecab, etc.)</p>
+<p>Use <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.apply.html">Series.apply</a>.
+By passing a function like <code>Series.apply(func)</code>, the processing of that function can be executed on the data of Series. You can also pass a lambda function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Insert&#39;address&#39; at the beginning of the text</span>
+df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x:<span style="color:#e6db74">&#39;address&#39;</span> <span style="color:#f92672">+</span> x)
+</code></pre></div><p>The actual text preprocessing is summarized below.</p>
+<h3 id="neologdn-text-preprocessing">neologdn (text preprocessing)</h3>
+<ul>
+<li><a href="https://github.com/ikegami-yukino/neologdn">https://github.com/ikegami-yukino/neologdn</a></li>
+</ul>
+<blockquote>
+<p>neologdn 0.4</p>
+</blockquote>
+<p>A Japanese text normalization package that can normalize long sounds and tildes that cannot be processed only by the standard library normalize.</p>
+<p>Before parsing with mecab, of course,
+If you use it before getting a string with a regular expression, the regular expression to write will be simple, so it is good to execute it first for Japanese text.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> neologdn
+df[<span style="color:#e6db74">&#39;neologdn&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>apply(neologdn<span style="color:#f92672">.</span>normalize)
+
+You can also use DataFrame<span style="color:#f92672">.</span>apply <span style="color:#66d9ef">if</span> you use <span style="color:#75715e">#lambda function</span>
+df[<span style="color:#e6db74">&#39;neologdn&#39;</span>] <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: neologdn<span style="color:#f92672">.</span>normalize(x[<span style="color:#e6db74">&#39;address&#39;</span>]), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><h3 id="separating">separating</h3>
+<h4 id="mecab-python3">mecab-python3</h4>
+<ul>
+<li><a href="https://github.com/SamuraiT/mecab-python3">https://github.com/SamuraiT/mecab-python3</a></li>
+</ul>
+<blockquote>
+<p>mecab-python3 0.996.3</p>
+</blockquote>
+<p>Specify <code>-Owakati</code> if you want only the separated words.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> MeCab
+
+<span style="color:#75715e"># `-d` specifies the dictionary path</span>
+tagger <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;-Owakati -d /usr/local/lib/mecab/dic/ipadic/&#39;</span>)
+df[<span style="color:#e6db74">&#39;neologdn&#39;</span>]<span style="color:#f92672">.</span>apply(tagger<span style="color:#f92672">.</span>parse)
+<span style="color:#e6db74">```In this case, the newline `</span>\n<span style="color:#960050;background-color:#1e0010">`</span> at the end <span style="color:#f92672">is</span> also attached, so <span style="color:#66d9ef">if</span> you want to remove it, define your own function <span style="color:#f92672">or</span> respond <span style="color:#66d9ef">with</span> a <span style="color:#66d9ef">lambda</span> statement<span style="color:#f92672">.</span>
+
+<span style="color:#e6db74">``</span><span style="color:#960050;background-color:#1e0010">`</span>python
+tagger <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;-Owakati -d /usr/local/lib/mecab/dic/ipadic/&#39;</span>)
+
+<span style="color:#75715e"># Define function</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">my_parser</span>(text):
+    res <span style="color:#f92672">=</span> tagger<span style="color:#f92672">.</span>parse(text)
+    <span style="color:#66d9ef">return</span> res<span style="color:#f92672">.</span>strip()
+
+df[<span style="color:#e6db74">&#39;neologdn&#39;</span>]<span style="color:#f92672">.</span>apply(my_parser)
+
+
+You don<span style="color:#e6db74">&#39;t need to declare a function if you use #lambda function</span>
+df[<span style="color:#e6db74">&#39;neologdn&#39;</span>]<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: tagger<span style="color:#f92672">.</span>parse(x)<span style="color:#f92672">.</span>strip())
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> Kasuga <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>chome <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Bunkyo<span style="color:#f92672">-</span>ku, Tokyo Laqua Building <span style="color:#ae81ff">2</span>F
+<span style="color:#ae81ff">1</span> Takadanobaba, Shinjuku<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">35</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Emiostyle <span style="color:#ae81ff">1</span>F
+<span style="color:#ae81ff">2</span> Marunouchi, Chiyoda<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Marunouchi Building B <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">3</span> <span style="color:#ae81ff">5</span><span style="color:#f92672">-</span><span style="color:#ae81ff">50</span> Misono, Midori<span style="color:#f92672">-</span>ku, Saitama City, Saitama Prefecture <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> AEON MALL Urawa Misono
+<span style="color:#ae81ff">4</span> Hamacho, Funabashi City, Chiba Prefecture <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> LaLaport TOKYO<span style="color:#f92672">-</span>BAY LaLaport <span style="color:#ae81ff">3</span>
+<span style="color:#ae81ff">5</span> Ofuna, Kamakura<span style="color:#f92672">-</span>shi, Kanagawa <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> LUMINE wing <span style="color:#ae81ff">4</span> F
+<span style="color:#ae81ff">6</span> Minami Koiwa, Edogawa<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">7</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> Shapo Koiwa <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">7</span> Minami Ikebukuro, Toshima<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Ikebukuro SP B <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">8</span> Saitama Prefecture Kawagoe<span style="color:#f92672">-</span>shi <span style="color:#ae81ff">105</span> Wakitacho Atre Kawagoe <span style="color:#ae81ff">4</span>F
+<span style="color:#ae81ff">9</span> Tokyo, Katsushika<span style="color:#f92672">-</span>ku, Kameari <span style="color:#ae81ff">3</span><span style="color:#f92672">-</span><span style="color:#ae81ff">49</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Ario Kameari <span style="color:#ae81ff">2</span>F
+</code></pre></div><h4 id="sudachipy">Sudachipy</h4>
+<ul>
+<li><a href="https://github.com/WorksApplications/SudachiPy">https://github.com/WorksApplications/SudachiPy</a></li>
+</ul>
+<blockquote>
+<p>SudachiDict-core 20190718
+SudachiPy 0.4.2</p>
+</blockquote>
+<p>In SudachiPy, if you want to get the segmentation result like the above mecab, you need to create a function that returns only the surface layer from the object of the analysis result.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sudachipy <span style="color:#f92672">import</span> tokenizer
+<span style="color:#f92672">from</span> sudachipy <span style="color:#f92672">import</span> dictionary
+
+
+tokenizer_obj <span style="color:#f92672">=</span> dictionary<span style="color:#f92672">.</span>Dictionary()<span style="color:#f92672">.</span>create()
+mode <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>Tokenizer<span style="color:#f92672">.</span>SplitMode<span style="color:#f92672">.</span>C
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sudachi_tokenize</span>(text):
+    res <span style="color:#f92672">=</span> tokenizer_obj<span style="color:#f92672">.</span>tokenize(text, mode)
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join([m<span style="color:#f92672">.</span>surface() <span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> res])
+
+df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>apply(sudachi_tokenize)
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Kasuga, Bunkyo<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> LaQua Building <span style="color:#ae81ff">2</span>F
+<span style="color:#ae81ff">1</span> Takadanobaba, Shinjuku<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">35</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Emiostyle <span style="color:#ae81ff">1</span>F
+<span style="color:#ae81ff">2</span> Marunouchi, Chiyoda<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Marunouchi Building B <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">3</span> <span style="color:#ae81ff">5</span><span style="color:#f92672">-</span><span style="color:#ae81ff">50</span> Misono, Midori<span style="color:#f92672">-</span>ku, Saitama City, Saitama Prefecture <span style="color:#ae81ff">1</span> AEON MALL Urawa Misono
+<span style="color:#ae81ff">4</span> Hamacho, Funabashi, Chiba <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> LaLaport TOKYO<span style="color:#f92672">-</span>BAY LaLaport <span style="color:#ae81ff">3</span>
+<span style="color:#ae81ff">5</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span> Ofuna, Kamakura<span style="color:#f92672">-</span>shi, Kanagawa LUMINE wing <span style="color:#ae81ff">4</span> F
+<span style="color:#ae81ff">6</span> Minami Koiwa, Edogawa<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">7</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> Shapo Koiwa <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">7</span> Minamiikebukuro, Toshima<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Ikebukuro SP B <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">8</span> <span style="color:#ae81ff">105</span> Wakitacho, Kawagoe City, Saitama Prefecture Atre Kawagoe <span style="color:#ae81ff">4</span>F
+<span style="color:#ae81ff">9</span> Kameari, Katsushika<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">3</span><span style="color:#f92672">-</span><span style="color:#ae81ff">49</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Ario Kameari <span style="color:#ae81ff">2</span>F
+</code></pre></div><p>By the way, unlike ipadic of mecab, Sudachi&rsquo;s <code>SplitMode.C</code> seems to put together the address.
+(Do you treat prefectures + municipalities as unique expressions?)</p>
+<h5 id="pass-mode-as-an-argument">pass mode as an argument</h5>
+<p>Besides the above results,
+Sudachi has three split units (<a href="https://github.com/WorksApplications/Sudachi#the-modes-of-splitting">Split Mode</a>), so the function <code>sudachi_tokenize</code> can be specified to specify the mode. Try to customize.</p>
+<p>Series.apply can pass variable length arguments, so you can add arguments to the function side and specify the arguments on the apply side.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sudachi_tokenize_with_mode</span>(text, mode):
+    res <span style="color:#f92672">=</span> tokenizer_obj<span style="color:#f92672">.</span>tokenize(text, mode)
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join([m<span style="color:#f92672">.</span>surface() <span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> res])
+
+df[<span style="color:#e6db74">&#39;address&#39;</span>]<span style="color:#f92672">.</span>apply(sudachi_tokenize_with_mode, mode<span style="color:#f92672">=</span>tokenizer<span style="color:#f92672">.</span>Tokenizer<span style="color:#f92672">.</span>SplitMode<span style="color:#f92672">.</span>A)
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0</span> Kasuga <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>chome <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Bunkyo<span style="color:#f92672">-</span>ku, Tokyo Laqua Building <span style="color:#ae81ff">2</span>F
+<span style="color:#ae81ff">1</span> Takadanobaba, Shinjuku<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">35</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Emiostyle <span style="color:#ae81ff">1</span>F
+<span style="color:#ae81ff">2</span> Marunouchi, Chiyoda<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Marunouchi Building B <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">3</span> <span style="color:#ae81ff">5</span><span style="color:#f92672">-</span><span style="color:#ae81ff">50</span> Misono, Midori<span style="color:#f92672">-</span>ku, Saitama City, Saitama Prefecture <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> AEON MALL Urawa Misono
+<span style="color:#ae81ff">4</span> Hamacho, Funabashi City, Chiba Prefecture <span style="color:#ae81ff">2</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> LaLaport TOKYO<span style="color:#f92672">-</span>BAY LaLaport <span style="color:#ae81ff">3</span>
+<span style="color:#ae81ff">5</span> Ofuna, Kamakura City, Kanagawa Prefecture <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">4</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> LUMINE wing <span style="color:#ae81ff">4</span> F
+<span style="color:#ae81ff">6</span> Minami Koiwa, Edogawa<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">7</span><span style="color:#f92672">-</span><span style="color:#ae81ff">24</span><span style="color:#f92672">-</span><span style="color:#ae81ff">15</span> Shapo Koiwa <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">7</span> Minami Ikebukuro, Toshima<span style="color:#f92672">-</span>ku, Tokyo <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span><span style="color:#ae81ff">29</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> Ikebukuro SP B <span style="color:#ae81ff">1</span> F
+<span style="color:#ae81ff">8</span> <span style="color:#ae81ff">105</span> Wakitacho, Kawagoe City, Saitama Prefecture Atre Kawagoe <span style="color:#ae81ff">4</span>F
+<span style="color:#ae81ff">9</span> Tokyo, Katsushika<span style="color:#f92672">-</span>ku, Kameari <span style="color:#ae81ff">3</span><span style="color:#f92672">-</span><span style="color:#ae81ff">49</span><span style="color:#f92672">-</span><span style="color:#ae81ff">3</span> Ario Kameari <span style="color:#ae81ff">2</span>F
+</code></pre></div><p>When set to <code>SplitMode.A</code>, the fine split was almost the same as the result of mecab.</p>
+<h5 id="use-expand">use expand</h5>
+<p>Sudachi has a Normalization function that modifies <em>simulation</em> into <em>simulation</em>.</p>
+<p>Consider returning <code>normalized_form</code> at the same time and making it a DataFrame.</p>
+<p>Since <code>Series.apply</code> does not have expand function, try executing it by specifying <code>result_type='expand'</code> in <code>DataFrame.apply</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sudachi_tokenize_multi</span>(text):
+    res <span style="color:#f92672">=</span> tokenizer_obj<span style="color:#f92672">.</span>tokenize(text, mode)
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join([m<span style="color:#f92672">.</span>surface() <span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> res]),<span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join([m<span style="color:#f92672">.</span>normalized_form() <span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> res])
+
+df<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: sudachi_tokenize_multi(x[<span style="color:#e6db74">&#39;neologdn&#39;</span>]), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, result_type<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;expand&#39;</span>)
+</code></pre></div><p>| | 0 | 1 |
+|&mdash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;|
+0 | Kasuga 1-chome 1-1 Bunkyo-ku, Tokyo 2 F | Kasuga 1-1 chome 1-1 Laqua Building 2 f | Bunkyo-ku, Tokyo
+1 | Takadanobaba, Shinjuku-ku, Tokyo 1-35-3 Emiostyle 1 F | Takadanobaba, Shinjuku-ku, Tokyo 1-35-3 Emiostyle 1 f |
+2 | Marunouchi, Tokyo Chiyoda-ku 2-4-1 Marunouchi Building B 1 F | Tokyo, Chiyoda-ku Marunouchi 2-4-1 Marunouchi Building b 1 f |
+3 | 5-50 Misono, Saitama City Midori-ku, 1 Aeon Mall Urawa Misono | 5-50 Misono, Midori-ku, Saitama City Saitama Prefecture 1 Aeon Mall Urawa Misono |
+4 | 2-1-1, Hamacho, Funabashi, Chiba Prefecture LaLaport TOKYO-BAY 3 LaLaport | 2-1-1, Hamacho, Funabashi City, Chiba Prefecture LaLaport Tokyo-Bay 3 LaLaport |
+5 | 1-4 Ofuna, Kamakura City, Kanagawa Prefecture 4-1 LUMINE wing 4 F | 1-4-1 Ofuna, Kamakura City, Kanagawa Prefecture 4 f |
+6 | Minamikoiwa, Edogawa-ku, Tokyo 7-24-15 Shapo Koiwa, 1F | Minamikoiwa, Edogawa-ku, Tokyo 7-24-15 Shappo Koiwa, 1f |
+7 | Minami-Ikebukuro 1-29-1 Ikebukuro SP B 1 F, Toshima-ku, Tokyo | Minami-Ikebukuro 1-29-1 Ikebukuro SP b 1 f | Toshima-ku, Tokyo
+8 | 105 Atre, Kawagoe-machi, Kawagoe-shi, Saitama Prefecture 4 F | Atre, Kawagoe-machi, Kawagoe-shi, Saitama Prefecture 4 f |
+9 | Kameari, Katsushika-ku, Tokyo 3-49-3 Ario Kameari 2F | Kameari, Katsushika-ku, Tokyo 3-49-3 Ario Kameari 2f |In the case of an address, I was wondering if it had any effect, but <em>Shapo</em> was converted to <em>Shapo</em> and <em>TOKYO-BAY</em> was converted to <em>Tokyo-Bay</em>. For some reason, letters like F are also lowercase.</p>
+<h3 id="other">Other</h3>
+<p>As for the order of personal preprocessing,</p>
+<ol>
+<li>neologdn</li>
+<li>Delete unnecessary character strings in the regular expression or fill in missing values</li>
+<li>separated by mecab</li>
+</ol>
+<p>However, if you use SudachiPy, it also has a normalization function, so you may want to tokenize first and then delete or complete characters.</p>
+<p>I wrote it at the beginning, but I would appreciate if you could tell me if there is a better processing method.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

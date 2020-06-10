@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Employee 2vec: Extract member characteristics from Slack history and visualize organizational structure | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Employee 2vec: Extract member characteristics from Slack history and visualize organizational structure</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 7, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning">MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/word2vec">word2vec</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/slack">Slack</a></code></small>
+
+</p>
+<pre><code>It is the 7th day of [ABEJA Advent Calendar](https://qiita.com/advent-calendar/2019/abeja).
+</code></pre>
+<p>#Introduction</p>
+<p>Last time, I dropped a piece of information that couldn&rsquo;t make a VIP channel in Slack, but it&rsquo;s not good to think that ABEJA is just playing with VIP, so I decided to send it to Tech a little this time. In this article, I&rsquo;ll try the following two stories. If it&rsquo;s hard to understand, maybe you can jump to the bottom and see the graph.</p>
+<ul>
+<li>Create characteristics of internal members from Slack conversation history and plot relationships within the organization</li>
+<li>Try to represent one employee with another</li>
+</ul>
+<p>Communication between members within a company represents relationships between members. By using the organization chart and project configuration chart, you can grasp the department relations among members and the status of cooperation with other departments. However, it is difficult to see which departments are close to each other, or which members in the same department have strong connections. However, it is difficult to easily visualize such relationships using questionnaires. On the other hand, in Slack, there is a conversation log between members, and this time I will try to visualize human relationships using that log. Furthermore, machine learning (specifically, word2vec) is used to calculate the feature amount of a member, or one member is created by combining other members (ex: I = 0.4 x A + 0.2 x B). -0.2 x C) You can.</p>
+<p>As a method, we consider the appearance sequence of the user in the conversation in Slack as the word sequence in the sentence and perform the word2vec to get the characteristics of the user**. As a result, similar to word2vec, user similarity, addition and subtraction of features between users, and visualization using t-SNE are possible.</p>
+<p>The source code of this article has been published on <a href="https://github.com/peisuke/shine2vec">here</a>. Unlike last time, you can use Slack&rsquo;s TOKEN, so please try it. I&rsquo;d be happy if you could add a star.</p>
+<p>#Slack processing</p>
+<h2 id="download">Download</h2>
+<p>First, let&rsquo;s download our slack conversation history. Let&rsquo;s start with various modules. The following is a list of currently registered users and channels. <code>SLACK_TOKEN</code> uses the Verification Token found in App Credentials of Slack API. I think <a href="https://qiita.com/ykhirao/items/3b19ee6a1458cfb4ba21">this area</a> will be helpful.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_user_list</span>():
+    r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;https://slack.com/api/users.list&#39;</span>,
+                     params<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;token&#39;</span>: SLACK_TOKEN})
+    <span style="color:#66d9ef">return</span> r<span style="color:#f92672">.</span>json()[<span style="color:#e6db74">&#39;members&#39;</span>]
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_channel_list</span>():
+    r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;https://slack.com/api/channels.list&#39;</span>,
+                     params<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;token&#39;</span>: SLACK_TOKEN})
+    <span style="color:#66d9ef">return</span> r<span style="color:#f92672">.</span>json()[<span style="color:#e6db74">&#39;channels&#39;</span>]
+</code></pre></div><p>Next, let&rsquo;s take a message for each channel. Use the API of channels.history. It often fails, so let&rsquo;s put a retry process.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_channel_messages</span>(channel, from_date, to_date, retry<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>):
+    latest <span style="color:#f92672">=</span> to_date
+    oldest <span style="color:#f92672">=</span> from_date
+    has_more <span style="color:#f92672">=</span> True
+    messages <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">while</span>(has_more):
+        payload<span style="color:#f92672">=</span>{
+            <span style="color:#e6db74">&#34;token&#34;</span>: SLACK_TOKEN,
+            <span style="color:#e6db74">&#34;channel&#34;</span>: channel[<span style="color:#e6db74">&#34;id&#34;</span>],
+            <span style="color:#e6db74">&#34;latest&#34;</span>: latest,
+            <span style="color:#e6db74">&#34;oldest&#34;</span>: oldest
+        }
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(retry):
+            <span style="color:#66d9ef">try</span>:
+                r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;https://slack.com/api/channels.history&#34;</span>, params<span style="color:#f92672">=</span>payload)
+            <span style="color:#66d9ef">except</span> BaseError <span style="color:#66d9ef">as</span> e:
+                t, v, tb <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>exc_info()
+                <span style="color:#66d9ef">print</span>(traceback<span style="color:#f92672">.</span>format_exception(t,v,tb))
+                <span style="color:#66d9ef">print</span>(traceback<span style="color:#f92672">.</span>format_tb(e<span style="color:#f92672">.</span>__traceback__))
+
+            <span style="color:#66d9ef">if</span> r<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">429</span>:
+                sleep_time <span style="color:#f92672">=</span> int(r<span style="color:#f92672">.</span>headers[<span style="color:#e6db74">&#34;Retry-After&#34;</span>])
+                time<span style="color:#f92672">.</span>sleep(sleep_time)
+                <span style="color:#66d9ef">continue</span>
+            <span style="color:#66d9ef">else</span>:
+                <span style="color:#66d9ef">break</span>
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">continue</span>
+        d <span style="color:#f92672">=</span> r<span style="color:#f92672">.</span>json()
+        messages <span style="color:#f92672">+=</span> d[<span style="color:#e6db74">&#39;messages&#39;</span>]
+        has_more <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;has_more&#39;</span> <span style="color:#f92672">in</span> d <span style="color:#f92672">and</span> d[<span style="color:#e6db74">&#39;has_more&#39;</span>]
+        <span style="color:#66d9ef">if</span> has_more:
+            latest <span style="color:#f92672">=</span> int(float(d[<span style="color:#e6db74">&#34;messages&#34;</span>][<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>][<span style="color:#e6db74">&#34;ts&#34;</span>]))
+    <span style="color:#66d9ef">return</span> messages
+</code></pre></div><p>Using the above, first fetch the user list/channel list, then download and save the history of all channels. I excluded the archived channels here. If you reduce the contents of timedelta, you can execute it faster, so I think it is better to test it there before proceeding.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">users <span style="color:#f92672">=</span> get_user_list()
+channels <span style="color:#f92672">=</span> get_channel_list()
+
+today <span style="color:#f92672">=</span> date<span style="color:#f92672">.</span>today()
+
+messages <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> channel <span style="color:#f92672">in</span> tqdm(channels):
+    <span style="color:#66d9ef">if</span> channel[<span style="color:#e6db74">&#39;is_archived&#39;</span>] <span style="color:#f92672">==</span> False:
+        from_date <span style="color:#f92672">=</span> int(time<span style="color:#f92672">.</span>mktime((today<span style="color:#f92672">-</span>timedelta(<span style="color:#ae81ff">60</span>))<span style="color:#f92672">.</span>timetuple()))
+        to_date <span style="color:#f92672">=</span> int(time<span style="color:#f92672">.</span>mktime(today<span style="color:#f92672">.</span>timetuple()))
+        messages[channel[<span style="color:#e6db74">&#39;id&#39;</span>]] <span style="color:#f92672">=</span> get_channel_messages(channel, from_date<span style="color:#f92672">=</span>from_date, to_date<span style="color:#f92672">=</span>to_date)
+
+data <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;users&#39;</span>: users,
+        <span style="color:#e6db74">&#39;channels&#39;</span>: channels,
+        <span style="color:#e6db74">&#39;messages&#39;</span>: messages}
+
+json<span style="color:#f92672">.</span>dump(data, open(<span style="color:#e6db74">&#39;./log.json&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>))
+</code></pre></div><h2 id="history-extraction">History extraction</h2>
+<p>Next, let&rsquo;s extract the conversation history. As we will see later, we will use &ldquo;whether we are talking on Slack&rdquo; to see if employees are similar. Instead of looking at the content of the conversation, consider only the user ID in the conversation. In addition to in-channel conversations, Slack conversations have threads for comments. The main flow was one conversation and the thread was another series of conversations. Note that BOT is removed (<code>subtype</code> is <code>bot_message</code>) when extracting conversations. Also, it can be judged whether it is the main conversation or not by the presence of <code>parent_user_id</code>. If the main conversation had <code>replies</code>, the information contained in it would be a thread for comments.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> json
+
+<span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#39;log.json&#39;</span>,<span style="color:#e6db74">&#39;r&#39;</span>) <span style="color:#66d9ef">as</span> f:
+    data <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+    
+sentence_list <span style="color:#f92672">=</span> []
+channel_ids<span style="color:#f92672">=</span>[d[<span style="color:#e6db74">&#39;id&#39;</span>] <span style="color:#66d9ef">for</span> d <span style="color:#f92672">in</span> data[<span style="color:#e6db74">&#39;channels&#39;</span>]]
+
+<span style="color:#66d9ef">for</span> channel_id <span style="color:#f92672">in</span> channel_ids:
+    <span style="color:#66d9ef">if</span> channel_id <span style="color:#f92672">in</span> data[<span style="color:#e6db74">&#39;messages&#39;</span>]:
+        messages <span style="color:#f92672">=</span> list(data[<span style="color:#e6db74">&#39;messages&#39;</span>][channel_id])
+        messages <span style="color:#f92672">=</span> list(filter(<span style="color:#66d9ef">lambda</span> x:<span style="color:#e6db74">&#39;parent_user_id&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> x, messages))
+        messages <span style="color:#f92672">=</span> list(filter(<span style="color:#66d9ef">lambda</span> x:<span style="color:#e6db74">&#39;subtype&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> x <span style="color:#f92672">or</span> x[<span style="color:#e6db74">&#39;subtype&#39;</span>] <span style="color:#f92672">!=</span><span style="color:#e6db74">&#39;bot_message&#39;</span>, messages))
+
+        sentence <span style="color:#f92672">=</span> [m[<span style="color:#e6db74">&#39;user&#39;</span>] <span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> messages]
+        sentence_list<span style="color:#f92672">.</span>append(sentence)
+
+        <span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> messages:
+            <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;replies&#39;</span> <span style="color:#f92672">in</span> m:
+                sentence <span style="color:#f92672">=</span> [r[<span style="color:#e6db74">&#39;user&#39;</span>] <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> m[<span style="color:#e6db74">&#39;replies&#39;</span>]]
+                <span style="color:#66d9ef">if</span> len(sentence)<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">3</span>:
+                    sentence_list<span style="color:#f92672">.</span>append(sentence)
+</code></pre></div><p>#Employee 2vec</p>
+<h2 id="overview">Overview</h2>
+<p>Up to this point, the preparation is done, and from here it is the production. By the way, word2vec technology is used to extract employee characteristics from conversation history. word2vec is a method of learning co-occurrence information before and after in a sentence, and learns what kind of words are likely to appear before and after a certain word. This is an interesting technique that allows you to add or subtract words to see if they are similar or not. For details, please refer to <a href="https://www.randpy.tokyo/entry/word2vec_skip_gram_model">this area</a>. This time, it is a conversation log, but we propose &ldquo;Employee 2vec&rdquo; that extracts the characteristics of employees by learning the people who are talking with them. Like word2vec, let&rsquo;s proceed with the expectation that employees are similar to each other and that the addition and subtraction can be used.</p>
+<h2 id="implementation-of-employee-2vecthere-is-no-implementation-and-i-use-a-library-called-gensim-gensim-is-a-library-that-has-functions-that-can-be-used-for-various-language-processing-such-as-topic-analysis-maybe-of-course-word2vec-can-also-be-used-easily-to-use-word2vec-give-a-list-of-sentences-separated-by-words-this-time-lets-regard-the-appearance-list-of-employee-user-ids-as-sentences-and-give-this-to-word2vec-the-code-is-just-that-without-thinking-deeply-about-the-parameters-we-judge-that-they-are-similar-by-five-conversations-before-and-after-and-learn-the-features-of-32-dimensions">Implementation of employee 2vecThere is no implementation and I use a library called gensim. gensim is a library that has functions that can be used for various language processing such as topic analysis (maybe). Of course word2vec can also be used easily. To use word2vec, give a list of sentences separated by words. This time, let&rsquo;s regard the appearance list of employee user IDs as sentences and give this to word2vec. The code is just that. Without thinking deeply about the parameters, we judge that they are similar by five conversations before and after, and learn the features of 32 dimensions.</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">model <span style="color:#f92672">=</span> word2vec<span style="color:#f92672">.</span>Word2Vec(sentence_list, size<span style="color:#f92672">=</span><span style="color:#ae81ff">32</span>, min_count<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, window<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, iter<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>)
+</code></pre></div><p>#Result</p>
+<p>First, display the synonyms that are often executed with word2vec, in this case, display a list of similar employees. Next, let&rsquo;s create a relationship map for employees throughout the company.</p>
+<h2 id="show-the-most-similar-people">Show the most similar people</h2>
+<p>Slack uses a unique user ID for each employee, but it will not be known who is who when it is visualized, so create a dictionary for mutual conversion with Slack name first.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">id2name <span style="color:#f92672">=</span> {d[<span style="color:#e6db74">&#39;id&#39;</span>]: d[<span style="color:#e6db74">&#39;name&#39;</span>] <span style="color:#66d9ef">for</span> d <span style="color:#f92672">in</span> data[<span style="color:#e6db74">&#39;users&#39;</span>]}
+name2id <span style="color:#f92672">=</span> {d[<span style="color:#e6db74">&#39;name&#39;</span>]: d[<span style="color:#e6db74">&#39;id&#39;</span>] <span style="color:#66d9ef">for</span> d <span style="color:#f92672">in</span> data[<span style="color:#e6db74">&#39;users&#39;</span>]}
+</code></pre></div><p>Enter the name of the original employee and view the top 10 similar employees. Note that <code>TARGET_NAME</code> is the name used in Slack, but for the list, I think that the list can be taken with <code>print(name2id.keys())</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">ret <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>most_similar(positive<span style="color:#f92672">=</span>[name2id[TARGET_NAME]])
+
+<span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> ret:
+    <span style="color:#66d9ef">print</span>(id2name[r[<span style="color:#ae81ff">0</span>]], r[<span style="color:#ae81ff">1</span>])
+</code></pre></div><h3 id="result">result</h3>
+<p>I&rsquo;m very sorry, but I&rsquo;m sorry, but I&rsquo;m not sure if I&rsquo;ll show my individual name or see the organizational structure. .. .. Imagine the employee name and proximity being displayed. You can see that there are people with relatively the same role.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/146529/f5485b12-cfaf-8061-79cf-333feef82cb7.png" alt="image.png"></p>
+<h2 id="display-employee-relationships">Display employee relationships</h2>
+<p>Employee 2vec makes it possible to see employees who are close to each other by showing the characteristics of each employee. However, it is difficult to grasp the overall situation by looking at individual relationships. Here, in order to visualize the closeness of employees to each other for the entire company, the feature amount of employees is compressed into two dimensions using t-SNE. With t-SNE, it is a method of dropping to a low dimension while being careful not to change the distance relationship between the data before compression and after compression. We will use t-SNE of scikit-learn. In the display, each node visualizes someone.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">user_ids <span style="color:#f92672">=</span> list(model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>vocab<span style="color:#f92672">.</span>keys())
+name_list <span style="color:#f92672">=</span> [id2name[id] <span style="color:#66d9ef">for</span> id <span style="color:#f92672">in</span> user_ids <span style="color:#66d9ef">if</span> id <span style="color:#f92672">in</span> id2name]
+
+vec_list <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> name <span style="color:#f92672">in</span> name_list:
+    v <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>word_vec(name2id[name])
+    vec_list<span style="color:#f92672">.</span>append(v)
+
+ret <span style="color:#f92672">=</span> TSNE(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>fit_transform(vec_list)
+
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">20</span>))
+<span style="color:#66d9ef">for</span> r, n <span style="color:#f92672">in</span> zip(ret, name_list):
+    plt<span style="color:#f92672">.</span>scatter(r[<span style="color:#ae81ff">0</span>], r[<span style="color:#ae81ff">1</span>], color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>)
+    plt<span style="color:#f92672">.</span>text(r[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">+</span><span style="color:#ae81ff">0.3</span>, r[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">+</span><span style="color:#ae81ff">0.3</span>, n, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">9</span>)
+</code></pre></div><h3 id="result-1">result</h3>
+<p>The internal relationship diagram is plotted. The name of the employee is displayed at each point, and nearby people are plotted near each other. This makes it possible to visualize who is communicating with whom. In addition, since it is more sensitive than before, it will be blurred, so please see with your own eyes. Certainly, people in the same department will be close to each other, and it will be easy for the hub role to come to the center. By using this, I think that the good effect can be obtained by being able to evaluate the communication failure of the organization.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/146529/0c8bc864-f86a-bd5e-4207-52fc90357d07.png" alt="image.png"></p>
+<h1 id="lets-combine-employees">Let&rsquo;s combine employees!</h1>
+<p>Every company has a core person, and if that person quits the company, it&rsquo;s a problem! I think there is something. By the way, let&rsquo;s try to express the above core personnel by another person by using addition and subtraction of employees by utilizing the fact that word2vec can add and subtract features. I disagree.</p>
+<h2 id="formulation">Formulation</h2>
+<p>Achieve a target feature with a different combination of features, but use fewer people. In order to achieve this, we perform L1 regularization and use it as a Lasso regression problem. The formula is as follows.</p>
+<pre><code class="language-math" data-lang="math">\min \bigl({\bf y}-{\bf Au}\bigr)^2 + \lambda \Sigma|u_i|
+</code></pre><p>y is a vector of target employees, A is a list of characteristics of employees excluding target employees, and u is each employee&rsquo;s characteristics and to what extent. As a result, the target employee can be represented by the linear sum of the employee feature values.</p>
+<h2 id="implementation">Implementation</h2>
+<p>First, the information on the target employee is extracted, and then a matrix is created that accumulates the characteristics of other employees. Finally, the Lasso regression implemented in scikit-learn calculates the employee combinations.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">target_name <span style="color:#f92672">=</span> TARGET_NAME
+target_idx <span style="color:#f92672">=</span> name_list<span style="color:#f92672">.</span>index(target_name)
+target_vec <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>word_vec(name2id[target_name])
+
+menber_dict <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(vec_list)<span style="color:#f92672">.</span>T
+
+<span style="color:#75715e"># Remove target vector from dictionary</span>
+idx <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">0</span>,target_idx)) <span style="color:#f92672">+</span> list(range(target_idx<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>,len(name_list)))
+tmp_menber_dict <span style="color:#f92672">=</span> menber_dict[:,idx]
+tmp_name_list <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(name_list)[idx]
+
+clf <span style="color:#f92672">=</span> linear_model<span style="color:#f92672">.</span>Lasso(alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>)
+clf<span style="color:#f92672">.</span>fit(tmp_menber_dict, target_vec)
+</code></pre></div><p>From the calculation results, we can extract which employee can be represented in what combination as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">selected_idx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(np<span style="color:#f92672">.</span>array(clf<span style="color:#f92672">.</span>coef_) <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>)[<span style="color:#ae81ff">0</span>]
+selected_names <span style="color:#f92672">=</span> tmp_name_list[selected_idx]
+selected_coef <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>coef_[selected_idx]
+
+<span style="color:#66d9ef">for</span> n, c <span style="color:#f92672">in</span> zip(selected_names, selected_coef):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;{}: {}&#39;</span><span style="color:#f92672">.</span>format(n, c))
+</code></pre></div><h2 id="result-2">result</h2>
+<p>As usual, I can&rsquo;t show the results&hellip; By doing this, you can obtain the employee list used for linear summation and its coefficient. The left is the person required to compose the target employee, and the right is the coefficient.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/146529/c0ad7dc9-ec24-9b40-20c8-1834194d18c2.png" alt="image.png"></p>
+<h2 id="internal-reaction">Internal reaction</h2>
+<p>It was interesting. In addition, let&rsquo;s have two people appearing with their real names that do not seem angry even if they give out their names.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/146529/106efdb9-c1a2-602f-059f-ac916614725d.png" alt="image.png"></p>
+<p>Such a story&hellip; The direction is a matter of decision, and it&rsquo;s not that bad because I pulled it. However, as a result, I laugh.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/146529/ded1985a-e716-0916-88ce-cb9da89eb5e1.png" alt="image.png"></p>
+<h2 id="discussion">Discussion</h2>
+<p>In this effort, I tried to extract it based on the assumption that the people talking in Slack have the same characteristics. On the other hand, just because they have the same conversation does not mean they have similar characteristics. Therefore, although the results of this time can show the communication diagram of the organization, I think that it is not easy to correctly extract the functional part of the employee. Well, even though word2vec is similar, it seems that addition and subtraction can be done, so I hope that something correct is made.</p>
+<p>Also, if you continue to talk with a small number of people in a given thread, the speed within that group will be stronger, but the distance to other groups will be much larger. To avoid this, it may be useful to reduce the weight if the conversation density becomes too high.</p>
+<p>This time, we used L1 optimization to approximate the employees. Actually, I think that L0 can give a higher precision result than L1, but since it was troublesome to implement, I passed this time.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>Using the conversation history of Slack, I tried to visualize the state of the organization and solve the combination problem of employees. By knowing the structure of the organization, for example, when relocating departments, it is possible to verify the hypothesis that the communication is as expected. It is difficult for other employees to pay for it, but I hope you will enjoy it from the perspective of being interesting.</p>
+<p>Also, when I posted this to Slack in the company, the heroes of the hyperbolic space inside the company began to react, so I escaped with all my might.</p>
+<p>The end.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

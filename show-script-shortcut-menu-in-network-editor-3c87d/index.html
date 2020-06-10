@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Show script shortcut menu in network editor | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Show script shortcut menu in network editor</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 25, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/houdini">HOUDINI</a></code></small>
+
+</p>
+<pre><code>This article is from the [Houdini Advent Calender 2019](https://qiita.com/advent-calendar/2019/houdini) on the 25th day. Last day! !
+</code></pre>
+<h1 id="at-first">at first</h1>
+<p>Shift+Tab (changeable) on the network editor displays the original menu.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223831/ec2d0d74-e3bc-bd58-cb4a-6842c03c50cb.gif" alt="houdini_network_editor.gif">
+Character images are just hobbies. You don&rsquo;t have to put it out.</p>
+<p>Houdini itself is full of HDA, shelves, presets and useful tools, so there is not much need to make such a modification, but Houdini is a fun and messy software for those who like modifying. I will.</p>
+<p>To give you the points that you feel good to make</p>
+<ul>
+<li>Less mouse movement than registering on the shelf.</li>
+<li>Can be created at the mouse position when creating a node from a script.</li>
+</ul>
+<p>Well, the tools registered in the shelf can be displayed in the normal TAB menu&hellip;
+As a disadvantage, it is difficult to create it. If there is a mistake in the code, Houdini will continue to output error messages endlessly.</p>
+<p>If you want to have fun, please do.
+I will write the creation method below. Houdini I&rsquo;m using is 18.0.287 and is a Windows environment.</p>
+<p>The official document is <a href="https://www.sidefx.com/docs/houdini/hom/network.html">here</a>.
+The script of the actual network editor is in <code>(Houdini installation directory)/houdini/python2.7libs/nodegraph.py</code>, so it is recommended to refer here if you have any.</p>
+<h1 id="hook-key-events-on-network-editor">Hook key events on network editor</h1>
+<p>First, add a script file. For the documentation
+<code>$HOUDINI_USER_PREF_DIR/python2.7libs/nodegraphhooks.py</code>
+<code>Example: C:\Users\(user name)\Documents\houdini18.0\python2.7libs\nodegraphhooks.py</code>
+Is said to be added.
+Personally, I created another directory and specified the path in pythonrc.py to manage the script easily.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:pythonrc.py" data-lang="python:pythonrc.py"><span style="color:#f92672">import</span> sys
+sys<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>insert(<span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;script storage path&#39;</span>)
+</code></pre></div><p>Whichever you like, I think it&rsquo;s okay.
+The operation confirmation code of nodegraphhooks.py is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:nodegraphhooks.py" data-lang="python:nodegraphhooks.py"><span style="color:#75715e">#coding:utf-8</span>
+<span style="color:#f92672">from</span> canvaseventtypes <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">createEventHandler</span>(uievent, pending_actions):
+    <span style="color:#e6db74">&#34;&#34;&#34;Hook events from the network editor &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">if</span> isinstance(uievent, KeyboardEvent):
+        <span style="color:#66d9ef">if</span> uievent<span style="color:#f92672">.</span>eventtype <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;keyhit&#39;</span> <span style="color:#f92672">and</span> uievent<span style="color:#f92672">.</span>key<span style="color:#f92672">==</span><span style="color:#e6db74">&#39;Shift+Tab&#39;</span>:
+            uievent<span style="color:#f92672">.</span>editor<span style="color:#f92672">.</span>flashMessage(None,<span style="color:#e6db74">&#39;nodegraphhook!!&#39;</span>, <span style="color:#ae81ff">2.0</span>)
+    <span style="color:#66d9ef">return</span> None, False
+</code></pre></div><p>Now Shift+Tab will display the message in the network editor.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223831/c40280fb-fcfe-7272-c22e-e61585704de8.gif" alt="nodegraphhook.gif">
+To find an unused hotkey and write the corresponding code, you can become an editor extension.
+It may be useful to add it here if you have scripting you use frequently.</p>
+<p>#Display the menu
+Here, <a href="https://www.sidefx.com/docs/houdini/hom/hou/qt/Menu.html">hou.qt.Menu</a> is used to display the shortcut menu.
+To write a process that continues for a while, it seems to be a manner to create a class that inherits nodegraphbase.EventHandler and process it with a function called handleEvent.</p>
+<p>The original QMenu of hou.qt.Menu is often displayed by using a function called exec_, but since a warning may be displayed when this function is used, it is displayed by show.</p>
+<p>The file custom_tabmenu_handler.py is added. Put it in a place where the python path is in. If you are not particular about it, I think that the same directory as nodegraphhooks.py is good.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:nodegraphhooks.py" data-lang="python:nodegraphhooks.py"><span style="color:#75715e">#coding:utf-8</span>
+<span style="color:#f92672">from</span> canvaseventtypes <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+<span style="color:#f92672">from</span> custom_tabmenu_handler <span style="color:#f92672">import</span> CustomTabMenuHandler
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">createEventHandler</span>(uievent, pending_actions):
+    <span style="color:#e6db74">&#34;&#34;&#34;Hook events from the network editor &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">if</span> isinstance(uievent, KeyboardEvent):
+        <span style="color:#66d9ef">if</span> uievent<span style="color:#f92672">.</span>eventtype <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;keyhit&#39;</span> <span style="color:#f92672">and</span> uievent<span style="color:#f92672">.</span>key<span style="color:#f92672">==</span><span style="color:#e6db74">&#39;Shift+Tab&#39;</span>:
+            <span style="color:#75715e"># Return event handler for custom tab menu</span>
+            <span style="color:#66d9ef">return</span> CustomTabMenuHandler(uievent), True
+    
+    <span style="color:#66d9ef">return</span> None, False
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:custom_tabmenu_handler.py" data-lang="python:custom_tabmenu_handler.py"><span style="color:#75715e">#coding:utf-8</span>
+<span style="color:#f92672">import</span> hou
+<span style="color:#f92672">import</span> nodegraphbase <span style="color:#f92672">as</span> base
+<span style="color:#f92672">from</span> hutil.Qt <span style="color:#f92672">import</span> QtGui
+<span style="color:#f92672">from</span> hutil.Qt <span style="color:#f92672">import</span> QtWidgets
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CustomTabMenuHandler</span>(base<span style="color:#f92672">.</span>EventHandler):
+    <span style="color:#e6db74">&#34;&#34;&#34; Shift+Tab custom tab menu processing &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">def</span> __init__(self, uievent):
+        <span style="color:#e6db74">&#34;&#34;&#34; Initialization process &#34;&#34;&#34;</span>
+        base<span style="color:#f92672">.</span>EventHandler<span style="color:#f92672">.</span>__init__(self, uievent)
+        Creating a <span style="color:#75715e">#Menu</span>
+        self<span style="color:#f92672">.</span>menu <span style="color:#f92672">=</span> hou<span style="color:#f92672">.</span>qt<span style="color:#f92672">.</span>Menu()
+        <span style="color:#75715e"># Register action</span>
+        self<span style="color:#f92672">.</span>addAction(self<span style="color:#f92672">.</span>menu,<span style="color:#e6db74">&#39;test&#39;</span>, self<span style="color:#f92672">.</span>testFunc1)
+        self<span style="color:#f92672">.</span>addAction(self<span style="color:#f92672">.</span>menu,<span style="color:#e6db74">&#39;test2&#39;</span>, self<span style="color:#f92672">.</span>testFunc2)
+        self<span style="color:#f92672">.</span>menu<span style="color:#f92672">.</span>addSeparator()
+        self<span style="color:#f92672">.</span>addAction(self<span style="color:#f92672">.</span>menu,<span style="color:#e6db74">&#39;test3&#39;</span>, self<span style="color:#f92672">.</span>testFunc3)
+        <span style="color:#75715e">#Display Menu</span>
+        cursor_pos <span style="color:#f92672">=</span> QtGui<span style="color:#f92672">.</span>QCursor<span style="color:#f92672">.</span>pos()
+        self<span style="color:#f92672">.</span>menu<span style="color:#f92672">.</span>move(cursor_pos)
+        self<span style="color:#f92672">.</span>menu<span style="color:#f92672">.</span>show()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handleEvent</span>(self, uievent, pending_actions):
+        <span style="color:#e6db74">&#34;&#34;&#34; Event processing &#34;&#34;&#34;</span>
+        <span style="color:#75715e"># Return event handler to continue event processing</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>menu<span style="color:#f92672">.</span>isVisible():
+            <span style="color:#66d9ef">return</span> self
+        <span style="color:#75715e"># Event processing ends when the menu disappears</span>
+        <span style="color:#66d9ef">return</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">addAction</span>(self, menu, name, func):
+        <span style="color:#e6db74">&#34;&#34;&#34; Helper function for action registration &#34;&#34;&#34;</span>
+        act <span style="color:#f92672">=</span> QtWidgets<span style="color:#f92672">.</span>QAction(name, menu)
+        act<span style="color:#f92672">.</span>triggered<span style="color:#f92672">.</span>connect(func)
+        menu<span style="color:#f92672">.</span>addAction(act)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">testFunc1</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34; Display message in network editor &#34;&#34;&#34;</span>
+        <span style="color:#75715e"># The uievent passed in the initialization can be obtained with self.start_uievent</span>
+        self<span style="color:#f92672">.</span>start_uievent<span style="color:#f92672">.</span>editor<span style="color:#f92672">.</span>flashMessage(None,<span style="color:#e6db74">&#39;test1&#39;</span>, <span style="color:#ae81ff">2.0</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">testFunc2</span>(self):
+        self<span style="color:#f92672">.</span>start_uievent<span style="color:#f92672">.</span>editor<span style="color:#f92672">.</span>flashMessage(None,<span style="color:#e6db74">&#39;test2&#39;</span>, <span style="color:#ae81ff">2.0</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">testFunc3</span>(self):
+        self<span style="color:#f92672">.</span>start_uievent<span style="color:#f92672">.</span>editor<span style="color:#f92672">.</span>flashMessage(None,<span style="color:#e6db74">&#39;test3&#39;</span>, <span style="color:#ae81ff">2.0</span>)
+</code></pre></div><p>To add actions, add member functions and associate them with addAction. <img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223831/e105d2b9-cedc-0c5b-f57b-bbece86166c9.gif" alt="nodegraphhook3.gif"></p>
+<p>#Display image with menu
+I&rsquo;m just creating a widget that displays only the image and displaying it with hou.qt.Menu.
+I am using this widget.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PopupImage</span>(QtWidgets<span style="color:#f92672">.</span>QWidget):
+    <span style="color:#e6db74">&#34;&#34;&#34; Existence that only displays lively images &#34;&#34;&#34;</span>
+
+    image <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> __init__(self, parent<span style="color:#f92672">=</span>None):
+        super(PopupImage, self)<span style="color:#f92672">.</span>__init__(parent)
+        self<span style="color:#f92672">.</span>setWindowFlags(QtCore<span style="color:#f92672">.</span>Qt<span style="color:#f92672">.</span>FramelessWindowHint <span style="color:#f92672">|</span> QtCore<span style="color:#f92672">.</span>Qt<span style="color:#f92672">.</span>NoDropShadowWindowHint)
+        self<span style="color:#f92672">.</span>setAttribute(QtCore<span style="color:#f92672">.</span>Qt<span style="color:#f92672">.</span>WA_NoSystemBackground)
+        self<span style="color:#f92672">.</span>setAttribute(QtCore<span style="color:#f92672">.</span>Qt<span style="color:#f92672">.</span>WA_TranslucentBackground)
+        
+        <span style="color:#66d9ef">if</span> PopupImage<span style="color:#f92672">.</span>image <span style="color:#f92672">is</span> None:
+            <span style="color:#75715e"># Adjust the image path so that it looks good.imagepath = os.path.abspath(os.path.join(os.path.dirname(__file__),&#39;..&#39;,&#39;images&#39;,&#39;popup_image.png&#39;))</span>
+            PopupImage<span style="color:#f92672">.</span>image <span style="color:#f92672">=</span> QtGui<span style="color:#f92672">.</span>QImage()
+            PopupImage<span style="color:#f92672">.</span>image<span style="color:#f92672">.</span>load(imagepath)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">paintEvent</span>(self, e):
+        <span style="color:#75715e">#Drawing event</span>
+        painter <span style="color:#f92672">=</span> QtGui<span style="color:#f92672">.</span>QPainter(self)
+        painter<span style="color:#f92672">.</span>drawImage(self<span style="color:#f92672">.</span>rect(), PopupImage<span style="color:#f92672">.</span>image, PopupImage<span style="color:#f92672">.</span>image<span style="color:#f92672">.</span>rect())
+</code></pre></div><h1 id="a-little-more-practical-sample">A little more practical sample</h1>
+<p>The code is listed on GitHub, so please check here for details.
+<a href="https://github.com/towazumi/HouNetworkEditorExtendSample">https://github.com/towazumi/HouNetworkEditorExtendSample</a></p>
+<p>Add a Null node named ## OUT to make the color black
+The original story is <a href="https://qiita.com/70_cg_art/items/46dd9ca06bee4478c495">Python starting with Houdini</a>.
+Originally, I changed the name and color of the selected node, but here I will add a Null node directly.
+The trick is to make sure the network editor is at the SOP level to see if it appears in the menu.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223831/74b345f1-c10b-eeb3-a974-3899ea9721f9.gif" alt="nodegraphhook5.gif"></p>
+<h2 id="add-python-text-box-and-execute-button-to-the-selected-node">Add Python text box and execute button to the selected node</h2>
+<p>The original story is the method __ which uses __2: String of <a href="http://majou.jp/archives/751/">Read Wavefront.mtl file by callback</a>.
+This setting is done from Python.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223831/01b5f8d6-cf89-db3a-83f5-c945f2056344.gif" alt="nodegraphhook6.gif"></p>
+<h2 id="saverestore-the-selected-node-as-python-code">Save/restore the selected node as Python code</h2>
+<p>The original story is <a href="https://www.youtube.com/watch?v=SY6NyECDwpk">[Houdini Snippet] Save Node as Python Code</a>.
+I added the processing to the script generated by asCode so that the information can be used when restoring.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223831/8873c87e-a878-d19d-77f1-f804ef6e1c1b.gif" alt="nodegraphhook7.gif"></p>
+<p>#Summary
+It may be a dangerous time to get out of Python 3 as well, but it is fun to modify it to your liking. I hope this article will be useful to those who are also interested.
+Until the end Thank you for reading.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

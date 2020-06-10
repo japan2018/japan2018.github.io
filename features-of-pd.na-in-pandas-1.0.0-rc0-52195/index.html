@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Features of pd.NA in pandas 1.0.0 (rc0) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Features of pd.NA in pandas 1.0.0 (rc0)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 13, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas">pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/na">na</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas1.0.0">pandas1.0.0</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/missing_value">missing_value</a></code></small>
+
+</p>
+<pre><code>update1 2020-01-25: Added that bug-like behavior was bug
+</code></pre>
+<p>As of 2020-01-13, pandas 1.0.0rc0 has been released, but one of the major features is that <code>pd.NA</code> is introduced as a missing value. Summarize this property and usage.</p>
+<p>Disclaimer: pandas 1.0.0 It is a confirmed operation with rc0, and there is a good possibility of change in the future.</p>
+<p><a href="#Verificationenvironment">Verification environment</a> is the last.</p>
+<h2 id="wrap-up">wrap up</h2>
+<ul>
+<li><code>pd.NA</code> appears as the meaning of missing value.</li>
+<li><code>pd.NA</code> can be used for IntegerArray, BooleanArray, StringArray</li>
+<li>With the introduction of <code>pd.NA</code>, missing value can be expressed in int class (no more careless conversion to float).</li>
+<li><code>pd.NA</code> is a singleton object and is consistent with all data types.</li>
+<li>All return values of comparison operators for <code>pd.NA</code> are the same as <code>pd.NA</code> (Julia&rsquo;s <code>missing</code> object, R&rsquo;s <code>NA</code>))</li>
+<li>Operations with logical operators follow so-called three-valued logic</li>
+<li>NA is recognized in <code>pd.read_csv()</code> by specifying <code>Int64</code>, <code>string</code>, and <code>boolean</code>. (<code>boolean</code> does not work in rc0 and issues are being handled). ~~ can be specified, but <code>boolean</code> results in error. It is unknown whether this behavior is a bug or a specification. (Probably specifications)~~</li>
+</ul>
+<h2 id="data-type">data type</h2>
+<p>A new class called <code>NAType</code> is introduced in pandas. The purpose indicates the value as missing value.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>NA
+<span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> type(pd<span style="color:#f92672">.</span>NA)
+<span style="color:#f92672">&lt;</span>class<span style="color:#e6db74">&#39;pandas._libs.missing.NAType&#39;</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><p>In pd.Series and pd.DataFrame, if the type is not specified, it will be treated as the object type, and if explicitly stated, it will be treated as that type. Note that <code>Int64Dtype</code> is a Nullable interger (An ExtensionDtype for int64 integer data. Array of integer (optional missing) values) introduced in pandas 0.24. Note that you need to specify the dtype in uppercase with <code>Int64</code> instead of <code>int64</code>. Technically, ExtensionDType can be used by introducing <code>Pandas Extension Arrays</code>.</p>
+<ul>
+<li><a href="https://pandas.pydata.org/pandas-docs/stable/reference/arrays.html">https://pandas.pydata.org/pandas-docs/stable/reference/arrays.html</a></li>
+<li><a href="https://dev.pandas.io/pandas-blog/pandas-extension-arrays.html">https://dev.pandas.io/pandas-blog/pandas-extension-arrays.html</a></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA])<span style="color:#f92672">.</span>dtype
+dtype(<span style="color:#e6db74">&#39;O&#39;</span>) <span style="color:#75715e"># O means Object</span>
+
+<span style="color:#75715e"># dtype can be specified as either a string alias or type itself. The following is specified by a character string.</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Int64&#34;</span>)<span style="color:#f92672">.</span>dtype
+Int64Dtype()
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;boolean&#34;</span>)<span style="color:#f92672">.</span>dtype
+BooleanDtype
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;string&#34;</span>)<span style="color:#f92672">.</span>dtype
+StringDtype
+</code></pre></div><hr>
+<p>Click here for the implementation of <code>NAType</code>.</p>
+<p><a href="https://github.com/pandas-dev/pandas/blob/493363ef60dd9045888336b5c801b2a3d00e976d/pandas/_libs/missing.pyx#L335-L485">https://github.com/pandas-dev/pandas/blob/493363ef60dd9045888336b5c801b2a3d00e976d/pandas/_libs/missing.pyx#L335-L485</a></p>
+<p>Interestingly, the hash value is defined by <code>2 ** 61-1 == 2305843009213693951</code>. There is no problem because the dictionary key does not collide. It&rsquo;s not related to <code>pd.NA</code>, but in fact, the integer hash of python goes around with <code>2**61-1</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> hash(pd<span style="color:#f92672">.</span>NA) <span style="color:#f92672">==</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">**</span> <span style="color:#ae81ff">61</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+True
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> {pd<span style="color:#f92672">.</span>NA: <span style="color:#e6db74">&#34;a&#34;</span>, <span style="color:#ae81ff">2305843009213693951</span>: <span style="color:#e6db74">&#34;b&#34;</span>}
+{<span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>:<span style="color:#e6db74">&#39;a&#39;</span>, <span style="color:#ae81ff">2305843009213693951</span>:<span style="color:#e6db74">&#39;b&#39;</span>}
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> (hash(<span style="color:#ae81ff">2</span><span style="color:#f92672">**</span><span style="color:#ae81ff">61</span><span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>), hash(<span style="color:#ae81ff">2</span><span style="color:#f92672">**</span><span style="color:#ae81ff">61</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>), hash(<span style="color:#ae81ff">2</span><span style="color:#f92672">**</span><span style="color:#ae81ff">61</span>))
+(<span style="color:#ae81ff">2305843009213693950</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>)
+</code></pre></div><hr>
+<p>#type in pd.Series, pd.DataFrame</p>
+<p>Regarding the determination of the type, it is necessary to specify it in uppercase <code>Int64</code> instead of <code>int64</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>]) <span style="color:#f92672">+</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA, pd<span style="color:#f92672">.</span>NA])
+<span style="color:#ae81ff">0</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+dtype: object
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>]) <span style="color:#f92672">+</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA, pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Int64&#34;</span>)
+<span style="color:#ae81ff">0</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+dtype: Int64
+</code></pre></div><p>The specification of <code>int64</code> is error.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;int64&#34;</span>)<span style="color:#f92672">.</span>dtype
+Traceback (most recent call last):
+  File <span style="color:#e6db74">&#34;&lt;stdin&gt;&#34;</span>, line <span style="color:#ae81ff">1</span>, <span style="color:#f92672">in</span> <span style="color:#f92672">&lt;</span>module<span style="color:#f92672">&gt;</span>
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/core/series.py&#34;</span>, line <span style="color:#ae81ff">304</span>, <span style="color:#f92672">in</span> __init__
+    data <span style="color:#f92672">=</span> sanitize_array(data, index, dtype, copy, raise_cast_failure<span style="color:#f92672">=</span>True)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/core/construction.py&#34;</span>, line <span style="color:#ae81ff">438</span>, <span style="color:#f92672">in</span> sanitize_array
+    subarr <span style="color:#f92672">=</span> _try_cast(data, dtype, copy, raise_cast_failure)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/core/construction.py&#34;</span>, line <span style="color:#ae81ff">535</span>, <span style="color:#f92672">in</span> _try_cast
+    subarr <span style="color:#f92672">=</span> maybe_cast_to_integer_array(arr, dtype)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/core/dtypes/cast.py&#34;</span>, line <span style="color:#ae81ff">1502</span>, <span style="color:#f92672">in</span> maybe_cast_to_integer_array
+    casted <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(arr, dtype<span style="color:#f92672">=</span>dtype, copy<span style="color:#f92672">=</span>copy)
+<span style="color:#a6e22e">TypeError</span>: int() argument must be a string, a bytes<span style="color:#f92672">-</span>like object <span style="color:#f92672">or</span> a number, <span style="color:#f92672">not</span><span style="color:#e6db74">&#39;NAType&#39;</span>
+</code></pre></div><hr>
+<p>The result of the operation with boolean is the same behavior as <code>missing</code> of Julia and <code>NA</code> of R.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([True, False, pd<span style="color:#f92672">.</span>NA]) <span style="color:#f92672">&amp;</span> True
+<span style="color:#ae81ff">0</span> True
+<span style="color:#ae81ff">1</span> False
+<span style="color:#ae81ff">2</span> NA
+dtype: bool
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([True, False, pd<span style="color:#f92672">.</span>NA]) <span style="color:#f92672">|</span> True
+<span style="color:#ae81ff">0</span> True
+<span style="color:#ae81ff">1</span> True
+<span style="color:#ae81ff">2</span> True
+dtype: bool
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>NA <span style="color:#f92672">&amp;</span> True
+NA
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>NA <span style="color:#f92672">&amp;</span> False
+False
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>NA <span style="color:#f92672">|</span> True
+True
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>NA <span style="color:#f92672">|</span> False
+NA
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Int64&#34;</span>)
+<span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2</span>
+<span style="color:#ae81ff">2</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+dtype: Int64
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([True, False, pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;boolean&#34;</span>)
+<span style="color:#ae81ff">0</span> True
+<span style="color:#ae81ff">1</span> False
+<span style="color:#ae81ff">2</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+dtype: boolean
+</code></pre></div><hr>
+<p>The result of sum operation is propagated <code>NA</code>, but <code>pd.Series.sum()</code> with no argument is treated as <code>0</code> and it is not propagated. It is necessary to specify <code>sum(skipna=False)</code> to handle it as propagate. However, <code>np.nan</code> was output instead of <code>NA</code> when the type of <code>'Int64'</code> was specified.
+~~ I wondered if this is the expected behavior or a bug, but I searched for an issue and it was unknown. So I recklessly created an <a href="https://github.com/pandas-dev/pandas/issues/30958">issue ticket</a>.~~<a href="https://github.com/pandas-dev/pandas/issues/30958">issueticket</a> Incorporated. It seems to be reflected in rc1.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> sum([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA])
+<span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># pd.Series object</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA])
+<span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+dtype: object
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA])<span style="color:#f92672">.</span>sum()
+<span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA])<span style="color:#f92672">.</span>sum(skipna<span style="color:#f92672">=</span>False)
+<span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># pd.Series Int64</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Int64&#39;</span>)
+<span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+dtype: Int64
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Int64&#39;</span>)<span style="color:#f92672">.</span>sum()
+<span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>Series([<span style="color:#ae81ff">1</span>, pd<span style="color:#f92672">.</span>NA], dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Int64&#39;</span>)<span style="color:#f92672">.</span>sum(skipna<span style="color:#f92672">=</span>False)
+nan
+</code></pre></div><h2 id="pow-function">pow function</h2>
+<p>Power handling is consistent with R&rsquo;s <code>NA_integer_</code>. The behavior of julia is a mystery.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> pd<span style="color:#f92672">.</span>NA <span style="color:#f92672">**</span> <span style="color:#ae81ff">0</span>
+<span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">**</span> pd<span style="color:#f92672">.</span>NA
+<span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">**</span> pd<span style="color:#f92672">.</span>NA
+<span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-R" data-lang="R"><span style="color:#f92672">&gt;</span> R.version.string[1] <span style="color:#e6db74">&#34;R version 3.6.1 (2019-07-05)&#34;</span>
+
+<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">NA_integer_</span> ^ <span style="color:#ae81ff">0L</span>
+[1] <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1L</span> ^ <span style="color:#66d9ef">NA_integer_</span>
+[1] <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">-1L</span> ^ <span style="color:#66d9ef">NA_integer_</span>
+[1] <span style="color:#ae81ff">-1</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-julia" data-lang="julia">julia<span style="color:#f92672">&gt;</span> VERSION
+v <span style="color:#e6db74">&#34;1.3.1&#34;</span>
+
+julia<span style="color:#f92672">&gt;</span> missing <span style="color:#f92672">^</span> <span style="color:#ae81ff">0</span>
+missing
+
+julia<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">^</span> missing
+missing
+
+julia<span style="color:#f92672">&gt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">^</span> missing
+missing
+</code></pre></div><hr>
+<h2 id="specification-in-read_csv">Specification in read_csv</h2>
+<p>Experiment with the following csv file. (<code>test.csv</code>)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">X_int,X_bool,X_string
+1,True,&#34;a&#34;
+2,False,&#34;b&#34;
+NA,NA,&#34;NA&#34;
+</code></pre></div><p>If dtype is not specified, the behavior is the same as pandas 0.25.3.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> df1 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;test.csv&#34;</span>)
+<span style="color:#f92672">&gt;&gt;&gt;</span> df1
+   X_int X_bool X_string
+<span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1.0</span> True a
+<span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2.0</span> False b
+<span style="color:#ae81ff">2</span> NaN NaN NaN
+<span style="color:#f92672">&gt;&gt;&gt;</span> df1<span style="color:#f92672">.</span>dtypes
+X_int float64
+X_bool object
+X_string object
+dtype: object
+</code></pre></div><p><code>Int64</code> and <code>string</code> can be specified for dtype.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#dtype can be the following type class instead of a character literal.</span>
+<span style="color:#75715e"># df2 = pd.read_csv(&#34;test.csv&#34;, dtype={&#39;X_int&#39;: pd.Int64Dtype(),&#39;X_string&#39;: pd.StringDtype()})</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> df2 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;test.csv&#34;</span>, dtype<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;X_int&#39;</span>:<span style="color:#e6db74">&#39;Int64&#39;</span>,<span style="color:#e6db74">&#39;X_string&#39;</span>:<span style="color:#e6db74">&#39;string&#39;</span>})
+<span style="color:#f92672">&gt;&gt;&gt;</span> df2
+   X_int X_bool X_string
+<span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span> True a
+<span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2</span> False b
+<span style="color:#ae81ff">2</span> <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span> NaN <span style="color:#f92672">&lt;</span>NA<span style="color:#f92672">&gt;</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> df2<span style="color:#f92672">.</span>dtypes
+X_int Int64
+X_bool object
+X_string string
+dtype: object
+</code></pre></div><p>On the other hand, even if <code>'boolean'</code> <code>pd.BooleanDtype()</code> is specified, reading as a boolean NA fails. Of course, specifying <code>'bool'</code> is also an error. <a href="https://github.com/pandas-dev/pandas/issues/31131">issue</a> When I reported, it was imported successfully. It seems to work fine with rc1.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> df3 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;test.csv&#34;</span>, dtype<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;X_bool&#39;</span>:<span style="color:#e6db74">&#39;boolean&#39;</span>})
+Traceback (most recent call last):
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1191</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_with_dtype
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/core/arrays/base.py&#34;</span>, line <span style="color:#ae81ff">232</span>, <span style="color:#f92672">in</span> _from_sequence_of_strings
+    <span style="color:#66d9ef">raise</span> AbstractMethodError(cls)
+pandas<span style="color:#f92672">.</span>errors<span style="color:#f92672">.</span>AbstractMethodError: This method must be defined <span style="color:#f92672">in</span> the concrete <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">type</span>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File <span style="color:#e6db74">&#34;&lt;stdin&gt;&#34;</span>, line <span style="color:#ae81ff">1</span>, <span style="color:#f92672">in</span> <span style="color:#f92672">&lt;</span>module<span style="color:#f92672">&gt;</span>
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">676</span>, <span style="color:#f92672">in</span> parser_f
+    <span style="color:#66d9ef">return</span> _read(filepath_or_buffer, kwds)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">454</span>, <span style="color:#f92672">in</span> _read
+    data <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>read(nrows)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">1133</span>, <span style="color:#f92672">in</span> read
+    ret <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_engine<span style="color:#f92672">.</span>read(nrows)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">2037</span>, <span style="color:#f92672">in</span> read
+    data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_reader<span style="color:#f92672">.</span>read(nrows)
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">859</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>read
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">874</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_read_low_memory
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">951</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_read_rows
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1083</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_column_data
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1114</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_tokens
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1194</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_with_dtype
+<span style="color:#a6e22e">NotImplementedError</span>: Extension Array: <span style="color:#f92672">&lt;</span>class<span style="color:#e6db74">&#39;pandas.core.arrays.boolean.BooleanArray&#39;</span><span style="color:#f92672">&gt;</span> must implement _from_sequence_of_strings <span style="color:#f92672">in</span> order to be used <span style="color:#f92672">in</span> parser methods
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> df3 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;test.csv&#34;</span>, dtype<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;X_bool&#39;</span>: pd<span style="color:#f92672">.</span>BooleanDtype()})
+Traceback (most recent call last):
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1191</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_with_dtype
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/core/arrays/base.py&#34;</span>, line <span style="color:#ae81ff">232</span>, <span style="color:#f92672">in</span> _from_sequence_of_strings
+    <span style="color:#66d9ef">raise</span> AbstractMethodError(cls)
+pandas<span style="color:#f92672">.</span>errors<span style="color:#f92672">.</span>AbstractMethodError: This method must be defined <span style="color:#f92672">in</span> the concrete <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">type</span>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File <span style="color:#e6db74">&#34;&lt;stdin&gt;&#34;</span>, line <span style="color:#ae81ff">1</span>, <span style="color:#f92672">in</span> <span style="color:#f92672">&lt;</span>module<span style="color:#f92672">&gt;</span>
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">676</span>, <span style="color:#f92672">in</span> parser_f
+    <span style="color:#66d9ef">return</span> _read(filepath_or_buffer, kwds)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">454</span>, <span style="color:#f92672">in</span> _read
+    data <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>read(nrows)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">1133</span>, <span style="color:#f92672">in</span> read
+    ret <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_engine<span style="color:#f92672">.</span>read(nrows)
+  File <span style="color:#e6db74">&#34;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&#34;</span>, line <span style="color:#ae81ff">2037</span>, <span style="color:#f92672">in</span> read
+    data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_reader<span style="color:#f92672">.</span>read(nrows)
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">859</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>read
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">874</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_read_low_memory
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">951</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_read_rows
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1083</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_column_data
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1114</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_tokens
+  File <span style="color:#e6db74">&#34;pandas/_libs/parsers.pyx&#34;</span>, line <span style="color:#ae81ff">1194</span>, <span style="color:#f92672">in</span> pandas<span style="color:#f92672">.</span>_libs<span style="color:#f92672">.</span>parsers<span style="color:#f92672">.</span>TextReader<span style="color:#f92672">.</span>_convert_with_dtype
+<span style="color:#a6e22e">NotImplementedError</span>: Extension Array: <span style="color:#f92672">&lt;</span>class<span style="color:#e6db74">&#39;pandas.core.arrays.boolean.BooleanArray&#39;</span><span style="color:#f92672">&gt;</span> must implement _from_sequence_of_strings <span style="color:#f92672">in</span> order to be used <span style="color:#f92672">in</span> parser methods
+</code></pre></div><pre><code class="language-python>>>" data-lang="python>>>">Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&quot;, line 676, in parser_f
+    return _read(filepath_or_buffer, kwds)
+  File &quot;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&quot;, line 454, in _read
+    data = parser.read(nrows)
+  File &quot;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&quot;, line 1133, in read
+    ret = self._engine.read(nrows)
+  File &quot;/usr/local/lib/python3.7/site-packages/pandas/io/parsers.py&quot;, line 2037, in read
+    data = self._reader.read(nrows)
+  File &quot;pandas/_libs/parsers.pyx&quot;, line 859, in pandas._libs.parsers.TextReader.read
+  File &quot;pandas/_libs/parsers.pyx&quot;, line 874, in pandas._libs.parsers.TextReader._read_low_memory
+  File &quot;pandas/_libs/parsers.pyx&quot;, line 951, in pandas._libs.parsers.TextReader._read_rows
+  File &quot;pandas/_libs/parsers.pyx&quot;, line 1083, in pandas._libs.parsers.TextReader._convert_column_data
+  File &quot;pandas/_libs/parsers.pyx&quot;, line 1114, in pandas._libs.parsers.TextReader._convert_tokens
+  File &quot;pandas/_libs/parsers.pyx&quot;, line 1231, in pandas._libs.parsers.TextReader._convert_with_dtype
+ValueError: Bool column has NA values in column 1
+</code></pre><p>（感想）
+全ての元凶は numpy に missing value が存在していなかったこと。なので pandas のレイヤーで導入には色々矛盾が・・・。
+ここに色々書いてあります。 <a href="https://dev.pandas.io/docs/user_guide/gotchas.html#why-not-make-numpy-like-r">https://dev.pandas.io/docs/user_guide/gotchas.html#why-not-make-numpy-like-r</a></p>
+<h2 id="そもそも私が知ったきっかけ">そもそも私が知ったきっかけ</h2>
+<p>twitter のどなたかからの retweet で気づいた</p>
+<p><a href="https://mobile.twitter.com/jorisvdbossche/status/1208476049690046465">https://mobile.twitter.com/jorisvdbossche/status/1208476049690046465</a>
+<img width="599" alt="スクリーンショット 2020-01-13 8.49.57.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/310959/9f6d763e-54b4-a560-7a06-81f67f4056c4.png"></p>
+<h2 id="要約">要約</h2>
+<ul>
+<li><code>pd.NA</code> は missing value の意味として登場。</li>
+<li><code>pd.NA</code> が 使えるのは IntegerArray, BooleanArray, StringArray</li>
+<li><code>pd.NA</code> 導入により int class にも missing value が表現可能となった（不用意な float への変換がなくなった）。</li>
+<li><code>pd.NA</code> は singleton object で 全ての data types と一貫性をもつ。</li>
+<li>pd.NA に対する比較演算子の返り値は全て <code>pd.NA</code> (Julia の <code>missing</code> object, R の <code>NA</code>) と同じ挙動）</li>
+<li>論理演算子での演算は、いわゆる three-valued logic に従う</li>
+<li><code>pd.read_csv()</code> では <code>Int64</code>, <code>string</code> の指定は可能だが <code>boolean</code> は error となる。この挙動がバグなのか仕様なのかは不明。（おそらく仕様）</li>
+</ul>
+<h2 id="最後に">最後に</h2>
+<p>こういうマニアックな話が大好きな方、ぜひ justInCase へ遊びに来て下さい。https://www.wantedly.com/companies/justincase</p>
+<hr>
+<h2 id="参考url">参考URL</h2>
+<ul>
+<li><a href="https://dev.pandas.io/docs/user_guide/missing_data.html">https://dev.pandas.io/docs/user_guide/missing_data.html</a></li>
+<li><a href="https://dev.pandas.io/docs/user_guide/gotchas.html#nan-integer-na-values-and-na-type-promotions">https://dev.pandas.io/docs/user_guide/gotchas.html#nan-integer-na-values-and-na-type-promotions</a></li>
+<li><a href="https://hackmd.io/@jorisvandenbossche/Sk0wMeAmB">https://hackmd.io/@jorisvandenbossche/Sk0wMeAmB</a></li>
+<li><a href="https://github.com/pandas-dev/pandas/blob/493363ef60dd9045888336b5c801b2a3d00e976d/pandas/_libs/missing.pyx#L335-L485">https://github.com/pandas-dev/pandas/blob/493363ef60dd9045888336b5c801b2a3d00e976d/pandas/_libs/missing.pyx#L335-L485</a></li>
+</ul>
+<h2 id="検証環境">検証環境</h2>
+<p>docker上で確認した。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile" data-lang="dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> python:3.7.6</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">WORKDIR</span><span style="color:#e6db74"> /home</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip install pandas<span style="color:#f92672">==</span>1.0.0rc0<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;/bin/bash&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ docker build -t pdna .
+$ docker run -it --rm -v <span style="color:#66d9ef">$(</span>pwd<span style="color:#66d9ef">)</span>:/home/ pdna
+</code></pre></div><p>Inside Docker</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@286578c2496b:/home# cat /etc/issue
+Debian GNU/Linux <span style="color:#ae81ff">10</span> <span style="color:#ae81ff">\n</span> <span style="color:#ae81ff">\l</span>
+root@286578c2496b:/home# uname -a
+Linux 286578c2496b 4.9.184-linuxkit <span style="color:#75715e">#1 SMP Tue Jul 2 22:58:16 UTC 2019 x86_64 GNU/Linux</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@286578c2496b:/home# python -c <span style="color:#e6db74">&#34;import pandas as pd; pd.show_versions()&#34;</span>
+
+INSTALLED VERSIONS
+- -----------------
+commit           : None
+python           : 3.7.6.final.0
+python-bits      : <span style="color:#ae81ff">64</span>
+OS               : Linux
+OS-release       : 4.9.184-linuxkit
+machine          : x86_64
+processor        : 
+byteorder        : little
+LC_ALL           : None
+LANG             : C.UTF-8
+LOCALE           : en_US.UTF-8
+
+pandas           : 1.0.0rc0
+numpy            : 1.18.1
+pytz             : 2019.3
+dateutil         : 2.8.1
+pip              : 19.3.1
+setuptools       : 44.0.0
+Cython           : None
+pytest           : None
+hypothesis       : None
+sphinx           : None
+blosc            : None
+feather          : None
+xlsxwriter       : None
+lxml.etree       : None
+html5lib         : None
+pymysql          : None
+psycopg2         : None
+jinja2           : None
+IPython          : None
+pandas_datareader: None
+bs4              : None
+bottleneck       : None
+fastparquet      : None
+gcsfs            : None
+lxml.etree       : None
+matplotlib       : None
+numexpr          : None
+odfpy            : None
+openpyxl         : None
+pandas_gbq       : None
+pyarrow          : None
+pytables         : None
+pytest           : None
+s3fs             : None
+scipy            : None
+sqlalchemy       : None
+tables           : None
+tabulate         : None
+xarray           : None
+xlrd             : None
+xlwt             : None
+xlsxwriter       : None
+numba            : None
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

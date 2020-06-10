@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Markov chain transition probability written in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Markov chain transition probability written in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 23, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/probability-statistics"> probability statistics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/markov-chain"> Markov chain</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/transition-probabilities"> transition probabilities</a></code></small>
+
+</p>
+<pre><code># 1.First of all
+</code></pre>
+<p>I write an article about transition probability of Markov chain.</p>
+<p>Specifically, I will introduce a function that calculates the transition probability from time series data and makes it a matrix.
+Note that this is not an introduction to a function that does this for a Markov chain transition probability matrix.</p>
+<p>I will write detailed information from &ldquo;2. What is Markov chain?&rdquo;
+If you want to know only the code, I think that it is enough to refer from &ldquo;3. Function for obtaining transition probability&rdquo;.</p>
+<h1 id="2-what-is-markov-chain">2. What is Markov chain?</h1>
+<h2 id="21-definition-of-transition-probability">2.1. Definition of transition probability</h2>
+<p>The following is the definition of Markov chain written in Wikipedia.</p>
+<blockquote>
+<p>For a set of random variables X1, X2, X3, &hellip;, if the current state is fixed, the past and future states are independent.</p>
+<blockquote>
+<p>Source: <a href="https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E9%80%A3%E9%25">https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E9%80%A3%E9%</a> 8E%96</p>
+</blockquote>
+</blockquote>
+<h2 id="22-formula-for-transition-probability-of-markov-chain">2.2. Formula for transition probability of Markov chain</h2>
+<p>The following is the Markov chain formula written in Wikipedia.</p>
+<pre><code class="language-math" data-lang="math">Pr(X_{n+1}=x | X_n=x_n,..., X_1=x_1,X_0=x_0) = Pr(X_{n+1}=x_{n+1} | X_n=x_n)
+</code></pre><p>The possible values of &gt;Xi are called the chain state space and form the enumerable set S. The Markov chain is represented by a directed graph, and the edge shows the probability of transition from one state to another.</p>
+<blockquote>
+<p>An example of a Markov chain is a finite state machine. This means that if it is in state y at time n, the probability that it will move to state x at time n + 1 depends only on the current state, not at time n.</p>
+<blockquote>
+<p>Source: <a href="https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E9%80%A3%E9%25">https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E9%80%A3%E9%</a> 8E%96</p>
+</blockquote>
+</blockquote>
+<p>The probability expressed by the formula below is called the transition probability.</p>
+<pre><code class="language-math" data-lang="math">Pr(X_{n+1}| X_n)
+</code></pre><blockquote>
+<p>Source:
+<a href="https://mathtrain.jp/markovchain">https://mathtrain.jp/markovchain</a></p>
+</blockquote>
+<h2 id="23-concrete-examples">2.3. Concrete examples</h2>
+<p>Actually, the transition probability is calculated, but I think it would be hard to imagine with just the definitions and formulas.
+Here, let&rsquo;s take weather as an example.</p>
+<p><em>S</em> = {Sunny = 0, Cloudy = 1, Rain = 2} Suppose you have weather information for one month.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">tenki <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span> , <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>])
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Sunny days: {0} days, cloudy days: {1} days, rain days: {2} days&#39;</span><span style="color:#f92672">.</span>format(np<span style="color:#f92672">.</span>count_nonzero(data<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>), np<span style="color:#f92672">.</span>count_nonzero(data<span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>), np<span style="color:#f92672">.</span>count_nonzero(data<span style="color:#f92672">==</span><span style="color:#ae81ff">2</span>))))
+</code></pre></div><pre><code class="language-text:" data-lang="text:">Sunny days: 20 days, Cloudy days: 8 days, Rainy days: 2 days
+</code></pre><p>Looking at the above, it seems that it is clear that the weather is the most sunny, followed by the cloudy and then the rain.
+However, the purpose is &ldquo;how the weather changed.&rdquo;</p>
+<p>Therefore, I want a matrix in which the transition probability is known (Fig. 1), but it does not appear even if I search.</p>
+<p>So, let&rsquo;s create a function.</p>
+<img width="412" alt="Untitled.jpg" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/555056/a929f94c-9ab6-ef53-7b8b-552179fcaf0f.jpeg">
+<h1 id="3-function-to-calculate-transition-probability">3. Function to calculate transition probability</h1>
+<h2 id="31-python-versionenvironment">3.1. Python version/environment</h2>
+<p>I&rsquo;m using Python 3.7.1.
+The usage environment is Jupyter notebook.</p>
+<h2 id="32-creating-a-function">3.2. Creating a function</h2>
+<h3 id="321-import-required-libraries">3.2.1 Import required libraries</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> copy
+<span style="color:#f92672">import</span> itertools
+<span style="color:#f92672">import</span> seaborn <span style="color:#f92672">as</span> sns
+</code></pre></div><p>It is not necessary to include seaborn functionally, but it is included because it will be visualized later.</p>
+<h3 id="322-data">3.2.2 Data</h3>
+<p>This time we will use the tenki from earlier.</p>
+<h3 id="323-functions-and-explanations">3.2.3 Functions and explanations</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">tp</span>(transition_probability):
+    
+    data <span style="color:#f92672">=</span> transition_probability
+    zero <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((np<span style="color:#f92672">.</span>max(data)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>,np<span style="color:#f92672">.</span>max(data)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>))
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(data)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        j <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>deepcopy(i)
+        j <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">for</span> x, y <span style="color:#f92672">in</span> itertools<span style="color:#f92672">.</span>product(range(np<span style="color:#f92672">.</span>max(data)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>), range(np<span style="color:#f92672">.</span>max(data)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)):
+            <span style="color:#66d9ef">if</span> data[i] <span style="color:#f92672">==</span> x <span style="color:#f92672">and</span> data[j] <span style="color:#f92672">==</span> y:
+                zero[x][y] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+    
+    row_sum <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sum(zero, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>reshape((np<span style="color:#f92672">.</span>max(data)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+    prob <span style="color:#f92672">=</span> zero <span style="color:#f92672">/</span> row_sum
+    
+    <span style="color:#66d9ef">return</span> prob
+</code></pre></div><ul>
+<li>
+<p>zero
+-The information used by tenki is 3 of &ldquo;0-2&rdquo;.
+-Therefore, if you take &ldquo;np.max(data)+1&rdquo;, you can create 0 matrix of maximum value * maximum value.
+-(3 or more or less can be supported)
+‥</p>
+</li>
+<li>
+<p>processing in for
+-&ldquo;I, j&rdquo; represent Xn* and *Xn+1* respectively.
+-&ldquo;X, y&rdquo; represent the column and row of the variable &ldquo;zero&rdquo; respectively.
+-By the process in for, a concrete combination is entered in the variable &ldquo;zero&rdquo;.</p>
+</li>
+<li>
+<p>row_sum
+-The variable &ldquo;zero&rdquo; is the count data.
+-I&rsquo;m giving the total count for each line.</p>
+</li>
+<li>
+<p>prob
+-Divides the sum of each row and each individual value of each row.</p>
+</li>
+</ul>
+<h3 id="323-result">3.2.3 result</h3>
+<p>Now the matrix of transition probabilities is obtained.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">print</span>(tp(data))
+</code></pre></div><pre><code class="language-text:" data-lang="text:">[[0.65 0.25 0.1]
+ [0.57142857 0.42857143 0.]
+ [1.0. 0. ]]
+</code></pre><h3 id="324-visualization">3.2.4 Visualization</h3>
+<p>This alone is a bit sad, so let&rsquo;s visualize it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">sns<span style="color:#f92672">.</span>heatmap(tp(data), cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Blues&#39;</span>, vmin<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, vmax<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, center<span style="color:#f92672">=.</span><span style="color:#ae81ff">5</span>,
+            square<span style="color:#f92672">=</span>True, cbar_kws<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;shrink&#34;</span>: <span style="color:#f92672">.</span><span style="color:#ae81ff">5</span>},
+            xticklabels <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, yticklabels <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/555056/bc3e5393-f49f-848f-906b-0664a5cbfe40.png" alt="Download.png"></p>
+<p>This heatmap has <em>Xn</em> on the left axis and <em>Xn+1</em> on the bottom axis.</p>
+<h1 id="4-finally">4. Finally</h1>
+<p>I wrote a function about the transition probability of Markov chains, but how was it?
+If there are any points that are difficult to understand or are incorrect, we would appreciate it if you could point them out.</p>
+<h2 id="reference-url">Reference URL</h2>
+<p>Markov chain (Wikipedia)
+<a href="https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E9%80%A3%E9%8E%96">https://ja.wikipedia.org/wiki/%E3%83%9E%E3%83%AB%E3%82%B3%E3%83%95%E9%80%A3%E9%8E%96</a></p>
+<p>・Basics of Markov chain and Kolmogorov equation (beautiful story of high school mathematics)
+<a href="https://mathtrain.jp/markovchain">https://mathtrain.jp/markovchain</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

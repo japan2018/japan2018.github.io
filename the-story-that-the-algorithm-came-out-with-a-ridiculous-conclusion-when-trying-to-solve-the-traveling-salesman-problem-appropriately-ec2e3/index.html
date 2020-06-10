@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>The story that the algorithm came out with a ridiculous conclusion when trying to solve the traveling salesman problem appropriately | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>The story that the algorithm came out with a ridiculous conclusion when trying to solve the traveling salesman problem appropriately</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 12, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/c"> C</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/beginner"> beginner</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/combinatorial-optimization-problem"> combinatorial optimization problem</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/sa-method"> SA method</a></code></small>
+
+</p>
+<pre><code>This article is from the 13th day of [Furukawa Lab Advent_calendar](https://qiita.com/advent-calendar/2019/flab).
+</code></pre>
+<p>This article was written by a student of Furukawa Lab as part of their studies. The content may be ambiguous or the expressions may be slightly different.</p>
+<p>#Introduction
+Hello everyone
+Do you know the traveling salesman problem?
+It&rsquo;s a kind of common combinatorial optimization problem, but in this article I&rsquo;d like to write about a sad case when I tried to solve the traveling salesman problem appropriately.
+The first thing to say is that rounding errors are scary.
+Since it is a story when I was a beginner in the program, I hope that you read it with lower hurdles in everything.</p>
+<h1 id="traveling-salesman-problem">Traveling salesman problem</h1>
+<p>First, I would like to explain the traveling salesman problem. The traveling salesman problem is a &ldquo;problem to find the shortest distance to return to the starting point by going through all cities once.&rdquo; For example, if four cities A, B, C, D are given as shown in the figure below, the shortest distance is as follows.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/0a2eb2cb-c7b0-47f7-830b-0de8cd3885f9.png" alt="jyunkai.png">
+In this case, since the number of cities is small and the arrangement is easy, the shortest distance can be seen immediately, but if the number of cities increases a little, the shortest distance will not be visible at a glance.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/bb5b0d84-2942-c5ab-48e0-3672ea9edf64.png" alt="jyunkai2.png"></p>
+<p>Actually, the number of combinations in the order of visiting cities is (the number of cities-1)! Therefore, if there are 30 cities and 40 cities, there will be a great number of visiting orders, and to check all visiting orders. Will be difficult.
+So I tried to solve this combinatorial optimization problem appropriately so that I could get a good solution.
+#SA Law
+The most orthodox general-purpose method for solving combinatorial optimization problems is called the SA method (Simulated-anearing). If translated into Japanese, it will be the annealing method.
+In the annealing method, the energy function $E$ is set. The energy function in this case is the total distance that has returned to the starting point around all cities. The order of visiting cities will be changed so that the total distance will decrease.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/7d4203b4-ff8d-f93a-8386-e8d8fb7d18ec.png" alt="jyunkai3.png"></p>
+<p>In this case, the total distance will be longer than before replacement. Therefore, I would like to reject this replacement, but in the SA method, replacement is adopted even if the distance becomes longer with the probability shown in the following formula.</p>
+<pre><code class="language-math" data-lang="math">p=\exp \left\{-\frac{1}{T}\left(E_{t+1}-E_{t}\right)\right\}
+</code></pre><p>Here, $T$ in the equation is a parameter called temperature and plays the role of noise. The larger $T$, the easier it is to adopt the replacement. If the distance becomes smaller as a result of replacement, it will be used with a probability of 1. This method is called the metropolis method.</p>
+<p>To summarize the flow so far</p>
+<ol>
+<li>Change the order of visits</li>
+<li>Use Metropolis method to decide whether to replace or not to replace
+After that, repeat this for the number of cities as one step
+Will be.</li>
+</ol>
+<p>Furthermore, in the SA method, the temperature $T$ is gradually reduced by the following formula according to the number of steps.</p>
+<pre><code class="language-math" data-lang="math">T_{t+1}=\alpha T_{t}
+</code></pre><p>Also, $\alpha$ is an index of how fast the temperature is lowered, and takes a value of $0&lt;\alpha&lt;1$.</p>
+<p>By lowering this temperature, it becomes easier for the replacement to occur when the number of steps is small, and it becomes less likely that replacement will occur when the number of steps is large, that is, in the final stage.
+That way, the first person can get out even if they fall into a local solution, and the last person will make an update that will make a precise decision.
+This comes from the fact that the strength of steel is increased by starting from a high temperature and gradually cooling it during forging, which is why it is called the annealing method.
+This method is very versatile in very combinatorial optimization problems.</p>
+<h1 id="algorithm-revolt">Algorithm Revolt</h1>
+<p>Well, this is where I wanted to talk. I was trying to solve the traveling salesman problem using the above annealing method. The algorithm itself is simple, so I set it up immediately. So I decided to test it in a very easy city arrangement. The easiest city arrangement is probably a circle.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/dea427b8-5c9a-f435-903c-b7b0fafb1b93.png" alt="jyunkai4.png"></p>
+<p>This time, I would like to talk about this city layout. By the way, the procedure of the annealing method is</p>
+<ol>
+<li>Change the order of visits</li>
+<li>Use Metropolis method to decide whether to replace or not to replace
+After that, repeat this for the number of cities as one step
+It was
+First, change the order of visiting cities. The initial value is randomly given.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/ef848578-9cd5-60da-c83b-f102d1bb361f.png" alt="jyunkai5.png"></li>
+</ol>
+<p>At a glance you can see that it is not the shortest route. Next, let&rsquo;s decide which city to replace. This is also decided by a random number, but since I was using C language at that time, by multiplying the uniform distribution that outputs the value of $0&lt;x&lt;1$ by the number of cities $N$ (int type), $0 The int type random number of &lt;x&lt;N-1$ was generated. This was the cause of the rebellion.</p>
+<p>A simulation was performed using a random number that outputs this self-made integer. At first, I had about 100 steps, but it works well enough. It&rsquo;s changed 600 times. But one day the incident happened. I decided to try 10,000 steps (60,000 replacements) from a strange thing, and turned the simulation
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/eec24cc4-3b6a-8fcf-4d63-b84325ec72a1.png" alt="jyunkai5.png">
+I got this result. I thought it was funny. I thought something was wrong when the total distance below the theoretical value calculated from the coordinates was output. Of course, <strong>the city has disappeared</strong>.
+Moreover, this result is not reproducible and will be messed up by one city disappearing, two cities disappearing, or whatever. If you&rsquo;re used to programming, you may be overwhelmed immediately with &ldquo;irreproducible results = random numbers are bad&rdquo;, but at the time I was at a fledgling and I had a headache.
+In the end, he said, &ldquo;Isn&rsquo;t the algorithm determined that the city should be gone in order to get the shortest distance?&rdquo;</p>
+<h2 id="ending">ending</h2>
+<p>I&rsquo;m sure some of you have noticed it, but the reason for this is that in the part that generates a uniform random number of $0&lt;x&lt;1$, 1 itself is output due to a rounding error, which is extremely rare. If 1 is output, it will be replaced with the Nth city. Since the array of c language is counted from 0, the array is prepared from 0 to N-1, so the Nth array does not exist. The city disappeared as a result of acquiring nothing and replacing it.</p>
+<h1 id="som-and-traveling-salesman-problem">SOM and Traveling Salesman Problem</h1>
+<p>Also, from here on, it will be a completely different story, but since I recently tried the traveling salesman problem again, I would like to post the results there. This time I tried to solve the traveling salesman problem using SOM.
+In short, SOM is very simple observation data $\mathbf{Y}=(\mathbf{y}_1,\mathbf{y}_2,&hellip;\mathbf{y}_N)\in \mathbb{R}^ {D×N}$ and latent variables</p>
+<p>$\mathbf{X}=(\mathbf{x}_1,\mathbf{x}_2,&hellip;\mathbf{x}_K)\in \mathbb{R}^{M×K}$ Is to estimate the map $\mathbf{f}:\mathbb{R}^{M} → \mathbb{R}^{D}$</p>
+<p>For detailed algorithm, there is <a href="http://www.brain.kyutech.ac.jp/~furukawa/data/som.html">Document written by professor of our laboratory</a>, so please refer to it. I&rsquo;m happy.
+For example, if 3D data and 2D latent space are given, such a result is produced.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/19269a2d-51c9-93de-176f-29276912d047.gif" alt="Som.gif"></p>
+<p>The left figure shows the observation data and mapping, and the right figure shows the latent space.</p>
+<p>Also, if you give 2D data and 1D latent space, this result will be produced.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/3ab0f9c1-490c-4804-9284-5b394c7e1f3e.gif" alt="Som_TSP_Node48.gif">
+Here is the image showing the final result
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/898aace1-0461-473e-e79b-9d2875ded0e3.gif" alt="Ohhhhh.gif"></p>
+<p>By the way, the data given is the coordinate data of 48 American cities called att48.
+It&rsquo;s kind of regrettable. I feel like I can do it.
+The bottleneck here is that the start and end points are not connected. If you can do that, you&rsquo;re done.
+So I will give a latent variable that connects the start point and the end point. That&rsquo;s right, the latent variables are arranged in a circle on the latent space.
+Here is the source code and execution result of the SOM with circular latent variables.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> mpl_toolkits.mplot3d <span style="color:#f92672">import</span> Axes3D
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> numpy.random <span style="color:#f92672">import</span><span style="color:#f92672">*</span>
+<span style="color:#f92672">import</span> matplotlib.animation <span style="color:#f92672">as</span> anm
+<span style="color:#f92672">import</span> math
+<span style="color:#f92672">import</span> random
+
+<span style="color:#f92672">%</span>matplotlib nbagg
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure(<span style="color:#ae81ff">1</span>,figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">4</span>))
+ax1 <span style="color:#f92672">=</span> fig<span style="color:#f92672">.</span>add_subplot(<span style="color:#ae81ff">121</span>)ax2 <span style="color:#f92672">=</span> fig<span style="color:#f92672">.</span>add_subplot(<span style="color:#ae81ff">122</span>)
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">som</span>():
+    <span style="color:#66d9ef">def</span> __init__(self,N,K,sigmin,sigmax,r,w,zeta):
+        self<span style="color:#f92672">.</span>N <span style="color:#f92672">=</span> N
+        self<span style="color:#f92672">.</span>K <span style="color:#f92672">=</span> K
+        self<span style="color:#f92672">.</span>sigmin <span style="color:#f92672">=</span> sigmin
+        self<span style="color:#f92672">.</span>sigmax <span style="color:#f92672">=</span> sigmax
+        self<span style="color:#f92672">.</span>r <span style="color:#f92672">=</span> r
+        self<span style="color:#f92672">.</span>w <span style="color:#f92672">=</span> w
+        self<span style="color:#f92672">.</span>zeta <span style="color:#f92672">=</span> zeta
+        self<span style="color:#f92672">.</span>hist <span style="color:#f92672">=</span>[]
+        self<span style="color:#f92672">.</span>hist2 <span style="color:#f92672">=</span> []
+        self<span style="color:#f92672">.</span>hist3 <span style="color:#f92672">=</span> []
+        self<span style="color:#f92672">.</span>sigma<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fit</span>(self,T):
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(T):
+            <span style="color:#75715e">#print(i)</span>
+            <span style="color:#66d9ef">if</span> i<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span> :
+                self<span style="color:#f92672">.</span>kn<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>K,size<span style="color:#f92672">=</span>(self<span style="color:#f92672">.</span>N))
+            <span style="color:#75715e">#if i%10 == 0 :</span>
+            <span style="color:#75715e">#    self.sigma = self.sigma+0.5</span>
+            self<span style="color:#f92672">.</span>sigma<span style="color:#f92672">=</span>max(self<span style="color:#f92672">.</span>sigmax<span style="color:#f92672">-</span>(i<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>r)<span style="color:#f92672">*</span>(self<span style="color:#f92672">.</span>sigmax<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>sigmin),self<span style="color:#f92672">.</span>sigmin)
+            <span style="color:#75715e">#print(self.kn.shape)</span>
+            self<span style="color:#f92672">.</span>test <span style="color:#f92672">=</span> (self<span style="color:#f92672">.</span>zeta[self<span style="color:#f92672">.</span>kn][None,:,:]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>zeta[:,None,:])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+            <span style="color:#75715e">#print(&#34;self,test=&#34;,self.test.shape)</span>
+            <span style="color:#75715e">#print(&#34;self,zeta=&#34;,self.zeta[self.kn][None,:,:].shape)</span>
+            <span style="color:#75715e">#print(&#34;self,zeta=&#34;,self.zeta[:,None,:].shape)</span>
+            self<span style="color:#f92672">.</span>h_kn<span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>sigma<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>sum((self<span style="color:#f92672">.</span>zeta[self<span style="color:#f92672">.</span>kn][None,:,:]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>zeta[:,None,:])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>,axis<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>))
+            <span style="color:#75715e">#print(self.h_kn)</span>
+            self<span style="color:#f92672">.</span>g_k <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sum(self<span style="color:#f92672">.</span>h_kn,axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+            self<span style="color:#f92672">.</span>y_test <span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(self<span style="color:#f92672">.</span>g_k[:,None]))<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>h_kn <span style="color:#960050;background-color:#1e0010">@</span> self<span style="color:#f92672">.</span>w 
+            <span style="color:#75715e">#print(&#34;y_test:{}&#34;,self.y_test.shape)</span>
+            self<span style="color:#f92672">.</span>kn<span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argmin(np<span style="color:#f92672">.</span>sum((self<span style="color:#f92672">.</span>w[:,None,:]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>y_test[None,:,:])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>,axis<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+            self<span style="color:#f92672">.</span>X1<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>reshape(self<span style="color:#f92672">.</span>y_test,(K,<span style="color:#ae81ff">2</span>))
+            self<span style="color:#f92672">.</span>hist<span style="color:#f92672">.</span>append(self<span style="color:#f92672">.</span>X1)
+            self<span style="color:#f92672">.</span>hist2<span style="color:#f92672">.</span>append(self<span style="color:#f92672">.</span>kn)
+            self<span style="color:#f92672">.</span>hist3<span style="color:#f92672">.</span>append(self<span style="color:#f92672">.</span>sigma)
+            <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>sigma)
+        <span style="color:#66d9ef">print</span>(np<span style="color:#f92672">.</span>array(self<span style="color:#f92672">.</span>hist)<span style="color:#f92672">.</span>shape)
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>hist,self<span style="color:#f92672">.</span>hist2,self<span style="color:#f92672">.</span>hist3
+            <span style="color:#75715e">#self.hist.setdefault(&#39;y&#39;,[]).append(self.y_test) </span>
+            <span style="color:#75715e">#self.hist.setdefault(&#39;k&#39;,[]).append(self.kn) </span>
+    <span style="color:#75715e">#def history(self):</span>
+        <span style="color:#75715e">#return self.hist</span>
+a<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>
+c<span style="color:#f92672">=-</span><span style="color:#ae81ff">0.1</span>
+N<span style="color:#f92672">=</span><span style="color:#ae81ff">48</span><span style="color:#75715e">#データ数</span>
+D<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span><span style="color:#75715e">#データの次元数</span>
+L<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span><span style="color:#75715e">#潜在空間の次元数</span>
+K<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span><span style="color:#75715e">#ノード数</span>
+T<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>
+zeta<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>zeros((K,<span style="color:#ae81ff">2</span>))
+distance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+sigmax<span style="color:#f92672">=</span><span style="color:#ae81ff">5.0</span><span style="color:#75715e">#sigmaの初期値</span>
+sigmin<span style="color:#f92672">=</span><span style="color:#ae81ff">0.01</span><span style="color:#75715e">#sigmaの最小値</span>
+latent_space<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal
+r<span style="color:#f92672">=</span>T<span style="color:#f92672">-</span><span style="color:#ae81ff">5</span><span style="color:#75715e">#傾き</span>
+rad <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linspace(<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>pi, np<span style="color:#f92672">.</span>pi, K)
+zetax <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sin(rad)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>
+zetay <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>cos(rad)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>
+zeta[:,<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> zetax
+zeta[:,<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span>zetay
+train_data <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>loadtxt(<span style="color:#e6db74">&#39;att48.txt&#39;</span>)
+w <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>reshape(train_data,(<span style="color:#ae81ff">48</span>,D))
+i<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+SOM <span style="color:#f92672">=</span> som(N,K,sigmin,sigmax,r,w,zeta)
+kekka,k,sigma <span style="color:#f92672">=</span> SOM<span style="color:#f92672">.</span>fit(T)
+kekka <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(kekka)
+k <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(k)
+sigma <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(sigma)
+<span style="color:#75715e">#print(k.shape)</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(K):
+    <span style="color:#75715e">#print((&#34;x1&#34;,kekka[T-1,i,0]))</span>
+    <span style="color:#75715e">#print((&#34;x2&#34;,kekka[T-1,i+1,0]))</span>
+    <span style="color:#75715e">#print((&#34;y1&#34;,kekka[T-1,i,1]))</span>
+    <span style="color:#75715e">#print((&#34;y2&#34;,kekka[T-1,i+1,1]))</span>
+    <span style="color:#75715e">#print((&#34;x_delta&#34;,kekka[T-1,i,0]-kekka[T-1,i+1,0]))</span>
+    <span style="color:#75715e">#print((&#34;y_delta&#34;,kekka[T-1,i,1]-kekka[T-1,i+1,1]))</span>
+    <span style="color:#66d9ef">if</span>(i<span style="color:#f92672">==</span>K<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        distance <span style="color:#f92672">+=</span> np<span style="color:#f92672">.</span>sqrt(abs(kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,i,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>abs(kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,i,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+    <span style="color:#66d9ef">else</span>:
+        distance <span style="color:#f92672">+=</span> np<span style="color:#f92672">.</span>sqrt(abs(kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,i,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>abs(kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,i,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>kekka[T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+    <span style="color:#75715e">#print(&#34;delta&#34;,np.sqrt(abs(kekka[T-1,i,0]-kekka[T-1,i+1,0])**2+abs(kekka[T-1,i,1]-kekka[T-1,i+1,1])**2))</span>
+    <span style="color:#66d9ef">print</span>(distance)
+<span style="color:#75715e">#print(kekka.shape)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(i, zeta,w):
+<span style="color:#75715e">#for i in range(T):</span>
+    <span style="color:#66d9ef">print</span>(i)
+    ax1<span style="color:#f92672">.</span>cla()
+    ax2<span style="color:#f92672">.</span>cla()
+    ax1<span style="color:#f92672">.</span>scatter(w[:,<span style="color:#ae81ff">0</span>],w[:,<span style="color:#ae81ff">1</span>],s<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>,color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>)
+    ax1<span style="color:#f92672">.</span>scatter(kekka[i,:,<span style="color:#ae81ff">0</span>],kekka[i,:,<span style="color:#ae81ff">1</span>],color <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;k&#39;</span>,marker <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;*&#39;</span>)
+    ax1<span style="color:#f92672">.</span>plot(kekka[i,:,<span style="color:#ae81ff">0</span>],kekka[i,:,<span style="color:#ae81ff">1</span>],color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;k&#39;</span>)
+    ax1<span style="color:#f92672">.</span>plot(kekka[i,:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>T,kekka[i,:,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>T,color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;k&#39;</span>)
+    ax2<span style="color:#f92672">.</span>scatter(zeta[k[i,:]][:,<span style="color:#ae81ff">0</span>],zeta[k[i,:]][:,<span style="color:#ae81ff">1</span>],c<span style="color:#f92672">=</span>w[:,<span style="color:#ae81ff">0</span>])
+    ax1<span style="color:#f92672">.</span>set_xlabel(<span style="color:#e6db74">&#34;X_axis&#34;</span>)
+    ax1<span style="color:#f92672">.</span>set_ylabel(<span style="color:#e6db74">&#34;Y_axis&#34;</span>)
+    ax2<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">&#39;latentspace&#39;</span>)
+    ax2<span style="color:#f92672">.</span>set_xlabel(<span style="color:#e6db74">&#34;X_axis&#34;</span>)
+    ax2<span style="color:#f92672">.</span>set_ylabel(<span style="color:#e6db74">&#34;Y_axis&#34;</span>)
+
+ani <span style="color:#f92672">=</span> anm<span style="color:#f92672">.</span>FuncAnimation(fig, update, fargs <span style="color:#f92672">=</span> (zeta,w), interval <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>, frames <span style="color:#f92672">=</span> T<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,repeat <span style="color:#f92672">=</span> False)
+
+
+ani<span style="color:#f92672">.</span>save(<span style="color:#e6db74">&#34;RSom_TSP_Node300.gif&#34;</span>, writer <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;imagemagick&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/230ba75d-ce0f-d7cf-873c-5b349709a8f9.gif" alt="RSom_TSP_Node300.gif"></p>
+<p>gifだと一瞬で最終結果が消えちゃうので画像も用意してます。<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/431858/112628fd-ef0e-bb3b-37ff-930d7e0ed746.jpeg" alt="aaa.jpg">
+こちらです</p>
+<p>めっちゃいい感じにできてますね　計算時間も早いのでかなりいい線いってると思います。あとはノイズとか加えて局所解を抜け出せるようにすればもっとよくなると思います。</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

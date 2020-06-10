@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Abnormality detection] Detect image distortion by deep distance learning | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Abnormality detection] Detect image distortion by deep distance learning</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 8, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning"> MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning"> DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/keras"> Keras</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/anomaly-detection"> Anomaly detection</a></code></small>
+
+</p>
+<pre><code>There is a lot of research being done on image anomaly detection using deep learning.
+</code></pre>
+<p>As an approach for detecting abnormal products using only normal data for industrial products,
+For now, @daisukelab&rsquo;s <a href="https://qiita.com/daisukelab/items/e0ff429bd58b2befbb1b">Learning with self-teaching</a> is the most powerful. In this research,
+As a problem, the accuracy of some images was sluggish, and we tried to make an error class data by trial and error **
+There was a comment.</p>
+<p>Therefore, in this article, I would like to explore methods for automatically generating <strong>various</strong> abnormal images.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/361d7bdb-a03a-b38f-e3a7-a876a7e25f8c.png" alt="image.png"></p>
+<p>*This is the presentation material of <a href="https://pythondata.connpass.com/event/161835/">Python Data Analysis Study Group #16</a>.
+*The entire code was placed in <a href="https://github.com/shinmura0/AutoEncoder_vs_MetricLearning/blob/master/AnomalyDetection_self_supervised.ipynb">here</a>.</p>
+<p>#From the conclusion</p>
+<ul>
+<li>In the previous study <a href="https://qiita.com/daisukelab/items/e0ff429bd58b2befbb1b">Self-supervised learning</a>,therearetwoclassesof&quot;normal&quot;and&quot;abnormalwithdrawnlines&quot;&ldquo;Additionalanomaly&quot;wasadded,anditwaslearnedby<strong>3deepdistancelearning</strong>(seethefigurebelow).
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/17a5e00a-6740-bbd8-f2fa-fe737a311b22.png" alt="image.png">
+With the addition of 3 classes, it is also possible to use the latest deep distance learning method &ldquo;<a href="https://qiita.com/shinmura0/items/d2a3a46c3fb287a1ea0e">AdaCos</a>&rdquo;.</li>
+<li>This method became a <strong>double-edged sword</strong>, although some data had better accuracy, but there was also bad data.</li>
+</ul>
+<h1 id="image-consideration">Image consideration</h1>
+<p><a href="https://qiita.com/daisukelab/items/e0ff429bd58b2befbb1b">Prior research</a> has succeeded in catching many defects, though it is a very simple method.
+In addition, @daisukelab&rsquo;s fasi.ai code is very clean and readable.
+We recommend reading this if you are interested in detecting abnormalities in images.</p>
+<p>In previous research, AUC is below 0.9 for four data of <a href="https://www.mvtec.com/company/research/datasets/mvtec-ad/">MVtech AD</a>, Screw, Transistor, Grid, and Pill.
+As a result, it was the content of trial and error.</p>
+<p>This time I would like to target data other than Pill.
+The three data other than Pill are as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/58d60783-77e1-bdf5-b975-a46e45a2926e.png" alt="Download.png"></p>
+<p>Looking at the abnormal image, there are many things that are &ldquo;distorted&rdquo; ** rather than scratches or stains, and this detection is
+Since it is difficult, it is estimated that AUC is hard to grow.</p>
+<p>Therefore, we are searching for a method to automatically generate &ldquo;distortion data&rdquo; from normal data** and boost the anomaly detection performance.</p>
+<h1 id="automatic-generation-of-distortion-data">Automatic generation of &ldquo;distortion data&rdquo;</h1>
+<p>There are various methods that can be used to create distortion data, but in this article we will explain how to rotate a part of the image.
+I adopted it.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/06be584c-b87d-404c-55eb-bf38c451513a.png" alt="image.png"></p>
+<p>This can easily be done using the Keras Data Generator.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> keras.preprocessing.image <span style="color:#f92672">import</span> ImageDataGenerator
+    small_fig <span style="color:#f92672">=</span> fig[begin1:end1,begin2:end2]
+
+    datagen <span style="color:#f92672">=</span> ImageDataGenerator(
+               rotation_range<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>,
+               width_shift_range<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>,
+              height_shift_range<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>,
+              horizontal_flip<span style="color:#f92672">=</span>False,
+              vertical_flip<span style="color:#f92672">=</span>False)
+
+    <span style="color:#66d9ef">for</span> d <span style="color:#f92672">in</span> datagen<span style="color:#f92672">.</span>flow(np<span style="color:#f92672">.</span>expand_dims(small_fig, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>), batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>):
+        <span style="color:#75715e"># datagen.flow exits the loop because it loops infinitely</span>
+        <span style="color:#66d9ef">break</span>
+
+    fig[begin1:end1,begin2:end2] <span style="color:#f92672">=</span> d[<span style="color:#ae81ff">0</span>]
+</code></pre></div><h2 id="apply-to-meaningful-places">Apply to meaningful places</h2>
+<p>However, it does not make sense to rotate a part of the <strong>background image</strong>.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/2a644b53-5d04-babf-45bb-cdbfbe80d508.png" alt="image.png"></p>
+<p>Therefore, we implemented an algorithm that automatically detects objects.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/3c870d82-1ff2-e0cb-aed4-88ebee60f1dc.png" alt="image.png"></p>
+<p>With Screw etc., the direction and position of the test piece are slightly misaligned in the learning data.
+For those, averaging the learning data gives an image that the test piece disappears.
+(2.Training data average).</p>
+<p>After that, the difference between the averaged image and the target image is calculated and binarized (Binary map)
+By doing so, the range of the test piece can be detected automatically. While performing automatic detection,
+If you rotate a part of the image, you will get the following image.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/0edc9eeb-a07a-1924-ef71-adc747b90014.png" alt="image.png"></p>
+<p>I got a distorted image.</p>
+<h1 id="procedure-of-this-method">Procedure of this method</h1>
+<ul>
+<li>Prepare a normal image.</li>
+<li>Draw a thin line on the normal image to generate an image of the &ldquo;abnormal line drawn&rdquo; class. (In the experiment, OpenCV was used to generate the image shown below.)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/e5883080-bdb9-c0f8-13f3-767cf0e77ac0.png" alt="image.png"></li>
+<li>Apply the proposed method to normal images to generate &ldquo;distorted abnormal&rdquo; class images.</li>
+<li>Train the prepared 3 class classification problems (see the figure below) by deep distance learning.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/17a5e00a-6740-bbd8-f2fa-fe737a311b22.png" alt="image.png"></li>
+<li>After learning, calculate the degree of abnormality by LOF or cosine similarity.</li>
+</ul>
+<p>#Experiment
+We conducted an experiment using <a href="https://www.mvtec.com/company/research/datasets/mvtec-ad/">MVtech AD</a>.
+I put the whole code in <a href="https://github.com/shinmura0/AutoEncoder_vs_MetricLearning/blob/master/AnomalyDetection_self_supervised.ipynb">here</a>. You can do it with Colab.</p>
+<p>##conditions</p>
+<ul>
+<li>Deep distance learning is “L2-SoftmaxLoss”, “ArcFace”, “<a href="https://qiita.com/shinmura0/items/d2a3a46c3fb287a1ea0e">AdaCos</a>”(<a href="https://qiita.com/shinmura0/items/d2a3a46c3fb287a1ea0e#%E5%88%B6%E7%B4%84">3ormoreclasses</a>,so<strong>Applicable!</strong>) is used.</li>
+<li>&ldquo;L2-Softmax Loss&rdquo; calculates the degree of abnormality by LOF</li>
+<li>&ldquo;ArcFace&rdquo; and &ldquo;AdaCos&rdquo; calculate the cosine similarity for all training (normal) data and adopt the largest value. (For &ldquo;L2-SoftmaxLoss&rdquo; and &ldquo;ArcFace,&rdquo; [here](<a href="https://qiita.com/shinmura0/items/06d81c72601c7578c6d3#2019%E5%B9%B4metric-learning%E8%B7%9D%E9%9B%A2%E5%AD%A6%E7%BF%92%E3%81(Refertothearticleof(%AB%E3%82%88%E3%82%8B%E7%95%B0%E5%B8%B8%E6%A4%9C%E7%9F%A5))">https://qiita.com/shinmura0/items/06d81c72601c7578c6d3#2019%E5%B9%B4metric-learning%E8%B7%9D%E9%9B%A2%E5%AD%A6%E7%BF%92%E3%81(Refertothearticleof(%AB%E3%82%88%E3%82%8B%E7%95%B0%E5%B8%B8%E6%A4%9C%E7%9F%A5))</a></li>
+<li>epoch is 10, optimization method is Adam</li>
+<li>Batch size is 32</li>
+<li>Base model is MobileNet V2 (using trained model, ie transfer learning)</li>
+<li>Since abnormal classes (lines, distortions) are drawn randomly for each batch, the training function uses train_on_batch of Keras</li>
+<li>10 trials to calculate AUC</li>
+<li>Data uses Screw, Transistor, Grid</li>
+</ul>
+<p>##AUC result
+In the experimental results, class2 (2 classes, &ldquo;normal&rdquo; and &ldquo;abnormal with drawn lines&rdquo;) is the baseline,
+The proposed method is class3 (class of class2 + &ldquo;abnormality with distortion&rdquo;).</p>
+<ul>
+<li>Screw</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/23b9f29f-365c-6415-7bb6-14cf53cb156a.png" alt="image.png"></p>
+<p>In Screw, when the proposed method (class3) is applied to class2, AUC decreases.
+I&rsquo;m sorry. The reason for the decrease will be discussed later in consideration.</p>
+<ul>
+<li>Grid</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/6406f050-d5db-c8b9-53db-3364cbddf89c.png" alt="image.png">InGrid,asexpected,theproposedmethod(class3)isbetterthanthebaseline(class2)
+AUC has risen. I think that the distortion could be detected as intended. Abnormal part detected
+We will verify if it is done by visualization.</p>
+<ul>
+<li>Transistor</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/e26499d9-6442-3f41-d35e-a75c06e03fc5.png" alt="image.png"></p>
+<p>In Transistor, when applying the proposed method (class3) as in Grid, AUC increased.
+For ArcFace, you can see an improvement of 0.1 or more.</p>
+<h2 id="visualization-result">Visualization result</h2>
+<p>As mentioned in <a href="https://qiita.com/daisukelab/items/e0ff429bd58b2befbb1b">Prior research</a>, I also tried to visualize the abnormal part with Grad-CAM.
+However, it is based on &ldquo;AdaCos&rdquo;. Therefore, there are two abnormal classes,
+We are running Grad-CAM in each class.</p>
+<p>First of all, the data of Grid.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/7098c38b-e365-efc5-fe9a-8cafc6b70578.png" alt="Download (1).png"></p>
+<p>Visualization of &ldquo;Distortion&rdquo; fits all data well.
+However, when there are multiple abnormalities, it seems that only one may be detected.</p>
+<p>Next is the Transistor.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/ffba5d5b-8483-6a9e-7114-a73ac2c30278.png" alt="image.png"></p>
+<p>In Transistor, visualization of &ldquo;Slight line&rdquo; fits most data well.
+The result is the opposite of Grid. Depending on the type of data, which class should be checked for abnormalities
+It may change.</p>
+<p>#Experiment (Extra)
+Finally, I will change the base model (MobileNet V2 → EfficentNet B0).</p>
+<p>##conditions
+The conditions are almost the same as the previous experiment. The differences are as follows.</p>
+<ul>
+<li>Base model is <a href="https://github.com/titu1994/keras-efficientnets">EfficentNetB0</a>(Usestrainedmodel,ietransferlearning)</li>
+<li>Try 5 times to calculate AUC</li>
+</ul>
+<p>##AUC result
+*The median value is hard to see, but it is summarized in the table later.</p>
+<ul>
+<li>Screw</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/103cb3b7-003e-4807-df5d-9e332aa7d8c8.png" alt="image.png"></p>
+<p>With Screw, AUC is below 0.5 even with class 2.</p>
+<ul>
+<li>Grid</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/23e3d085-d644-02cc-fe4e-fcc6463b566e.png" alt="image.png"></p>
+<p>With Grid, the result is similar to MobileNetV2.
+After all, it is better to use **class3 to get a better score. **</p>
+<ul>
+<li>Transistor</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/044887d5-4b62-e4e2-5ca6-f74ddbdcbfe6.png" alt="image.png"></p>
+<p>With Transistor, the result is similar to MobileNetV2.
+After all, it is better to use class 3 because it gives a better score.</p>
+<p>#Summary of experimental results
+Let&rsquo;s compare the results so far with the median.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/0e8bcdaa-ee5d-c887-f71d-86a0fdbf86ca.png" alt="image.png"></p>
+<p>Excluding Screw, if the proposed method (class3) is applied to the baseline (class2), AUC rises**
+You can check. Also, regarding the types of distance learning, it seems that there are so many differences.
+I can&rsquo;t see it, but ArcFace shows a fairly good score.</p>
+<p>As for the difference in AUC according to the CNN model, EfficientNet B0, which has exceeded AUC 0.9, looks good.
+Applying EfficientNet B7 or the like may increase the AUC more significantly (However, in the image
+The minimum size seems to be 600x600. heavy. By the way, B0 is 224×224. )</p>
+<p>#Discussion (Why did Screw AUC drop?)
+Consider the cause of AUC deterioration of the Screw.</p>
+<p>Simply put, by adding the “distorted anomaly” class, **“large” distortion is anomalous.
+Now that it can be detected, **&lsquo;small&rsquo; distortions will instead be perceived as near normal.
+It seems that it has become.</p>
+<p>In the two-class classification of the previous research, by drawing a thin line, scratches and discoloration as well as the screw tip
+By drawing a line, I was able to simulate a &ldquo;small&rdquo; distortion. However, the third class
+The introduction makes the task of CNN more difficult.</p>
+<p>Until now, in the two-class classification, the &ldquo;small&rdquo; distortions were rather thin line classes.
+On the other hand, due to the three-class classification, ** CNN feature extraction is specialized for line detection and rotation detection, and **
+The &ldquo;small&rdquo; distortions are probably closer to normal. As a result, decrease in AUC
+It is presumed that it was invited.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/264781/dc273216-42c1-c299-4ab1-b64bf1aa8772.png" alt="image.png"></p>
+<p>The figure above is the figure which applied Grad-CAM to AdaCos(class3) learned by Screw. All images
+It is an abnormal image. As you can see, the small distortion at the screw tip is not detected at all.</p>
+<p>Furthermore, if you change from MobileNetV2 to EfficientNetB0, AUC is 0.5 even in class2.
+It is below the result. This is because EfficientNet B0 can extract features more clearly.
+The &ldquo;thin line&rdquo; feature extraction is too successful and the &ldquo;small&rdquo; distortion approaches normal.
+I think it&rsquo;s gone.</p>
+<p>Then, isn&rsquo;t it possible to simulate a &ldquo;small&rdquo; distortion by reducing the range of partial rotation?
+However, if the range is too small, CNN will not be able to detect it, and learning will not progress at all.
+Become.</p>
+<p>To improve this, increase the image resolution or align the orientation of the test item.
+A device specializing in images is required. As mentioned in <a href="https://qiita.com/daisukelab/items/e0ff429bd58b2befbb1b">Prior research</a>,
+If anomalous data is available, you can look at the image and analyze it.
+It seems to be effective.</p>
+<p>As a recommended procedure, first, self-supervised learning is used to classify into 2 classes. afterwards,
+If you try three-class classification and the AUC deteriorates, you should analyze the image thoroughly.
+It will be a process.</p>
+<p>#Summary</p>
+<ul>
+<li>&ldquo;Distorted anomaly&rdquo; class was added, and deep distance learning of 3 classes + learning was performed by self-supervised learning.</li>
+<li>In Transistor and Grid, **AUC increase (maximum AUC: 0.75 → 0.87) was confirmed. **On the other hand, in the case of Screw, on the contrary **the AUC decreased. **</li>
+<li>Therefore, whether or not to apply this method must be carefully judged by looking at the data. **
+Since +Pill has many images with discoloration abnormality rather than distortion, we have not tried this method because it is not suitable.</li>
+<li>Approximately the same accuracy for deep distance learning types. However, &ldquo;AdaCos&rdquo; is highly recommended because it does not require parameter tuning.</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

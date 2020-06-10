@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Creation of negative/positive classifier using BERT | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Creation of negative/positive classifier using BERT</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 25, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> Natural Language Processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3"> Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch"> PyTorch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/bert"> bert</a></code></small>
+
+</p>
+<pre><code>This post is the 25th day of &quot;Natural Language Processing Advent Calendar 2019-Qiita&quot;.
+</code></pre>
+<p><a href="https://twitter.com/shinya_hd">siny</a>.</p>
+<p>In this article, I summarized the creation of a negative-positive classifier using BERT, which plays a major role in natural language processing in 2019.</p>
+<p>#Introduction
+I think that knowledge about BERT has appeared in books, blogs, Qiita, etc.
+However, since most datasets that can be used for natural language processing are based on English, and there are not many Japanese datasets, it is quite difficult to use BERT using Japanese text. felt.</p>
+<p>Currently, I think the following are the major Japanese datasets that can be used free of charge.</p>
+<ul>
+<li><a href="https://twitter.com/shinya_hd">Aozora Bunko</a></li>
+<li><a href="https://twitter.com/shinya_hd">Twitter Japanese Reputation Analysis Data Set</a></li>
+<li><a href="https://twitter.com/shinya_hd">SNOW D18 Japanese emotion expression dictionary</a></li>
+<li><a href="https://twitter.com/shinya_hd">Livedoor News Corpus</a></li>
+</ul>
+<p>I was looking for &ldquo;** Is there a certain amount of data, is there a dataset that can be used as free text data in Japanese? **&rdquo;, <a href="https://github.com/IfoundaJapanesedataset(about2800datasets)calledchakki-works/chABSA-dataset">chABSA-dataset</a>.</p>
+<p><a href="https://github.com/chakki-works/chABSA-dataset">chABSA-dataset</a> is a Japanese dataset created based on the securities reports of listed companies.
+Each sentence contains not only negative and positive sentiment classifications, but also information about what is negative and positive.
+The following is sample data of <strong>chABSA-dataset</strong>.</p>
+<pre><code>{
+  &quot;header&quot;: {
+    &quot;document_id&quot;: &quot;E00008&quot;,
+    &quot;document_name&quot;: &quot;Hokuto Corporation&quot;,
+    &quot;doc_text&quot;: &quot;Securities report&quot;,
+    &quot;edi_id&quot;: &quot;E00008&quot;,
+    &quot;security_code&quot;: &quot;13790&quot;,
+    &quot;category33&quot;: &quot;Fisheries, agriculture and forestry&quot;,
+    &quot;category17&quot;: &quot;Food&quot;,
+    &quot;scale&quot;: &quot;6&quot;
+  },
+  &quot;sentences&quot;: [
+    {
+      &quot;sentence_id&quot;: 0,
+      &quot;sentence&quot;: &quot;The Japanese economy in the current consolidated fiscal year has improved its business performance and employment/income environment due to the government's economic policies and the Bank of Japan's monetary easing measures...&quot;,
+      &quot;opinions&quot;: [
+        {
+          &quot;target&quot;: &quot;Japanese economy&quot;,
+          &quot;category&quot;: &quot;NULL#general&quot;,
+          &quot;polarity&quot;: &quot;neutral&quot;,
+          &quot;from&quot;: 11,
+          &quot;to&quot;: 16
+        },
+        {
+          &quot;target&quot;: &quot;corporate performance&quot;,
+          &quot;category&quot;: &quot;NULL#general&quot;,
+          &quot;polarity&quot;: &quot;positive&quot;,
+          &quot;from&quot;: 38,
+          &quot;to&quot;: 42
+        },...
+      ],
+    },
+    {
+      &quot;sentence_id&quot;: 1,
+      &quot;sentence&quot;: &quot;The environment surrounding our group is for consumers while real wages are sluggish.&quot;,
+      &quot;opinions&quot;: [
+        {
+          &quot;target&quot;: &quot;real wage&quot;,
+          &quot;category&quot;: &quot;NULL#general&quot;,
+          &quot;polarity&quot;: &quot;negative&quot;,
+          &quot;from&quot;: 15,
+          &quot;to&quot;: 19
+        },...
+      ]
+    },...
+  ]
+}
+</code></pre><p>With <strong>chABSA-dataset</strong>, since there are thousands of data items and there are values that express emotions, it may be useful for negative/positive classification, so I made a negative/positive classifier for BERT with this data set. I tried.</p>
+<p>Please note that all the implementation code explained in this article is on github, so please use Clone as appropriate.
+In addition, each process is described in <strong>BERT model creation-learning-inference.ipynb</strong> on github, so please refer to it as appropriate.</p>
+<p>&ldquo;ChABSA-dataset&rdquo; (<a href="https://github.com/sinjorjob/chABSA-dataset">https://github.com/sinjorjob/chABSA-dataset</a>)</p>
+<p>#table of contents</p>
+<ol>
+<li>Assumption</li>
+<li>Environmental construction</li>
+<li>Schematic diagram of BERT model for negative/positive classification</li>
+<li>Creation of data set for negative/positive learning</li>
+<li>Implementation of Tokenizer for BERT</li>
+<li>Create Data Loader</li>
+<li>Implementation of negative-positive classification model by BERT</li>
+<li>BERT fine tuning settings</li>
+<li>BERT learning and reasoning</li>
+<li>Learning result</li>
+<li>Input test text and visualize predicted value and Attention</li>
+<li>Display inference results and mixing matrix with large amount of test data</li>
+<li>Summary</li>
+</ol>
+<h1 id="1-assumption">1. Assumption</h1>
+<p>In this article, we will create a negative-positive classifier based on the following assumptions.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Item</th>
+<th align="left">Meaning</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">OS</td>
+<td align="left">Ubuntu</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">BERT model</td>
+<td align="left">Kyoto University&rsquo;s [pytorch-pretrained-BERT model](<a href="http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%Finetuningbasedon(E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB)">http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%Finetuningbasedon(E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB)</a>.</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">Morphological analysis</td>
+<td align="left">Juman++ (v2.0.0-rc2) or (v2.0.0-rc3)</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">Library</td>
+<td align="left">Pytorch</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h1 id="2-environment-construction">2. Environment construction</h1>
+<p>Build an environment where you can use the BERT Japanese Pretrained model with PyTorch.</p>
+<h2 id="library-installation">Library installation</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+conda create <span style="color:#f92672">-</span>n pytorch python<span style="color:#f92672">=</span><span style="color:#ae81ff">3.6</span>
+conda activate pytorch
+conda install pytorch<span style="color:#f92672">=</span><span style="color:#ae81ff">0.4</span> torchvision <span style="color:#f92672">-</span>c pytorch
+conda install pytorch<span style="color:#f92672">=</span><span style="color:#ae81ff">0.4</span> torchvision cudatoolkit <span style="color:#f92672">-</span>c pytorch
+conda install pandas jupyter matplotlib scipy scikit<span style="color:#f92672">-</span>learn pillow tqdm cython
+pip install torchtext
+pip install mojimoji
+pip install attrdict
+pip install pyknp
+
+</code></pre></div><ul>
+<li>If you can&rsquo;t enter conda well, I installed it with pip.</li>
+</ul>
+<h2 id="install-juman">Install Juman++</h2>
+<p>Since the BERT Japanese Pretrained model used this time performs morphological analysis with Juman++ (v2.0.0-rc2) for the input text, I will match the morphological analysis tool with <strong>Juman++</strong> in this article as well.
+The Juman++ installation procedure is summarized in another article, so please refer to the following.</p>
+<p>[<strong>Summary of JUMAN++ installation procedure</strong>] <a href="https://sinyblog.com/deaplearning/juman/">https://sinyblog.com/deaplearning/juman/</a></p>
+<h2 id="bert-japanese-pretrained-model-preparation">BERT Japanese Pretrained model preparation</h2>
+<p>BERT Japanese Pretrained model can be downloaded from the following URL.</p>
+<p>[BERT Japanese Pretrained model] <a href="http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB">http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB</a></p>
+<p>Download <strong>Japanese_L-12_H-768_A-12_E-30_BPE .zip</strong> from &ldquo;**Japanese_L-12_H-768_A-12_E-30_BPE.zip (1.6G)****&rdquo; on the above HP.
+When you unzip the zip file, some files are included, but the following three are required this time.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Item</th>
+<th align="left">Meaning</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">bert_config.json</td>
+<td align="left">Config file for BERT model</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">pytorch_model.bin</td>
+<td align="left">The model converted for the pytorch version BERT (pytorch-pretrained-BERT)</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">vocab.txt</td>
+<td align="left">BERT glossary dictionary data</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The overall directory structure is as follows.</p>
+<pre><code>├─data
+│ └─chABSA #chABSA json file
+│ └─test.tsv # test data
+│ └─train.tsv # training data
+│ └─test_dumy.tsv # dummy data
+│ └─train_dumy.tsv # dummy data
+
+├─utils
+│ └─bert.py #BERT model definition
+│ └─config.py #Definition of various paths
+│ └─dataloader.py #for generating dataloader
+│ └─ predict.py # for inference
+│ └─ predict.py # for inference
+│ └─tokenizer.py # For morphological analysis
+│ └─train.py # for learning
+├─vocab # bert dictionary dictionary vocab.txt
+└─weights # bert_config.json, pytorch_model.bin
+└─Create_data_from_chABSA.ipynb #tsv data creation
+└─BERT model creation-learning-inference.ipynb # data loader creation-learning-inference
+
+</code></pre><ul>
+<li>The following files are not stored in the git repository because they are large in capacity, so please download the former from Kyoto University HP and the latter by following the Notebook and save the model parameters by yourself.</li>
+</ul>
+<p>pytorch_model.bin (pytorch-pretrained-BERT)
+bert_fine_tuning_chABSA_22epoch.pth (negative-positive learned parameter file)</p>
+<h1 id="3-overview-of-bert-model-for-negativepositive-classification">3. Overview of BERT model for negative/positive classification</h1>
+<p>This is a schematic diagram of the negative-positive classification BERT model implemented this time.<img width="890" alt="bert Negative/Positive Classification Machine Overview. png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/14f52713-b751-b8d2-91a7-5308b20d274e.png"></p>
+<p>The BERT model above is created based on the source code of the book &ldquo;<a href="https://github.com/YutaroOgawa/pytorch_advanced"><strong>Learn While Making! Advanced Deep Learning by PyTorch</strong></a>&rdquo;.
+This article does not explain the details of the BERT model, so if you are interested, please refer to the book.
+*The source code itself is published at the link above.</p>
+<p>Explaining only the points, the BERT source code itself is made based on <a href="https://github.com/huggingface/transformers">huggingface/transformers</a>,andattheendoftheBERTmodelthereisnoAmodelthatoutputsatwo-classclassification**[negative(0)orpositive(1)]**byaddingaconnectionlayer(Linear**).
+The feature quantity of the first word [CLS] of the input sentence data is used for class classification.</p>
+<h1 id="4-creating-a-data-set-for-negativepositive-learning">4. Creating a data set for negative/positive learning</h1>
+<p><a href="https://github.com/chakki-works/chABSA-dataset">chABSA-dataset</a> There are 230 data files in json format in the dataset, but as it is, the negative-positive classifier using BERT is used. It cannot be used as learning data.</p>
+<p>Multiple text data are stored in one json file, and the following information is included.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Item</th>
+<th align="left">Meaning</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">sentence_id</td>
+<td align="left">ID that uniquely identifies the data</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">sentence</td>
+<td align="left">Sentence data</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">opinions</td>
+<td align="left">The options include multiple sets of {target,category,porarity,from,to}.</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">target</td>
+<td align="left">target is the key word in sentence</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">category</td>
+<td align="left">Industry information</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">polarity</td>
+<td align="left">Is the target keyword positive or negative?</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">From which character of sentence does the</td>
+<td align="left">from, to</td>
+<td align="left">target keyword exist?</td>
+</tr>
+</tbody>
+</table>
+<p>From these json files, create a tsv dataset that can be used for training as follows.
+Each line is in the format of &ldquo;input sentence 0 (negative) or 1 (positive)&rdquo;. ――</p>
+<pre><code>On the other hand, the outlook remains uncertain due to the economic slowdown in the Chinese economy, the policy administration of the new US administration, and the risk of the UK leaving the EU.
+In the cosmetics and miscellaneous goods business, we strengthened store development by large-scale stores, worked to attract customers by digital sales promotion and held events, and sales were 3,262 million yen (down 15.5% year on year) 0
+In addition, maintenance contracts increased steadily, resulting in sales of ¥6,952 million (up 1.2% year on year) 1
+With regard to profit, segment profit (operating profit) was 1,687 million yen (up 2.4% year on year) due to increased replacement work and securing stable profit through maintenance contracts. 1
+In other segments, the bicycle parking system remained strong, resulting in sales of 721 million yen (up 0.8% year on year) 1
+</code></pre><p>Please execute the code of <strong>Create_data_from_chABSA.ipynb</strong> in Jupyter notebook to create the data.</p>
+<p>By following the procedure, training data (train.tsv) containing 1970 sentences and test data (test.tsv) containing 843 data will be created.</p>
+<h1 id="5-implementation-of-tokenizer-for-bert">5. Implementation of Tokenizer for BERT</h1>
+<p>BertTokenizer class for dividing the input sentence into words is implemented in <strong>utils\bert.py</strong>.
+This time we will use the Japanese dataset, but <a href="http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB">BERT Japanese Pretrained model</a> morphological analysis is performed using Juman++.</p>
+<p>Also, <a href="http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB">link</a> As stated, the following points are customized for Japanese.</p>
+<p>Set <strong>&ndash;do_lower_case option</strong> to <strong>False</strong> in BertTokenizer class in bert.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Class BertTokenizer(object):
+    Implemented sentence segmentation <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">for</span> <span style="color:#75715e">#BERT</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self, vocab_file, do_lower_case<span style="color:#f92672">=</span>False): Change to <span style="color:#75715e">#False (part different from English model)</span>
+</code></pre></div><p>Comment out the following in the BasicTokenizer class of tokenizer.py</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#text = self._tokenize_chinese_chars(text) #Comment out because all kanji are in single character units</span>
+</code></pre></div><p><strong>JumanTokenize class</strong> for morphological analysis with Juman++ is added to tokenizer.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> pyknp <span style="color:#f92672">import</span> Juman
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">JumanTokenize</span>(object):
+    <span style="color:#e6db74">&#34;&#34;&#34;Runs JumanTokenizer.&#34;&#34;&#34;</span>
+    
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>juman <span style="color:#f92672">=</span> Juman()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">tokenize</span>(self, text):
+        result <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>juman<span style="color:#f92672">.</span>analysis(text)
+        <span style="color:#66d9ef">return</span> [mrph<span style="color:#f92672">.</span>midasi <span style="color:#66d9ef">for</span> mrph <span style="color:#f92672">in</span> result<span style="color:#f92672">.</span>mrph_list()]
+</code></pre></div><p>If you use the above JumanTokenizer class, the input sentence will be morphologically analyzed by Juman++ as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cd chABSA<span style="color:#f92672">-</span>dataset
+python
+<span style="color:#f92672">&gt;&gt;&gt;</span><span style="color:#f92672">from</span> utils.tokenizer <span style="color:#f92672">import</span> JumanTokenize
+<span style="color:#f92672">&gt;&gt;&gt;</span><span style="color:#f92672">from</span> pyknp <span style="color:#f92672">import</span> Juman
+<span style="color:#f92672">&gt;&gt;&gt;</span>text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ordinary income decreased by 881 million yen year-on-year to 227,811 million yen, mainly due to a decrease in cash management income such as interest on loans.</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span>juman <span style="color:#f92672">=</span> JumanTokenize()
+<span style="color:#f92672">&gt;&gt;&gt;</span><span style="color:#66d9ef">print</span>(juman<span style="color:#f92672">.</span>tokenize(text))
+[<span style="color:#e6db74">&#39;Recurring&#39;</span>,<span style="color:#e6db74">&#39;revenue&#39;</span>,<span style="color:#e6db74">&#39;is&#39;</span>,<span style="color:#e6db74">&#39;,&#39;</span>,<span style="color:#e6db74">&#39;lending&#39;</span>,<span style="color:#e6db74">&#39;money&#39;</span>,<span style="color:#e6db74">&#39;interest&#39;</span>,<span style="color:#e6db74">&#39;etc.&#39;</span>,<span style="color:#e6db74">&#39;fund&#39;</span>,<span style="color:#e6db74">&#39;operation&#39;</span>,<span style="color:#e6db74">&#39;earnings&#39;</span>,<span style="color:#e6db74">&#39;of&#39;</span>,<span style="color:#e6db74">&#39; Decrease&#39;</span>,<span style="color:#e6db74">&#39; to&#39;</span>,<span style="color:#e6db74">&#39; main cause&#39;</span>,<span style="color:#e6db74">&#39; to&#39;</span>,<span style="color:#e6db74">&#39;,&#39;</span>,<span style="color:#e6db74">&#39;previous&#39;</span>,<span style="color:#e6db74">&#39;fiscal year&#39;</span>,<span style="color:#e6db74">&#39;ratio&#39;</span>, <span style="color:#e6db74">&#39;888 million&#39;</span>,<span style="color:#e6db74">&#39;yen&#39;</span>,<span style="color:#e6db74">&#39;decrease&#39;</span>,<span style="color:#e6db74">&#39;shi&#39;</span> , <span style="color:#e6db74">&#34;227,811 million&#34;</span>, <span style="color:#e6db74">&#34;yen&#34;</span>, <span style="color:#e6db74">&#34;and&#34;</span>, <span style="color:#e6db74">&#34;nari&#34;</span>, <span style="color:#e6db74">&#34;was&#34;</span>]
+<span style="color:#f92672">&gt;&gt;&gt;</span>
+
+
+</code></pre></div><h1 id="6-create-data-loader">6. Create Data Loader</h1>
+<p>Create a DataLoader with torchtext to generate data for learning and testing.
+This time, I use the function &ldquo;<strong>get_chABSA_DataLoaders_and_TEXT</strong>&rdquo; for creating DataLoder in <strong>dataloder.py</strong>.</p>
+<ul>
+<li>There is an opinion that it is better not to perform detailed preprocessing when using BERT, but this time the following is added as preprocessing.</li>
+</ul>
+<ul>
+<li>&ldquo;** Half-width → Full-width **&rdquo;</li>
+<li>&ldquo;<strong>Delete line breaks, half-width spaces, and full-width spaces</strong>&rdquo;</li>
+<li>&ldquo;** Unify all numeric characters to 0 **&rdquo;</li>
+<li>&ldquo;** Replace all symbols except commas and periods with spaces **&rdquo;</li>
+</ul>
+<p>The return value of the <strong>get_chABSA_DataLoaders_and_TEXT</strong> function is as follows.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Item</th>
+<th align="left">Meaning</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">train_dl</td>
+<td align="left">Training data set</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">val_dl</td>
+<td align="left">Verification data set</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">TEXT</td>
+<td align="left">torchtext.data.field.Field object</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">dataloaders_dict</td>
+<td align="left">iterator dictionary data of learning and verification data <strong>※1</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>※1</strong> dataloaders_dict is used for learning and verification.</p>
+<p>If you are not sure how to use torchtext, please refer to the following articles as well.
+<a href="https://sinyblog.com/pytorch/torchtext_001/">pytorch text preprocessing (torchtext) [for beginners]</a></p>
+<p>Below is the code to generate the Dataloader.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> utils.dataloader <span style="color:#f92672">import</span> get_chABSA_DataLoaders_and_TEXT
+<span style="color:#f92672">from</span> utils.bert <span style="color:#f92672">import</span> BertTokenizer
+train_dl, val_dl, TEXT, dataloaders_dict<span style="color:#f92672">=</span> get_chABSA_DataLoaders_and_TEXT(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">256</span>, batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">32</span>)
+
+</code></pre></div><p>Let&rsquo;s check the contents by extracting the data from the generated training data (train_dl).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Operation check Confirm with the verification data dataset</span>
+batch <span style="color:#f92672">=</span> next(iter(train_dl))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Text shape=&#34;</span>, batch<span style="color:#f92672">.</span>Text[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>shape)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Label shape=&#34;</span>, batch<span style="color:#f92672">.</span>Label<span style="color:#f92672">.</span>shape)
+<span style="color:#66d9ef">print</span>(batch<span style="color:#f92672">.</span>Text)
+<span style="color:#66d9ef">print</span>(batch<span style="color:#f92672">.</span>Label)
+
+</code></pre></div><p>As shown below, batch size (32 pieces) of text data (Max of length is 256) is generated in Text (input data).
+The input data is a list data of numerical value by converting the word list into ID.
+Label stores the correct answer label where the sentence is 0 (negative) or 1 (positive).</p>
+<pre><code>Text shape = torch.Size([32, 256])
+Label shape = torch.Size([32])
+(tensor([[ 2, 3718, 534, ..., 0, 0, 0],
+        [2, 17249, 442, ..., 0, 0, 0],
+        [2, 719, 3700, ..., 0, 0, 0],
+        ...,[2, 719, 3700, ..., 0, 0, 0],
+        [2, 64, 6, ..., 0, 0, 0],
+        [2, 1, 3962, ..., 0, 0, 0]]), tensor([68, 48, 31, 30, 33, 89, 55, 49, 53, 29, 61, 44, 21, 69 , 51, 48, 30, 32,
+        54, 31, 39, 28, 27, 24, 24, 48, 21, 86, 39, 51, 71, 42]))
+tensor([0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0 ,
+        1, 1, 0, 1, 0, 1, 0, 0])
+</code></pre><p>Just in case, I take 1 sentence from the mini-batch and pass the digitized list data to the <strong>ids_to_tokens</strong> method of <strong>tokenizer_bert</strong> to restore the original sentence (word).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Check the first sentence of the mini batch</span>
+tokenizer_bert <span style="color:#f92672">=</span> BertTokenizer(vocab_file<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./vocab/vocab.txt&#34;</span>, do_lower_case<span style="color:#f92672">=</span>False)
+text_minibatch_1 <span style="color:#f92672">=</span> (batch<span style="color:#f92672">.</span>Text[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">1</span>])<span style="color:#f92672">.</span>numpy()
+
+<span style="color:#75715e"># Return ID to word</span>
+text <span style="color:#f92672">=</span> tokenizer_bert<span style="color:#f92672">.</span>convert_ids_to_tokens(text_minibatch_1)
+
+<span style="color:#66d9ef">print</span>(text)
+</code></pre></div><pre><code>
+['[CLS]','Sales','Profit','is',',','Complete','Construction','Total','Profit','Rate','Gain','Improve' ,'Done','koto','from',',','previous','consolidation','accounting','fiscal year','ratio','[UNK]','. ','[UNK]','%','increase','of','[UNK]','yen','(','previous','consolidate','accounting','year', 'Ha','[UNK]','yen',')','and','nata','[SEP]','[PAD]','[PAD]','[PAD]' ,'[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', ' [PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD ]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]' ,'[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', ' [PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD ]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]' ,'[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', ' [PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD ]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]' ,'[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', ' [PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD ]','[PAD]','[PAD]','[PAD]','[PA D]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD] ','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', '[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[ 'PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD] ','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', '[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[ 'PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD] ','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', '[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[ 'PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD] ','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]', '[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[ 'PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD] ','[PAD]','[PAD]','[PAD ]','[PAD]','[PAD]','[PAD]','[PAD]','[PAD]']
+</code></pre><p>The beginning of the sentence is <strong>[CLS]</strong>, the end is <strong>[SEP]</strong>, the unknown word is <strong>[UNK]</strong>, and the part less than 256 characters is padded with <strong>[PAD]</strong>. I will.</p>
+<p>So far, we have confirmed the creation of the dataset and the mini-batch that is actually generated.</p>
+<h1 id="7-implementation-of-negativepositive-classification-model-by-bert">7. Implementation of negative/positive classification model by BERT</h1>
+<p>Next, we will implement the negative-positive classification model using BERT.</p>
+<p>The following BERT model to be implemented this time is defined as <strong>BertModel class</strong> in <strong>utils\bert.py</strong>, so a model is generated using this class.</p>
+<img width="890" alt="bert Negative/Positive Classification Machine Overview. png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/14733004-a883-6b58-af54-b977558036d1.png">
+<p>The following files are used to build the model.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Item</th>
+<th align="left">Description</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">bert_config.json</td>
+<td align="left">BERT model parameter file</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">pytorch_model.bin</td>
+<td align="left">Trained BERT model</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>First, create a base BERT model by specifying the config configuration file as an argument in <strong>BertModel class</strong>, and then learn by using the <strong>set_learned_params</strong> method defined in <strong>bert.py</strong>. Set the parameters of the existing BERT model (<strong>pytorch_model.bin</strong>).
+After that, after generating a negative-positive classification model using <strong>BertForchABSA class</strong>, set it to learning mode with <strong>net.train()</strong>.</p>
+<p>The code to generate the model is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> utils.bert <span style="color:#f92672">import</span> get_config, BertModel,BertForchABSA, set_learned_params
+
+<span style="color:#75715e"># Read JOSN file of model setting as object variable</span>
+config <span style="color:#f92672">=</span> get_config(file_path<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./weights/bert_config.json&#34;</span>)
+
+Generate <span style="color:#75715e">#-based BERT model</span>
+net_bert <span style="color:#f92672">=</span> BertModel(config)
+
+<span style="color:#75715e"># BERT model trained parameter set</span>
+net_bert <span style="color:#f92672">=</span> set_learned_params(
+    net_bert, weights_path<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;./weights/pytorch_model.bin&#34;</span>)
+
+<span style="color:#75715e"># BERT Negative/Positive classification model is created (Linear connection layer for negative/positive classification is added to the end of the model)</span>
+net <span style="color:#f92672">=</span> BertForchABSA(net_bert)
+
+<span style="color:#75715e"># Set to training mode</span>
+net<span style="color:#f92672">.</span>train()
+
+</code></pre></div><h1 id="8-bert-fine-tuning-setting">8. BERT fine tuning setting</h1>
+<p><a href="https://arxiv.org/abs/1810.04805">Original paper of BERT</a>fine-tunesall12layersofBertLayer(Self-Attention) layers, but this time only the last layer + negative-positive classifier Is intended for learning.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#75715e"># Perform gradient calculation only on last adapter with BertLayer module and added classification adapter</span>
+
+<span style="color:#75715e"># 1. Set to whole gradient calculation False</span>
+<span style="color:#66d9ef">for</span> name, param <span style="color:#f92672">in</span> net<span style="color:#f92672">.</span>named_parameters():
+    param<span style="color:#f92672">.</span>requires_grad <span style="color:#f92672">=</span> False
+
+<span style="color:#75715e"># 2. Change the last BertLayer module with gradient calculation</span>
+<span style="color:#66d9ef">for</span> name, param <span style="color:#f92672">in</span> net<span style="color:#f92672">.</span>bert<span style="color:#f92672">.</span>encoder<span style="color:#f92672">.</span>layer[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>named_parameters():
+    param<span style="color:#f92672">.</span>requires_grad <span style="color:#f92672">=</span> True
+
+<span style="color:#75715e"># 3. Change the discriminator (negative or positive) to have gradient calculation</span>
+<span style="color:#66d9ef">for</span> name, param <span style="color:#f92672">in</span> net<span style="color:#f92672">.</span>cls<span style="color:#f92672">.</span>named_parameters():
+    param<span style="color:#f92672">.</span>requires_grad <span style="color:#f92672">=</span> True
+</code></pre></div><p>Next, specify the optimizer and the loss function to use for training.</p>
+<p><strong>Torch.optim.Adam class</strong> is used for the final layer of BertLayer (Self-Attention) and the discriminator.
+The learning rate (lr) is <strong>5e-e</strong>, and the default value of betas is <strong>(0.9, 0.999)</strong> (the values in the reference books are used as they are).And this time, since it is a two-class classification of negative or positive, <strong>torch.nn.CrossEntropyLoss</strong> is specified as the criterion.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+The original part of <span style="color:#75715e"># BERT is fine tuning</span>
+optimizer <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>Adam([
+    {<span style="color:#e6db74">&#39;params&#39;</span>: net<span style="color:#f92672">.</span>bert<span style="color:#f92672">.</span>encoder<span style="color:#f92672">.</span>layer[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>parameters(),<span style="color:#e6db74">&#39;lr&#39;</span>: <span style="color:#ae81ff">5e-5</span>},
+    {<span style="color:#e6db74">&#39;params&#39;</span>: net<span style="color:#f92672">.</span>cls<span style="color:#f92672">.</span>parameters(),<span style="color:#e6db74">&#39;lr&#39;</span>: <span style="color:#ae81ff">5e-5</span>}
+], betas<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0.9</span>, <span style="color:#ae81ff">0.999</span>))
+
+<span style="color:#75715e"># Set loss function</span>
+criterion <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>CrossEntropyLoss()
+Calculate <span style="color:#75715e">#nn.LogSoftmax() and then nn.NLLLoss(negative log likelihood loss)</span>
+</code></pre></div><h1 id="9-bert-learning-and-reasoning">9. BERT learning and reasoning</h1>
+<p>Next, we will carry out learning and verification.
+Training and verification are performed using the training and verification function <strong>train_model</strong> defined in <strong>utls.py\train.py</strong>.
+The data of <strong>train.tsv (1970)</strong> is used for learning and the data of <strong>test.tsv (843)</strong> is used for verification.</p>
+<p>Learning in a CPU environment takes time, so we recommend using a GPU environment such as Google Coraboratory.</p>
+<ul>
+<li>Core i7 8 core, 16 GB memory I tried in a CPU environment, 1 epoch took about 30 minutes.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#75715e"># Conduct learning and verification</span>
+<span style="color:#f92672">from</span> utils.train <span style="color:#f92672">import</span> train_model
+
+<span style="color:#75715e"># Perform learning and verification.</span>
+num_epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#75715e">#Please change the number of epochs accordingly.</span>
+net_trained <span style="color:#f92672">=</span> train_model(net, dataloaders_dict,
+                          criterion, optimizer, num_epochs<span style="color:#f92672">=</span>num_epochs)
+
+
+<span style="color:#75715e"># Save the learned network parameters (This time, write the file name assuming that the result of 22 epoch times will be saved)</span>
+save_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./weights/bert_fine_tuning_chABSA_22epoch.pth&#39;</span>
+torch<span style="color:#f92672">.</span>save(net_trained<span style="color:#f92672">.</span>state_dict(), save_path)
+
+</code></pre></div><p>The arguments of <strong>train_model</strong> are as follows.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Item</th>
+<th align="left">Description</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">net</td>
+<td align="left">BERT negative-positive classification model</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">dataloaders_dict</td>
+<td align="left">Iterator for learning &amp; verification</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">criterion</td>
+<td align="left">loss function</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">optimizer</td>
+<td align="left">Optimizer</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">num_epochs</td>
+<td align="left">Number of epochs</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>When executed, the correct answer rate for every 10 iterations and Lost and Acc for each Epoch are displayed.</p>
+<pre><code>Device used: cpu
+- ----start-------
+Iteration 10 || Loss: 0.6958 || 10iter: 294.9368 sec. || Correct rate of this iteration: 0.46875
+Iteration 20 || Loss: 0.7392 || 10iter: 288.1598 sec. || Correct rate of this iteration: 0.4375
+Iteration 30 || Loss: 0.6995 || 10iter: 232.9404 sec. || Correct rate of this iteration: 0.53125
+Iteration 40 || Loss: 0.5975 || 10iter: 244.0613 sec. || Correct rate of this iteration: 0.6875
+Iteration 50 || Loss: 0.5678 || 10iter: 243.3908 sec. || Correct rate of this iteration: 0.71875
+Iteration 60 || Loss: 0.5512 || 10iter: 269.5538 sec. || Correct rate of this iteration: 0.6875
+Epoch 1/1 | train | Loss: 0.6560 Acc: 0.5975
+Epoch 1/1 | val | Loss: 0.5591 Acc: 0.7711
+</code></pre><p>#10. Learning results</p>
+<p>This time, I compared the accuracy of the following 3 patterns with the MAX of epoch number set to 50.</p>
+<ul>
+<li>BertLayer (Self-Attention) <strong>final layer only</strong>fine tuning</li>
+<li>**BertLayer (Self-Attention) **Only 2 layers behind **Fine tuning</li>
+<li>Fine tuning the back 6 layers of BertLayer (Self-Attention)</li>
+</ul>
+<p>The results are as follows.</p>
+<img width="800" alt="Learning result.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/f21a79fe-9189-f71c-5ab5-2a2a43c97fe2.png">
+<p>The following is a summary of the evaluation.</p>
+<ul>
+<li>With this model, increasing the number of fine tuning targets had little effect on improving accuracy.</li>
+<li>If you turn about 5 epoch, the accuracy reaches around 86%, and even if you increase the number of epoch after that, the accuracy does not improve greatly.</li>
+<li>When over 20 epoch, over-learning becomes remarkable.</li>
+</ul>
+<p>After all, the precision rate MAX(<strong>87.76%</strong>) was reached at the time when <strong>22epoch</strong> was turned after fine tuning only the final layer of BertLayer.</p>
+<h1 id="11-input-test-text-and-visualize-predicted-value-and-attention">11. Input test text and visualize predicted value and Attention</h1>
+<p>Using the trained BERT negative-positive classification model, we give a sample sentence to visualize the negative-positive prediction value and Attention (which word was judged more important?).
+*Attention is displayed in html format, so it is easy to understand by using Jupyter Notebook.</p>
+<h2 id="advance-preparation">Advance preparation</h2>
+<p>To use the TEXT object (torchtext.data.field.Field) generated by torchtext during inference, dump the TEXT object to a pkl file once.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">from</span> utils.predict create_vocab_text
+TEXT <span style="color:#f92672">=</span> create_vocab_text()
+</code></pre></div><p>Executing the above code will generate text.pkl under \chABSA-dataset\data.</p>
+<p>The create_vocab_text method is defined in predict.py.
+After generating the TEXT object using dummy data (train_dumy.tsv, test_dumy.tsv) and BERT glossary data (vocab.txt) under \chABSA-dataset\data, it is output with pickle.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_vocab_text</span>():
+    TEXT <span style="color:#f92672">=</span> torchtext<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>Field(sequential<span style="color:#f92672">=</span>True, tokenize<span style="color:#f92672">=</span>tokenizer_with_preprocessing, use_vocab<span style="color:#f92672">=</span>True,
+                            lower<span style="color:#f92672">=</span>False, include_lengths<span style="color:#f92672">=</span>True, batch_first<span style="color:#f92672">=</span>True, fix_length<span style="color:#f92672">=</span>max_length, init_token<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;[CLS]&#34;</span>, eos_token<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;[SEP]&#34;</span>, pad_token<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;[PAD]&#39;</span>, unk_token<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;[UNK]&#39;</span>)
+    LABEL <span style="color:#f92672">=</span> torchtext<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>Field(sequential<span style="color:#f92672">=</span>False, use_vocab<span style="color:#f92672">=</span>False)
+    train_val_ds, test_ds <span style="color:#f92672">=</span> torchtext<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>TabularDataset<span style="color:#f92672">.</span>splits(
+        path<span style="color:#f92672">=</span>DATA_PATH, train<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;train_dumy.tsv&#39;</span>,
+        test<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;test_dumy.tsv&#39;</span>, format<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;tsv&#39;</span>,
+        fields<span style="color:#f92672">=</span>[(<span style="color:#e6db74">&#39;Text&#39;</span>, TEXT), (<span style="color:#e6db74">&#39;Label&#39;</span>, LABEL)])
+    vocab_bert, ids_to_tokens_bert <span style="color:#f92672">=</span> load_vocab(vocab_file<span style="color:#f92672">=</span>VOCAB_FILE)
+    TEXT<span style="color:#f92672">.</span>build_vocab(train_val_ds, min_freq<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    TEXT<span style="color:#f92672">.</span>vocab<span style="color:#f92672">.</span>stoi <span style="color:#f92672">=</span> vocab_bert
+    pickle_dump(TEXT, PKL_FILE)
+
+    <span style="color:#66d9ef">return</span> TEXT
+</code></pre></div><h2 id="inference-and-visualization-of-attention">Inference and visualization of attention</h2>
+<p>Since the methods of build (<strong>build_bert_model</strong>) and inference (<strong>predict</strong>) of trained model are defined in <strong>utils\predict.py</strong>, use this to input sample sentences To visualize the predicted value and Attention.
+Attention uses IPython to visualize HTML.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> utils.config <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+<span style="color:#f92672">from</span> utils.predict <span style="color:#f92672">import</span> predict, build_bert_model
+<span style="color:#f92672">from</span> IPython.display <span style="color:#f92672">import</span> HTML, display
+
+
+input_text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;As a result of the above, sales in the current consolidated fiscal year were 1,785 million yen (down 357 million yen, 16.7</span><span style="color:#e6db74">% d</span><span style="color:#e6db74">ecrease from the same period last year), operating loss was 117 million yen (down 174 million yen from the same period last year, Operating income of 57 million yen for the same period, ordinary loss of 112 million yen (183 million yen decrease from the same period of the previous year, ordinary profit of 71 million yen for the same period of the previous year), net loss attributable to shareholders of the parent company of 58 million yen (the same period of the previous year) 116 million yen decrease compared to the same period last year, net income attributable to owners of the parent company was 57 million yen)</span>
+net_trained <span style="color:#f92672">=</span> build_bert_model()
+html_output <span style="color:#f92672">=</span> predict(input_text, net_trained)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;====================== display inference results ===================== =&#34;</span>)
+<span style="color:#66d9ef">print</span>(input_text)
+display(HTML(html_output))
+</code></pre></div><p>When the above code is executed, the following result will be displayed.
+*Unknown words are displayed as [UNK]</p>
+<img width="800" alt="Inference result.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/94743d03-633f-3c57-6850-cd7a364bf11e.png">
+<h1 id="12-display-inference-results-and-mixing-matrix-with-large-amount-of-test-data">12. Display inference results and mixing matrix with large amount of test data</h1>
+<p>It automatically makes inferences using large amounts of test data and displays <strong>mixing matrix</strong> information to evaluate the results.</p>
+<p>First, import the required modules.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> utils.config <span style="color:#f92672">import</span> <span style="color:#f92672">*</span><span style="color:#f92672">from</span> utils.predict <span style="color:#f92672">import</span> predict2, create_vocab_text, build_bert_model
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> confusion_matrix
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> accuracy_score
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> precision_score
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> recall_score
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> f1_score
+</code></pre></div><p>The mixed matrix is displayed using <strong>sklearn</strong>.
+Also, a method predict2 that returns only predicted values (preds) is added in utils\predict.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict2</span>(input_text, net_trained):
+    TEXT <span style="color:#f92672">=</span> pickle_load(PKL_FILE) <span style="color:#75715e">#load vocab data</span>
+    input <span style="color:#f92672">=</span> conver_to_model_format(input_text, TEXT)
+    input_pad <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#75715e"># Because&#39;&lt;pad&gt;&#39;: 1 in the word ID</span>
+    input_mask <span style="color:#f92672">=</span> (input <span style="color:#f92672">!=</span> input_pad)
+    outputs, attention_probs <span style="color:#f92672">=</span> net_trained(input, token_type_ids<span style="color:#f92672">=</span>None, attention_mask<span style="color:#f92672">=</span>None,
+                                       output_all_encoded_layers<span style="color:#f92672">=</span>False, attention_show_flg<span style="color:#f92672">=</span>True)
+    _, preds <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>max(outputs, <span style="color:#ae81ff">1</span>) <span style="color:#75715e"># predict labels</span>
+    <span style="color:#75715e">#html_output = mk_html(input, preds, attention_probs, TEXT) # HTML creation</span>
+    <span style="color:#66d9ef">return</span> preds
+</code></pre></div><p>The data to be input will be prepared as the following data as a <strong>test.csv file</strong>.</p>
+<img width="800" alt="test data.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/d6543b4f-5600-7634-9d52-d155a81b862f.png">
+<p>Next, read the above test.csv with pandas, give each sentence of **INPUT column ** to the trained BERT model to make a negative/positive judgment, and store the prediction result in the <strong>PREDICT</strong> column ..
+After processing to the end, save it as <strong>predicted_test.csv</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;test.csv&#34;</span>, engine<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;python&#34;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8-sig&#34;</span>)
+net_trained<span style="color:#f92672">.</span>eval() <span style="color:#75715e"># In inference mode.</span>
+
+<span style="color:#66d9ef">for</span> index, row <span style="color:#f92672">in</span> df<span style="color:#f92672">.</span>iterrows():
+    df<span style="color:#f92672">.</span>at[index, <span style="color:#e6db74">&#34;PREDICT&#34;</span>] <span style="color:#f92672">=</span> predict(row[<span style="color:#e6db74">&#39;INPUT&#39;</span>], net_trained)<span style="color:#f92672">.</span>numpy()[<span style="color:#ae81ff">0</span>] <span style="color:#75715e"># For a GPU environment, use &#34;.cpu().numpy()&#34;.</span>
+    
+df<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#34;predicted_test .csv&#34;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8-sig&#34;</span>, index<span style="color:#f92672">=</span>False)
+
+</code></pre></div><p>Predicted_test.csv will be generated with the following prediction results added.</p>
+<img width="800" alt="test2 data.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/b89a61cc-7c4b-4b0d-07b8-d8511827ee35.png">
+<p>Finally, display the mixing matrix information from the result of this csv file.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Display of mixed matrix (evaluation)</span>
+
+y_true <span style="color:#f92672">=</span>[]
+y_pred <span style="color:#f92672">=</span>[]
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;predicted_test .csv&#34;</span>, engine<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;python&#34;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8-sig&#34;</span>)
+<span style="color:#66d9ef">for</span> index, row <span style="color:#f92672">in</span> df<span style="color:#f92672">.</span>iterrows():
+    <span style="color:#66d9ef">if</span> row[<span style="color:#e6db74">&#39;LABEL&#39;</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        y_true<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;negative&#34;</span>)
+    <span style="color:#66d9ef">if</span> row[<span style="color:#e6db74">&#39;LABEL&#39;</span>] <span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+        y_true<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;positive&#34;</span>)
+    <span style="color:#66d9ef">if</span> row[<span style="color:#e6db74">&#39;PREDICT&#39;</span>] <span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+        y_pred<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;negative&#34;</span>)
+    <span style="color:#66d9ef">if</span> row[<span style="color:#e6db74">&#39;PREDICT&#39;</span>] <span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+        y_pred<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;positive&#34;</span>)
+
+    
+<span style="color:#66d9ef">print</span>(len(y_true))
+<span style="color:#66d9ef">print</span>(len(y_pred))
+
+
+<span style="color:#75715e">#Get the confusion matrix</span>
+labels <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;negative&#34;</span>, <span style="color:#e6db74">&#34;positive&#34;</span>]
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> confusion_matrix
+cm <span style="color:#f92672">=</span> confusion_matrix(y_true, y_pred, labels<span style="color:#f92672">=</span>labels)
+
+<span style="color:#75715e">#Convert to data frame</span>
+cm_labeled <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(cm, columns<span style="color:#f92672">=</span>labels, index<span style="color:#f92672">=</span>labels)
+
+<span style="color:#75715e"># Show results</span>
+cm_labeled
+</code></pre></div><p>The following mixing matrix is displayed.
+<img width="400" alt="Mixed matrix.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215810/7544bb6d-adc9-61cc-1733-3e1b36169872.png"></p>
+<p>From the viewpoint, the negative,positve on the left side is the label of the actual data, and the negative,positve in the vertical direction is the predicted value.
+For example, the number &ldquo;<strong>62</strong>&rdquo; represents the number of data that was falsely predicted to be positive among the negative data.</p>
+<p>Next, the accuracy rate, precision rate, recall rate and F value are displayed with the following code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">y_true <span style="color:#f92672">=</span>[]
+y_pred <span style="color:#f92672">=</span>[]
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;predicted_test .csv&#34;</span>, engine<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;python&#34;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8-sig&#34;</span>)
+<span style="color:#66d9ef">for</span> index, row <span style="color:#f92672">in</span> df<span style="color:#f92672">.</span>iterrows():
+    y_true<span style="color:#f92672">.</span>append(row[<span style="color:#e6db74">&#34;LABEL&#34;</span>])
+    y_pred<span style="color:#f92672">.</span>append(row[<span style="color:#e6db74">&#34;PREDICT&#34;</span>])
+        
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;correct answer rate (ratio of correct answer samples among all samples) ={}%&#34;</span><span style="color:#f92672">.</span>format((round(accuracy_score(y_true, y_pred),<span style="color:#ae81ff">2</span>)) <span style="color:#f92672">*</span><span style="color:#ae81ff">100</span> ))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Precision rate (probability that it was positive when predicted as positive) ={}%&#34;</span><span style="color:#f92672">.</span>format((round(precision_score(y_true, y_pred),<span style="color:#ae81ff">2</span>)) <span style="color:#f92672">*</span><span style="color:#ae81ff">100</span> ))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Recall rate (probability that positive was predicted for positive data)={}%&#34;</span><span style="color:#f92672">.</span>format((round(recall_score(y_true, y_pred),<span style="color:#ae81ff">2</span>)) <span style="color:#f92672">*</span><span style="color:#ae81ff">100</span> ))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;F1 (harmonic mean of precision and recall) ={}%&#34;</span><span style="color:#f92672">.</span>format((round(f1_score(y_true, y_pred),<span style="color:#ae81ff">2</span>)) <span style="color:#f92672">*</span><span style="color:#ae81ff">100</span> ))
+
+<span style="color:#75715e">#Execution result</span>
+
+Correct answer rate (ratio of correct answer samples among all samples) <span style="color:#f92672">=</span> <span style="color:#ae81ff">76.0</span><span style="color:#f92672">%</span>
+Precision rate (probability that was actually positive among the predictions of positive) <span style="color:#f92672">=</span> <span style="color:#ae81ff">85.0</span><span style="color:#f92672">%</span>
+Recall rate (probability that positive was predicted <span style="color:#66d9ef">for</span> positive data) <span style="color:#f92672">=</span> <span style="color:#ae81ff">71.0</span><span style="color:#f92672">%</span>
+F1 (harmonic average of precision <span style="color:#f92672">and</span> recall) <span style="color:#f92672">=</span> <span style="color:#ae81ff">78.0</span><span style="color:#f92672">%</span>
+
+</code></pre></div><p>#13 Summary</p>
+<p>This time, we added a fully connected layer (Linear) for judging negative/positive based on the BERT model and made it into binary classification, but it seems that it can be applied to various tasks such as multilevel classification and application to QA. , I would like to challenge in the future.
+** ※ Added December 25, 2019 **
+If you are interested in implementing the Django REST framework using the BERT negative/positive classifier created in this article, <strong><a href="https://qiita.com/ysinySee/items/30e10a3db76c6f7c5b4d">[Django Advent Calendar 2019-Qiita 20th day article]</a></strong>.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Investigation of relationship between voice preprocessing and transcription accuracy in Google Cloud Speech API | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Investigation of relationship between voice preprocessing and transcription accuracy in Google Cloud Speech API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 2, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlecloudplatform"> GoogleCloudPlatform</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/speech-recognition"> Speech recognition</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlespeechapi"> GoogleSpeechAPI</a></code></small>
+
+</p>
+<pre><code>## Transcription accuracy is lower than expected
+</code></pre>
+<p>As I mentioned at the end of the previous article that summarized <a href="https://qiita.com/ysdyt/items/bc22eb04d90eb074cf9d">How to use Google Speech API</a>, I encountered a problem that the character recognition accuracy is lower than I expected. It was.</p>
+<p>It seems that about 80% can be transcribed in rebuild.fm, but in my case <a href="https://github.com/ysdyt/podcast_app/blob/master/text/google_speech_api/001.txt">not even half recognized by experience</a> It&rsquo;s an impression. Even though it wasn&rsquo;t perfect, I was hoping that reading the transcribed text would give me a sense of what the conversation was about, but it was pretty devastating.</p>
+<p>Based on the premise that &ldquo;Speech API is not bad, my own preprocessing is bad&rdquo;, I tried various combinations of preprocessing and parameter and compared the accuracy. The purpose of this time is to find the best preprocessing method for Google Speech API.</p>
+<h2 id="sound-source-data-to-be-verified">Sound source data to be verified</h2>
+<p>The target was the <a href="https://shirokane-kougyou.fm/episode/1">first sound source</a> of the podcast &ldquo;Platinum Mining Industry.FM&rdquo; that was recorded and distributed by myself. What is uploaded is a clear sound source that has been edited, but since I record a lot in recording, such as recording in a quiet room, the sound quality is clear so raw data is not so different.</p>
+<p>The length of the sound source is just 1h. It was cut at the position of 1h from the start by editing. It doesn&rsquo;t mean that it is 1h, but I wanted to try it on a long sound source, and just made it sharp as an experiment target.</p>
+<h2 id="verification-items">Verification items</h2>
+<p><a href="https://qiita.com/ysdyt/items/bc22eb04d90eb074cf9d">Last article</a> In order to confirm the temporary construction made at the end, this time, ** &ldquo;Noise reduction process&rdquo; &ldquo;Volume adjustment&rdquo; &ldquo;sample&rdquo; Differences in rate hertz” ** will be verified.</p>
+<ul>
+<li>
+<p>** Noise reduction process **&hellip; White noise process performed by Audacity. The execution method is <a href="https://qiita.com/ysdyt/items/9a95857aed85a19766b0">here</a></p>
+</li>
+<li>
+<p><strong>Volume control process</strong>・・・Processing for automatic volume control with Leverator. The execution method is <a href="https://qiita.com/ysdyt/items/9a95857aed85a19766b0">here</a></p>
+</li>
+<li>
+<p><strong>sample rate hertz</strong>・・・Sampling rate of voice. The Speech API recommends sampling at 16kHZ, but it is noted that the sound source originally recorded at 16kHZ or higher is not resampled at 16kHZ and is input to the Speech API at the sampling rate as it is recorded. For details and how to execute it, click here ((<a href="https://qiita.com/ysdyt/items/9a95857aed85a19766b0))">https://qiita.com/ysdyt/items/9a95857aed85a19766b0))</a>. Since the default sampling rate of the microphone used for recording is 44kHz, I will try two patterns of 16kHz or 44kHz this time.</p>
+</li>
+</ul>
+<p>We have created a total combination of parameters for the above three items. There are 8 types as shown below.</p>
+<p>No. | File name | Noise reduction processing | Volume control | sample rate hertz | File size |
+| &mdash;- | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | - &mdash;&mdash;&mdash;&mdash; | &mdash;&mdash;&ndash; | &mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | &mdash;&mdash;&mdash;- &mdash;- |
+1 | 01_001_NoiRed-true_lev-true_samp16k.flac | True | True | 16k | 73.1MB |
+2 | 02_001_NoiRed-true_lev-true_samp44k.flac | True | True | 44k | 169.8MB |
+3 | 03_001_NoiRed-true_lev-false_samp16k.flac | True | False | 16k | 64.7KB |
+4 | 04_001_NoiRed-true_lev-false_samp44k.flac | True | False | 44k | 147.4KB |
+5 | 05_001_NiRed-false_lev-true_samp16k.flac | False | True | 16k | 75.8KB |
+6 | 06_001_NiRed-false_lev-true_samp44k.flac | False | True | 44k | 180.9KB |
+7 | 07_001_NiRed-false_lev-false_samp16k.flac | False | False | 16k | 68.1KB |
+8 | 08_001_NiRed-false_lev-false_samp44k.flac | False | False | 44k | 160.2KB |</p>
+<p>As far as the file size is concerned, if you set &ldquo;sample rate hertz&rdquo; to 16k, the file size will drop sharply. This is normal. It was unclear how &ldquo;noise reduction&rdquo; and &ldquo;volume control&rdquo; affect the file size.</p>
+<p>By the way, the platinum mining industry.</p>
+<ul>
+<li>Noise reduction processing → True,</li>
+<li>Volume control → True</li>
+<li>sampling rate → 16k</li>
+</ul>
+<p>This is the same processing as No. 1 in.</p>
+<h2 id="method-of-verification">Method of verification</h2>
+<h3 id="execution-method">Execution method</h3>
+<p>The execution method of Google Speech API was as <a href="https://qiita.com/ysdyt/items/bc22eb04d90eb074cf9d">previous article</a>.</p>
+<h3 id="evaluation-methods">Evaluation methods</h3>
+<p>Since it is truly tedious to check whether each character is correctly transcribed, here we will roughly qualitatively check which parameter produces the most accurate transcription.</p>
+<p>However, since it is difficult to evaluate if it is only that, let&rsquo;s consider it as a quantitative result.</p>
+<ul>
+<li>Total number of transcriptions</li>
+<li>Total number of words extracted by mecab (duplicate)</li>
+<li>Number of nouns extracted by mecab (duplicate)</li>
+<li>Total number of words extracted by mecab (no duplication)</li>
+<li>Number of nouns extracted by mecab (no duplication)</li>
+</ul>
+<p>I will put out about as an evaluation item.</p>
+<h2 id="result">result</h2>
+<h3 id="quantitative-result">Quantitative result</h3>
+<p>The value of the quantification result is as follows.</p>
+<p>No. | File name | Noise reduction processing | Volume control | sample rate hertz | Transcribed characters | Total number of words with duplication | Number of noun words with duplication | Total number of words without duplication | Number of noun words without duplication |
+| &mdash;- | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | - &mdash;&mdash;&mdash;&mdash; | &mdash;&mdash;&ndash; | &mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | &mdash;&mdash;&mdash;- &mdash;&mdash; | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash; | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | &mdash; &mdash;&mdash;&mdash;&mdash;&mdash; | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; |
+1 | 01_001_NoiRed-true_lev-true_samp16k.flac | True | True | 16k | 16849 | 9007 | 2723 | 1664 | 1034 |
+2 | 02_001_NoiRed-true_lev-true_samp44k.flac | True | True | 44k | 16818 | 8991 | 2697 | 1666 | 1030 |
+3 | 03_001_NoiRed-true_lev-false_samp16k.flac | True | False | 16k | 16537 | 8836 | 2662 | 1635 | 1026 |
+4 | 04_001_NoiRed-true_lev-false_samp44k.flac | True | False | 44k | 16561 | 8880 | 2651 | 1659 | 1019 |
+5 | 05_001_NiRed-false_lev-true_samp16k.flac | False | True | 16k | 17219 | 9191 | 2758 | 1706 | 1076 |
+6 | 06_001_NiRed-false_lev-true_samp44k.flac | False | True | 44k | 17065 | 9118 | 2727 | 1675 | 1055 |7 | 07_001_NiRed-false_lev-false_samp16k.flac | False | False | 16k | 16979 | 9045 | 2734 | 1679 | 1047 |
+8 | 08_001_NiRed-false_lev-false_samp44k.flac | False | False | 44k | 17028 | 9120 | 2727 | 1664 | 1040 |</p>
+<p>I made a graph because it is a little hard to understand if it is a table.</p>
+<img width="596" alt="Screenshot 2020-01-02 21.13.00.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/0f36ee77-34d4-640e-f15f-b1987a2c4cf5.png">
+<img width="710" alt="Screenshot 2020-01-02 21.13.40.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/ce0739e0-17bd-6f4a-0fc8-223bd71e852f.png">
+<img width="692" alt="Screenshot 2020-01-02 21.13.55.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/c13a13b3-e63e-2ddf-7c44-0a4b82a38744.png">
+<ul>
+<li>Considering all the items <strong>The best result was No.5</strong> (No noise reduction process, volume adjustment, sampling 16kHz)</li>
+<li><strong>No.3 or No.4</strong> was bad.</li>
+</ul>
+<p>What can be said from the quantitative results is</p>
+<ul>
+<li>
+<p>Noise reduction processing is better <strong>No (False)</strong></p>
+</li>
+<li>
+<p>The volume adjustment process should be <strong>Yes (True)</strong></p>
+</li>
+<li>
+<p>Sampling is more affected by the presence or absence of &ldquo;noise reduction processing&rdquo; and &ldquo;volume adjustment processing&rdquo;, so it can be said that there is almost no difference between 16kHz or 44kHz, but strictly speaking, &ldquo;noun words without duplication&rdquo; In terms of &ldquo;number&rdquo;, 16kHz is always a slightly better result, so 16kHz seems better.</p>
+</li>
+</ul>
+<h3 id="qualitative-result">qualitative result</h3>
+<p>Qualitatively confirm the transcription results of No. 5 that was the best and No. 3 that was bad (or No. 4 was okay, but for the time being).</p>
+<h4 id="transcription-result">Transcription result</h4>
+<p>The images are arranged on the left and right sides so that it is easy to compare the range of one part of the whole transcription. The left is No.5 and the right is No.3.</p>
+<img width="725" alt="Screenshot 2020-01-02 10.35.14.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/377a88a8-60ff-031d-1107-8565a560700c.png">
+<p>I don&rsquo;t really understand.</p>
+<h4 id="frequent-nouns">Frequent nouns</h4>
+<p>I&rsquo;m not sure, so let&rsquo;s compare the &ldquo;noun words without duplication&rdquo; and &ldquo;the counts&rdquo; output from No. 5 and No. 3, respectively. Let&rsquo;s try displaying the words that appeared 11 times or more.</p>
+<img width="459" alt="Screenshot 2020-01-02 20.38.27.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/0656b516-c9d8-835b-7d94-022e320141c1.png">
+<p>Frequently occurring words look almost the same.</p>
+<h4 id="word-cloud">word cloud</h4>
+<p>By the way, there is no particular increase in information, but I&rsquo;ll give you a word cloud and look at it. No. 5 on the left and No. 3 on the right.</p>
+<p>By the way, &ldquo;Shochu&rdquo; is a transcription error of &ldquo;resident&rdquo;.</p>
+<img width="716" alt="Screenshot 2020-01-02 20.44.06.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/c1f9f5d2-cf72-6b0c-966b-06a7808c6a04.png">
+<p>#Summary</p>
+<p>Of the three verified items, the combination that gave the best quantitative results is:</p>
+<ul>
+<li>Noise reduction processing → None</li>
+<li>Volume adjustment process → Yes</li>
+<li>sample rate hertz → 16kHz</li>
+</ul>
+<p>have become. As stated in the API formula, it seems better that there is no noise reduction processing. On the other hand, it seems better for the API that the volume is clear (not small) because there should be volume adjustment processing. Lastly, it said that what was recorded at 16 kHz or more should not be resampled, but even when recording at 44 kHz, it seems that it is better to resample to 16 kHz in terms of API (However, it does not seem to affect the big picture. But.)</p>
+<p>If you qualitatively compare the transcription result output by the combination of the best performing items (No.5) and the transcription result output by the combination of the worst performing items (No.3), the transcription It seems that there is almost no difference in the frequently used words that have been successful, and it was found that the difference in parameters does not make a big difference in the content of the transcription itself. Although it may be possible that a new transcription is successful for a word that rarely appears, it has not been confirmed because it is out of the scope of this verification (because there is no energy to confirm that much) ..</p>
+<p>The mystery of &ldquo;80% of the characters can be transcribed with rebuild.fm&rdquo; deepens, but I think that the accuracy of the transcription of the Google Speech API is the limit in terms of the quality of the sound source that can be recorded. The road to automatic transcription is still steep.</p>
+<h2 id="future-work">Future Work</h2>
+<p>I would like to try the best-accuracy Google Speech API transcription result obtained this time vs. Amazon Transcribe.</p>
+<p>In many of the &ldquo;compared&rdquo; articles I have seen, I often transcribe on a few lines (or minutes) to say good/bad. Or, there are many things we do for &ldquo;too clear sound sources&rdquo; such as news videos.</p>
+<p>About Transcribe <a href="https://note.com/sangmin/n/nf404e9945f48">Buzzing blog</a> also talks with high accuracy by transcribing in English. It is well known that English is highly accurate in the field of natural language processing, but what is important about it is Japanese.</p>
+<p>What I would like to know is how much can only API fight against Japanese sound sources, noisy sound sources such as podcasts, long sound sources of about 1h, and sound sources where multiple people are crosstalking So I would like to verify it.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

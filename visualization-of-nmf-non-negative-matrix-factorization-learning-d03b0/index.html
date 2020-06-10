@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Visualization of NMF (non-negative matrix factorization) learning | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Visualization of NMF (non-negative matrix factorization) learning</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 6, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nmf"> NMF</a></code></small>
+
+</p>
+<pre><code>This article is from the Furukawa Laboratory Advent_calendar 6th day.
+</code></pre>
+<p>This article was written by a student of Furukawa Lab as part of their studies. The content may be ambiguous or the expressions may be slightly different.</p>
+<p>#Introduction
+Since I studied NMF, I will explain it as easily as possible.
+What is NMF? I hope it helps those who are studying NMF for the first time (*^^)v
+In the second half, we visualize the learning process.
+#NMF(Non-negative Matrix Factorization)
+NMF decomposes and approximates matrix $Y$ into two nonnegative matrix $W,H$ under nonnegative constraints. In other words, it looks like the figure below.</p>
+<p>$$
+y_{mn}\simeq\sum_{k} w_{m k} h_{k n}
+$$</p>
+<p>$$
+\boldsymbol{Y} \simeq \boldsymbol{W} \boldsymbol{H} \boldsymbol{=} \boldsymbol{\hat{Y}}
+$$</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/448503/8054fa40-6506-062e-f1d4-8db4870658e3.png" alt="image.png">
+The point is that the matrices $Y,W,H,\hat{Y}$ are all non-negative (no negative values). That is, $Y\geq0,W\geq0,H\geq0,\hat{Y}\geq0$. The NMF algorithm updates $W,H$ so that the inner product of $W,H$, $\hat{Y}$, is as close as possible to the original data, $Y$. When calculating the update formula, some parts are difficult to calculate analytically, so replace the formula using Jensen&rsquo;s inequality. The update formula is listed at the end. (When using Frobenius)</p>
+<pre><code class="language-math" data-lang="math">\begin{equation}
+\begin{aligned}
+D_{\mathrm{EU}}(\boldsymbol{W}, \boldsymbol{H}) &amp;=\|\boldsymbol{Y}-\boldsymbol{W} \boldsymbol{H}\|_{F}^{2 } \\
+&amp;=\sum_{m, n}\left|y_{m, n}-\sum_{k} w_{m, k} h_{k, n}\right|^{2}\\
+&amp;=\sum_{m, n}\left(\left|y_{m, n}\right|^{2}-2 x_{m, n} \sum_{k} w_{m, k} h_{k , n}+\underset{Analytical calculation difficulty}{\left|\sum_{k} w_{m, k} h_{k, n}\right|^{2}}\right)
+\end{aligned}
+\end{equation}
+
+</code></pre><div align="center">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/448503/e79be43a-006a-1605-ae39-89e2e012e619.png" alt="attribute" title= "Title">
+</div>
+The inequality of Jensen!
+<pre><code class="language-math" data-lang="math">
+\begin{equation}
+\lambda_{k, m, n}=\frac{w_{m, k} h_{k, n}}{\sum_{k} w_{m, k} h_{k, n}}
+\end{equation}
+</code></pre><pre><code class="language-math" data-lang="math">\begin{equation}
+G:=\sum_{m, n}\left(\left|y_{m, n}\right|^{2}-2 y_{m, n} \sum_{k} w_{m, k} h_{ k, n}+\sum_{k} \frac{w_{m, k}^{2} h_{k, n}^{2}}{\lambda_{k, m, n}}\right)
+\end{equation}
+</code></pre><p>The above equation is partially differentiated to obtain the following two equations. Optimal $W,H$ is found by repeating the following formulas the number of times of learning.</p>
+<pre><code class="language-math" data-lang="math">\begin{equation}
+\begin{aligned}
+w_{mk} \leftarrow w_{mk} \frac{(\boldsymbol{Y} \boldsymbol{H})_{mn}}{\left(\boldsymbol{W} \boldsymbol{H} \boldsymbol{H}^ {T}\right)_{mk}}
+\end{aligned}
+\end{equation}
+</code></pre><pre><code class="language-math" data-lang="math">\begin{equation}
+\begin{aligned}
+h_{kn} \leftarrow h_{kn} \frac{\left(\boldsymbol{W}^{T} \boldsymbol{Y}\right)_{mn}}{\left(\boldsymbol{W}^{T } \boldsymbol{W} \boldsymbol{H}\right)_{mn}}
+\end{aligned}
+\end{equation}
+</code></pre><p>#NMF implementation</p>
+<h2 id="2d-coordinate-implementation">2D coordinate implementation</h2>
+<p>Let&rsquo;s implement NMF in python for better understanding!
+Here, the 2D coordinates are approximated by NMF.
+The figure on the left is an 80-point plot with noise added to the linear function. This time, this is the observation data $Y$.
+If you decompose this data $Y$ with NMF and restore it, it will be the right figure ($\hat{Y}$). You can get a good approximation.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/448503/6bc7e34e-0467-cd01-7b0e-c6d0a8f6ca79.png" alt="image.png">
+Next, I will explain about $W and H$. In 2D coordinates, $W,H$ can be interpreted as weights and basis vectors. This time, we can interpret $W$ as a weight and $H$ as a basis vector. The figure on the right shows the basis vectors actually plotted. In other words, the data point can be expressed by adding these two vectors.</p>
+<h2 id="learning">Learning</h2>
+<p>Here, we will visualize the state of learning. ~~ What do you mean by visualization? ~~
+The left figure is the data point created by the $cos$ function. The figure on the right shows how you are learning with NMF.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/448503/5c8a89b7-087a-551d-838d-90797535b73b.gif" alt="NMF_cos2.gif">
+##python code
+This is the animation code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> matplotlib.animation <span style="color:#f92672">as</span> anm
+<span style="color:#f92672">import</span> matplotlib.cm <span style="color:#f92672">as</span> cm
+<span style="color:#f92672">from</span> sklearn.decomposition <span style="color:#f92672">import</span> NMF
+<span style="color:#f92672">from</span> sklearn <span style="color:#f92672">import</span> decomposition
+
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(seed<span style="color:#f92672">=</span><span style="color:#ae81ff">32</span>)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">true_fun</span>(X):
+      <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>cos(X)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+
+
+X<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(<span style="color:#ae81ff">80</span>)<span style="color:#f92672">*</span><span style="color:#ae81ff">4</span><span style="color:#f92672">+</span><span style="color:#ae81ff">0.2</span>
+Y<span style="color:#f92672">=</span>true_fun(X)
+Y<span style="color:#f92672">=</span>Y<span style="color:#f92672">+</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0.1</span>,<span style="color:#ae81ff">80</span>)<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>
+
+x<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>zeros([<span style="color:#ae81ff">80</span>,<span style="color:#ae81ff">2</span>])
+x[:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">=</span>X
+x[:,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">=</span>Y
+
+
+
+
+k <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+m, n <span style="color:#f92672">=</span> <span style="color:#ae81ff">80</span>, <span style="color:#ae81ff">2</span>
+t<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+
+
+vecter_x<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>
+vecter_y<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(seed<span style="color:#f92672">=</span><span style="color:#ae81ff">32</span>)
+
+U <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>uniform(low<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, high<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, size<span style="color:#f92672">=</span>(m, k)))
+V <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>uniform(low<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, high<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, size<span style="color:#f92672">=</span>(n, k)))
+
+xx<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">50</span>)
+
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">4.5</span>))
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(t):
+
+
+    
+    <span style="color:#66d9ef">global</span> U,V
+    U <span style="color:#f92672">=</span> U <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>dot(x, V) <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>dot(np<span style="color:#f92672">.</span>dot(U, V<span style="color:#f92672">.</span>T), V)
+    V <span style="color:#f92672">=</span> V <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>dot(U<span style="color:#f92672">.</span>T, x)<span style="color:#f92672">.</span>T <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>dot(U<span style="color:#f92672">.</span>T, np<span style="color:#f92672">.</span>dot(U, V<span style="color:#f92672">.</span>T))<span style="color:#f92672">.</span>T
+    
+       
+    
+    NMF <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(U, V<span style="color:#f92672">.</span>T)
+   
+
+
+
+    <span style="color:#66d9ef">print</span>(NMF<span style="color:#f92672">.</span>shape)
+
+
+
+    plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">122</span>)
+    plt<span style="color:#f92672">.</span>cla()
+    plt<span style="color:#f92672">.</span>title(t)
+    plt<span style="color:#f92672">.</span>xlim((<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">4.5</span>))
+    plt<span style="color:#f92672">.</span>ylim((<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">3.3</span>))
+    plt<span style="color:#f92672">.</span>scatter(NMF[:,<span style="color:#ae81ff">0</span>], NMF[:,<span style="color:#ae81ff">1</span>],s<span style="color:#f92672">=</span><span style="color:#ae81ff">60</span>,cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;blues&#39;</span>,color<span style="color:#f92672">=</span>cm<span style="color:#f92672">.</span>jet((NMF[:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">0.25</span>)),edgecolors<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;black &#39;</span>,linewidths<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+    plt<span style="color:#f92672">.</span>quiver(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,V[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>],V[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>],angles<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;xy&#39;</span>,scale_units<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;xy&#39;</span>,scale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    plt<span style="color:#f92672">.</span>quiver(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,V[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>],V[<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>],angles<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;xy&#39;</span>,scale_units<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;xy&#39;</span>,scale<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    
+
+
+    plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">121</span>)
+    plt<span style="color:#f92672">.</span>cla()
+    plt<span style="color:#f92672">.</span>xlim((<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">4.5</span>))
+    plt<span style="color:#f92672">.</span>ylim((<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">3.3</span>))
+    plt<span style="color:#f92672">.</span>scatter(X, Y,s<span style="color:#f92672">=</span><span style="color:#ae81ff">60</span>,cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;blues&#39;</span>,color<span style="color:#f92672">=</span>cm<span style="color:#f92672">.</span>jet((x[:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">0.25</span>)),edgecolors<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;black&#39;</span>,linewidths<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+
+    
+    
+
+
+ani <span style="color:#f92672">=</span> anm<span style="color:#f92672">.</span>FuncAnimation(fig, update,interval <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span>, frames <span style="color:#f92672">=</span> <span style="color:#ae81ff">50</span>)
+<span style="color:#75715e">#ani.save(&#34;NMF_cos2.gif&#34;, writer =&#39;imagemagick&#39;) #Use when saving</span>
+
+</code></pre></div><h1 id="references">References</h1>
+<p>[1] <a href="https://qiita.com/nozma/items/d8dafe4e938c43fb7ad1">https://qiita.com/nozma/items/d8dafe4e938c43fb7ad1</a>
+[2] <a href="http://r9y9.github.io/blog/2013/07/27/nmf-euclid/">http://r9y9.github.io/blog/2013/07/27/nmf-euclid/</a>
+[3] <a href="https://qiita.com/mamika311/items/d920be626c343bcb423a">https://qiita.com/mamika311/items/d920be626c343bcb423a</a>
+[4] <a href="https://qiita.com/sumita_v09/items/d22850f41257d07c45ea">https://qiita.com/sumita_v09/items/d22850f41257d07c45ea</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

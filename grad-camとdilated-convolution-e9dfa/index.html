@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Grad-CAMとdilated convolution | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Grad-CAMとdilated convolution</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/hard"> Hard</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/grad-cam"> Grad-CAM</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Grad-CAM is a good way to visualize where the model looks and discriminates.
+However, as a personal complaint, Grad-CAM has a low resolution of (14,14) for the image size (224,224).
+The reason why the resolution of Grad-CAM is low is that pooling is included 4 times in VGG16 model. However, except for the pooling layer, only the short-distance features of the image can be extracted, and the long-distance features cannot be extracted.
+I thought that high resolution Grad-CAM could be obtained by using dilated convolution, so I tried to create an equivalent model of VGG16 that uses dilated convolution.
+As a result, the resolution of Grad-CAM was increased, but it was not the original high resolution.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/c9053d23-ec4c-48dc-6721-85eb7354f616.jpeg" alt="gradcam.jpg"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/4c0d4823-f567-305f-1264-aa3eebec9a7a.jpeg" alt="gradcam.jpg">
+Left: normal Grad-CAM, right: Grad-CAM using dilated convolution</p>
+<p>What is #dilated convolution
+As shown in the figure below, this is a method of convolving a filter with missing tooth gaps.
+If you increase dilation_rate, you can convolve a long distance with a small filter size without using pooling. If you use this, the image size will not decrease because pooling is not used.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/58f7d082-03f1-c405-674b-8ba55b9cafad.png" alt="image.png"></p>
+<p>#model
+I created a model written in Keras below. This model is named dilated_VGG16 model for convenience.
+This allows you to compute long-distance convolutions with size (224,224) by adjusting dilation_rate.
+Therefore, the resolution before full combination has a resolution of (224,224) instead of (14,14).
+The name of the final convolution layer is&rsquo;block5_conv3&rsquo; for later Grad-CAM.
+Notice that the VGG16 and dilated_VGG16 models have the same number of parameters.</p>
+<pre><code class="language-python:" data-lang="python:">    inputs = Input(shape=(224,224,3))
+    x = Conv2D( 64, (3, 3), padding='same', activation='relu', dilation_rate=1)(inputs)
+    x = Conv2D( 64, (3, 3), padding='same', activation='relu', dilation_rate=1)(x)
+    x = Conv2D(128, (3, 3), padding='same', activation='relu', dilation_rate=2)(x)
+    x = Conv2D(128, (3, 3), padding='same', activation='relu', dilation_rate=2)(x)
+    x = Conv2D(256, (3, 3), padding='same', activation='relu', dilation_rate=4)(x)
+    x = Conv2D(256, (3, 3), padding='same', activation='relu', dilation_rate=4)(x)
+    x = Conv2D(256, (3, 3), padding='same', activation='relu', dilation_rate=4)(x)
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', dilation_rate=8)(x)
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', dilation_rate=8)(x)
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', dilation_rate=8)(x)
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', dilation_rate=16)(x)
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', dilation_rate=16)(x)
+    x = Conv2D(512, (3, 3), padding='same', activation='relu', dilation_rate=16, name='block5_conv3')(x)
+    x = MaxPooling2D(pool_size=32)(x)
+    x = Flatten()(x)
+    x = Dense(4096, activation='relu')(x)
+    x = Dense(4096, activation='relu')(x)
+    y = Dense(1000, activation='softmax')(x)
+    
+    model = Model(inputs=inputs, outputs=y)
+</code></pre><p>##dilated_VGG16</p>
+<pre><code class="language-python:" data-lang="python:">Layer (type) Output Shape Param #
+=================================================== ===============
+input_1 (InputLayer) (None, 224, 224, 3) 0
+_________________________________________________________________
+conv2d_1 (Conv2D) (None, 224, 224, 64) 1792
+_________________________________________________________________
+conv2d_2 (Conv2D) (None, 224, 224, 64) 36928
+_________________________________________________________________
+conv2d_3 (Conv2D) (None, 224, 224, 128) 73856
+_________________________________________________________________
+conv2d_4 (Conv2D) (None, 224, 224, 128) 147584
+_________________________________________________________________
+conv2d_5 (Conv2D) (None, 224, 224, 256) 295168
+_________________________________________________________________
+conv2d_6 (Conv2D) (None, 224, 224, 256) 590080
+_________________________________________________________________
+conv2d_7 (Conv2D) (None, 224, 224, 256) 590080
+_________________________________________________________________
+conv2d_8 (Conv2D) (None, 224, 224, 512) 1180160
+_________________________________________________________________
+conv2d_9 (Conv2D) (None, 224, 224, 512) 2359808
+_________________________________________________________________
+conv2d_10 (Conv2D) (None, 224, 224, 512) 2359808
+_________________________________________________________________
+conv2d_11 (Conv2D) (None, 224, 224, 512) 2359808
+_________________________________________________________________
+conv2d_12 (Conv2D) (None, 224, 224, 512) 2359808
+_________________________________________________________________
+block5_conv3 (Conv2D) (None, 224, 224, 512) 2359808
+_________________________________________________________________
+max_pooling2d_1 (MaxPooling2 (None, 7, 7, 512) 0
+_________________________________________________________________
+flatten_1 (Flatten) (None, 25088) 0
+_________________________________________________________________
+dense_1 (Dense) (None, 4096) 102764544
+_________________________________________________________________
+dense_2 (Dense) (None, 4096) 16781312_________________________________________________________________
+dense_3 (Dense)              (None, 1000)              4097000
+=================================================================
+Total params: 138,357,544
+Trainable params: 138,357,544
+Non-trainable params: 0
+_________________________________________________________________
+</code></pre><p>##参考：VGG16</p>
+<pre><code class="language-python:" data-lang="python:">_________________________________________________________________
+Layer (type)                 Output Shape              Param #
+=================================================================
+input_2 (InputLayer)         (None, 224, 224, 3)       0
+_________________________________________________________________
+block1_conv1 (Conv2D)        (None, 224, 224, 64)      1792
+_________________________________________________________________
+block1_conv2 (Conv2D)        (None, 224, 224, 64)      36928
+_________________________________________________________________
+block1_pool (MaxPooling2D)   (None, 112, 112, 64)      0
+_________________________________________________________________
+block2_conv1 (Conv2D)        (None, 112, 112, 128)     73856
+_________________________________________________________________
+block2_conv2 (Conv2D)        (None, 112, 112, 128)     147584
+_________________________________________________________________
+block2_pool (MaxPooling2D)   (None, 56, 56, 128)       0
+_________________________________________________________________
+block3_conv1 (Conv2D)        (None, 56, 56, 256)       295168
+_________________________________________________________________
+block3_conv2 (Conv2D)        (None, 56, 56, 256)       590080
+_________________________________________________________________
+block3_conv3 (Conv2D)        (None, 56, 56, 256)       590080
+_________________________________________________________________
+block3_pool (MaxPooling2D)   (None, 28, 28, 256)       0
+_________________________________________________________________
+block4_conv1 (Conv2D)        (None, 28, 28, 512)       1180160
+_________________________________________________________________
+block4_conv2 (Conv2D)        (None, 28, 28, 512)       2359808
+_________________________________________________________________
+block4_conv3 (Conv2D)        (None, 28, 28, 512)       2359808
+_________________________________________________________________
+block4_pool (MaxPooling2D)   (None, 14, 14, 512)       0
+_________________________________________________________________
+block5_conv1 (Conv2D)        (None, 14, 14, 512)       2359808
+_________________________________________________________________
+block5_conv2 (Conv2D)        (None, 14, 14, 512)       2359808
+_________________________________________________________________
+block5_conv3 (Conv2D)        (None, 14, 14, 512)       2359808
+_________________________________________________________________
+block5_pool (MaxPooling2D)   (None, 7, 7, 512)         0
+_________________________________________________________________
+flatten (Flatten)            (None, 25088)             0
+_________________________________________________________________
+fc1 (Dense)                  (None, 4096)              102764544
+_________________________________________________________________
+fc2 (Dense)                  (None, 4096)              16781312
+_________________________________________________________________
+predictions (Dense)          (None, 1000)              4097000
+=================================================================
+Total params: 138,357,544
+Trainable params: 138,357,544
+Non-trainable params: 0
+_________________________________________________________________
+</code></pre><p>#VGG16重みの流用
+dilated_VGG16のモデルの問題としてpoolingを使わないため画像サイズが大きく学習に非常に時間がかかることが挙げられます。深い層の畳み込み時間は画像比率からVGG16の<strong>16*16=256倍</strong>もかかるのでこのモデルで学習を行うのはおそらく現実的ではないように考えられます。
+下記のように書いてVGG16の重みをdilated_VGG16に流用しました。
+これはVGG16とdilated_VGG16のパラメータ数が等しいので可能です。</p>
+<pre><code class="language-python:" data-lang="python:">    model1 = build_dilated_model()
+    model2 = VGG16(include_top=True, weights='imagenet')
+
+    model1.set_weights(model2.get_weights())
+</code></pre><p>#分類精度
+VGG16重みを使ったdilated_VGG16でいつもの画像の分類予測を行いました。
+分類精度はdilated_VGG16で非常に劣化してましたが、多少は有効のようです。
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/7428005a-8d70-6e22-b73f-fb3f30ffd2f9.png" alt="cat_dog.png">
+##VGG16重みを使ったdilated_VGG16での予測</p>
+<pre><code>Model prediction:
+        Saint_Bernard   (247)   with probability 0.029
+        boxer           (242)   with probability 0.026
+        whippet         (172)   with probability 0.020
+        tiger_cat       (282)   with probability 0.019
+        vacuum          (882)   with probability 0.017
+</code></pre><p>##参考：VGG16での予測</p>
+<pre><code>Model prediction:
+        boxer           (242)   with probability 0.420
+        bull_mastiff    (243)   with probability 0.282
+        tiger_cat       (282)   with probability 0.053
+        tiger           (292)   with probability 0.050
+        Great_Dane      (246)   with probability 0.050
+</code></pre><p>#Grad-CAM結果
+boxer予測の場合のGrad-CAM結果を書かせました。The normal VGG16 Grad-CAM map has only (14,14) resolution, but dilated_VGG16 has (224,224) resolution. However, the grid pattern appeared, and it was not a high resolution.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/c9053d23-ec4c-48dc-6721-85eb7354f616.jpeg" alt="gradcam.jpg"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/4c0d4823-f567-305f-1264-aa3eebec9a7a.jpeg" alt="gradcam.jpg">
+Left: normal Grad-CAM, right: Grad-CAM using dilated convolution</p>
+<p>#Summary
+I tried dilated convolution to get a high resolution Grad-CAM, but it didn&rsquo;t work.
+When I searched, there seems to be a solution for the grid-like pattern of dilated convolution, and the following paper was found.
+<a href="https://www.cs.princeton.edu/~funk/drn.pdf">https://www.cs.princeton.edu/~funk/drn.pdf</a>
+(I haven&rsquo;t read the contents&hellip;)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/b4e8df2c-c8ff-f56a-0fc5-a0cf175493e9.png" alt="image.png">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/299928/fc06f716-e453-d196-f572-1d7721b51c77.png" alt="image.png"></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Two ways to use type() | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Two ways to use type()</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 3, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>When I read the code around Django&rsquo;s Manager at work
+I found an unfamiliar usage of <code>type()</code>.</p>
+<p>GitHub link is here [https://github.com/django/django/blob/master/django/db/models/manager.py#L100-L108)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#a6e22e">@classmethod</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">from_queryset</span>(cls, queryset_class, class_name<span style="color:#f92672">=</span>None):
+    <span style="color:#66d9ef">if</span> class_name <span style="color:#f92672">is</span> None:
+        class_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">From</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">%</span>(cls<span style="color:#f92672">.</span>__name__, queryset_class<span style="color:#f92672">.</span>__name__)
+    <span style="color:#66d9ef">return</span> type(class_name, (cls,), {
+        <span style="color:#e6db74">&#39;_queryset_class&#39;</span>: queryset_class,
+        <span style="color:#f92672">**</span>cls<span style="color:#f92672">.</span>_get_queryset_methods(queryset_class),
+    })
+</code></pre></div><p>Three arguments are passed to type&hellip;???
+what&rsquo;s this?</p>
+<p>When I checked it, it was written in the <a href="https://docs.python.org/ja/3/library/functions.html#type">Documentation</a> of the Python standard library.
+(Yeah)</p>
+<p>Although it looks almost like a quotation, I will briefly summarize it.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The behavior of __type() changes depending on the number of arguments. __</p>
+<hr>
+<h3 id="1-maybe-common-usage">1. (Maybe) common usage</h3>
+<blockquote>
+<p>With only one argument, return the type of object. The return value is a type object, typically the same object returned by object.<strong>class</strong>. (Quoted from Python documentation)</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Bar</span>:
+<span style="color:#f92672">...</span> <span style="color:#66d9ef">pass</span>
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Foo</span>(Bar):
+<span style="color:#f92672">...</span> <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>Prepare <code>class Bar</code> and <code>class Foo</code> which inherits it.</p>
+<p>At this time, the behavior of type() is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> foo <span style="color:#f92672">=</span> Foo()
+<span style="color:#f92672">&gt;&gt;&gt;</span> type(foo)
+<span style="color:#f92672">&lt;</span>class<span style="color:#e6db74">&#39;__main__.Foo&#39;</span><span style="color:#f92672">&gt;</span>
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> type(foo) <span style="color:#f92672">is</span> Foo
+True
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> type(foo) <span style="color:#f92672">is</span> Bar
+False
+</code></pre></div><p>Depending on the case, let&rsquo;s use it properly with <code>isinstance()</code>.</p>
+<p>That was the story I knew.</p>
+<h3 id="2-unexpected-usage">2. Unexpected usage</h3>
+<p><code>class type(name, bases, dict)</code></p>
+<blockquote>
+<p>With three arguments, returns a new type object. It is essentially a dynamic form of the class statement.
+(Quoted from Python documentation)</p>
+</blockquote>
+<p>The documentation says that the following two statements create the same type object.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">X</span>:
+<span style="color:#f92672">...</span> a <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> X <span style="color:#f92672">=</span> type(<span style="color:#e6db74">&#39;X&#39;</span>, (object,), dict(a<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>))
+</code></pre></div><p>First argument: class name to generate
+Second argument: inherited class
+Third argument: object attributes</p>
+<p>Has become.</p>
+<p>I will try it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Bar</span>:
+<span style="color:#f92672">...</span> a<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+<span style="color:#f92672">...</span>
+<span style="color:#f92672">...</span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">print_hogefuga</span>(self):
+<span style="color:#f92672">...</span> <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;hogefuga&#39;</span>)
+<span style="color:#f92672">...</span>
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> Foo <span style="color:#f92672">=</span> type(<span style="color:#e6db74">&#39;Foo&#39;</span>, (Bar,), dict(b<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>))
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> foo <span style="color:#f92672">=</span> Foo()
+<span style="color:#f92672">&gt;&gt;&gt;</span> foo<span style="color:#f92672">.</span>print_hogefuga()
+hogefuga
+<span style="color:#f92672">&gt;&gt;&gt;</span> foo<span style="color:#f92672">.</span>a
+<span style="color:#ae81ff">1</span>
+<span style="color:#f92672">&gt;&gt;&gt;</span> foo<span style="color:#f92672">.</span>b
+<span style="color:#ae81ff">2</span>
+</code></pre></div><p>I was able to create a FooClass that inherits BarClass like this.</p>
+<h2 id="summary">Summary</h2>
+<p>The above is about the usage of <code>type()</code> that I didn&rsquo;t know.</p>
+<p>There are many surprising uses other than <code>type()</code>.</p>
+<h2 id="referencecitation">Reference/Citation</h2>
+<ul>
+<li><a href="https://note.nkmk.me/python-type-isinstance/">Type function, isinstance function to get/determine type in Python
+</a>
+-Describes frequently used <code>type()</code> and <code>isinstance()</code>.</li>
+<li><a href="https://docs.python.org/ja/3/library/functions.html#type">Python built-in function document/#type</a>
+-Personally, there were many things I had never used and it was fun. It&rsquo;s a good opportunity to review it.</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

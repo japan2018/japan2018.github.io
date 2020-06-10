@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Copy consumer offset to another with kafka-python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Copy consumer offset to another with kafka-python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kafka">Kafka</a></code></small>
+
+</p>
+<pre><code>When implementing Kafka consumer, we often use languages such as Java and Scala, but I would like to use Python, which can be implemented lightly if it is not that complicated.
+</code></pre>
+<p>This time I&rsquo;d like to write a maintenance process that moves the offset of one consumer to another consumer using kafka-python of Apache Kafka library for Python.</p>
+<h1 id="consumer-offset-acquisition">Consumer offset acquisition</h1>
+<p>This time we will use KafkaAdminClient. You can also get it from KafkaConsumer, but it is complicated to subscribe or poll the consumer, so it is recommended to use this client.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> kafka <span style="color:#f92672">import</span> KafkaAdminClient
+
+<span style="color:#75715e"># consumer01 is subscribed to topic01</span>
+target_consumer_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;consumer01&#34;</span>
+
+<span style="color:#75715e">#Get KafkaAdminClient</span>
+cluster_admin <span style="color:#f92672">=</span> KafkaAdminClient(bootstrap_servers<span style="color:#f92672">=</span>bootstrap_servers)
+
+<span style="color:#75715e">#Get offset</span>
+offsets <span style="color:#f92672">=</span> cluster_admin<span style="color:#f92672">.</span>list_consumer_group_offsets(target_consumer_name)
+</code></pre></div><p>For reference, something like this will be returned.
+Offset information using the TopicPartition class as a key.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">(TopicPartition(topic<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;topic01&#39;</span>, partition<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>): OffsetAndMetadata(offset<span style="color:#f92672">=</span><span style="color:#ae81ff">14475</span>, metadata<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;aa6c00e6-ffbf-41a3-b011-6997549f6166a&#39;</span>),
+ TopicPartition(topic<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;topic01&#39;</span>, partition<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>): OffsetAndMetadata(offset<span style="color:#f92672">=</span><span style="color:#ae81ff">14494</span>, metadata<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;8fcc736c-1cb0-41b5-b111-6d55d67b3096a&#39;</span>)}
+</code></pre></div><h1 id="write-offset-to-another-consumer">Write offset to another consumer</h1>
+<p>Use KafkaConsumer to rewrite the consumer.
+Write the offset information obtained earlier to consumer02.
+If consumer does not exist, it will be created automatically.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> kafka <span style="color:#f92672">import</span> KafkaConsumer
+
+consumer_group_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;consumer02&#39;</span>
+
+consumer <span style="color:#f92672">=</span> KafkaConsumer(
+        group_id<span style="color:#f92672">=</span>consumer_group_name,
+        bootstrap_servers<span style="color:#f92672">=</span>bootstrap_servers,
+        enable_auto_commit<span style="color:#f92672">=</span>False)
+
+Write <span style="color:#75715e"># offset information (created if consumer does not exist)</span>
+consumer<span style="color:#f92672">.</span>commit(offsets)
+</code></pre></div><p>Now the offset information of the same topic as consumer01 is written in consumer02.
+When you start a subscription using consumer02, it should start from the same offset as consumer01 when you get the offset.</p>
+<p>#Subscription example</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">consumer_group_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;consumer02&#39;</span>
+
+get <span style="color:#75715e"># consumer</span>
+consumer <span style="color:#f92672">=</span> KafkaConsumer(
+        group_id<span style="color:#f92672">=</span>consumer_group_name,
+        bootstrap_servers<span style="color:#f92672">=</span>bootstrap_servers)
+
+Changed to subscribe to <span style="color:#75715e">#topic01</span>
+consumer<span style="color:#f92672">.</span>subscribe(topics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;topic01&#39;</span>])
+
+<span style="color:#75715e"># topic01 actually participate in consumer02</span>
+consumer<span style="color:#f92672">.</span>poll()
+
+<span style="color:#75715e"># Continue printing the received message</span>
+<span style="color:#66d9ef">for</span> msg <span style="color:#f92672">in</span> consumer:
+    <span style="color:#66d9ef">print</span>(msg)
+
+</code></pre></div><p>#Reference
+<a href="https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html">https://kafka-python.readthedocs.io/en/master/apidoc/KafkaConsumer.html</a>
+<a href="https://kafka-python.readthedocs.io/en/master/apidoc/KafkaAdminClient.html">https://kafka-python.readthedocs.io/en/master/apidoc/KafkaAdminClient.html</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

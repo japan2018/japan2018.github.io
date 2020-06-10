@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>In AWS SDK for Python (Boto3), let&#39;s use Resource API rather than Client API | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>In AWS SDK for Python (Boto3), let&rsquo;s use Resource API rather than Client API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lambda">lambda</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/boto3">boto3</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This article is <a href="https://qiita.com/advent-calendar/2019/aws_beginner">AWS Beginner Advent Calendar 2019</a>
+This is the 14th day article.
+I would appreciate if you could point out any mistakes.</p>
+<h1 id="wrap-up">wrap up</h1>
+<p>In Boto3, there are resource APIs (which are called with boto3.reosurce(&lsquo;service name&rsquo;)) depending on the service. The resource API is more abstract than the client API and can be implemented without writing unnecessary information, so if each API can do the same, it is better to use the resource API first.</p>
+<h1 id="article-structure">Article structure</h1>
+<p>First, let&rsquo;s reconfirm what were Boto3, the client API, and the resource API.
+After that, when both APIs are used, we will take a look at the usage patterns of SQS, S3, and DynamoDB one by one and compare them to see how they differ.
+Finally, I have written a list of services that currently provide resource APIs and their impressions.</p>
+<p>What is # Boto3
+This is the AWS SDK provided for Python, and is used when connecting to various AWS services (EC2, DynamoDB, S3, etc.) from code.
+API reference is described in the following documents.
+<a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">Boto 3 Documentation</a></p>
+<p>There are mainly low-level API, client API, and high-level API, resource API. Specifically, it is called with the following description.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Client API</span>
+boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;sqs&#39;</span>)
+
+<span style="color:#75715e"># Resource API</span>
+boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;sqs&#39;</span>)
+</code></pre></div><p>Next, check what characteristics each API has.</p>
+<h1 id="client-api-low-level-api">Client API (Low Level API)</h1>
+<p>It is a method that corresponds one-to-one with the HTTP API provided by AWS services. HTTP API
+Since it is fully mapped with, you can do all the operations that can be done with the API. However, since it is a general setting, it is necessary to directly set the parameter set in the API to the method.
+The following is an example of executing SQS send_message. QueueUrl etc. used in API are specified.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> boto3
+
+<span style="color:#75715e"># SQS client API version</span>
+sqs <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;sqs&#39;</span>)
+
+response <span style="color:#f92672">=</span> sqs<span style="color:#f92672">.</span>send_message(QueueUrl<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://sqs.us-east-2.amazonaws.com/123456789012/MyQueue&#39;</span>, MessageBody<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;...&#39;</span>)
+</code></pre></div><p>Reference source: Boto3 Client API document (send_message)
+<a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.send_message">https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.send_message</a></p>
+<ul>
+<li>URL description is added for &ldquo;QueueUrl=&rsquo;&hellip;'&rdquo;</li>
+</ul>
+<h1 id="resource-api-high-level-api">Resource API (High Level API)</h1>
+<p>It is a high-level abstraction API compared to the client API. Instead of a direct mapping with the API, it is easier for the developer to handle by putting an abstract class between them.
+Here, as an example, the example of performing send_message with resource API is described as with client API.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">queueName<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;target-queue-name&#39;</span>
+
+<span style="color:#75715e"># SQS resource API version</span>
+sqs <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;sqs&#39;</span>)
+
+response <span style="color:#f92672">=</span> sqs<span style="color:#f92672">.</span>get_queue_by_name
+                QueueName <span style="color:#f92672">=</span> queueName
+            )<span style="color:#f92672">.</span>send_message(
+                MessageBody <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;...&#39;</span>
+            )
+</code></pre></div><p>Reference source: &ldquo;I tried using &ldquo;Service Resource&rdquo; with Boto3 (Python) (Lambda)&rdquo;
+<a href="https://cloudpack.media/16114">https://cloudpack.media/16114</a></p>
+<p>Compared with the client API, you can write the message from the inquiry of the queue name without writing the SQS URL in the code. The developer does not need to be aware of the queue URL, so the developer only needs to describe the queue name.</p>
+<p>#Comparison of client API and resource API (S3)
+Then compare the S3 client API with the resource API.
+As an example, write the code to get the file name from the bucket.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Common constants (bucket and file prefix in S3)</span>
+BUCKET_NAME<span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxx-bucket&#34;</span>
+S3_PREFIX <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;image-file-done/&#34;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># S3 client API version</span>
+s3_client <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;s3&#39;</span>)
+<span style="color:#75715e"># Return type: &lt;class&#39;dict&#39;&gt;</span>
+s3_objects <span style="color:#f92672">=</span> s3_client<span style="color:#f92672">.</span>list_objects_v2(Bucket<span style="color:#f92672">=</span>BUCKET_NAME, Prefix<span style="color:#f92672">=</span>S3_PREFIX)
+
+<span style="color:#66d9ef">for</span> filename <span style="color:#f92672">in</span> s3_objects[<span style="color:#e6db74">&#39;Contents&#39;</span>]:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;client:&#39;</span><span style="color:#f92672">+</span>filename[<span style="color:#e6db74">&#39;Key&#39;</span>])
+
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># S3 resource API version</span>
+s3_resource <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)
+<span style="color:#75715e"># Return type: &lt;class&#39;boto3.resources.collection.s3.Bucket.objectsCollection&#39;&gt;</span>
+s3_objects <span style="color:#f92672">=</span> s3_resource<span style="color:#f92672">.</span>Bucket(BUCKET_NAME)<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>filter(Prefix<span style="color:#f92672">=</span>S3_PREFIX)
+
+<span style="color:#66d9ef">for</span> filename <span style="color:#f92672">in</span> s3_objects:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;resource:&#39;</span><span style="color:#f92672">+</span>filename<span style="color:#f92672">.</span>key)
+</code></pre></div><p>There is almost no change until the call, but the type after the call is different.
+If you call it with the client API, it will be returned in a dictionary type, so it is necessary to take out the data in consideration of the dictionary type format that is returned every implementation. If it is a resource API, it is an object for boto3, so you can write the code with a similar description even when using the resource API with other services.</p>
+<p>#Comparison of client API and resource API (DynamoDB)
+Finally, compare DynamoDB&rsquo;s client API and resource API.
+I don&rsquo;t really understand the Boto3 documentation here, so it seems that I often copy it by mistake, referring to other descriptions. (I&rsquo;m about myself&hellip;)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Common constants (table name, hash key name, sort key name)</span>
+TABLE_NAME<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;XXXXX_IFO&#39;</span>
+HASH_KEY_NAME<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;XXXXX_CODE&#39;</span>
+SORT_KEY_NAME<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;DATE_TIME&#39;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># DynamoDB client version</span>
+dynamodb_client <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;dynamodb&#39;</span>)
+<span style="color:#75715e"># Return type: &lt;class&#39;dict&#39;&gt;</span>
+response <span style="color:#f92672">=</span> dynamodb_client<span style="color:#f92672">.</span>get_item(
+    TableName<span style="color:#f92672">=</span>TABLE_NAME,
+    Key<span style="color:#f92672">=</span>{
+        HASH_KEY_NAME:{
+            <span style="color:#e6db74">&#39;S&#39;</span>: <span style="color:#e6db74">&#39;54620100&#39;</span>
+        },
+        SORT_KEY_NAME:{
+            <span style="color:#e6db74">&#39;S&#39;</span>: <span style="color:#e6db74">&#39;2019050621&#39;</span>
+        }
+    }
+)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># DynamoDB resource API</span>
+dynamodb_resource <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;dynamodb&#39;</span>)
+table <span style="color:#f92672">=</span> dynamodb_resource<span style="color:#f92672">.</span>Table(TABLE_NAME)
+<span style="color:#75715e"># Return type: &lt;class&#39;dict&#39;&gt;</span>
+response <span style="color:#f92672">=</span> table<span style="color:#f92672">.</span>get_item(
+    Key<span style="color:#f92672">=</span>{
+        HASH_KEY_NAME: <span style="color:#e6db74">&#39;54620100&#39;</span>,
+        SORT_KEY_NAME: <span style="color:#e6db74">&#39;2019050621&#39;</span>
+    }
+)
+</code></pre></div><p>I wrote it with the client API after a long time, but it is a bit tough because the parameters are written in the same format as the CLI. The return type itself is a dictionary type, but the operation inside the table can be done from the Table object, and the description of the Key item does not need to write the type information one by one, so it is considerably easier.</p>
+<h1 id="service-that-provides-resource-api-as-of-december-14-2019">Service that provides resource API (as of December 14, 2019)</h1>
+<p>The resource API is limited in the services provided. Specifically, the following services are supported.
+-CloudFormation
+-Cloud Watch
+-DynamoDB
+-EC2
+-Glacier
+-IAM
+-OpsWorks
+-S3
+-SNS
+-SQS</p>
+<p>Reference source: &ldquo;Boto 3 Documentation&rdquo;
+<a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">https://boto3.amazonaws.com/v1/documentation/api/latest/index.html</a></p>
+<p>When using the above service, it seems that it is necessary to consider the resource API first before using the client API. DynatoDB is a resource in Boto3&rsquo;s CodeExamples (sample document), but other EC2 and CloudWatch are clients, so it seems necessary to see not only CodeExamples but also Available Services.</p>
+<p>#Remarks
+Up until now, I have used the client API and resource API without much consciousness, so I have summarized the results of various investigations without any reflection. As you can see from the SQS example, it is not necessary to write unnecessary information in the code part, so in the future I will first check if there is a service provided by the resource API, and if it is provided, consider the client API before using it. I want to use it.
+It seems that there are many implementations written in the client API on Qiita and the net, so I would like to increase the information on the resource API by writing my own article in the future.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

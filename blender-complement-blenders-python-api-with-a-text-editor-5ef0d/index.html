@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Blender] Complement Blender&#39;s Python API with a text editor | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Blender] Complement Blender&rsquo;s Python API with a text editor</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/blender">Blender</a></code></small>
+
+</p>
+<pre><code>This is the 23rd day article of [Blender Advent Calendar 2019](https://qiita.com/advent-calendar/2019/blender).
+</code></pre>
+<p>When creating Blender scripts and add-ons, you will often edit the source code using a text editor.
+One of the advantages of using a text editor is the efficiency of development by the code completion function, but as part of the Python API provided by Blender is provided as binary data instead of Python source code, it remains as is. The code cannot be completed.
+In order to solve such a problem, a pseudo module &ldquo;<a href="https://github.com/nutti/fake-bpy-module">fake-bpy-module</a>&rdquo; that describes only the interface part of the Python API provided by Blender Was developed.</p>
+<p>By using &ldquo;fake-bpy-module&rdquo;, you can complete code regarding Blender&rsquo;s Python API with any editor that basically has code completion function.
+In this article, I will show you how to perform code completion on Visual Studio Code and PyCharm using &ldquo;fake-bpy-module&rdquo;.</p>
+<p>#Prerequisites</p>
+<p>The version of Blender targeted in this article is <strong>2.80</strong>.
+Please refer to <a href="https://github.com/nutti/fake-bpy-module#supported-blender-version">README</a> on GitHub for the version supported by &ldquo;fake-bpy-module&rdquo;.
+&ldquo;Fake-bpy-module&rdquo; works in any environment of Windows/Mac/Linux, but the complement function cannot be used unless the Python is <strong>Python 3.6</strong> or higher with Type Hint function introduced. Please be careful.</p>
+<p>In the future, we plan to provide modules for Blender 2.81 and later versions.</p>
+<h1 id="form-of-fake-bpy-module">Form of &ldquo;fake-bpy-module&rdquo;</h1>
+<p>&ldquo;Fake-bpy-module&rdquo; is provided by the following three methods.</p>
+<ol>
+<li>PyPI package</li>
+<li>Modules available on GitHub</li>
+<li>Self-made module</li>
+</ol>
+<p>In this article, we will explain the specific code completion procedure for each.</p>
+<h1 id="method-1-pypi-package">Method 1: PyPI package</h1>
+<h2 id="1-install-the-package-using-pip-command">1. Install the package using pip command</h2>
+<p>You can install &ldquo;fake-bpy-module&rdquo; registered in PyPI by using the pip command.
+Execute the following command to install &ldquo;fake-bpy-module&rdquo;.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"> $ pip install fake-bpy-module-&lt;version&gt;
+</code></pre></div><p>Here, the version of Blender is specified in <code>&lt;version&gt;</code>.
+To install &ldquo;fake-bpy-module&rdquo; for Blender 2.8, execute the following command.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"> $ pip install fake-bpy-module-2.80
+</code></pre></div><p>If you can use pip, it is easy and sure to install &ldquo;fake-bpy-module&rdquo; using pip, but if you cannot use pip, please try another method.</p>
+<h2 id="2-check-code-completion-in-the-editor">2. Check code completion in the editor</h2>
+<p>If you install the package using the pip command, you do not need to set each editor for code completion.
+Here is an example of code completion for Visual Studio Code and PyCharm respectively.</p>
+<h3 id="visual-studio-code">Visual Studio Code</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/38888/d5c3c58e-8473-a38b-08d7-cfff624122af.png" alt="vscode_completion.png"></p>
+<h3 id="pycharm">PyCharm</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/38888/2ea50b5d-6280-b652-1643-239b87b59a06.png" alt="pycharm_completion.png"></p>
+<h1 id="method-2-module-on-github">Method 2: Module on GitHub</h1>
+<h2 id="1-download-the-module-from-github">1. Download the module from GitHub</h2>
+<p>&ldquo;Fake-bpy-module&rdquo; is <a href="https://github.com/nutti/fake-bpy-module/releases">published on GitHub</a>.
+The file that summarizes the set of modules is released as <code>fake_bpy_modules_&lt;Blender version&gt;-&lt;date of creation of module&gt;.zip</code>, so you can download the necessary modules according to the environment.
+Here, <code>fake_bpy_modules_2.80-20191008. which is [module for Blender 2.80 created on October 8, 2019](https://github.com/nutti/fake-bpy-module/releases/tag/20191008). Download zip</code>.
+Unzip the file when the download is complete.</p>
+<h2 id="2-tell-the-editor-the-module-path">2. Tell the editor the module path</h2>
+<p>Tell the editor the path to the module so that you can complete your code.
+The method of telling the path to the module depends on the editor.</p>
+<h3 id="visual-studio-code-1">Visual Studio Code</h3>
+<p>To do code completion with Visual Studio Code, follow these steps:</p>
+<ol>
+<li>Download <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.python">Visual Studio Code Extention</a> of Python</li>
+<li>Click <em>[File]</em> &gt;*[Preferences]* &gt;*[Settings]*</li>
+<li>When <code>settings.json</code> opens, set the module path in <code>python.autoComplete.extraPaths</code></li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;python.autoComplete.extraPaths&#34;</span>: [
+        <span style="color:#e6db74">&#34;&lt;path-to-generated-modules&gt;&#34;</span>
+    ]
+}
+</code></pre></div><p>For &laquo;path-to-generated-modules&gt;`, specify the absolute path of the module.</p>
+<h3 id="pycharm-1">PyCharm</h3>
+<p>To do code completion with PyCharm, follow these steps:</p>
+<ol>
+<li>On Windows, click <em>[File]</em> &gt;*[Settings]* to open the *[Settings]* window, and on macOS click *[Pycharm Menu]* &gt;*[Preferences]*. Opens the Preferences* window</li>
+<li>Select <em>[Project:]</em> &gt;*[Project Interpreter]*</li>
+<li>Click the gear icon to the right of <em>[Project Interpreter:]</em></li>
+<li>Click <em>[Show All&hellip;]</em> from the popup menu that appears</li>
+<li>In the <em>[Project Interpreters]</em> window, click the <em>[Show paths for the selected Interpreter]</em> icon to display the <em>[Interpreter Paths]</em> window.</li>
+<li>Click the <em>[+]</em> icon to launch the file browser</li>
+<li>Specify the directory where the module is located and click <em>[OK]</em></li>
+<li>Click <em>[OK]</em> multiple times until the <em>[Settings]</em> window on Windows or <em>[Preferences]</em> window on macOS closes</li>
+</ol>
+<h2 id="3-check-code-completion-in-the-editor">3. Check code completion in the editor</h2>
+<p>As in the case of installing the module using the method of Method 1, you will be able to complete code in each editor.</p>
+<h1 id="method-3-make-your-own-module">Method 3: Make your own module</h1>
+<h2 id="1-download-blender-binary">1. Download Blender binary</h2>
+<p>Download the target Blender binary from the <a href="https://download.blender.org/release/">Official Blender download site</a>.
+The Blender 2.80 binaries are published at <a href="https://download.blender.org/release/Blender2.80/">https://download.blender.org/release/Blender2.80/</a>.</p>
+<h2 id="2-clone-the-blender-source-code">2. Clone the Blender source code</h2>
+<p>Run the following command to download the Blender source code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ git clone git://git.blender.org/blender.git
+</code></pre></div><h2 id="3-clone-the-fake-bpy-module-project-on-github">3. Clone the fake-bpy-module project on GitHub</h2>
+<p>Run the following command to clone the fake-bpy-module project published on GitHub.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ git clone https://github.com/nutti/fake-bpy-module.git
+</code></pre></div><h2 id="4-generate-fake-bpy-module">4. Generate &ldquo;fake-bpy-module&rdquo;</h2>
+<p>Execute the following command to generate &ldquo;fake-bpy-module&rdquo;.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd fake-bpy-module/src
+$ sh gen_module.sh &lt;source-dir&gt; &lt;blender-dir&gt; &lt;branch/tag/commit&gt; &lt;output-dir&gt; &lt;mod-version&gt;
+</code></pre></div><ul>
+<li><code>&lt;source-dir&gt;</code>: root directory of Blender source code</li>
+<li><code>&lt;blender-dir&gt;</code>: Directory where Blender binaries are located</li>
+<li><code>&lt;branch/tag/commit&gt;</code>: The branch of the Blender source code corresponding to the generated module</li>
+<li><code>&lt;output-dir&gt;</code>: Directory where the module is generated</li>
+<li><code>&lt;mod_version&gt;</code>: For the specified version, modify the API using the patch placed in the <code>mods</code> directory.</li>
+</ul>
+<p>If commands are executed continuously from 2, execute the command as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ cd fake-bpy-module/src
+$ sh gen_module.sh ../../blender &lt;Directory where Blender binary downloaded in <span style="color:#ae81ff">1</span> is located&gt; v2.80 out 2.80
+</code></pre></div><h2 id="5-tell-the-editor-the-path-to-the-module">5. Tell the editor the path to the module</h2>
+<p>Follow the method of Method 2 and tell the editor the path of the module.</p>
+<h2 id="6-check-code-completion-in-the-editor">6. Check code completion in the editor</h2>
+<p>As with the methods of Method 1 and Method 2, code completion can be performed with each editor.</p>
+<p>#SummaryI showed you how to use &ldquo;fake-bpy-module&rdquo; to code-blend the Python API of Blender on Visual Studio Code and PyCharm.
+By using code completion, you can improve the efficiency of Blender script and add-on development, so please try it.
+Although not introduced in this article, even if you do not use the PyPI package, you can find a method for code completion in all editors, not limited to Visual Studio Code and PyCharm, on the project page of GitHub <a href="httpshttp://github.com/nutti/fake-bpy-module/blob/master/docs/setup_all_text_editor.md">Documents</a> is available.
+Please refer to this as well.</p>
+<p>Since &ldquo;fake-bpy-module&rdquo; is released as OSS, <a href="https://github.com/nutti/fake-bpy-module/issues">bug report</a>and<a href="https://Contributionssuchasgithub.com/nutti/fake-bpy-module/pulls">pullrequest</a> are welcome!
+Let&rsquo;s have a fun adder development life for Blender!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

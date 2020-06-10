@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>A story of trial and error trying to create a dynamic user group in Slack | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>A story of trial and error trying to create a dynamic user group in Slack</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 6, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lambda">lambda</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/slack">Slack</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/chalice">chalice</a></code></small>
+
+</p>
+<pre><code>This article is a December 6th article of [JSL \ (Japan System Giken \) Advent Calendar 2019 \- Qiita](https://qiita.com/advent-calendar/2019/jsl).Lastyear'scalendaris[here!!](https://qiita.com/advent-calendar/2018/jsl)
+</code></pre>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>It seems useful to have dynamic user groups in Slack
+<ul>
+<li>like <code>@here</code></li>
+</ul>
+</li>
+<li>Is it possible to use Slack&rsquo;s <code>usergroups.users.update</code> API?</li>
+<li>It was possible after periodic execution using <code>Chalice</code> (Python) and <code>AWS Lambda</code></li>
+<li>I was able to do it, but I quit because there was a problem</li>
+<li>Is it suitable for the purpose?</li>
+</ul>
+<h2 id="preface">Preface</h2>
+<p>Our company is a company that has a long history but sells free working styles such as &ldquo;recommended full flex &amp; remote work without core time&rdquo;.
+All work hours are different, and about 30% are remote workers. Therefore, it is rare for everyone who has an office to come to work.</p>
+<p>However, when the way of working changes, <strong>good and bad to be discussed and issues to be solved</strong> also occur.
+This article is about trying to solve the problem of remote work.</p>
+<h2 id="chat-operation-issues-during-remote-work">Chat operation issues during remote work</h2>
+<p>Nowadays, we see that Slack&rsquo;s operation is being talked about by each company, such as prohibiting <code>@here</code> and <code>@channel</code>.
+Notifications are useful, but they can also disturb the programmer&rsquo;s concentration.</p>
+<p>Meanwhile, I had this <code>@here</code> mention on our Slack (my post&hellip;).</p>
+<p>![Screenshot 2019-12-05 18.48.56.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/67790/f9286cd9-581b-7eea-3713-(a132665605ea.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/67790/f9286cd9-581b-7eea-3713-(a132665605ea.png)</a></p>
+<p>How about that? The situation is &ldquo;a little hurry&rdquo; &ldquo;I want to notify only active users&rdquo;, so I think that it is a general usage of <code>@here</code>.</p>
+<p>But what about a remote worker?
+For remote workers, there should be no problem if the usage of the meeting room and reception room in the company building is not shared.</p>
+<p>So remote workers don&rsquo;t need this notification.</p>
+<p>Of course, you may feel sorry for notifying the remote work person of not only the notified person but also the person who notifies by <code>@here</code>.</p>
+<p>A company that &ldquo;recommends remote work&hellip;but I will give a lot of unrelated notifications!!&rdquo; would not be a comfortable working environment for programmers&hellip;?</p>
+<p>Thus, as the number of remote workers increases, it becomes important to design <strong>the notification destination for chats</strong>.</p>
+<h2 id="dynamic-mentions">Dynamic mentions</h2>
+<p>So I thought about <strong>dynamic mentions</strong>.
+I thought that I could solve this problem if there were mentions that only users who met certain conditions were notified.</p>
+<p>In this example, it will be ** &ldquo;mentions that will be notified only to those who are coming to work today&rdquo; **.</p>
+<p>Speaking of which, it&rsquo;s a dynamic mention in that <code>@here</code> also notifies only active users in the channel.</p>
+<h2 id="consider-implementation">Consider implementation</h2>
+<p>We have an in-house destination board and its REST API.
+If you use this, you can get a list of people who are at the office.
+So it would be nice to be able to mention on Slack towards the list of people who are at the office.</p>
+<p>While searching for a good API on Slack, I found an API called <code>usergroups.users.update</code>.</p>
+<p><a href="https://api.slack.com/methods/usergroups.users.update">usergroups.users.update method | Slack</a></p>
+<p>It is possible to update the users of the user group by passing the group ID to usergroup and the array of user IDs to users.</p>
+<p>So</p>
+<ol>
+<li>Get the list of people who are at the office from the API of the destination board</li>
+<li>Convert list to Slack user ID</li>
+<li>Execute <code>usergroups.users.update</code> for the user group created in advance to update the users</li>
+<li>Run this regularly</li>
+</ol>
+<p>It would be great if we could achieve!</p>
+<h2 id="utilization-technology">Utilization technology</h2>
+<ul>
+<li>Can be executed regularly</li>
+<li>Anyone can maintain</li>
+<li>If possible, do not incur operational costs</li>
+</ul>
+<p>I decided to use <code>AWS Lambda</code>.</p>
+<p>If it is Lambda, even if it operates on a weekday (20th) fixed time + 1 hour before and after (10 hours) with a feeling of every minute,
+20 * 10 * 60 = 12,000
+So you can easily afford the 1,000,000 free requests each month,</p>
+<p>I also used <code>chalice</code> to deploy Lambda</p>
+<p><a href="https://github.com/aws/chalice">aws/chalice: Python Serverless Microframework for AWS</a></p>
+<p><code>chalice</code> is a framework that can write Lambda with <code>Flask</code>-like decorator base and even create (delete) peripheral services.
+If you want to receive Http(s), Lambda is troublesome because it needs to cooperate with <code>APIGateway</code>, but it takes care of that.</p>
+<p>For example, the requirement of this time, periodic execution, can also be written with the syntax of <code>chalice</code>.</p>
+<pre><code class="language-python:" data-lang="python:">from chalice import Chalice, Rate
+
+app = Chalice(app_name=&quot;helloworld&quot;)
+
+# Automatically runs every 5 minutes
+@app.schedule(Rate(5, unit=Rate.MINUTES))
+def periodic_task(event):
+    return {&quot;hello&quot;: &quot;world&quot;}
+</code></pre><p>The final code is as follows (the part that uses the in-house API is omitted)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:src/update_usergroup.py" data-lang="python:src/update_usergroup.py"><span style="color:#a6e22e">@app.schedule</span>(Cron(<span style="color:#e6db74">&#39;0&#39;</span>, <span style="color:#e6db74">&#39;23-9&#39;</span>,<span style="color:#e6db74">&#39;?&#39;</span>,<span style="color:#e6db74">&#39;*&#39;</span>,<span style="color:#e6db74">&#39;SUN-THU&#39;</span>,<span style="color:#e6db74">&#39;*&#39;</span>))
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_in_office_usergroup</span>(event):
+    OAUTH_TOKEN <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;token_xxxx_xxxx&#39;</span>
+    <span style="color:#75715e"># UID of user group created in advance</span>
+    in_office_usergroup_uid <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;some_usergorup_uid&#39;</span>
+
+    <span style="color:#75715e"># ~ Omitted ~</span>
+
+    <span style="color:#75715e">#List of Slack IDs of users who are coming to the office from the API</span>
+    office_user_slack_ids <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;some&#39;</span>,<span style="color:#e6db74">&#39;user&#39;</span>,<span style="color:#e6db74">&#39;uids&#39;</span>]
+
+    <span style="color:#66d9ef">try</span>:
+        data <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>parse<span style="color:#f92672">.</span>urlencode(
+            (
+                (<span style="color:#e6db74">&#34;token&#34;</span>, OAUTH_TOKEN),
+                (<span style="color:#e6db74">&#34;usergroup&#34;</span>, in_office_usergroup_uid),
+                (<span style="color:#e6db74">&#34;users&#34;</span>,<span style="color:#e6db74">&#39;,&#39;</span><span style="color:#f92672">.</span>join(office_user_slack_ids)),
+
+            )
+        )
+        data <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#34;ascii&#34;</span>)
+        request <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>Request(
+            <span style="color:#e6db74">&#34;https://slack.com/api/usergroups.users.update&#34;</span>,
+            data<span style="color:#f92672">=</span>data,
+            method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;POST&#34;</span>
+        )
+        request<span style="color:#f92672">.</span>add_header(
+            <span style="color:#e6db74">&#34;Content-Type&#34;</span>,
+            <span style="color:#e6db74">&#34;application/x-www-form-urlencoded&#34;</span>
+        )
+
+        <span style="color:#66d9ef">with</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(request) <span style="color:#66d9ef">as</span> r:
+            resp <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(r<span style="color:#f92672">.</span>read())
+        logger<span style="color:#f92672">.</span>info(resp)
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;ok&#39;</span>: True}
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+        logger<span style="color:#f92672">.</span>error(e)
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;ok&#39;</span>: False}
+</code></pre></div><p>Since I use Lambda, I&rsquo;m using <code>urllib</code> without any external packages.</p>
+<p>Also, the cron expression is shifted by 9 hours by adjusting UTC so that it is set to 23-9 o&rsquo;clock Sunday-Thursday (9-18 o&rsquo;clock Monday-Friday in Japan time).
+(Isn&rsquo;t there a good way to do this?)</p>
+<h2 id="its-completed">It&rsquo;s completed&hellip;</h2>
+<p>It was released as a doya face named <code>@in_office</code>.</p>
+<p>![Screenshot 2019-12-06 10.18.37.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/67790/9edbbe5a-1e14-324e-9445-(ed0e53cc1816.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/67790/9edbbe5a-1e14-324e-9445-(ed0e53cc1816.png)</a></p>
+<p>However, there are reports that such notifications are frequently received. ..</p>
+<p>![Screenshot 2019-12-06 10.20.00.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/67790/e6337c24-bdf7-eeab-9d30-(2af1f0f54913.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/67790/e6337c24-bdf7-eeab-9d30-(2af1f0f54913.png)</a></p>
+<p>Apparently, Slackbot will send notifications when adding/deleting user groups.
+Although I made it to reduce unnecessary notifications, the number of notifications increased. This is useless&hellip;</p>
+<p>I thought, &ldquo;Is there an option to turn off notifications via the API?&rdquo;</p>
+<p>It was a choke here, and it was a function I made with a lot of effort, but it stopped operating. My name is Ami Ki.</p>
+<h2 id="looking-back">Looking back</h2>
+<p>The main reason was lack of technical verification.</p>
+<p>I started running when I said, &ldquo;I have an API! I have an idea! I&rsquo;m gonna do it!&rdquo;, and I didn&rsquo;t even try small code.
+Can the selected technology solve the problem? Is it the right way to solve the problem? Is important.</p>
+<p>On the other hand, I think the idea of designing chat notifications was good.</p>
+<p>Well, it&rsquo;s a personal development, so it&rsquo;s also a catch that I made a mistake, and this is also a technical verification!</p>
+<p>Dynamic Mention I think it&rsquo;s a pretty good idea. ..
+If you read this article, please let me know if you realize it.</p>
+<h2 id="bonus">bonus</h2>
+<p>When I made an official inquiry in poor English, I received a polite answer.
+Although it is not possible to turn off the notification with the current usergroup API (October 2019 at the time of inquiry), I would like to inform the feedback team so that I can do it in the future.</p>
+<p>I would like to try again once it is implemented!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

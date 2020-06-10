@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Data preprocessing for systems using machine learning | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Data preprocessing for systems using machine learning</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 3, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/spark"> Spark</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas"> pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/preprocessing"> preprocessing</a></code></small>
+
+</p>
+<pre><code>First Edition: March 3, 2020 &lt;br&gt;
+</code></pre>
+<p>Author: Soichi Takashige, Masahiro Ito, Hitachi, Ltd.</p>
+<p>#Introduction
+In this post, I will introduce the design know-how of data preprocessing and the performance verification results of numerical data preprocessing when designing a system incorporating a machine learning model.</p>
+<p>The first article introduces the data preprocessing of machine learning system and its design.</p>
+<p><strong>Post list:</strong></p>
+<ol>
+<li>Data preprocessing for systems that use machine learning (this post)</li>
+<li><a href="https://qiita.com/takashige/items/cf1766a404d50d4d14c9">Performance verification of data preprocessing for machine learning (numerical data) (1)</a></li>
+<li><a href="https://qiita.com/takashige/items/455d7cd1ed9bf0246f09">Performance Verification of Data Preprocessing for Machine Learning (Numerical Data) (Part 2)</a></li>
+</ol>
+<p>#Outline and flow of AI projects
+Data analysis utilizing AI technology such as machine learning is drawing attention, and the number of projects utilizing AI is increasing. In AI projects, by analyzing customer data, we create machine learning models to gain some insight and automate forecasts.
+In many cases of AI projects, 1) data scientists who are experts in data analysis play a central role in conducting PoC (Proof of Concept) to confirm the usefulness of data analysis and machine learning models. It will be implemented in two stages, in which a system engineer (SE) will put it into a production system. The PoC deliverables by the data scientists include the source code written in languages such as Python in addition to the report submitted to the customer, and SE designs and systemizes based on this.</p>
+<h1 id="challenges-in-systemization">Challenges in systemization</h1>
+<p>One of the challenges of systematization based on PoC deliverables is the increase of data volume in production environment. Since PoC is just verification, the amount of data entrusted to us by the customer is often small, and we often sample and use the data for quick verification even when there is a large amount of data. As such, PoCs typically use small amounts of data that can be processed on a single desktop machine. On the other hand, since machine learning systems perform learning based on data, they have the characteristic that the prediction accuracy increases as the amount of data increases. Therefore, a large amount of data is often used in order to improve the prediction accuracy when making it into a production system, and a machine learning system is required to have high data processing performance.</p>
+<p>In addition, while the machine learning model is handled by the data scientist, the data pre-processing is generally designed by engineers such as SEs. Data preprocessing is a technology that is closely related to the model of machine learning, but it also requires knowledge as SE such as basic design, sizing, and failure handling at the time of failure.
+At that time, it is not efficient for the SE side to redesign and re-implement the preprocessing from the beginning with cost and time. Therefore, the approach of systematization using a prototype developed by data scientists in Python etc. is effective. However, there is currently not much public information available on such design know-how.
+In this post, we will introduce the design procedure and points of data preprocessing based on the knowledge obtained from the results of performance verification, targeting SEs who have completed the PoC stage and are designing systems incorporating machine learning models. I will.</p>
+<p>#Outline of data preprocessing in machine learning system</p>
+<h2 id="data-preprocessing-in-machine-learning-system">Data preprocessing in machine learning system</h2>
+<p>In a system that uses machine learning, it is possible to perform data preprocessing mainly in three phases: learning, inference, and retraining. Figure 1 shows the outline.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/3ff9d6d8-d6a4-7e2e-15f1-208d809b5aa8.png" alt="Outline of pre-processing system"><br>
+Figure 1 Overview of machine learning utilization system</p>
+<ol>
+<li>
+<p>Data preprocessing during learning</p>
+<p>Data sets stored in various formats are transformed into a data structure suitable for learning a model, and data normalization and aggregation are performed to improve accuracy. In the pre-processing at the time of learning, there are many cases where all data are processed in a batch, and the processing amount tends to be much larger than that at the time of inference.</p>
+</li>
+<li>
+<p>Data preprocessing during inference</p>
+<p>Inference uses models to perform classification and trend predictions on data collected from real-world operations. Inference can also impose latency requirements, such as seconds, which also impose latency requirements on preprocessing.
+The data preprocessing at the time of inference is a process that performs conversion so that it has the same feature amount as at the time of learning, but it is performed only on the data to be inferred, and the process may be simplified. On the other hand, since it is necessary to execute the process each time the model is used, it is frequently called continuously in the production system.</p>
+</li>
+<li>
+<p>Data preprocessing during retraining</p>
+<p>If data that can be diverted to learning is accumulated based on actual data at the operation site, it may be used to update the model. In such a case, the same processing as the data preprocessing during learning will be performed.</p>
+</li>
+</ol>
+<h2 id="issues-and-solution-policies-in-data-preprocessing-design">Issues and solution policies in data preprocessing design</h2>
+<p>Since data scientists often perform PoC with a small amount of data, preprocessing is often implemented in Python during PoC. On the other hand, if you try to implement preprocessing in Python during systemization, the problems shown in Table 1 below will occur. Table 1 also shows the proposed solution to the problem.</p>
+<p>Table 1 Issues and solutions of data preprocessing system</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Challenges</th>
+<th>Proposed Solutions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①</td>
+<td>Preprocessing takes a very long time because the amount of target data is huge</td>
+<td>** Utilizing the big data processing platform ** If the amount of data is large, preprocessing written in Python, etc. Designed and implemented so that parallel processing can be executed on the processing platform of</td>
+</tr>
+<tr>
+<td>②</td>
+<td>When using the big data processing platform in (1), it is necessary to re-implement the pre-processing, which requires man-hours.</td>
+<td>** Pre-processing implementation with a view to systematization from the PoC stage ** No major changes when using Spark Adopt and implement Python processing implementation method that works with.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="system-design-process-that-utilizes-machine-learning">System design process that utilizes machine learning</h1>
+<p>Design a system that utilizes machine learning as shown in Figure 2. As mentioned at the beginning of this post, it is common to implement a PoC that confirms the usefulness of machine learning, and systematize the logic for which the usefulness was confirmed.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/e85cb12d-5f3d-f05c-901d-26d73f4f75ea.png" alt="Process">
+Figure 2 Overview of the design process of a system that utilizes machine learning</p>
+<p>As shown in Fig. 1, there are two major systems that utilize machine learning: learning systems and inference systems. From now on, we will deal with learning systems. In general, inference systems are</p>
+<ul>
+<li>The amount of data used in one inference is small</li>
+<li>There is a large restriction on the execution time (latency) of one inference.</li>
+</ul>
+<p>There is a tendency.</p>
+<h2 id="pre-processing-design-during-learning">Pre-processing design during learning</h2>
+<p>Table 2 shows the design items when designing and implementing the data preprocessing of the learning system. Only the parts that are characteristic of machine learning are shown here.</p>
+<p>Table 2 List of learning system design items</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Design Items</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>System Requirements</td>
+<td><ul><li>Throughput Requirements</li> <li>Total Execution Time Requirements</li> <li>Availability/Recovery Processing Requirements</li> <li>Previous Estimated total number of processing types</li></ul></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Data design</td>
+<td><ul><li>Data layout design</li> <li>Intermediate data layout design</li></ul></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Resource estimation by actual device</td>
+<td><ul><li>PoC code analysis on small data set</li> <li>Checking number of data</li> <li>Data size per record</li> li&gt;<li>Estimation of sparseness of data</li> <li>Estimation of total data size</li> <li>Estimation of training data size and intermediate data to be saved</li></ul></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Implementation</td>
+<td><ul><li>Execution platform selection (Python, Spark, etc.)</li> <li>Estimation of the number of nodes</li> <li>Estimation of the amount of memory per node</li> <li>Determining the data processing method</li> <li>Implementation considering common processing in Python and Spark</li> <li>Spark support for Python code</li></ul></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Availability design</td>
+<td><ul><li>Design of the switchback and re-execution method when processing fails</li></ul></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Operation design</td>
+<td><ul><li>Design of data preprocessing update accompanying model update</li> <li>Design of data history management and deletion after processing</li></ul></td>
+</tr>
+</tbody>
+</table>
+<h3 id="resource-estimation">Resource estimation</h3>
+<p>In the learning system, the most important point is whether the model development using the target data can be completed within the period required by the system requirements. In the PoC phase, the target data is often handled by focusing on a part of the target (devices, forms, etc.) for a part of the period, but in the subsequent systemization, the whole period and all types of data are handled. This can lead to huge amounts of data. For pre-processing, it is important to estimate the resources (number of CPUs, memory amount) required in systematization design so that processing can be completed within an acceptable processing time for large data.</p>
+<p>When determining the resources required for preprocessing, first check the input/output data size and processing time using a small data set for each processing in the preprocessing. Also, check the processing (processing with a large number of iterations) that can be expected to be effective in optimizing the processing logic, which will be described in the second and subsequent sections.</p>
+<p>Regarding the number of CPUs among the resources, estimate the processing time of the production system from the input data size of the production system based on the input data size and the processing time when using a small data set (at this time, the processing time is the data It shall be proportional to the size). By dividing this time by the processing time defined in your system requirements, you can estimate the approximate number of CPUs you will need.</p>
+<p>For the memory size, estimate the data size of each process in the production system based on the input data size of each process when using a small data set, and estimate the total size.</p>
+<h3 id="selection-of-data-processing-infrastructure">Selection of data processing infrastructure</h3>
+<p>As a base for pre-processing the data of the production pre-processing system, it is possible to determine whether to build an environment in which PoC code written in Python is executed as it is or to execute it on a distributed processing platform such as Spark. Is required.
+Basically, as a result of estimating the required resources, if the memory seems to be insufficient, Spark will be preprocessed, and if the memory amount is not a problem, Python will be preprocessed as it is.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>In this post, I have presented an overview of the data preprocessing and design of a system that uses machine learning. Next time, I will introduce the know-how for improving the performance of numerical data preprocessing using Python, and the performance verification results on an actual machine.2nd: <a href="https://qiita.com/takashige/items/cf1766a404d50d4d14c9">Performance verification of preprocessing by machine learning of numerical data (1)</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

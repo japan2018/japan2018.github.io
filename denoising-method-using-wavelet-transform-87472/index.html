@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Denoising method using wavelet transform | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Denoising method using wavelet transform</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 4, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numpy">numpy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kaggle">Kaggle</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pywt">pywt</a></code></small>
+
+</p>
+<pre><code>There was a noise removal method that I was convinced that there is a method like this in the kaggle kernel (notebook now), so I will summarize the things I examined about it below with notes.
+</code></pre>
+<h2 id="method-overview">Method overview</h2>
+<p>An analysis method for a certain signal or waveform is called <strong>wavelet transform</strong>.
+I think that I often imagine the Fourier transform as an analysis method, but the Fourier transform expands the waveform to the sum of trigonometric functions (Sain, Kosain), whereas the wavelet transform decomposes it into a waveform of any shape. You can (And there is an inverse transformation)</p>
+<p>Therefore, if you can confirm some characteristic waves (<strong>mother wavelet</strong>) in the given waveform, you can determine which time zone or rule the characteristic appears by decomposing the wave as a basis. You can check. (Coefficients that appear when decomposed are called <strong>wavelet coefficients</strong>)</p>
+<p>Therefore, if the shape of noise can be grasped, it is wavelet transformed by using it as a mother wavelet, the noise portion is replaced with 0, and then the inverse transformation is performed to obtain a noise-free waveform.</p>
+<p>##procedure</p>
+<p>Now, the function that gives the above mechanism is</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pywt
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">maddest</span>(d, axis<span style="color:#f92672">=</span>None):
+    <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>mean(np<span style="color:#f92672">.</span>absolute(d<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>mean(d, axis)), axis)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">denoise</span>(x, wavelet<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;db&#39;</span>, level<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>):
+    coeff <span style="color:#f92672">=</span> pywt<span style="color:#f92672">.</span>wavedec(x, wavelet, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;per&#34;</span>)
+    sigma <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span><span style="color:#ae81ff">0.6745</span>) <span style="color:#f92672">*</span> maddest(coeff[<span style="color:#f92672">-</span>level])
+
+    uthresh <span style="color:#f92672">=</span> sigma <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>sqrt(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>log(len(x)))
+    coeff[<span style="color:#ae81ff">1</span>:] <span style="color:#f92672">=</span> (pywt<span style="color:#f92672">.</span>threshold(i, value<span style="color:#f92672">=</span>uthresh, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;hard&#39;</span>) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> coeff[<span style="color:#ae81ff">1</span>:])
+
+    <span style="color:#66d9ef">return</span> pywt<span style="color:#f92672">.</span>waverec(coeff, wavelet, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;per&#39;</span>)
+</code></pre></div><p>The first def gives the calculation of mean absolute deviation
+The deviation is the difference between each data and the average, the absolute deviation is the absolute value of the deviation, and the average absolute deviation is the absolute deviation divided by the parameter, that is, the average.</p>
+<p>Example: 4 data of 50 points, 70 points, 90 points and 70 points (70 points on average)
+Deviation is -20, 0, 20, 0,
+Absolute deviation is 20, 0, 20, 0,
+The average absolute deviation is (0+20+20+0)/4=10.</p>
+<p>The second def gives waveform denoising. First</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">coeff <span style="color:#f92672">=</span> pywt<span style="color:#f92672">.</span>wavedec(x, wavelet, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;per&#39;</span>)
+</code></pre></div><p>Then, the given waveform is wavelet transformed.
+Parameter x is array data, wavelet is the name of the wavelet (db this time), mode is the boundary condition (per means that the right and left ends of the waveform are connected)
+coeff is given as a list of wavelet coefficients. (However, the first from the beginning is not the wavelet coefficient. The remainder of the minimum resolution is stored.)</p>
+<p>next</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">sigma <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span><span style="color:#ae81ff">0.6745</span>) <span style="color:#f92672">*</span> maddest(coeff[<span style="color:#f92672">-</span>level])
+</code></pre></div><p>Gives the amount of noise. maddest(coeff[-level]) represents the average absolute deviation of the first value from the back of the wavelet coefficient list (the higher the value after the list, the higher the resolution. The setting is level). 0.6745 is a constant, but it is a constant that represents the ratio of the standard deviation to the average absolute deviation.</p>
+<p>next</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">uthresh <span style="color:#f92672">=</span> sigma <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>sqrt(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>log(len(x)))
+coeff[<span style="color:#ae81ff">1</span>:] <span style="color:#f92672">=</span> (pywt<span style="color:#f92672">.</span>threshold(i, value<span style="color:#f92672">=</span>uthresh, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;hard&#39;</span>) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> coeff[<span style="color:#ae81ff">1</span>:])
+</code></pre></div><p>First, a threshold value (uthresh) is calculated, and if the wavelet coefficient falls below the threshold value, it is regarded as noise and 0 is given.</p>
+<p>Finally</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">return</span> pywt<span style="color:#f92672">.</span>waverec(coeff, wavelet, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;per&#39;</span>)
+</code></pre></div><p>Then, the wavelet transform is transformed back to the original form. Since the process for checking the gap with the threshold value has been performed, a waveform free of noise can be obtained.</p>
+<h2 id="impression">Impression</h2>
+<p>I felt like trying to get a little more theory.</p>
+<p>##reference
+<a href="https://pywavelets.readthedocs.io/en/latest/ref/dwt-discrete-wavelet-transform.html">Discrete Wavelet Transform (DWT)</a>
+<a href="https://www.hellocybernetics.tech/entry/2017/06/17/040736">Wavelet transform basics</a>
+<a href="https://medium.com/@junkoda/%E3%82%A6%E3%82%A7%E3%83%BC%E3%83%96%E3%83%AC%E3%83%83%E3%83%88%E3%81%AB%E3%82%88%E3%82%8B%E3%83%8E%E3%82%A4%E3%82%BA%E9%99%A4%E5%8E%BB-fc20d82bcb80">Noise removal by wavelet</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

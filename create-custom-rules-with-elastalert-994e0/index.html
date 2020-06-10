@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Create custom rules with ElastAlert | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Create custom rules with ElastAlert</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/elasticsearch">Elasticsearch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/elastalert">elastalert</a></code></small>
+
+</p>
+<pre><code>This article is from the 9th day of [MicroAd Advent Calendar 2019 ](https://qiita.com/advent-calendar/2019/microad).
+</code></pre>
+<p>#Introduction</p>
+<p>Everyone loves Elasticsearch,
+A tool called <a href="https://github.com/Yelp/elastalert">ElastAlert</a> is useful when you want to constantly monitor data on Elasticsearch and skip alerts when a specific pattern occurs.</p>
+<p>ElastAlert has many kinds of monitoring patterns called <code>Rule</code> by default, but there are times when it is not enough to meet your needs.
+In that case, let&rsquo;s solve it by creating a new monitoring pattern called a custom rule.</p>
+<p>#How to make
+These are the two that I referred to when creating the custom rule. Especially the latter is a must see because it contains practical code.</p>
+<ul>
+<li><a href="https://elastalert.readthedocs.io/en/latest/recipes/adding_rules.html">Documents of the original family</a></li>
+<li><a href="https://qiita.com/ihsiek/items/e8e89b274e99e48067a2">Extend ElastAlert&rsquo;s monitoring rules to make you a little happy</a></li>
+</ul>
+<h1 id="custom-rule-created-this-time">Custom rule created this time</h1>
+<p>In this article,</p>
+<ul>
+<li>Aggregate the values of multiple fields, perform arithmetic operations on the aggregated results, and compare the result with the threshold value.</li>
+</ul>
+<p>Create a rule that can.</p>
+<p>For example, suppose there are <code>field_a</code> and <code>field_b</code> in an index with Elasticsearch,</p>
+<pre><code>- 0.001 &lt;sum(field_a)-sum(field_b) &lt;0.001
+</code></pre><p>That&rsquo;s why I want to do something like <strong>alert when it disappears</strong>.</p>
+<p>As an example of my specific use, &ldquo;This should match, but it would be bad if the values were different from each other.&rdquo; Set this rule for two pieces of data, and immediately set different values. It feels like to skip the notification to.</p>
+<p>In the default rule, <code>MetricAggregationRule</code> has a similar function, but since this rule can only use the result of aggregating a single field, it is not possible to &ldquo;monitor the operation result of the aggregating results&rdquo;.</p>
+<p>#Create custom rule
+While referring to the <code>MetricAggregationRule</code> class, <a href="https://github.com/Yelp/elastalert/blob/325f1dfe7a45f3ca2a2cc00127ab71fcd4f9cead/elastalert/ruletypes.py#L972Rule">BaseAggregationRule</a>Basethatisthebaseoftherulethathandlesaggregateddata.) Is inherited and a class called <code>BinaryOperationOnAggregatedMetricRule</code> is created.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:elastalert/elastalert_modules/custum_rules.py" data-lang="python:elastalert/elastalert_modules/custum_rules.py"><span style="color:#f92672">import</span> operator <span style="color:#f92672">as</span> op
+<span style="color:#f92672">from</span> elastalert.util <span style="color:#f92672">import</span> EAException
+<span style="color:#f92672">from</span> elastalert.ruletypes <span style="color:#f92672">import</span> BaseAggregationRule
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BinaryOperationOnAggregatedMetricRule</span>(BaseAggregationRule):
+
+    required_options <span style="color:#f92672">=</span> frozenset([
+        <span style="color:#e6db74">&#39;metric_agg_key_first&#39;</span>,<span style="color:#e6db74">&#39;metric_agg_key_second&#39;</span>,<span style="color:#e6db74">&#39;metric_agg_type_first&#39;</span>,<span style="color:#e6db74">&#39;metric_agg_type_second&#39;</span>,
+        <span style="color:#e6db74">&#39;binary_operator&#39;</span>
+    ])
+    allowed_aggregations <span style="color:#f92672">=</span> frozenset([<span style="color:#e6db74">&#39;min&#39;</span>,<span style="color:#e6db74">&#39;max&#39;</span>,<span style="color:#e6db74">&#39;avg&#39;</span>,<span style="color:#e6db74">&#39;sum&#39;</span>,<span style="color:#e6db74">&#39;cardinality&#39;</span>,<span style="color:#e6db74">&#39;value_count&#39;</span>])
+    allowed_binary_operators <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;add&#39;</span>: {<span style="color:#e6db74">&#39;func&#39;</span>: op<span style="color:#f92672">.</span>add,<span style="color:#e6db74">&#39;sign&#39;</span>:<span style="color:#e6db74">&#39;+&#39;</span>},
+                                <span style="color:#e6db74">&#39;subtract&#39;</span>: {<span style="color:#e6db74">&#39;func&#39;</span>: op<span style="color:#f92672">.</span>sub,<span style="color:#e6db74">&#39;sign&#39;</span>:<span style="color:#e6db74">&#39;-&#39;</span>},
+                                <span style="color:#e6db74">&#39;multiply&#39;</span>: {<span style="color:#e6db74">&#39;func&#39;</span>: op<span style="color:#f92672">.</span>mul,<span style="color:#e6db74">&#39;sign&#39;</span>:<span style="color:#e6db74">&#39;*&#39;</span>},
+                                <span style="color:#e6db74">&#39;divide&#39;</span>: {<span style="color:#e6db74">&#39;func&#39;</span>: op<span style="color:#f92672">.</span>truediv,<span style="color:#e6db74">&#39;sign&#39;</span>:<span style="color:#e6db74">&#39;/&#39;</span>}}
+
+    <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args):
+        super(BinaryOperationOnAggregatedMetricRule, self)<span style="color:#f92672">.</span>__init__(<span style="color:#f92672">*</span>args)
+        self<span style="color:#f92672">.</span>ts_field <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;timestamp_field&#39;</span>,<span style="color:#e6db74">&#39;@timestamp&#39;</span>)
+        self<span style="color:#f92672">.</span>metric_key_first <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;metric_&#39;</span> <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_first&#39;</span>] <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;_&#39;</span> <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_first&#39;</span>]
+        self<span style="color:#f92672">.</span>metric_key_second <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;metric_&#39;</span> <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_second&#39;</span>] <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;_&#39;</span> <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_second&#39;</span>]
+        self<span style="color:#f92672">.</span>binary_operator <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>allowed_binary_operators[self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;binary_operator&#39;</span>]]
+        self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;aggregation_query_element&#39;</span>] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>generate_aggregation_query()
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_first&#39;</span>] <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>allowed_aggregations \
+            <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_second&#39;</span>] <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>allowed_aggregations:
+            <span style="color:#66d9ef">raise</span> EAException(<span style="color:#e6db74">&#34;metric_agg_type must be one of </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>(str(self<span style="color:#f92672">.</span>allowed_aggregations)))
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;binary_operator&#39;</span>] <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>allowed_binary_operators<span style="color:#f92672">.</span>keys():
+            <span style="color:#66d9ef">raise</span> EAException(<span style="color:#e6db74">&#34;binary_operator must be one of </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>(str(self<span style="color:#f92672">.</span>allowed_binary_operators<span style="color:#f92672">.</span>keys())))
+
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;max_threshold&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>rules <span style="color:#f92672">and</span><span style="color:#e6db74">&#39;min_threshold&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>rules:
+            <span style="color:#66d9ef">raise</span> EAException(<span style="color:#e6db74">&#34;BinaryOperationOnAggregatedMetricRule must have at least one of either max_threshold or min_threshold&#34;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_match_str</span>(self, match):
+        message <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Threshold violation, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">_</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">_</span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> = </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> (min: </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> max :</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">)</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">%</span>(
+            self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_first&#39;</span>],
+            self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_first&#39;</span>],
+            self<span style="color:#f92672">.</span>binary_operator[<span style="color:#e6db74">&#39;sign&#39;</span>],
+            self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_second&#39;</span>],
+            self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_second&#39;</span>],
+            str(self<span style="color:#f92672">.</span>binary_operator[<span style="color:#e6db74">&#39;func&#39;</span>](<span style="color:#f92672">*</span>[match[self<span style="color:#f92672">.</span>metric_key_first],match[self<span style="color:#f92672">.</span>metric_key_second]])),
+            self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;min_threshold&#39;</span>),
+            self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;max_threshold&#39;</span>)
+        )
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;delete_ruletype_text&#39;</span>):
+            message <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+
+        top_events <span style="color:#f92672">=</span> [[key[<span style="color:#ae81ff">11</span>:], counts] <span style="color:#66d9ef">for</span> key, counts <span style="color:#f92672">in</span> match<span style="color:#f92672">.</span>items() <span style="color:#66d9ef">if</span> key<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;top_events_&#39;</span>)]
+
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">events_to_message</span>(items):
+            message <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+            items <span style="color:#f92672">=</span> sorted(items, key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">1</span>], reverse<span style="color:#f92672">=</span>True)
+            <span style="color:#66d9ef">for</span> term, count <span style="color:#f92672">in</span> items:
+                message <span style="color:#f92672">+=</span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">: </span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">%</span> (term, count)
+            <span style="color:#66d9ef">return</span> message
+
+        <span style="color:#66d9ef">for</span> key, counts <span style="color:#f92672">in</span> top_events:
+            message <span style="color:#f92672">+=</span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">:</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">%</span>(key)
+            message <span style="color:#f92672">+=</span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">%</span>(events_to_message(counts<span style="color:#f92672">.</span>items()))
+
+        <span style="color:#66d9ef">return</span> message
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">generate_aggregation_query</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        custom_top_count_keys: A list of fields.
+</span><span style="color:#e6db74">            ElastAlert will perform a terms query for the top X most common values for each of the fields,
+</span><span style="color:#e6db74">            where X is 5 by default, or custom_top_count_number if it exists.custom_top_count_number: The number of terms to list if custom_top_count_keys is set. (Optional, integer, default 5)
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+
+        query <span style="color:#f92672">=</span> {
+            <span style="color:#e6db74">&#34;all_matching_docs&#34;</span>: {
+                <span style="color:#e6db74">&#34;filters&#34;</span>: {
+                    <span style="color:#e6db74">&#34;filters&#34;</span>: {
+                        <span style="color:#e6db74">&#34;all&#34;</span>: {
+                            <span style="color:#e6db74">&#34;match_all&#34;</span>: {}
+                        }
+                    }
+                },
+                <span style="color:#e6db74">&#39;aggs&#39;</span>: {
+                    <span style="color:#e6db74">&#39;topx_match_aggs&#39;</span>: {
+                        <span style="color:#e6db74">&#34;filter&#34;</span>: {
+                            <span style="color:#e6db74">&#34;bool&#34;</span>: {
+                                <span style="color:#e6db74">&#34;must&#34;</span>: []
+                            }
+                        },
+                        <span style="color:#e6db74">&#39;aggregations&#39;</span>: {
+                        }
+                    },
+                    self<span style="color:#f92672">.</span>metric_key_first: {
+                        self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_first&#39;</span>]: {
+                            <span style="color:#e6db74">&#39;field&#39;</span>: self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_first&#39;</span>]
+                        }
+                    },
+                    self<span style="color:#f92672">.</span>metric_key_second: {
+                        self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_second&#39;</span>]: {
+                            <span style="color:#e6db74">&#39;field&#39;</span>: self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_second&#39;</span>]
+                        }
+                    },
+                    <span style="color:#e6db74">&#39;binary_operation&#39;</span>: {
+                        <span style="color:#e6db74">&#39;bucket_script&#39;</span>: {
+                            <span style="color:#e6db74">&#39;buckets_path&#39;</span>: {
+                                <span style="color:#e6db74">&#39;first&#39;</span>: self<span style="color:#f92672">.</span>metric_key_first,
+                                <span style="color:#e6db74">&#39;second&#39;</span>: self<span style="color:#f92672">.</span>metric_key_second
+                            },
+                            <span style="color:#e6db74">&#39;script&#39;</span>: <span style="color:#e6db74">&#39;params.first&#39;</span> <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>binary_operator[<span style="color:#e6db74">&#39;sign&#39;</span>] <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;params.second&#39;</span>
+                        }
+                    }
+                }
+            }
+        }
+
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;custom_top_count_keys&#39;</span>):
+            number <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>top_count_number <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;custom_top_count_number&#39;</span>, <span style="color:#ae81ff">5</span>)
+            keys <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>top_count_keys <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;custom_top_count_keys&#39;</span>)
+            <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> keys:
+                child_query <span style="color:#f92672">=</span> {
+                    <span style="color:#e6db74">&#39;terms&#39;</span>: {
+                        <span style="color:#e6db74">&#39;field&#39;</span>: key,
+                        <span style="color:#e6db74">&#39;order&#39;</span>: {<span style="color:#e6db74">&#39;_count&#39;</span>: <span style="color:#e6db74">&#39;desc&#39;</span>},
+                        <span style="color:#e6db74">&#39;size&#39;</span>: number
+                    },
+                    <span style="color:#e6db74">&#39;aggs&#39;</span>: {
+                        <span style="color:#e6db74">&#39;metric_aggregation_first&#39;</span>: {
+                            self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_first&#39;</span>]: {<span style="color:#e6db74">&#39;field&#39;</span>: self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_first&#39;</span>]}
+                        },
+                        <span style="color:#e6db74">&#39;metric_aggregation_second&#39;</span>: {
+                            self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_type_second&#39;</span>]: {<span style="color:#e6db74">&#39;field&#39;</span>: self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;metric_agg_key_second&#39;</span>]}
+                        },
+                        <span style="color:#e6db74">&#39;metric_aggregation&#39;</span>: {
+                            <span style="color:#e6db74">&#39;bucket_script&#39;</span>: {
+                                <span style="color:#e6db74">&#39;buckets_path&#39;</span>: {
+                                    <span style="color:#e6db74">&#39;first&#39;</span>: <span style="color:#e6db74">&#39;metric_aggregation_first&#39;</span>,
+                                    <span style="color:#e6db74">&#39;second&#39;</span>: <span style="color:#e6db74">&#39;metric_aggregation_second&#39;</span>
+                                },
+                                <span style="color:#e6db74">&#39;script&#39;</span>: <span style="color:#e6db74">&#39;params.first&#39;</span> <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>binary_operator[<span style="color:#e6db74">&#39;sign&#39;</span>] <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;params.second&#39;</span>
+                            }
+                        }
+
+                    }
+                }
+                query[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;aggs&#39;</span>][<span style="color:#e6db74">&#39;topx_match_aggs&#39;</span>][<span style="color:#e6db74">&#39;aggregations&#39;</span>][key] <span style="color:#f92672">=</span> child_query
+        <span style="color:#66d9ef">return</span> query
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">check_matches</span>(self, timestamp, query_key, aggregation_data):
+        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#34;compound_query_key&#34;</span> <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>rules:
+            self<span style="color:#f92672">.</span>check_matches_recursive(timestamp, query_key, aggregation_data, self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;compound_query_key&#39;</span>], dict())
+        <span style="color:#66d9ef">else</span>:
+            metric_val_first <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>][self<span style="color:#f92672">.</span>metric_key_first][<span style="color:#e6db74">&#39;value&#39;</span>]
+            metric_val_second <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>][self<span style="color:#f92672">.</span>metric_key_second][<span style="color:#e6db74">&#39;value&#39;</span>]
+            binary_operation <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>][<span style="color:#e6db74">&#39;binary_operation&#39;</span>][<span style="color:#e6db74">&#39;value&#39;</span>]
+
+            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>fulfill_condition(metric_val_first, metric_val_second, self<span style="color:#f92672">.</span>binary_operator[<span style="color:#e6db74">&#39;func&#39;</span>]):
+                match <span style="color:#f92672">=</span> {
+                    self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;timestamp_field&#39;</span>]: timestamp,
+                    self<span style="color:#f92672">.</span>metric_key_first: metric_val_first,
+                    self<span style="color:#f92672">.</span>metric_key_second: metric_val_second,
+                    <span style="color:#e6db74">&#39;binary_operation&#39;</span>: binary_operation
+                }
+                <span style="color:#66d9ef">if</span> query_key <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+                    match[self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;query_key&#39;</span>]] <span style="color:#f92672">=</span> query_key
+
+                <span style="color:#75715e"># Set TopX counts</span>
+                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;custom_top_count_keys&#39;</span>):
+                    counts <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_top_counts(aggregation_data)
+                    match<span style="color:#f92672">.</span>update(counts)
+
+                self<span style="color:#f92672">.</span>add_match(match)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">check_matches_recursive</span>(self, timestamp, query_key, aggregation_data, compound_keys, match_data):
+        <span style="color:#66d9ef">if</span> len(compound_keys) <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1</span>:
+            <span style="color:#75715e"># shouldn&#39;t get to this point, but checking for safety</span>
+            <span style="color:#66d9ef">return</span>
+
+        match_data[compound_keys[<span style="color:#ae81ff">0</span>]] <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;key&#39;</span>]
+        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;bucket_aggs&#39;</span> <span style="color:#f92672">in</span> aggregation_data:
+            <span style="color:#66d9ef">for</span> result <span style="color:#f92672">in</span> aggregation_data[<span style="color:#e6db74">&#39;bucket_aggs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>]:self<span style="color:#f92672">.</span>check_matches_recursive(timestamp,
+                                             query_key,
+                                             result,
+                                             compound_keys[<span style="color:#ae81ff">1</span>:],
+                                             match_data)
+        <span style="color:#66d9ef">else</span>:
+            metric_val_first <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>][self<span style="color:#f92672">.</span>metric_key_first][<span style="color:#e6db74">&#39;value&#39;</span>]
+            metric_val_second <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>][self<span style="color:#f92672">.</span>metric_key_second][<span style="color:#e6db74">&#39;value&#39;</span>]
+            binary_operation <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>][<span style="color:#e6db74">&#39;binary_operation&#39;</span>][<span style="color:#e6db74">&#39;value&#39;</span>]
+
+            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>fulfill_condition(metric_val_first, metric_val_second, self<span style="color:#f92672">.</span>binary_operator[<span style="color:#e6db74">&#39;func&#39;</span>]):
+                match_data[self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;timestamp_field&#39;</span>]] <span style="color:#f92672">=</span> timestamp
+                match_data[self<span style="color:#f92672">.</span>metric_key_first] <span style="color:#f92672">=</span> metric_val_first
+                match_data[self<span style="color:#f92672">.</span>metric_key_second] <span style="color:#f92672">=</span> metric_val_second
+                match_data[<span style="color:#e6db74">&#39;binary_operation&#39;</span>] <span style="color:#f92672">=</span> binary_operation
+
+                <span style="color:#75715e"># add compound key to payload to allow alerts to trigger for every unique occurrence</span>
+                compound_value <span style="color:#f92672">=</span> [match_data[key] <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;compound_query_key&#39;</span>]]
+                match_data[self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;query_key&#39;</span>]] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;,&#34;</span><span style="color:#f92672">.</span>join([str(value) <span style="color:#66d9ef">for</span> value <span style="color:#f92672">in</span> compound_value])
+
+                <span style="color:#75715e"># Set TopX counts</span>
+                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>rules<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;custom_top_count_keys&#39;</span>):
+                    counts <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_top_counts(aggregation_data)
+                    match_data<span style="color:#f92672">.</span>update(counts)
+
+                self<span style="color:#f92672">.</span>add_match(match_data)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_top_counts</span>(self, aggregation_data):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Counts the number of events for each unique value for each key field.
+</span><span style="color:#e6db74">        Returns a dictionary with top_events_&lt;key&gt; mapped to the top 5 counts for each key.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        all_counts <span style="color:#f92672">=</span> {}
+        number <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>top_count_number
+        keys <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>top_count_keys
+        <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> keys:
+
+            hits_terms <span style="color:#f92672">=</span> aggregation_data[<span style="color:#e6db74">&#39;all_matching_docs&#39;</span>][<span style="color:#e6db74">&#39;buckets&#39;</span>][<span style="color:#e6db74">&#39;all&#39;</span>]<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;topx_match_aggs&#39;</span>)<span style="color:#f92672">.</span>get(key, None)
+            <span style="color:#66d9ef">if</span> hits_terms <span style="color:#f92672">is</span> None:
+                top_events_count <span style="color:#f92672">=</span> {}
+            <span style="color:#66d9ef">else</span>:
+                buckets <span style="color:#f92672">=</span> hits_terms<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;buckets&#39;</span>)
+
+                terms <span style="color:#f92672">=</span> {}
+                <span style="color:#66d9ef">for</span> bucket <span style="color:#f92672">in</span> buckets:
+                    terms[bucket[<span style="color:#e6db74">&#39;key&#39;</span>]] <span style="color:#f92672">=</span> bucket[<span style="color:#e6db74">&#39;metric_aggregation&#39;</span>][<span style="color:#e6db74">&#39;value&#39;</span>]
+                counts <span style="color:#f92672">=</span> terms<span style="color:#f92672">.</span>items()
+                counts <span style="color:#f92672">=</span> sorted(counts, key<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x[<span style="color:#ae81ff">1</span>], reverse<span style="color:#f92672">=</span>True)
+                top_events_count <span style="color:#f92672">=</span> dict(counts[:number])
+
+            <span style="color:#75715e"># Save a dict with the top 5 events by key</span>
+            all_counts[<span style="color:#e6db74">&#39;top_events_</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">%</span> (key)] <span style="color:#f92672">=</span> top_events_count
+
+        <span style="color:#66d9ef">return</span> all_counts
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fulfill_condition</span>(self, metric_val_first, metric_val_second, binary_operator):
+        <span style="color:#66d9ef">if</span> metric_val_first <span style="color:#f92672">is</span> None <span style="color:#f92672">or</span> metric_val_second <span style="color:#f92672">is</span> None:
+            <span style="color:#66d9ef">return</span> False
+        <span style="color:#66d9ef">if</span> metric_val_second <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">and</span> binary_operator <span style="color:#f92672">==</span> op<span style="color:#f92672">.</span>truediv:
+            <span style="color:#66d9ef">return</span> False
+        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;max_threshold&#39;</span> <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>rules <span style="color:#f92672">and</span> binary_operator(<span style="color:#f92672">*</span>[metric_val_first, metric_val_second]) <span style="color:#f92672">&gt;</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;max_threshold&#39;</span>]:
+            <span style="color:#66d9ef">return</span> True
+        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;min_threshold&#39;</span> <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>rules <span style="color:#f92672">and</span> binary_operator(<span style="color:#f92672">*</span>[metric_val_first, metric_val_second]) <span style="color:#f92672">&lt;</span> self<span style="color:#f92672">.</span>rules[<span style="color:#e6db74">&#39;min_threshold&#39;</span>]:
+            <span style="color:#66d9ef">return</span> True
+        <span style="color:#66d9ef">return</span> False
+
+</code></pre></div><p>コードはpythonですが、ポイントの大半は、内部で発行される<code>Elasticsearchのクエリの構造</code>を理解する所にあります。</p>
+<p>今回のクエリでは<code>bucket_script</code>と<code>buckets_path</code>の内容を理解しておくことが必要でした。</p>
+<ul>
+<li><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-pipeline.html#buckets-path-syntax">bucket_scriptの説明</a></li>
+<li><a href="https://discuss.elastic.co/t/bucket-script-aggregation-error/114106">buckets_pathの説明</a></li>
+</ul>
+<h1 id="設定ファイルの作成">設定ファイルの作成</h1>
+<p>このルールを使う設定ファイルで指定する項目は、次のようになります。</p>
+<ul>
+<li>各フィールドの集計関数：<code>'min', 'max', 'avg', 'sum', 'cardinality', 'value_count'</code></li>
+<li>集計結果の演算：<code>+, -, ×, ÷</code>の４種類のうち１つ</li>
+</ul>
+<p>がそれぞれ使えます。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:rule_setting.yaml" data-lang="yaml:rule_setting.yaml">
+<span style="color:#66d9ef">es_host</span>: &lt;host_name&gt;
+<span style="color:#66d9ef">es_port</span>: &lt;port_number<span style="color:#e6db74">&gt;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">name: your rule name</span>
+<span style="color:#66d9ef">type</span>: <span style="color:#e6db74">&#34;elastalert_modules.custom_rules.BinaryOperationOnAggregatedMetricRule&#34;</span>
+
+<span style="color:#66d9ef">index</span>: &lt;index_name&gt;
+<span style="color:#66d9ef">timestamp_field</span>: &lt;timestamp_field_name&gt;
+<span style="color:#66d9ef">doc_type</span>: &lt;doc_type_name<span style="color:#e6db74">&gt;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74"># metric_agg_type must be one of [&#39;min&#39;, &#39;max&#39;, &#39;avg&#39;, &#39;sum&#39;, &#39;cardinality&#39;, &#39;value_count&#39;]</span>
+<span style="color:#75715e"># binary_operator must be one of [&#39;add&#39;, &#39;subtract&#39;, &#39;multiply&#39;, &#39;divide&#39;]</span>
+<span style="color:#66d9ef">metric_agg_key_first</span>: fielde_a
+<span style="color:#66d9ef">metric_agg_type_first</span>: sum
+<span style="color:#66d9ef">metric_agg_key_second</span>: fielde_b
+<span style="color:#66d9ef">metric_agg_type_second</span>: sum
+<span style="color:#66d9ef">binary_operator</span>: subtract
+
+<span style="color:#66d9ef">min_threshold</span>: -<span style="color:#ae81ff">0.0001</span>
+<span style="color:#66d9ef">max_threshold</span>: <span style="color:#ae81ff">0.00001</span>
+
+<span style="color:#66d9ef">query_key</span>:
+  - xxxxxx_id
+
+<span style="color:#66d9ef">custom_top_count_keys</span>:
+  - zzzzzz_id
+</code></pre></div><h1 id="アラートのサンプル">アラートのサンプル</h1>
+<p>設定とプログラムがうまく機能すれば、次のようなアラートが飛んでくるはずです。</p>
+<pre><code>your rule name
+
+Threshold violation, fielde_a_sum - fielde_b_sum = 0.25 (min: -0.0001 max : 0.00001)
+
+zzzzzz_id:
+19 : 0.25
+
+binary_operation: 0.25
+xxxxxx_id: 19
+time: 2019-12-08T00:00:00.00000000Z
+metric_fielde_a_sum: 1.0
+metric_fielde_b_sum: 0.75
+num_hits: 5000
+num_matches: 1
+</code></pre><h1 id="おわりに">おわりに</h1>
+<p>意図通り動くクエリの発行さえできれば、大抵の監視パターンは実現可能です。</p>
+<p>ただし、時間を指定する部分をカスタマイズするときだけ、少し困るケースが出てきます。Because, regarding the part that specifies the time, it is difficult to customize the time specification as it is because the query is assembled in a place different from the custom rule.</p>
+<p>but it&rsquo;s okay. How pretty! I hope I can introduce how I can manage it at the next opportunity.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

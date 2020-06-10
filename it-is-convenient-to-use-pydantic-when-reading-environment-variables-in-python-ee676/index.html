@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>It is convenient to use pydantic when reading environment variables in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>It is convenient to use pydantic when reading environment variables in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 23, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/environment-variables"> environment variables</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/dotenv"> dotenv</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pydantic"> pydantic</a></code></small>
+
+</p>
+<pre><code>When implementing an application, dealing with environment variables is a little tricky, right?
+</code></pre>
+<p>When implementing in Python, if you use the library <a href="https://pydantic-docs.helpmanual.io/">pydantic</a>, you can set the default value, cast to int type, and set the value from <code>.env</code>. You can easily implement processing such as reading. In this article, I will introduce those sample codes.</p>
+<p>By the way, pydantic is not a library that only reads environment variables, but a library that can define a class by using type annotations. Other than that, you can cast and validate json format data to the class. If you want to read more about other features, read the following article.</p>
+<p><a href="https://qiita.com/0622okakyo/items/d1dcb896621907f9002b">Introduction to Pydantic</a></p>
+<h1 id="read-environment-variables">Read environment variables</h1>
+<p>Suppose the following environment variables are set:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#bash format</span>
+export REDIS_HOST_NAME<span style="color:#f92672">=</span>localhost
+export REDIS_PORT<span style="color:#f92672">=</span><span style="color:#ae81ff">6379</span>
+</code></pre></div><p>Using pydantic, you can read it with the following code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> pydantic <span style="color:#f92672">import</span> BaseSettings
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Settings</span>(BaseSettings):
+    redis_host_name: str
+    redis_port: int
+
+settings <span style="color:#f92672">=</span> Settings()
+ 
+<span style="color:#66d9ef">print</span>(settings<span style="color:#f92672">.</span>redis_host_name)
+<span style="color:#75715e"># =&gt; localhost</span>
+<span style="color:#66d9ef">print</span>(settings<span style="color:#f92672">.</span>redis_port)
+<span style="color:#75715e"># =&gt; 6379</span>
+<span style="color:#66d9ef">print</span>(type(settings<span style="color:#f92672">.</span>redis_port))
+<span style="color:#75715e"># =&gt; &lt;class&#39;int&#39;&gt;</span>
+</code></pre></div><p>If the environment variable is not set, or if the typecast fails, a validation error will be issued.</p>
+<pre><code>pydantic.error_wrappers.ValidationError: 1 validation error for Settings
+redis_port
+  value is not a valid integer (type=type_error.integer)
+</code></pre><p>Use # dotenv</p>
+<p>During development, you can use the <code>.env</code> file format to simplify setting environment variables. This is a node.js article, but I think this is easy to understand.</p>
+<p><a href="https://maku77.github.io/nodejs/env/dotenv.html">Use .env file instead of environment variable (dotenv)</a></p>
+<p>First, you must also install <a href="https://pypi.org/project/python-dotenv/">python-dotenv</a> with <code>pip install python-dotenv</code> or <code>pip install pydantic[dotenv]</code>.</p>
+<p>If you have the following <code>.env</code> file,</p>
+<pre><code class="language-bash:.env" data-lang="bash:.env">REDIS_HOST_NAME=localhost
+REDIS_PORT=6379
+</code></pre><p>You can load it with code like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> pydantic <span style="color:#f92672">import</span> BaseSettings
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Settings</span>(BaseSettings):
+    redis_host_name: str
+    redis_port: int
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Config</span>:
+        env_file <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;.env&#39;</span>
+
+settings <span style="color:#f92672">=</span> Settings()
+</code></pre></div><h1 id="further-functions">Further functions</h1>
+<p>With this, I think I have introduced the useful functions related to environment variables that are often used in everyday development. If you want to know more, please read the corresponding item in the official document.</p>
+<p><a href="https://pydantic-docs.helpmanual.io/usage/settings/">Settings management-pydantic</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

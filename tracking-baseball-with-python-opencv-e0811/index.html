@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Tracking baseball with Python &#43; OpenCV | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Tracking baseball with Python + OpenCV</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 13, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv">OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/baseball">baseball</a></code></small>
+
+</p>
+<pre><code>After seeing the OpenCV site for the first time in a while, it was new, so I tried it a little.
+</code></pre>
+<p><a href="https://opencv.org/">https://opencv.org/</a></p>
+<p>I used to track baseball balls in Java a long time ago, so this time I tried using Python.
+Tracking is performed by combining background difference and template matching.</p>
+<h2 id="environment">Environment</h2>
+<p>The environment is as follows.</p>
+<ul>
+<li>Python: 3.8.0</li>
+<li>OpentCV: 4.2.0</li>
+</ul>
+<p>I am creating an environment with <code>venv</code>. There is no problem even if it is not <code>venv</code>.</p>
+<pre><code class="language-console" data-lang="console">$ python -m venv pythonOpevCV
+$ cd pythonOpenCV
+$ Script\activate
+$ python -m pip install --upgrade pip
+$ pip install opencv-python
+Successfully installed numpy-1.18.2 opencv-python-4.2.0.34
+</code></pre><p><code>numpy</code> is also installed.</p>
+<h2 id="items-to-prepare">Items to prepare</h2>
+<p>Prepare the following items.</p>
+<ul>
+<li>Video showing a baseball</li>
+<li>Image of cut out baseball (template image)</li>
+</ul>
+<p>The image of the ball cut out is as follows. Below is a sample.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239179/76523672-a227-3762-014d-c3adb5a27daf.jpeg" alt="template.jpeg"></p>
+<h2 id="procedure">Procedure</h2>
+<p>Follow the steps below to perform tracking.</p>
+<ol>
+<li>Save as an image for each frame of the video</li>
+<li>Grayscale the frame image and template image</li>
+<li>Binarize frame image and template image</li>
+<li>Perform background subtraction on the previous and next frame images</li>
+<li>Perform template matching from the image of the background difference result</li>
+<li>Tracking and drawing the result</li>
+</ol>
+<p>Even if template matching is performed suddenly on the original frame image, clouds and buildings in the background are mistaken for balls and detected, and the accuracy is poor, so grayscale → binarization is used to create a black and white image. If background subtraction is performed on the previous and next frames in the state of the black and white image, the cloud and the background hardly move in about 0.1 second, so the moving ball can be clearly detected.</p>
+<p>The grayscale image is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239179/ec74c643-fbf7-a962-3868-51971b616d8a.jpeg" alt="gray.jpeg"></p>
+<p>Detects the ball in the range surrounded by the red frame. This image is binarized into a black and white image.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239179/65bbf5ea-b210-e1a8-ecdb-3905d1760ddb.jpeg" alt="binary.jpeg"></p>
+<p>Although the ball can be detected in white, only the ball cannot be detected because the background and the ball are white. Here is the background difference between the previous and next frame images.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239179/802da9ca-4c92-8c1d-0114-99fb0c406ca0.jpeg" alt="sub.jpeg"></p>
+<p>The white background is not working so it is not detected in the background difference, only the ball and other noise is detected in white. In this state, perform template matching with the binarized image of the following template image.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239179/daffc03b-8c81-2daa-df50-bff8a442ac46.jpeg" alt="templatebi.jpeg"></p>
+<p>This allows the ball to be detected without being affected by light intensity or background.</p>
+<h2 id="source-code">Source code</h2>
+<p>The source code is as follows. Place the target video in <code>VIDEOPATH</code> and the template image in <code>TEMPLATEPATH</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">import</span> glob
+<span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> cv2
+
+
+VIDEOPATH <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;media/video/video.mp4&#34;</span>
+IMAGEPATH <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;media/image/&#34;</span>
+TEMPLATEPATH <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;template.jpeg&#34;</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_frames</span>(video_path, image_dir):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Extract frame image from video
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    cap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoCapture(video_path)
+    digit <span style="color:#f92672">=</span> len(str(int(cap<span style="color:#f92672">.</span>get(cv2<span style="color:#f92672">.</span>CAP_PROP_FRAME_COUNT))))
+    n <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">while</span> True:
+        ret, frame <span style="color:#f92672">=</span> cap<span style="color:#f92672">.</span>read()
+        <span style="color:#66d9ef">if</span> ret:
+            cv2<span style="color:#f92672">.</span>imwrite(<span style="color:#e6db74">&#34;{}original/frame_{}.{}&#34;</span><span style="color:#f92672">.</span>format(IMAGEPATH, n, <span style="color:#e6db74">&#34;jpeg&#34;</span>), frame)
+            n <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">return</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">do_grayscale</span>(image_path):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Grayscale image
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(image_path)
+    gray <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_RGB2GRAY)
+    save_image(image_path, <span style="color:#e6db74">&#34;gray&#34;</span>, gray)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">do_binarization</span>(image_path):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Binarize image
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(image_path)
+    ret, img_thresh <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(img, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>THRESH_BINARY)
+    save_image(image_path, <span style="color:#e6db74">&#34;binary&#34;</span>, img_thresh)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">do_backgroundsub</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Background subtraction
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    img_list <span style="color:#f92672">=</span> glob<span style="color:#f92672">.</span>glob(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;binary/frame*.jpeg&#34;</span>)
+    num <span style="color:#f92672">=</span> <span style="color:#66d9ef">lambda</span> val: int(re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">&#34;\D&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,val))
+    sorted(img_list,key<span style="color:#f92672">=</span>(num))
+    source <span style="color:#f92672">=</span> img_list[<span style="color:#ae81ff">0</span>]
+    <span style="color:#66d9ef">for</span> path <span style="color:#f92672">in</span> img_list:
+        diff <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>absdiff(cv2<span style="color:#f92672">.</span>imread(source),cv2<span style="color:#f92672">.</span>imread(path))
+        source <span style="color:#f92672">=</span> path
+        save_image(path, <span style="color:#e6db74">&#34;bgsub&#34;</span>, diff)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">do_template_matching</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Perform template matching with template images and frame images
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    template_img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;binary/&#34;</span> <span style="color:#f92672">+</span> TEMPLATEPATH)
+    img_list <span style="color:#f92672">=</span> glob<span style="color:#f92672">.</span>glob(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;bgsub/frame*.jpeg&#34;</span>)
+    num <span style="color:#f92672">=</span> <span style="color:#66d9ef">lambda</span> val: int(re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">&#34;\D&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,val))
+    sorted(img_list,key<span style="color:#f92672">=</span>(num))
+    location_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> path <span style="color:#f92672">in</span> img_list:
+        result <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>matchTemplate(cv2<span style="color:#f92672">.</span>imread(path), template_img, cv2<span style="color:#f92672">.</span>TM_CCOEFF)
+        minVal, maxVal, minLoc, maxLoc <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>minMaxLoc(result)
+        location_list<span style="color:#f92672">.</span>append(maxLoc)
+    <span style="color:#66d9ef">return</span> location_list
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">draw_rectangle</span>(location_list):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Drawing the matching result on the image
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    source <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;original/frame_0.jpeg&#34;</span>)
+    cv2<span style="color:#f92672">.</span>imwrite(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;result.jpeg&#34;</span>,source)
+    source <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;result.jpeg&#34;</span>)
+    <span style="color:#66d9ef">for</span> loc <span style="color:#f92672">in</span> location_list:
+        lx, ly, rx, ry <span style="color:#f92672">=</span> loc[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">10</span>, loc[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">10</span>, loc[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+</span> <span style="color:#ae81ff">10</span>, loc[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> <span style="color:#ae81ff">10</span>
+        img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>rectangle(source, (lx, ly), (rx, ry), (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">0</span>), <span style="color:#ae81ff">3</span>)
+        cv2<span style="color:#f92672">.</span>imwrite(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;result.jpeg&#34;</span>,img)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_image</span>(img_path, dir, img):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Save image
+</span><span style="color:#e6db74">    img_path: Image path
+</span><span style="color:#e6db74">    dir: directory name
+</span><span style="color:#e6db74">    img: Image data
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    file_name <span style="color:#f92672">=</span> img_path<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">&#34;</span>,<span style="color:#e6db74">&#34;/&#34;</span>)<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;.&#34;</span>)[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;/&#34;</span>)[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+    cv2<span style="color:#f92672">.</span>imwrite(<span style="color:#e6db74">&#34;{}{}/{}.{}&#34;</span><span style="color:#f92672">.</span>format(IMAGEPATH, dir, file_name,<span style="color:#e6db74">&#34;jpeg&#34;</span>), img)
+
+
+<span style="color:#66d9ef">if</span> __name__<span style="color:#f92672">==</span><span style="color:#e6db74">&#34;__main__&#34;</span>:
+    <span style="color:#75715e"># ① Split video into frames</span>
+    save_frames(VIDEOPATH,IMAGEPATH)
+    <span style="color:#75715e"># ② Convert template image and frame image to grayscale</span>
+    do_grayscale(IMAGEPATH <span style="color:#f92672">+</span> TEMPLATEPATH)
+    <span style="color:#66d9ef">for</span> path <span style="color:#f92672">in</span> glob<span style="color:#f92672">.</span>glob(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;original/*.jpeg&#34;</span>):
+        do_grayscale(path)
+    <span style="color:#75715e"># ③ Binarization of template image and frame image</span>
+    <span style="color:#66d9ef">for</span> path <span style="color:#f92672">in</span> glob<span style="color:#f92672">.</span>glob(IMAGEPATH <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;gray/*.jpeg&#34;</span>):
+        do_binarization(path)
+    <span style="color:#75715e"># ④ background difference</span>
+    do_backgroundsub()
+    <span style="color:#75715e"># ⑤ Perform template matching</span>
+    location_list <span style="color:#f92672">=</span> do_template_matching()
+    <span style="color:#75715e"># ⑥ Project matched coordinatesdraw_rectangle(location_list)</span>
+
+</code></pre></div><h2 id="result">result</h2>
+<p>I tried to detect the ball in the throwing video. Although it can be detected almost, it also detects parts other than the trajectory of the ball.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/239179/15c43d66-5c64-5850-083f-519b05aa71a0.jpeg" alt="result.jpeg"></p>
+<p>There was a method to correct noise and outliers, but I forgot it because I forgot.</p>
+<h2 id="summary">Summary</h2>
+<p>We tracked a baseball using background subtraction and template matching with Python + OpenCV.
+If you use <code>YOLO</code>, it seems that you can detect a baseball in the image, so I&rsquo;d like to try this area as well.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

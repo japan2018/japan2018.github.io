@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>How to sample from any probability density function in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>How to sample from any probability density function in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scipy"> scipy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mathematics"> mathematics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/probability"> probability</a></code></small>
+
+</p>
+<pre><code>~~MCMC should be done! Onegacious without the tsukkomi
+</code></pre>
+<p>As you know, many probability density functions are predefined in scipy, and by using them, you can easily perform sampling and plotting of probability density functions.</p>
+<p>For example,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3">stats<span style="color:#f92672">.</span>norm<span style="color:#f92672">.</span>rvs(loc<span style="color:#f92672">=</span><span style="color:#ae81ff">50</span>, scale<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>, size<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>)
+</code></pre></div><p>Then you can get 1000 samples from a normal distribution with mean 50 and standard deviation 20, and</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3">x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linspace(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">100</span>)
+px <span style="color:#f92672">=</span> stats<span style="color:#f92672">.</span>norm<span style="color:#f92672">.</span>pdf(x, loc<span style="color:#f92672">=</span><span style="color:#ae81ff">50</span>, scale<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+plt<span style="color:#f92672">.</span>plot(x, px)
+</code></pre></div><p>Then we can also plot the normal distribution at $0&lt;x&lt;100$.</p>
+<p>So how do you sample from your own probability density function that is not predefined in scipy? In case of discrete distribution, it is introduced in @yk-tanigawa&rsquo;s <a href="https://qiita.com/yk-tanigawa/items/0e4bd9480216c7a84106">article</a>, so here we will deal with continuous distribution.</p>
+<p>As an example, assuming that the normal distribution is not defined in scipy.stats (it is really defined), I will define it myself and sample it below. You just need to write the function you want to define in the _pdf function, inheriting from rv_continous.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3"><span style="color:#f92672">from</span> scipy <span style="color:#66d9ef">import</span> stats
+<span style="color:#f92672">import</span> math
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">gaussian</span>(stats<span style="color:#f92672">.</span>rv_continuous):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_pdf</span>(self, x, mu, sigma):
+        normalize_factor <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">2.0</span><span style="color:#f92672">*</span>math<span style="color:#f92672">.</span>pi<span style="color:#f92672">*</span>sigma<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">**</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)
+        px <span style="color:#f92672">=</span> normalize_factor <span style="color:#f92672">*</span> math<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span>(x<span style="color:#f92672">-</span>mu)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>sigma<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>))
+
+        <span style="color:#66d9ef">return</span> px
+
+gaussian <span style="color:#f92672">=</span> gaussian(name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;gaussian&#34;</span>, a<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>)
+sample_from_gaussian <span style="color:#f92672">=</span> gaussian<span style="color:#f92672">.</span>rvs(size<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, mu<span style="color:#f92672">=</span><span style="color:#ae81ff">10.0</span>, sigma<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span>)
+</code></pre></div><p>Please note that the probability density function that you define by yourself must be standardized. If it has not been standardized, it seems good to use <a href="https://www.iwanttobeacat.com/entry/2018/03/24/225348">Rejection Sampling</a>.</p>
+<p>(However, even if you look at <a href="https://docs.scipy.org/doc/scipy-1.2.1/reference/generated/scipy.stats.rv_continuous.html">Documents</a>,therearemanyreasonswhya=0isnecessary.Idon&rsquo;tknow&hellip;)</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

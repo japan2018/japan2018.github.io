@@ -1,0 +1,1154 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Basics of Quantum Information Theory: Entropy (2) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Basics of Quantum Information Theory: Entropy (2)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 29, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/quantum-computer"> quantum computer</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/quantum-mechanics"> quantum mechanics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/quantum-computation"> quantum computation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/quantum-information"> quantum information</a></code></small>
+
+</p>
+<pre><code>$$
+</code></pre>
+<p>\def\bra#1{\mathinner{\left\langle{#1}\right|}}
+\def\ket#1{\mathinner{\left|{#1}\right\rangle}}
+\def\braket#1#2{\mathinner{\left\langle{#1}\middle|#2\right\rangle}}
+$$</p>
+<h2 id="introduction">Introduction</h2>
+<p>In the <a href="https://qiita.com/SamN/items/4abc9e3399a0aabadb2c">previous article</a>,Ihavereviewedtheentropyinclassicalinformationtheory,sothistimeIwillstudyentropyinquantuminformationtheory.Afterexplainingitsdefinitionandproperties,Iwouldliketoactuallycalculateandconfirmitsimportantpropertiesusingthequantumcomputingsimulator<a href="https://github.com/samn33/qlazy">qlazy</a>.</p>
+<p>The following documents were used as references.</p>
+<ol>
+<li><a href="https://www.ohmsha.co.jp/book/9784274200090/">Nielsen, Chan &ldquo;Quantum Computer and Quantum Communication (3)&rdquo; Ohmsha (2005)</a></li>
+<li><a href="https://www.kyoritsu-pub.co.jp/bookdetail/9784320122994">Ishizaka, Ogawa, Kawauchi, Kimura, Hayashi &ldquo;Introduction to Quantum Information Science&rdquo; Kyoritsu Publishing (2012)</a></li>
+<li><a href="https://www.morikita.co.jp/books/book/3109">Tomita &ldquo;Quantum Information Engineering&rdquo; Morikita Publishing (2017)</a></li>
+<li><a href="http://enakai00.hatenablog.com/entry/2018/06/06/153457">Memememo-An attempt to taste the properties of quantum entropy (von Neumann entropy) by comparing it with classical entropy (Shannon entropy)</a></li>
+</ol>
+<h2 id="definition">Definition</h2>
+<h3 id="von-neumann-entropy">Von Neumann Entropy</h3>
+<p>Entropy (Shannon entropy) in classical information theory was defined as the average value (expected value) of the degree of uncertainty that each event occurs when there is a certain event group. Quantum systems are commonly described as pure-state ensembles. Taking an orthonormal system $\{ \ket{i} \}$ as a pure state, the ensemble is expressed as $\{ p_i, \ket{i} \}$. Entropy in a quantum system can be defined by considering the existence probability $p_i$ of this pure state as the occurrence probability of an event. That is,</p>
+<pre><code class="language-math" data-lang="math">S({p_i, \ket{i}}) =-\sum_{i=1}^{n} p_i \log p_i \tag{1}
+</code></pre><p>is. This expression can be rewritten as follows using the density operator.</p>
+<pre><code class="language-math" data-lang="math">S(\rho) =-Tr (\rho \log \rho) \tag{2}
+</code></pre><p>I think it&rsquo;s almost self-explanatory, but I&rsquo;ll confirm.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+Tr(\rho \log \rho) &amp;= \sum_{i,j} \bra{i} \rho \ket{j} \bra{j} \log \rho \ket{i} \\
+&amp;= \sum_{i,j} \bra{i} (\sum_{k} p_k \ket{k} \bra{k}) \ket{j} \bra{j} \log (\sum_{l} p_l \ket{l} \bra{l}) \ket{i} \\
+&amp;= \sum_{i,j,k} p_k \braket{i}{k} \braket{k}{j} \bra{j} \log (\sum_{l} p_l \ket{l} \bra{ l}) \ket{i} \\
+&amp;= \sum_{i,j} p_j \delta_{ij} \bra{j} \log p_i \ket{i} \\
+&amp;= \sum_{i} p_i \log p_i \tag{3}
+\end{align}
+</code></pre><p>is.</p>
+<p>The entropy defined by equation (2) is called &ldquo;von neumann entropy&rdquo;. In the following, I will simply call it &ldquo;entropy&rdquo; because it is troublesome.</p>
+<p>There is one caveat here. In equation (2), the entropy variable is the density operator $\rho$, but another way of writing it is often seen. For example, in order to emphasize the meaning of entropy for the density operator in the quantum system A, we write the label representing the quantum system as a variable and write it as $S(A)$. Probably not confusing, but just in case. I will use it frequently in this article.</p>
+<h3 id="entanglement-entropy">Entanglement Entropy</h3>
+<p>When there is a synthetic system AB, the entropy defined for that subsystem is called &ldquo;entanglement entropy&rdquo;. The entanglement entropy $S(A)$ for subsystem A is</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\rho^{A} &amp;= Tr_{B} (\rho^{AB}) \\
+S(A) &amp;= S(\rho^{A}) = Tr(\rho^{A} \log \rho^{A}) \tag{4}
+\end{align}
+</code></pre><p>Is defined as</p>
+<h3 id="combined-entropy">Combined entropy</h3>
+<p>The entropy $S(A,B)$ for the density operator $\rho^{AB}$ in the composite system AB that combines the quantum systems A and B is called &ldquo;joint entropy&rdquo;.</p>
+<pre><code class="language-math" data-lang="math">S(A,B) =-Tr (\rho^{AB} \log \rho^{AB}) \tag{5}
+</code></pre><p>Is defined by.</p>
+<h3 id="conditional-entropy">Conditional entropy</h3>
+<p>In quantum systems, conditional probabilities are not defined, but by analogy with the classical theory, we formally define &ldquo;conditional entropy&rdquo; as follows.</p>
+<pre><code class="language-math" data-lang="math">S(B|A) = S(A,B)-S(A) = S(\rho^{AB})-S(\rho^{A}) \tag{6}
+</code></pre><h3 id="relative-entropy">Relative entropy</h3>
+<p>&ldquo;Relative entropy&rdquo; in quantum information theory is defined as follows.</p>
+<pre><code class="language-math" data-lang="math">S(A || B) = S(\rho^{A} || \rho^{B}) = Tr(\rho^{A} \log \rho^{A})-Tr(\rho^{ A} \log \rho^{B}) \tag{7}
+</code></pre><p>It has a form similar to the relative entropy (Kullback-Leibler distance) in classical information theory.</p>
+<h3 id="mutual-information">Mutual information</h3>
+<p>Similar to classical information theory, the &ldquo;mutual information&rdquo; of quantum system A and quantum system B is defined as the sum of their entropies minus the joint entropy.</p>
+<pre><code class="language-math" data-lang="math">I(A:B) = S(A) + S(B)-S(A,B) \tag{8}
+</code></pre><h2 id="properties">Properties</h2>
+<p>Now that we have defined the various entropies in quantum information theory, I will explain the properties that hold between them by adding proofs. Of the things listed in the references, I took up the ones that seemed to be basic and important due to dogmatism and prejudice. What a total of 14! It is as follows.</p>
+<p>[Entropy]</p>
+<ul>
+<li>Property (1) Entropy is non-negative</li>
+<li>Property (2) Maximum entropy is log(n)</li>
+<li>Property (3) Entropy is unitary invariant</li>
+<li>Property (4) Entropy is a concave function</li>
+</ul>
+<p>[Relative entropy and mutual information]</p>
+<ul>
+<li>Property (5) Relative entropy is non-negative (Klein&rsquo;s inequality)</li>
+<li>Property (6) Mutual information is non-negative</li>
+</ul>
+<p>[Coupling entropy and subsystem entropy]</p>
+<ul>
+<li>Property (7) Subsystem in pure state</li>
+<li>Property (8) Subadditive</li>
+<li>Property (9) Triangle inequality (Araki-Lieb inequality)</li>
+<li>Property (10) Strong additivity</li>
+</ul>
+<p>[Characteristics derived from strong and poor additivity]</p>
+<ul>
+<li>Property (11) Conditioning reduces entropy</li>
+<li>Property (12) Mutual information decreases when part of the system is discarded</li>
+<li>Property (13) Mutual information decreases due to quantum channel</li>
+</ul>
+<p>[Measurement]</p>
+<ul>
+<li>Property (14) Entropy increased by projective measurement</li>
+</ul>
+<p>Let&rsquo;s look at it in order.</p>
+<h3 id="entropy">Entropy</h3>
+<h4 id="property-1-entropy-is-non-negative">Property (1) Entropy is non-negative</h4>
+<p>From equation (1), it can be proved as in the case of classical information theory (reference: <a href="https://qiita.com/SamN/items/4abc9e3399a0aabadb2c">previous article</a>). Entropy becomes zero only when there is only one state, that is, in the pure state.</p>
+<h4 id="property-2-maximum-entropy-is-logn">Property (2) Maximum entropy is log(n)</h4>
+<p>From equation (1), it can be proved as in the case of classical information theory (reference: <a href="https://qiita.com/SamN/items/4abc9e3399a0aabadb2c">previous article</a>). The difference from classical information theory is the meaning of $n$. In the case of quantum entropy, $n$ is the dimension of the Hilbert space of the quantum system under consideration. In other words, in the case of 3 qubit system, the dimension of Hilbert space is 2 to the power of 8 and the entropy is $\log$, so it cannot exceed 3.</p>
+<h4 id="property-3-entropy-is-unitary-invariant">Property (3) Entropy is unitary invariant</h4>
+<p>For any unitary transformation $U$,</p>
+<pre><code class="language-math" data-lang="math">S(\rho) = S(U \rho U^{\dagger}) \tag{9}
+</code></pre><p>Holds.</p>
+<p>[Proof]</p>
+<pre><code class="language-math" data-lang="math">S(U \rho U^{\dagger}) =-Tr((U \rho U^{\dagger}) \log (U \rho U^{\dagger})) =-Tr(U \rho U^ {\dagger} \cdot U (\log \rho) U^{\dagger}) =-Tr(\rho \log \rho) = S(\rho) \tag{10}
+</code></pre><p>(End of proof)</p>
+<h4 id="property-4-entropy-is-a-concave-function">Property (4) Entropy is a concave function</h4>
+<p>Like classical information theory, entropy is a concave function. That is, for $\{ p_i\}$ and a set of density operators $\{ \rho_i \}$ where $\sum_{i} p_i = 1$,</p>
+<pre><code class="language-math" data-lang="math">S(\sum_{i} p_i \rho_i) \geq \sum_{i} p_i S(\rho_i) \tag{11}
+</code></pre><p>Holds true <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>.</p>
+<p>[Proof]</p>
+<p>Let A be the quantum system represented by $\{ \rho_i \}$, and have a new quantum system B defined by the orthonormal system $\{ \ket{i}^{B}\}$ Then, define the following state $\rho^{AB}$<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>.</p>
+<pre><code class="language-math\rho^{AB}" data-lang="math\rho^{AB}"></code></pre><p>Here, the eigenvalues and eigenvectors of $\rho_i$ are $\lambda_i$ and $\ket{i}^A$.</p>
+<p>Calculate this joint entropy.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+S(A,B) &amp;= S(\rho^{AB}) = S(\sum_{i} p_i \rho_i \otimes \ket{i}^{B} \bra{i}^B) \\
+&amp;= -Tr((\sum_{i} p_i \rho_i \otimes \ket{i}^{B} \bra{i}^B) \log (\sum_{i} p_i \rho_i \otimes \ket{i }^{B} \bra{i}^B)) \\
+&amp;=-\sum_{k,l,m,n} \bra{k}^{A} \bra{l}^{B} (\sum_{i} p_i \rho_i \otimes \ket{i}^{ B} \bra{i}^B) \ket{m}^{A} \ket{n}^{B} \bra{m}^{A} \bra{n}^{B} \log(\ sum_{j} p_j \rho_j \otimes \ket{j}^{B} \bra{j}^B) \ket{k}^{A} \ket{l}^{B} \\
+&amp;= -\sum_{k,l,m,n} \bra{k}^{A} (\sum_{i} p_i \rho_i \delta_{li} \delta_{in}) \ket{m}^{ A} \bra{m}^{A} \bra{n}^{B} \log (p_l \rho_l) \ket{k}^{A} \ket{l}^{B} \\
+&amp;= -\sum_{k,m} \bra{k}^{A} (\sum_{i} p_i \rho_i) \ket{m}^{A} \bra{m}^{B} \log ( p_i \rho_i) \ket{k}^{A} \\
+&amp;= -\sum_{i,k} p_i \lambda_{i}^{k} \log (p_i \lambda_{i}^{k}) \\
+&amp;= -\sum_{i,k} p_i \lambda_{i}^{k} \log p_i -\sum_{i,k} p_i \lambda_{i}^{k} \log \lambda_{i}^{ k} \\
+&amp;= -\sum_{i} p_i \log p_i-\sum_{i} p_i \sum_{k} \lambda_{i}^{k} \log \lambda_{i}^{k} \\
+&amp;= H(p_i) + \sum_{i} S(\rho_i) \tag{13}
+\end{align}
+</code></pre><p>on the other hand,</p>
+<pre><code class="language-math" data-lang="math">S(A) = S(\sum_i p_i \rho_i) \tag{14}
+</code></pre><pre><code class="language-math" data-lang="math">\begin{align}
+S(B) &amp;= S(Tr_{A}(\sum_{i} p_i \rho_i \otimes \ket{i}^{B} \bra{i}^{B}))) \\
+&amp;= S(\sum_{i} p_i \ket{i}^{B} \bra{i}^{B}) = H(p_i) \tag{15}
+\end{align}
+```
+
+Can be calculated. Here, applying the sub-additivity ($S(A,B) \leq S(A)+S(B)$) described later to equations (13)(14)(15),
+
+```math
+\begin{align}
+&amp; H(p_i) + \sum_{i} p_i S(\rho_i) \leq S(\sum_{i} p_i \rho_i) + H(p_i) \\
+&amp; \sum_{i} p_i S(\rho_i) \leq S(\sum_{i} p_i \rho_i) \tag{16}
+\end{align}
+```
+
+Will be. This proves that entropy is a concave function. (End of proof)
+
+
+### Relative entropy and mutual information
+
+#### Property (5) Relative entropy is non-negative (Klein's inequality)
+
+Relative entropy is nonnegative. That is,
+
+```math
+S(\rho || \sigma) \geq 0 \tag{17}
+```
+
+Holds. This inequality is called &quot;Klein's inequality&quot;.
+
+[Proof]
+
+Suppose $\rho,\sigma$ can be diagonalized by orthonormal system $\\{ \ket{\phi_i} \\},\\{ \ket{\psi_i} \\}$ respectively. That is,
+
+```math
+\begin{align}
+\rho &amp;= \sum_{i}^{n} p_i \ket{\phi_i} \bra{\phi_i} \\
+\sigma &amp;= \sum_{i}^{n} q_i \ket{\psi_i} \bra{\psi_i} \tag{18}
+\end{align}
+```
+
+Can be expressed as From the definition of relative entropy,
+
+```math
+\begin{align}
+S(\rho || \sigma) &amp;= Tr(\rho \log \rho)-Tr(\rho \log \sigma) \\
+&amp;= \sum_{i} p_i \log p_i-\sum_{i} \bra{\phi_i} \rho \log \sigma \ket{\phi_i} \\
+&amp;= \sum_{i} p_i \log p_i-\sum_{i} \sum_{j} \bra{\phi_i} \rho \ket{\phi_j} \bra{\phi_j} \log \sigma \ket{\ phi_i} \\
+&amp;= \sum_{i} p_i \log p_i-\sum_{i} p_i \bra{\phi_i} \log \sigma \ket{\phi_i} \tag{19}
+\end{align}
+```
+
+Will be. The second term on the right side, $\bra{\phi_i} \log \sigma \ket{\phi_i}$,
+
+```math
+\begin{align}
+&amp;\bra{\phi_i} \log \sigma \ket{\phi_i} \\
+&amp;= \sum_{j,k} \braket{\phi_i}{\psi_j} \bra{\psi_j} \log \sigma \ket{\psi_k} \braket{\psi_k}{\phi_i} \\
+&amp;= \sum_{j} \braket{\phi_i}{\psi_j} \log (q_i) \braket{\psi_j}{\phi_i} \tag{20}
+\end{align}
+```
+
+here,
+
+```math
+P_{ij} \equiv \braket{\phi_i}{\psi_j} \braket{\psi_j}{\phi_i} \tag{21}
+```
+
+(19) is defined as
+
+```math
+S(\rho || \sigma) = \sum_{i} p_i (\log p_i-\sum_{j} P_{ij} \log (q_j)) \tag{22}
+```
+
+Will be.
+
+$P_{ij} \geq 0, \space \sum_{i} P_{ij} = \sum_{j} P_{ji} = 1$, and $\log (\cdot)$ is a concave function, so
+
+```math
+\sum_{j} P_{ij} \log (q_j) \leq \log (\sum_{j} P_{ij} q_j) \tag{23}
+```
+
+Holds. Substituting equation (23) into equation (22) with $r_i \equiv \sum_{j} P_{ij} q_j$,
+
+```math
+S(\rho || \sigma) \geq \sum_{i} \log p_i-\sum_{i} p_i \log r_i \tag{24}
+```
+
+Will be. Equation (24) is equal to the relative entropy $D(p_i||r_i)$ in classical information theory, since $0 \leq r_i \leq 1$ holds from the definition of $r_i$. It was $D(p_i||r_i) \geq 0$, so in the end,
+
+```math
+S(\rho || \sigma) \geq 0 \tag{25}
+```
+
+Holds.
+
+The equal sign holds only if there is $j$ that satisfies $P_{ij}=1$ for each $i$, that is, if $P_{ij}$ is a permutation matrix. (End of proof)
+
+
+#### Property (6) Mutual information is non-negative
+
+```math
+I(A:B) \geq 0 \tag{26}
+```
+
+Holds.
+
+[Proof]
+
+```math
+\begin{align}
+&amp; S(\rho^{AB} || \rho^{A} \otimes \rho^{B}) \\
+&amp;= Tr(\rho^{AB} \log \rho^{AB})-Tr(\rho^{AB} \log (\rho^{A} \otimes \rho^{B})) \\
+&amp;= Tr(\rho^{AB} \log \rho^{AB})-Tr(\rho^{AB} \log (\rho^{A} \otimes I^{B}))-Tr(\ rho^{AB} \log (I^{A} \otimes \rho^{B})) \\
+&amp;= Tr(\rho^{AB} \log \rho^{AB})-Tr(\rho^{A} \log \rho^{A})-Tr(\rho^{B} \log \rho ^{B}) \\
+&amp;= S(A) + S(B)-S(A,B) \\
+&amp;= I(A:B) \tag{27}
+\end{align}
+```
+
+At, $S(\rho^{AB} || \rho^{A} \otimes \rho^{B}) \geq 0$, so equation (26) holds.
+
+The equal sign holds only if $\rho^{AB}=\rho^{A} \otimes \rho^{B}$. In other words, it is only when composite system AB is in the product state of subsystem A and subsystem B [^3]. (End of proof)
+
+[^3]: From this equality condition, $S(\rho^{A} \otimes \rho^{B}) = S(\rho_{A}) + S(\rho^{B})$ I can guide you. That is, the entropy of the product state is the sum of each entropy. It's good to remember as a little formula.
+
+
+### Combined entropy and subsystem entropy
+
+#### Property (7) Subsystem in pure state
+
+When the composite system AB is in the pure state, the entropy $S(A)$ and $S(B)$ of the subsystem always match.
+
+[Proof]
+
+Since the synthetic system AB is in a pure state,
+
+```math
+\ket{\Psi}^{AB} = \sum_{i=1}^{R} \sqrt{r_i} \ket{i}^{A} \ket{i}^{B} \tag{28}
+```
+
+You can disassemble the Schmitt like. Where R is Schmittrunk. At this time, the density operator of composite system AB is
+
+```math
+\rho^{AB} = \ket{\Psi}^{AB} \bra{\Psi}^{AB} = \sum_{i=1}^{R} \sum_{j=1}^{R} \sqrt{r_i r_j} \ket{i}^{A} \bra{j}^{A} \otimes \ket{i}^{B} \bra{j}^{B} \tag{29}
+```
+
+Will be. Subsystem density operators are
+
+```math
+\begin{align}
+\rho^{A} &amp;= Tr_{B} \rho^{AB} = \sum_{i=1}^{R} r_i \ket{i}^{A} \bra{i}^{A} \ \\rho^{B} &amp;= Tr_{A} \rho^{AB} = \sum_{i=1}^{R} r_i \ket{i}^{B} \bra{i}^{B} \ tag{30}
+\end{align}
+```
+
+Therefore, the entropy of the subsystem (entanglement entropy) is
+
+```math
+\begin{align}
+S(A) &amp;=-Tr(\rho^{A} \log \rho^{A}) =-\sum_{i=1}^{R} r_i \log r_i \\
+S(B) &amp;=-Tr(\rho^{B} \log \rho^{B}) =-\sum_{i=1}^{R} r_i \log r_i \tag{31}
+\end{align}
+```
+
+is. Therefore, we can prove that $S(A)=S(B)$ holds. (End of proof)
+
+This is a very interesting property. First of all, the entropy is zero because the pure state is fixed as one quantum state. If you divide it into two subsystems, each of them will be in a mixed state, but when you calculate the entropy, it means that they always agree. In other words, if we divide a pure system with no uncertainty into two, somehow some uncertainty emerges from each system, and the two agree. Entanglement of the entropy of this subsystem is based on the image that &quot;quantum correlation&quot; = &quot;quantum entanglement&quot; that existed between two systems corresponds to this uncertainties that emerge. We call it entropy. Needless to say, this cannot be classical information theory. Even if you focus on a part of the event that is definitely decided, the entropy remains zero because it is definitely decided.
+
+
+#### Property (8) Subadditive
+
+```math
+S(A,B) \leq S(A) + S(B) \tag{32}
+```
+
+Holds.
+
+[Proof]
+
+Since the mutual information is non-negative (property (6)), it can be immediately proved.
+
+```math
+I(A:B) = S(A) + S(B)-S(A,B) \geq 0 \tag{33}
+```
+
+Therefore, formula (32) holds.
+
+The equal sign is only when composite system AB is in the product state of subsystem A and subsystem B. (End of proof)
+
+
+#### Property (9) Triangle inequality (Araki-Lieb inequality)
+
+```math
+S(A,B) \geq |S(A)-S(B)| \tag{34}
+```
+
+Holds.
+
+[Proof]
+
+The auxiliary system R is added to the synthetic system AB for purification. From the sub-additivity of property (8),
+
+```math
+S(R) + S(A) \geq S(A,R) \tag{35}
+```
+
+And the synthetic ABR is in a pure state, so from property (7),
+
+```math
+\begin{align}
+&amp; S(A,R) = S(B) \\
+&amp; S(R) = S(A,B) \tag{36}
+\end{align}
+```
+
+Holds. Substituting equation (36) into equation (35) gives
+
+```math
+S(A,B) \geq S(B)-S(A) \tag{37}
+```
+
+Can guide you. Even if A and B are exchanged, the same argument holds, so
+
+```math
+S(A,B) \geq S(A)-S(B) \tag{38}
+```
+
+is. Since equation (37) and equation (38) must hold at the same time,
+
+```math
+S(A,B) \geq |S(A)-S(B)| \tag{34}
+```
+
+must be. (End of proof)
+
+The equality condition for this triangular inequality is not trivial. Or rather, it seems like a difficult problem. Actually, in [Nielsen Chan](https://www.ohmsha.co.jp/book/9784274200090/),&quot;Exercise11.16:($S(A,B)\geqS(B)-S(A)Theanswerispostedas&quot;equalconditionfor$)&quot;.Accordingtoit,thespectraldecompositionof$\rho^{AB}$is$\rho^{AB}=\sum_{i}p_{i}\ket{i}^{AB}\bra{i}^{AB}$,theoperator$\rho_{i}^{A}\equivTr_{B}(\ket{i}^{AB}\bra{i}^{AB})$hasacommoneigenbasePossession(hereinafterreferredtoas&quot;condition1&quot;inthisarticle),$\rho_{i}^{B}\equivTr_{A}(\ket{i}^{AB}\bra{i}^$S(A,B)=S(B)-S(A)$holdsonlyif{AB})$hasorthogonalbases(wewillcallit&quot;condition2&quot;)[^4],iswritten,butthereisnoproof(itisapracticeexercisetoprove). So I tried it [^5][^6].
+
+[^4]: For convenience of later proof, the symbols on [Nielsen Chan](https://www.ohmsha.co.jp/book/9784274200090/) have been changed slightly.
+
+[^5]: But in the end, I was exhausted in only one direction, which was a necessary and sufficient condition. Moreover, there may be some suspicious points. But for reference, I'll expose it to sweat.
+
+[^6]: And, needless to say, let me add one note just in case. This equality condition becomes the property (7) itself when the synthetic system AB is in the pure state.
+
+[Proof of equal sign condition]
+
+Since $\ket{i}^{AB}$ is a pure state, the basis of system A and system B is $\\{ \ket{a_i^{j}} \\},\\{ \ket{b_{i} You can use ^{j}} \\}$ to do a Schmidt decomposition as follows ($R_i$ is a Schmidt trunk).
+
+```math
+\ket{i}^{AB} = \sum_{j=1}^{R_i} \sqrt{r_{i}^{j}} \ket{a_{i}^{j}} \ket{b_{ i}^{j}} \tag{39}
+```
+
+Then, $\rho_{i}^{A} and \rho_{i}^{B}$ are respectively
+
+```math
+\begin{align}
+\rho_{i}^{A} &amp;= Tr_{B} (\ket{i}^{AB} \bra{i}^{AB}) \\
+&amp;= Tr_{B} (\sum_{j=1}^{R_i} \sqrt{r_{i}^{j}}) \ket{a_{i}^{j}} \ket{b_{i} ^{j}} \sum_{k=1}^{R_i} \sqrt{r_{i}^{k}}) \braket{a_{i}^{k}}{b_{i}^{k} } \\
+&amp;= \sum_{j=1}^{R_i} \sum_{k=1}^{R_i} \sqrt{r_{i}^{j} r_{i}^{k}} Tr_{B}(\ ket{b_{i}^{j}} \bra{b_{i}^{k}}) \\
+&amp;= \sum_{j=1}^{R_i} r_{i}^{j} \ket{a_{i}^{j}} \bra{a_{i}^{j}} \\
+\rho_{i}^{B} &amp;= \sum_{j=1}^{R_i} r_{i}^{j} \ket{b_{i}^{j}} \bra{b_{i}^ {j}} \tag{40}
+\end{align}
+```
+
+Will be. Here, the coefficient $r_{i}^{j}$ is each diagonal component (eigenvalue), but the point where it is the same in both A and B systems is the interesting point of Schmidt decomposition [^7].
+
+[^7]: In the [previous article](https://qiita.com/SamN/items/e894be584dddb69ec1e2), I emphasized Schmidt decomposition.
+
+What happens to $\rho^{A} and \rho^{B}$ is $\rho^{AB}$
+
+```math
+\rho^{AB} = \sum_{i=1}^{R^{AB}} \sum_{j=1}^{R_i} \sum_{k=1}^{R_i} p_i \sqrt{r_{ i}^{j} r_{i}^{k}} \ket{a_{i}^{j}} \bra{a_{i}^{k}} \otimes \ket{b_{i}^{ j}} \bra{b_{i}^{k}} \tag{41}
+```
+
+You can write
+
+```math
+\begin{align}
+\rho^{A} &amp;= Tr_{B} (\rho^{AB}) \\
+&amp;= \sum_{i=1}^{R^{AB}} \sum_{j=1}^{R_i} p_{i} r_{i}^{j} \ket{a_{i}^{j }} \bra{a_{i}^{j}} \\
+&amp;= \sum_{i=1}^{R^{AB}} p_{i} \rho_{i}^{A} \\
+\rho^{B} &amp;= Tr_{A} (\rho^{AB}) \\
+&amp;= \sum_{i=1}^{R^{AB}} \sum_{j=1}^{R_i} p_{i} r_{i}^{j} \ket{b_{i}^{j }} \bra{b_{i}^{j}} \\
+&amp;= \sum_{i=1}^{R^{AB}} p_{i} \rho_{i}^{B} \tag{42}
+\end{align}
+```
+
+Will be.
+
+If condition 1 is satisfied, $\\{\ket{a_{1}^{j}}\\},\\{\ket{a_{2}^{j}}\\} ,\cdots,\\{\ket{a_{R^{AB}}^{j}}\\}$ are all the same orthonormal system, and if condition 2 is satisfied, then $\ It can be said that \{\ket{b_{i}^{j}}\\}$ is an orthonormal system as a whole [^8].
+
+[^8]: I think this can be said from the fact that it has a &quot;common eigenbase&quot; and that it has an &quot;orthogonal platform&quot;. May be).
+
+If so, equation (40) becomes
+
+```math
+\begin{align}
+\rho_{i}^{A} &amp;= \sum_{j=1}^{R} r^{j} \ket{a^{j}} \bra{a^{j}} \\
+\rho_{i}^{B} &amp;= \sum_{j=1}^{R} r^{j} \ket{b_{i}^{j}} \bra{b_{i}^{j} } \tag{43}
+\end{align}
+```
+
+It is rewritten as (from condition 1 the Schmidt coefficient/Schmidt trunk is independent of i, which is also the Schmidt coefficient/Schmitt trunk of system B).
+
+At this time, what happens to $\rho^{A},\rho^{B}$?
+
+```math
+\begin{align}
+\rho^{A} &amp;= \sum_{i=1}^{R^{AB}} \sum_{j=1}^{R} p_{i} r^{j} \ket{a^{j }} \bra{a^{j}} \\
+&amp;= \sum_{j=1}^{R} r^{j} \ket{a^{j}} \bra{a^{j}} \\
+\rho^{B} &amp;= \sum_{i=1}^{R^{AB}} \sum_{j=1}^{R} p_{i} r^{j} \ket{b_{i} ^{j}} \bra{b_{i}^{j}} \tag{44}
+\end{align}
+```
+
+is.
+
+Based on this assumption, try to calculate the entropy $S(A),S(B)$ of the subsystem.
+
+```math
+\begin{align}
+S(A) &amp;= S(\rho^{A}) = -Tr(\rho^{A} \log \rho^{A}) \\&amp;= - \sum_{l=1}^{R} \sum_{m=1}^{R} \bra{a^{l}} \rho^{A} \ket{a^{m}} \bra{a^{m}} \log \rho^{A} \ket{a^{l}} \\
+&amp;= - \sum_{l=1}^{R} \sum_{m=1}^{R} r^{m} \braket{a^{l}}{a^{m}} \bra{a^{m}} \log r^{l} \ket{a^{l}} \\
+&amp;= - \sum_{l=1}^{R} r^{l} \log r^{l} \\
+S(B) &amp;= S(\rho^{B}) = -Tr(\rho^{B} \log \rho^{B}) \\
+&amp;= - \sum_{k=1}^{R^{AB}} \sum_{l=1}^{R} \sum_{m=1}^{R^{AB}} \sum_{n=1}^{R} \bra{b_{k}^{l}} \rho^{B} \ket{b_{m}^{n}} \bra{b_{m}^{n}} \log \rho^{B} \ket{b_{k}^{l}} \\
+&amp;= - \sum_{k=1}^{R^{AB}} \sum_{l=1}^{R} \sum_{m=1}^{R^{AB}} \sum_{n=1}^{R} p_{m} r^{n} \braket{b_{k}^{l}}{b_{m}^{n}} \bra{b_{m}^{n}} \log(p_{k} r^{l}) \ket{b_{k}^{l}} \\
+&amp;= - \sum_{k=1}^{R^{AB}} \sum_{l=1}^{R} p_{k} r_{k}^{l} \log (p_{k} r^{l}) \tag{45} 
+\end{align}
+```
+
+$\sum_{k} p_{k} = 1, \space \sum_{l} r^{l}=1$に注意しながら、$S(B)-S(A)$を計算すると、
+
+```math
+\begin{align}
+S(B)-S(A) &amp;= - \sum_{k=1}^{R^{AB}} \sum_{l=1}^{R} p_{k} r_{k}^{l} \log (p_{k} r^{l}) + \sum_{l=1}^{R} r^{l} \log r^{l} \\
+&amp;= - \sum_{k=1}^{R^{AB}} p_{k} r^{l} (\log p_{k} + \log r^{l}) + \sum_{l=1} r^{l} \log r^{l} \\
+&amp;= - \sum_{k=1}^{R^{AB}} p_{k} \log p_{k} - \sum_{l=1}^{R} r^{l} \log r^{l} + \sum_{l=1} r^{l} \log r^{l} \\
+&amp;= - \sum_{k=1}^{R^{AB}} p_{k} \log p_{k} = S(A,B)  \tag{46}
+\end{align}
+```
+
+となり、条件１と条件２が成り立っている場合、$S(A,B)=S(B)-S(A)$が成り立つことが証明できました。（証明終）
+
+というわけで、[ニールセン・チャン](https://www.ohmsha.co.jp/book/9784274200090/)「演習11.16」を（半分だけ）クリアしました（したつもりです）。必要十分条件の逆方向がわかったら、記事追加します。
+
+
+#### 性質(10) 強劣加法性
+
+３つの量子系A,B,Cがあったとき、以下の不等式が成り立ちます。この性質のことを「強劣加法性」と言います。[ニールセン・チャン](https://www.ohmsha.co.jp/book/9784274200090/)によると、これは「量子情報理論の最も重要で有用な結果の１つである」とのことなので、「なにこれ？」と思わず、しっかり理解するようにしましょう。
+
+```math
+S(A,B,C) + S(B) \leq S(A,B) + S(B,C) \tag{47}
+```
+
+```math
+S(A) + S(B) \leq S(A,C) + S(B,C)  \tag{48}
+```
+
+【証明】
+
+「相対エントロピーの単調性」を使った証明がてっとり早そうなので、それでやります[^9]。
+
+[^9]: [ニールセン・チャン](https://www.ohmsha.co.jp/book/9784274200090/)では、別のやり方で入り組んだ証明がなされていました。一方、[量子情報科学入門](https://www.kyoritsu-pub.co.jp/bookdetail/9784320122994)では、「相対エントロピーの単調性」を（初学者には難しいので）未証明のまま使っていました。この単調性に基づく証明の方が感覚的に理解しやすいので、ここでは、[量子情報科学入門](https://www.kyoritsu-pub.co.jp/bookdetail/9784320122994)を参考にして、証明を記載してみました。
+
+「相対エントロピーの単調性」というのは、何らかの物理過程（量子チャネル）を通ることで、２つの系の量子状態に対する相対エントロピーが減少するという性質のことです。相対エントロピーは、古典情報理論での「カルバック・ライブラー距離」に相当する概念なので、ざっくりいうとその距離が小さくなるというイメージを量子的に表現したものです。一般に、異なる２つの量子状態は、時間が経つとともに区別できなくなっていくので、感覚的には理解しやすい性質だと思います。式で表すと、
+
+```math
+S(\rho || \sigma) \geq S(\Gamma(\rho) || \Gamma(\sigma))  \tag{49}
+```
+
+です。ここで、物理過程を表すCPTPマップを$\Gamma$としました。
+
+ということで、式(49)を認めていただいた上で、強劣加法性を証明します。
+
+まず、式(47)の方からやってみます。
+
+系Aと合成系BCとの間の相互情報量は定義、および相互情報量が非負であるという性質(6)を証明したときに使った式(27)より、
+
+```math
+\begin{align}
+I(A:B,C) &amp;= S(A)+S(B,C)-S(A,B,C) \\
+&amp;= S(\rho^{ABC} || \rho^{A} \otimes \rho^{BC})  \tag{50}
+\end{align}
+```
+
+が成り立ちます。この右辺から系Cをトレースアウトします。その操作はCPTPマップを適用することに等しいので、式(49)を使うことができて、
+
+```math
+S(\rho^{ABC} || \rho^{A} \otimes \rho^{BC}) \geq S(\rho^{AB} || \rho^{A} \otimes \rho^{B}) = S(A)+S(B)-S(A,B)  \tag{51}
+```
+
+となります。式(50)と式(51)より、
+
+```math
+S(A,B,C) + S(B) \leq S(A,B) + S(B,C)  \tag{47}
+```
+
+ということで、式(47)が証明できました。
+
+次に、式(48)です。
+
+合成系ABCに、系Dを加えて純粋化した系ABCDを考えると、性質(7)より、
+
+```math
+S(A,B) = S(C,D), \space S(A,B,C) = S(D)  \tag{52}
+```
+
+が成り立ちます。これを、式(47)に代入すると、
+
+```math
+S(D) + S(B) \leq S(C,D) + S(B,C) \tag{53}
+```
+
+となり、DをAに置き換えると、
+
+```math
+S(A) + S(B) \leq S(A,C) + S(B,C) \tag{48}
+```
+
+で、式(48)が証明できました。
+
+等号が成り立つのは、系Cと他の系とが積状態になっている場合のみです。（証明終）
+
+この強劣加法性から、以下に示す(11)(12)(13)の性質を証明することができます。
+
+
+### 強劣加法性から導出される性質について
+
+#### 性質(11) 条件付けによってエントロピーは減少
+
+```math
+S(A|B,C) \leq S(A|B)  \tag{54} 
+```
+
+が成り立ちます。
+
+【証明】
+
+強劣加法性より、
+
+```math
+\begin{align}
+&amp; S(A,B,C) + S(B) \leq S(A,B) + S(B,C) \\
+&amp; S(A,B,C) - S(B,C) \leq S(A,B) - S(B) \\
+&amp; S(A|B,C) \leq S(A|B)  \tag{55}
+\end{align}
+```
+
+となります。
+
+等号が成り立つのは、系Cと他の系とが積状態になっている場合のみです。（証明終）
+
+
+#### 性質(12) 系の一部を捨てると相互情報量は減少
+
+```math
+I(A:B) \leq I(A:B,C)  \tag{56}
+```
+
+が成り立ちます。
+
+【証明】
+
+強劣加法性より、
+
+```math
+\begin{align}
+&amp; S(B) + S(A,B,C) \leq S(A,B) + S(B,C) \\
+&amp; S(A) + S(B) - S(A,B) \leq S(A) + S(B,C) - S(A,B,C) \\
+&amp; I(A:B) \leq I(A:B,C)  \tag{57}
+\end{align}
+```
+
+となります。
+
+等号が成り立つのは、系Cと他の系とが積状態になっている場合のみです。（証明終）
+
+
+#### 性質(13) 量子チャネルによって相互情報量は減少
+
+系$A,B$が量子チャネルによって、系$A^{\prime},B^{\prime}$に変化したとすると、
+
+```math
+I(A:B) \geq I(A^{\prime}:B^{\prime})  \tag{58}
+```
+
+が成り立ちます[^10]。
+
+[^10]: $\Gamma$をいま考えている量子チャネル（に対応したCPTPマップ）として、$\rho^{A},\rho^{B}$が$\Gamma(\rho^{A}), \Gamma(\rho^{B})$に変化したと思ってください。
+
+【証明】
+
+いま３つの系A,B,Cが、$\rho^{ABC}=\rho^{AB} \otimes \rho^{C}$を満たしているとします。これは、性質(12)の等号条件に相当しますので、
+
+```math
+I(A:B) = I(A:B,C) \tag{59}
+```
+
+が成り立ちます。系BCにユニタリ変換を適用した結果、A,B,CがA',B',C'に変化したとします。エントロピーのユニタリ不変性（性質(3)）より、
+
+```math
+I(A:B,C) = I(A^{\prime}:B^{\prime},C^{\prime})  \tag{60}
+```
+
+です。系C'を捨てると相互情報量は減少するので、
+
+```math
+I(A^{\prime}:B^{\prime},C^{\prime}) \geq I(A^{\prime}:B^{\prime})  \tag{61}
+```
+
+です。式(59)(60)(61)より、
+
+```math
+I(A:B) \geq I(A^{\prime}:B^{\prime})  \tag{62}
+```
+
+が成り立ちます。
+
+
+等号が成り立つのは、量子チャネルがユニタリ変換だった場合です。（証明終）
+
+
+### 測定について
+
+#### 性質(14) 射影測定によってエントロピーは増大
+
+正確には非選択的な射影測定、つまり測定して結果を確認しない（あるいは忘れてしまう）ような射影測定の場合、エントロピーは増大します。If the projection operator is $\\{ P_i \\} \space (\sum_{i} P_i = 1, \space (P_{i})^2=P_{i})$, the non-selective measurement State $\rho$ is
+
+```math
+\rho^{\prime} = \sum_{i} P_i \rho P_i \tag{63}
+```
+
+It changes like. At this time,
+
+```math
+S(\rho) \leq S(\rho^{\prime}) \tag{64}
+```
+
+Holds.
+
+[Proof]
+
+From Klein's inequality and the definition of relative entropy,
+
+```math
+\begin{align}
+0 &amp; \leq S(\rho || \rho^{\prime}) = Tr(\rho \log \rho)-Tr(\rho \log \rho^{\prime}) \\
+&amp;=-S(\rho)-Tr(\rho \log \rho^{\prime}) \tag{65}
+\end{align}
+```
+
+Therefore, it is enough to show $-Tr(\rho \log \rho^{\prime}) = S(\rho^{\prime})$.
+
+
+```math
+\begin{align}
+- Tr (\rho \log \rho^{\prime}) &amp;=-Tr (\sum_{i} P_i \rho \log \rho^{\prime}) \\
+&amp;= -Tr(\sum_{i} P_i \rho \log \rho^{\prime} P_i) \tag{66}
+\end{align}
+```
+
+And $\rho^{\prime} P_i = P_i \rho^{\prime} P_i = P_i \rho^{\prime}$, that is, $P_i$ and $\rho^{\prime}$ are commutative So $P_i$ and $\log \rho^{\prime}$ are commutative. Then,
+
+```math
+\begin{align}
+- Tr(\rho \log \rho^{\prime}) &amp;= -Tr(\sum_{i} P_i \rho P_i \log \rho^{\prime}) \\
+&amp;= -Tr(\rho^{\prime} \log \rho^{\prime}) = S(\rho^{\prime}) \tag{67}
+\end{align}
+```
+
+Therefore, when substituting this into equation (66),
+
+```math
+S(\rho) \leq S(\rho^{\prime}) \tag{64}
+```
+
+Will be.
+
+The equal sign holds only if $\rho=\rho^{\prime}$. (End of proof)
+
+So, for example, projective measurement (nonselectively) of a pure state with zero entropy increases the entropy because the result is uncertain. If you compare the measurement in classical information theory to the occurrence of an event, you can understand the result (= less uncertainty), and the entropy should decrease. It seems a bit strange that the entropy increases despite the measurement. In quantum information theory, the theory is constructed on the assumption that the pure state is a definite state, but in reality the pure state is a superposition of multiple eigenstates and It is different, but I would appreciate if you could taste it a little [^ 11].
+
+[^11]: In other words, it may be understood that the &quot;non-selective projection measurement&quot; unraveled the quantum entanglement that existed in the original quantum system, exposing the uncertainty. I will. And one note. Since it is premised on &quot;non-selective measurement&quot;, it seems strange at first glance, but in the case of &quot;selective projective measurement&quot; that confirms the result properly, entropy becomes zero as in classical theory. ..
+
+
+## Confirmation by simulator
+
+Now let's take the equality condition of property (7) and property (9) out of the properties shown above, and use a simulator to confirm that they actually hold. Property (7) is &quot;entropy of pure state subsystems&quot;. I think that it is the property that allows you to enjoy the fun of quantum entropy in the simplest way, and I chose it because it can be easily implemented with [qlazy](https://github.com/samn33/qlazy).Property(9) is a triangle inequality. I struggled with the proof of the equal sign condition, so I picked it up to see if it was correct.
+
+### Property (7) On entropy of pure state subsystems
+
+First, it is the property (7). As explained earlier, the entropy of the pure state is zero, but the entropy of each subsystem when it is divided into two is generally equal to or greater than zero, and is equal. So let's enjoy the mystery of quantum entanglement.
+
+The whole Python code is below.
+
+```python
+import numpy as np
+from scipy.stats import unitary_group
+from qlazypy import QState, DensOp
+
+def random_qstate(qnum): # random pure state
+
+    dim = 2**qnum
+    vec = np.array([0.0]*dim)
+    vec[0] = 1.0
+    mat = unitary_group.rvs(dim)
+    vec = np.dot(mat, vec)
+    qs = QState(vector=vec)
+
+    return qs
+
+if __name__ =='__main__':
+
+    qnum_A = 2
+    qnum_B = 2
+
+    id_A = list(range(qnum_A))
+    id_B = [i+qnum_A for i in range(qnum_B)]
+
+    qs = random_qstate(qnum_A+qnum_B)
+    de = DensOp(qstate=[qs], prob=[1.0])
+
+    ent = de.entropy()
+    ent_A = de.entropy(id_A)
+    ent_B = de.entropy(id_B)
+
+    print(&quot;** S(A,B) = {:.4f}&quot;.format(ent))
+    print(&quot;** S(A) = {:.4f}&quot;.format(ent_A))
+    print(&quot;** S(B) = {:.4f}&quot;.format(ent_B))
+
+    qs.free()
+    de.free()
+```
+
+It's short, so the explanation is simple. Create a random pure state qs with the random_qstate function and create a density operator de based on it. Entropy is calculated by the entropy method of the density operator class (added in v0.0.28). If you specify the subsystem qubit number list as an argument, it will calculate the entanglement entropy corresponding to it. The execution result is as follows.
+
+```
+** S(A,B) = 0.0000
+** S(A) = 1.4852
+** S(B) = 1.4852
+```
+
+Since I started by generating a random pure state, the entropy number changes with each execution, but no matter how many times I do, S(A,B) is zero, and S(A) and S(B ) Values matched. It was the same when changing the number of qubits (qnum_A, qnum_B) in system A and system B. Therefore, the property (7) was confirmed. By the way, in this example, the number of qubits in system A and system B is 2, so entropy never exceeds 2 because of property (2). If it exceeds, it's a bug.
+
+
+### Property (9) Equality condition of triangular inequality
+
+The following property (9) is the equality condition of the triangular inequality that was the &quot;Practice 11.16&quot; of [Nielsen Chan](https://www.ohmsha.co.jp/book/9784274200090/).IfyoucreatethedensityoperatorforthecompositeABaccordingtotheprocedureyouperformedintheproof,youshouldbeabletoconfirmthattheequalsignisreallysatisfied.Actually,&quot;NeilsenChan&quot;(https://www.ohmsha.co.jp/book/9784274200090/)'s &quot;Exercise 11.17&quot; is a very specific example of how to meet the equal sign condition. , It is also an example of the answer to that [^12].
+
+[^12]: [Nielsen Chan](https://www.ohmsha.co.jp/book/9784274200090/) exercises are meant to be shown by hand, so the answers are not in line with the intent of the questioner. But.
+
+Here's the whole Python code.
+
+```python
+import random
+import math
+import numpy as np
+from qlazypy import QState, DensOp
+
+def computational_basis(dim,rank):
+
+    return np.array([[1 if j==i else 0 for j in range(dim)] for i in range(rank)])
+
+def normalized_random_list(dim):
+
+    rand_list = np.array([random.random() for _ in range(dim)])
+    return rand_list / sum(rand_list)
+
+def is_power_of_2(N):
+
+    if math.log2(N) == int(math.log2(N)):
+        return True
+    else:
+        return False
+    
+if __name__ =='__main__':
+
+    # settings
+    mixed_num = 3 # mixed number of pure states
+    qnum_A = 2 # qubit number of system A
+
+    # system A
+    dim_A = 2**qnum_A
+    rank = dim_A
+    id_A = list(range(qnum_A))
+
+    # system B
+    dim_B = mixed_num*rank
+    if is_power_of_2(dim_B):
+        qnum_B = int(math.log2(dim_B))
+    else:
+        qnum_B = int(math.log2(dim_B)) + 1
+        dim_B = 2**qnum_B
+    id_B = [i+qnum_A for i in range(qnum_B)]
+
+    # basis of system A,B
+    basis_A = computational_basis(dim_A, rank)
+    basis_B = computational_basis(dim_B, mixed_num*rank)
+
+    # random schmidt coefficients
+    coef = normalized_random_list(rank)
+
+    # random probabilities for mixing the pure statesprob = normalized_random_list(mixed_num)
+
+    # basis for system A+B
+    dim_AB = dim_A * dim_B
+    basis_AB = [None]*mixed_num
+    for i in range(mixed_num):
+        basis_AB[i] = np.zeros(dim_AB)
+        for j in range(dim_A):
+            basis_AB[i] = basis_AB[i] + \
+                math.sqrt(coef[j]) * np.kron(basis_A[j],basis_B[i*dim_A+j])
+
+    # construct the density operator
+    matrix = np.zeros((dim_AB,dim_AB))
+    for i in range(mixed_num):
+        matrix = matrix + prob[i] * np.outer(basis_AB[i],basis_AB[i])
+    de = DensOp(matrix=matrix)
+
+    # calculate the entropies
+    ent = de.entropy()
+    ent_A = de.entropy(id_A)
+    ent_B = de.entropy(id_B)
+
+    print(&quot;** S(A,B)    = {:.4f}&quot;.format(ent))
+    print(&quot;** S(A)      = {:.4f}&quot;.format(ent_A))
+    print(&quot;** S(B)      = {:.4f}&quot;.format(ent_B))
+    print(&quot;** S(B)-S(A) = {:.4f}&quot;.format(ent_B-ent_A))
+
+    de.free()
+```
+
+先程説明した、条件１と条件２を前提にすると、
+
+```math
+\ket{i}^{AB} = \sum_{i=1}^{R_i} \sqrt{r_{i}^{j}} \ket{a_{i}^{j}} \ket{b_{i}^{j}}  \tag{39}
+```
+
+のシュミット係数$r_{i}^{j}$と$\ket{a_{i}^{j}}$はi非依存となり、$\ket{b_{i}^{j}}$は全体として（i,jをindexとするベクトル集合として）正規直交系をなすのでした。すなわち、
+
+```math
+\ket{i}^{AB} = \sum_{i=1}^{R} \sqrt{r^{j}} \ket{a^{j}} \ket{b_{i}^{j}}  \tag{68}
+```
+
+と書けます。これを使って、密度演算子、
+
+```math
+\rho^{AB}=\sum_{i=1}^{R^{AB}} p_{i} \ket{i}^{AB} \bra{i}^{AB}  \tag{69}
+```
+
+を用意すれば良いです。
+
+上に示したコードでは、まず、$R^{AB}$(変数mixed_num)の値を3、系Aの量子ビット数(変数qnum_A)を2に初期設定しました。そうすると系Aのヒルベルト空間の次元は2の2乗で4になります(変数dim_A)。系Bの方は、i,jをindexとするベクトルとして正規直交系とならないといけないので、$R^{AB}$に系Aの次元数をかけたもの、つまり12(=3*4)を系Bの次元にすれば良さそうです。が、量子情報理論におけるヒルベルト空間の次元は2のべき乗になっていないと都合が悪いので、16(=2**4)にしておきます。
+
+系Aと系Bの次元と量子ビット数が決まったので、各々で正規直交系を構成します。何でも良いので、もっとも実装が簡単な計算基底とします。関数computational_basisで作成します。
+
+さらに必要なのは、式(69)の係数$r^{j}と$式(70)の係数$p_{i}$です。これはランダムに決めます（ただし総和が１になるように）。関数normalized_random_listで作ります。
+
+これで材料が揃ったので、密度演算子$\rho^{AB}$を構成します(変数de)。そして、entropyメソッドで、合成系のエントロピー、系Aと系Bのエントロピー、およびそれらの差を計算して表示し、プログラムは終了します。
+
+結果は、以下の通りです。
+
+```
+** S(A,B)    = 1.3598
+** S(A)      = 1.8018
+** S(B)      = 3.1616
+** S(B)-S(A) = 1.3598
+```
+
+確かに、S(B)-S(A)=S(A,B)が成り立っていることがわかりました。何度実行しても、数値は違うのですが、常にこの等式は成り立っていました。初期設定をいくつか変えてやってみましたが、同様でした。
+
+
+## おわりに
+
+量子情報理論におけるエントロピーの面白さと不思議さを、きちんと堪能したいと思いつつ、こんなに長い記事になってしまいました。実は、まだ言い足りていないところもあったりするのですが、今後、必要に応じて、というか、気が向いたら、別途記事にして追加説明したいと思います。
+
+さて、次回以降ですが、どうしようか思案中です。「量子暗号」か「量子誤り訂正」か、あるいは、その前に、もう少し基礎的な話題を取り上げてからにするか、、というわけで、予定は未定です。あしからず。
+
+
+以上</code></pre><section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p><a href="https://qiita.com/SamN/items/4abc9e3399a0aabadb2c">Last article</a>,fortwoclassicaleventsequences$p,q$,therespectiveprobabilitiesarexand1-x.Itwasprovedontheassumptionthatitisrepresentedby,butitcanbeextendedtothreeormoreeventseries.Thistime,Iwillprovegeneralinequalitiesthatholdwhentherearemultiplequantumsystems(densityoperators), not limited to two. <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>It came from a very artificial operation, but to prove it by adding an auxiliary system is a technique that is very often used in the world of quantum information. That is also this time. However, please note that it is assumed that purification has not been done. I just added the auxiliary system as shown in equation (12). <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>How to use jpxlab, a processing/analysis tool for TSE stock high frequency data (FLEX historical) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>How to use jpxlab, a processing/analysis tool for TSE stock high frequency data (FLEX historical)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 20, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas">pandas</a></code></small>
+
+</p>
+<pre><code>Alpaca Japan (hereafter Alpaca) is a processing/analysis tool for TSE stock high-frequency data (FLEX historical), which is a data service provided by the Tokyo Stock Exchange, &quot;[jpxlab](https://github.com/AlpacaDB/jpxlab)&quot;. Is now available. FLEX historical collects market information distributed by TSE in real time in one file and provides it as historical information, and this project was realized by collaboration between Alpaca and the Tokyo Stock Exchange.
+</code></pre>
+<hr>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>A contract with the Tokyo Stock Exchange is required to access FLEX Historical. Please contact <a href="https://www.jpx.co.jp/markets/paid-info-equities/historical/01.html">here</a> if you would like to make a contract.
+&ldquo;<a href="https://github.com/AlpacaDB/jpxlab">Jpxlab</a>&quot;,aprocessing/analysistoolforTSEstockhighfrequencydata(FLEXhistorical), is provided as an open source project. We would like to provide future technical support and function additions with everyone who uses this tool. We will add features and report defects via Github Issue. This tool is assumed to be used on Linux / MacOSX.</p>
+<h3 id="quick-start">quick start</h3>
+<p>Clone repository from Github</p>
+<pre><code>$ git clone git@github.com:AlpacaDB/jpxlab.git
+</code></pre><h3 id="set-account-information">Set account information</h3>
+<p>When the contract is completed, you will be given the login information of the FTP server required to retrieve the archive file. <a href="https://github.com/AlpacaDB/jpxlab">jpxlab</a> comes with a simple shell script that allows you to easily download files. Edit <code>tools/fetcher/fetch.sh</code> as needed.</p>
+<pre><code>$ cat fetch.sh
+#!/bin/bash
+# A simple ftp downloader for FLEX Historical
+#
+# Usage: ./fetch.sh &lt;YYYYMMDD&gt;
+#
+#-Wildcard is allowed to fetch multiple files
+#-Downloaded files go `/jpxlab/downloads`
+#
+# edit these
+FTP_USER=$FTP_USER &lt;- Edit this
+FTP_PASS=$FTP_PASS &lt;- Edit this
+</code></pre><p>If you accidentally push the login information to the repository, it will be difficult, so you can make it work by specifying two environment variables when executing the script.</p>
+<pre><code>FTP_USER=**** FTP_PASS=**** ./fetch.sh '20190902'
+</code></pre><h3 id="download-data">Download data</h3>
+<p>Let&rsquo;s execute the following command.</p>
+<pre><code>$ cd tools/fetcher
+$ ./fetch.sh '20190902'
+</code></pre><p>FLEX Historical is archived in zip format on the ftp server and split into daily files. Keep in mind that the file size is quite large, close to 4GB after compression.</p>
+<p>You can also use the wiled-card to retrieve multiple files in batch. For example, you can use the command below to download all files for September 2019.</p>
+<pre><code>$ cd tools/fetcher
+$ ./fetch.sh '201909??'
+$ ls ../../downloads/
+StandardEquities_20190902.zip
+StandardEquities_20190903.zip
+StandardEquities_20190904.zip
+StandardEquities_20190905.zip
+StandardEquities_20190906.zip
+StandardEquities_20190909.zip
+StandardEquities_20190910.zip
+StandardEquities_20190911.zip
+StandardEquities_20190912.zip
+StandardEquities_20190913.zip
+StandardEquities_20190917.zip
+StandardEquities_20190918.zip
+StandardEquities_20190919.zip
+StandardEquities_20190920.zip
+StandardEquities_20190924.zip
+StandardEquities_20190925.zip
+StandardEquities_20190926.zip
+StandardEquities_20190927.zip
+StandardEquities_20190930.zip
+</code></pre><h3 id="parse-data">Parse data</h3>
+<p>These zip files contain raw FLEX messages that need to be parsed to be used as time series data for analysis. For example, the data structure looks like this:</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/48701/9c0bc679-0b45-5459-3aa9-4c910e71bb53.png" alt="image.png"></p>
+<p><em>02_Market Information System FLEX Connection Specification Realtime Message (Standard) Quoted from DS.15.10.pdf</em></p>
+<p>For more information on the FLEX format, check the official documentation from <code>ftp.tmi.tse.or.jp: /specifications/English/Standard_E_20181225.zip</code>.</p>
+<p>The format is a sequence of chunks delimited by ASCII data in byte units and control codes, and performance is difficult to obtain if parsing with a high-level language, but basically the type of chunks included in the chunk header. It is possible to extract only the desired information by accurately seeking the information about the chunk size.</p>
+<p>However, don&rsquo;t worry, <a href="https://github.com/AlpacaDB/jpxlab">jpxlab</a> has a parser that converts these files into h5 files. The h5 file is a compressed tabular data file format mainly used by the python analysis library pandas.</p>
+<pre><code>$ python cli.py resample -f 1H /opt/jpxlab/downloads/*.h5
+</code></pre><p>This parser parses the &ldquo;4P: Four price&rdquo; tag provided by FLEX data and contains all the information of four price (open price, high price, low price, current price). The date of data distribution is as follows, and all current values during the day can be obtained with this tag.</p>
+<p>(1) When contract price information (including equivalent contract) newly occurs
+(2) When the Zaraba closes (including when the trade is closed or closed with the trade suspended)
+(3) During backup delivery
+(4) During daily information distribution</p>
+<p>Note that no quote information is included. However, new tag parsing is also possible by extending this tool.</p>
+<p>Also, by parsing the corresponding &ldquo;VL:Volume&rdquo; tag in addition to &ldquo;4P:Four values&rdquo;, the actual transaction volume is also dumped at the same time. The volume value included in the FLEX Historical telegram is the cumulative value since the market opened, so the volume value corresponding to each data point should be recorded as a difference from the previous record in the parser. I am trying to calculate.</p>
+<h3 id="resample-data">Resample data</h3>
+<p>These h5 files contain detailed price information for all stocks. The file size is still around 500MB per day, which is probably too large in most cases. Therefore, <a href="https://github.com/AlpacaDB/jpxlab">jpxlab</a> also has a utility command for resampling to a candle of a specified size. The command takes the converted raw h5 file as input and produces an OHLC resampling sequence on the h5 file. For example, you can resample the data to hourly candles with a command like the following:</p>
+<pre><code>$ python cli.py resample -f 1H /opt/jpxlab/downloads/*.h5
+</code></pre><h3 id="launch-jupyter-notebook">Launch Jupyter Notebook</h3>
+<p>Now let&rsquo;s play with the data. Launch the Jupyter notebook.</p>
+<pre><code>$ make notebook_docker
+To access the notebook, open this file in a browser:
+ file:///root/.local/share/jupyter/runtime/nbserver-1-open.html
+ Or copy and paste one of these URLs:
+ http://85e47314c90a:8888/?token=*****
+ or http://127.0.0.1:8888/?token=*****
+</code></pre><h3 id="example-data-loading">Example: Data loading</h3>
+<p>Although some samples are preloaded in jpxlab, <a href="https://github.com/AlpacaDB/jpxlab/blob/master/notebooks/jpxlab%20demo%20-%20loader.ipynb">jpxlab demo — loader.ipynb</a> is the most basic demo showing how to load data.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/48701/d522dcef-8da1-396a-598a-5b59214c017c.png" alt="image.png"></p>
+<p>The generated h5 file consists of 6 columns including trade volume and trade size in addition to open, high, low and close. The h5 file has such a table for each stock and the example above shows Toyota Motor Corp (TYO: 7203).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/48701/3f79a954-d843-8fd4-c8fc-50999919fb88.png" alt="image.png"></p>
+<h3 id="finally">Finally</h3>
+<p>In this blog, I showed you how to:</p>
+<ul>
+<li>Download archive from FTP server</li>
+<li>Convert raw files to h5 files</li>
+<li>Resample h5 file data to OHLC data</li>
+<li>Load and visualize H5 filesWe hope <a href="https://github.com/AlpacaDB/jpxlab">jpxlab</a> will help more people jump into the world of Japanese equities data.</li>
+</ul>
+<p>Please refer to <a href="https://qiita.com/kitayama_tomoya/items/225d82eb012d1a58dce9">this article</a> for more applied usage!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

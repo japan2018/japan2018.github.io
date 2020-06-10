@@ -1,0 +1,1313 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I made an AI that cuts out images with good feeling using Saliency Map | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I made an AI that cuts out images with good feeling using Saliency Map</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning">DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch">PyTorch</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>In this article, I will implement a method for cropping images using Saliency Map using deep learning with Python and PyTorch while reading the paper.</p>
+<p>When it comes to images in deep learning, we often try to classify handwritten numbers and detect people, but I would like you to see that you can also do such things.</p>
+<p>This article participates in <a href="https://qiita.com/advent-calendar/2019/dena-20-shinsostu">DeNA 20 New Graduate Advent Calendar 2019-Qiita</a>. Thanks to Advent Calendar for the opportunity to make it!</p>
+<h3 id="reader-assumptions">Reader assumptions</h3>
+<p>Because it is an advent calendar with various genres, it is assumed that all people who have touched the program just read the article. In terms of moving, tutorials of deep learning are intended for those who have done it.</p>
+<p>It is possible to move it at hand because the code assuming Jupyter Notebook is put on it so that it is easy to try. The display is collapsed, so click to open it as needed.</p>
+<p>The library uses only the one already installed in <a href="https://colab.research.google.com/">Google Colaboratory</a>. Due to the large dataset, it can be a bit difficult to try before training.</p>
+<h2 id="image-cropping">Image cropping</h2>
+<p>There are times when I want to crop (cropping) an image in some way. For example, the icon image is roughly square, so I think you&rsquo;ve wondered how to cut it when registering for various services. In addition, the header image is halfway oblong, and the shape of the image is often fixed on the spot. On the other hand, if the user cuts it into a fixed shape, it is good to work hard, but there are many cases where the application side needs to automate it.</p>
+<h3 id="a-little-example">A little example</h3>
+<p>Suppose you want your posted image to always be displayed vertically (1:3) on a page. It is vertically long because it is difficult to cut.</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/38c6903d-5b0d-80e7-0153-03fa06322cce.jpeg" width=70%>
+<p>I took this picture &ldquo;It&rsquo;s a nice lobby with a Christmas tree,&rdquo; if you cut it yourself, of course I&rsquo;ll do it like this to show the Christmas tree.</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/af4e5117-a53d-5da2-332c-6b2f0f2aa131.jpeg" width=50%>
+<p>However, it is not possible for people to see and cut all the images posted in large numbers, so it will be automated. Well, I decided to implement it in Python that it would be safe to cut the middle.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> cv2
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">crop</span>(image, aspect_rate<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>)):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Crop the image from the center so that it has the specified aspect ratio.
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Parameters:
+</span><span style="color:#e6db74">    -----------------
+</span><span style="color:#e6db74">    image: ndarray, (h, w, rgb), uint8
+</span><span style="color:#e6db74">    aspect_rate: tuple of int (x, y)
+</span><span style="color:#e6db74">        default: (1, 1)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Returns:
+</span><span style="color:#e6db74">    -----------------
+</span><span style="color:#e6db74">    cropped_image :ndarray, (h, w, rgb), uint8
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+    <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">3</span>
+
+    im_size <span style="color:#f92672">=</span> (image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]) <span style="color:#75715e"># tuple of int, (width, height)</span>
+    center <span style="color:#f92672">=</span> (int(round(im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)), int(round(im_size[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>))) <span style="color:#75715e"># tuple of int, (x, y)</span>
+
+    <span style="color:#75715e"># Calculate the following 4 values</span>
+    <span style="color:#75715e"># box_x: int, upper left x coordinate for clipping, box_y: int, upper left y coordinate for clipping</span>
+    <span style="color:#75715e"># box_width: int, crop width, box_height: int, crop height</span>
+    <span style="color:#66d9ef">if</span> im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">&gt;</span>im_size[<span style="color:#ae81ff">1</span>]:
+        box_y <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        box_height <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">1</span>]
+        box_width <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">/</span>aspect_rate[<span style="color:#ae81ff">1</span>])<span style="color:#f92672">*</span>aspect_rate[<span style="color:#ae81ff">0</span>]))
+        <span style="color:#66d9ef">if</span> box_width<span style="color:#f92672">&gt;</span>im_size[<span style="color:#ae81ff">0</span>]:
+            box_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            box_width <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">0</span>]
+            box_height <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">/</span>aspect_rate[<span style="color:#ae81ff">0</span>])<span style="color:#f92672">*</span>aspect_rate[<span style="color:#ae81ff">1</span>]))
+            box_y <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>(box_height<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+        <span style="color:#66d9ef">else</span>:
+            box_x <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>(box_width<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+    <span style="color:#66d9ef">else</span>:
+        box_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        box_width <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">0</span>]
+        box_height <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">/</span>aspect_rate[<span style="color:#ae81ff">0</span>])<span style="color:#f92672">*</span>aspect_rate[<span style="color:#ae81ff">1</span>]))
+        <span style="color:#66d9ef">if</span> box_height<span style="color:#f92672">&gt;</span>im_size[<span style="color:#ae81ff">1</span>]:
+            box_y <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            box_height <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">1</span>]
+            box_width <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">/</span>aspect_rate[<span style="color:#ae81ff">1</span>])<span style="color:#f92672">*</span>aspect_rate[<span style="color:#ae81ff">0</span>]))
+            box_y <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>(box_width<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+        <span style="color:#66d9ef">else</span>:
+            box_y <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>(box_height<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+
+    cropped_image <span style="color:#f92672">=</span> image[box_y:box_y<span style="color:#f92672">+</span>box_height, box_x:box_x<span style="color:#f92672">+</span>box_width]
+    <span style="color:#66d9ef">return</span> cropped_image
+    
+<span style="color:#75715e"># image: Read the image with OpenCV etc. and make it a NumPy array</span>
+image <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#34;tree.jpg&#34;</span>)[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+cropped_image <span style="color:#f92672">=</span> crop(image, aspect_rate<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+plt<span style="color:#f92672">.</span>imshow(cropped_image)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p>All the long side of the image is used, and the length of the short side at that time is calculated from the given aspect ratio.</p>
+<p>I will try it.</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/66b8afd0-fa6c-30c8-8ed2-ab496a3cc5f4.jpeg" width=50%>
+<p>The Christmas elements are gone and it&rsquo;s just a nice lobby photo. This is bad. AI? Let&rsquo;s manage with the power of.</p>
+<h3 id="references">References</h3>
+<p>This time, I will try to imitate the one using Saliency Map that Twitter and Adobe have introduced in the last two years. On Twitter<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>, when I post an image, it is displayed on the timeline in a nice way. Also, Adobe&rsquo;s InDesigin has a function called Content-Aware Fit that cuts out the image according to the specified range.</p>
+<p>Object detection can be used as a comparison method. However, it is not always the case that the learned label object is captured, so the Saliency Map-based method is versatile in that respect.</p>
+<h2 id="cropping-with-saliency-map">Cropping with Saliency Map</h2>
+<p>A cropping method <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup> using Saliency Map was proposed in 2013 by Ardizzone&rsquo;s paper &ldquo;Saliency Based Image Cropping&rdquo;.</p>
+<h3 id="what-is-saliency-map">What is Saliency Map?</h3>
+<p>Where do people look when looking at the image? Think of it in pixels as a <strong>Saliency Map</strong>. For example, in the lower left of the figure, this is obtained by measuring from many people, and the Saliency Map is obtained by calculating such things. In this figure, the white areas have a higher probability of having a viewpoint, and the black areas have a lower probability of having a viewpoint.</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/ce00e275-e9e7-a85d-e157-42775d448a5b.png" width=50%>
+Figure: Saliency Map example. Upper left: image. Upper right: A red X from the measured viewpoint. Lower left: Saliency Map. Bottom right: Saliency Map in color and overlaid on the image.
+<p>This figure visualizes the training data of the SALICON dataset [^3]. The red X on the upper right is the viewpoint data obtained by having many people see the image on the upper left and touching the point you are looking at with the mouse cursor.</p>
+<p>If you apply a Gaussian filter based on that data, you can make a map like the lower left which shows the probability (0 to 1) that there is a viewpoint in pixel units. This is the training data of Saliency Map that you want to calculate.</p>
+<p>As you can see in the lower right, when you color it and overlay it on the image, you can see that the cat has a high probability of getting an eye. If the perspective probability is close to 1, it is red, and if the perspective probability is close to 0, it is blue.[^3]: SALICON <a href="http://salicon.net/">http://salicon.net/</a></p>
+<h2 id="implement-ardizzone-method">Implement Ardizzone method</h2>
+<p>Let&rsquo;s implement Ardizzone&rsquo;s method. For the Saliency Map, let&rsquo;s use the learning data of the SALICON dataset as it is. This is the cat image and the learning data (correct answer data) of Saliency Map for it.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/73af2058-d9a3-f265-f8f4-6d35ad27d4ab.jpeg" width=50%> <img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/11c25d98-5947-cb09-666b-3ef04ef855d1.png" width=50%></p>
+<h3 id="what-method">What method?</h3>
+<p>It is a technique to cut out so that all pixels with a certain probability or more are included. It means that you should only place in places where you can see it.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/f821014f-173c-d500-f103-1bd8dcf47f94.png" alt="fig2.png">
+Figure: Ardizzone&rsquo;s method pipeline (cited from paper <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>)</p>
+<p>To summarize this figure in words, the following three steps are involved.</p>
+<ul>
+<li>Binarize Saliency Map with a certain threshold (set to 1 and 0)</li>
+<li>Find bounding box that encloses a range of 1s</li>
+<li>Crop original image with bounding box</li>
+</ul>
+<h3 id="binarize">Binarize</h3>
+<p>Binarization is easy with NumPy. NumPy also broadcasts the calculation of comparison operators (<code>&gt;</code> and <code>==</code>), so if you execute <code>ndarray&gt;float</code>, you can get True or False of each element and binarization is completed. ..</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">threshhold <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.3</span> <span style="color:#75715e"># set threshold, float (0&lt;threshhold&lt;1)</span>
+saliencymap_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;COCO_train2014_000000196971.png&#39;</span> <span style="color:#75715e"># Saliency Map path</span>
+
+saliencymap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(saliencymap_path)[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8 (0-255)</span>
+saliencymap <span style="color:#f92672">=</span> saliencymap[:, :, <span style="color:#ae81ff">0</span>] <span style="color:#75715e"># ndarray, (h, w), np.uint8 (0-255)</span>
+plt<span style="color:#f92672">.</span>imshow(saliencymap)
+plt<span style="color:#f92672">.</span>show()
+
+threshhold <span style="color:#f92672">*=</span> <span style="color:#ae81ff">255</span> <span style="color:#75715e"># The range is converted because the Saliency Map read from the image is 0-255</span>
+
+binarized_saliencymap <span style="color:#f92672">=</span> saliencymap<span style="color:#f92672">&gt;</span>threshhold <span style="color:#75715e">#ndarray, (h, w), bool</span>
+
+plt<span style="color:#f92672">.</span>imshow(binarized_saliencymap)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/c79390b0-f64c-eac6-37f0-d1bac9b4d55e.png" alt="fig3.png">
+Figure: Result of binarization</p>
+<p>The result looks like this figure. With the default setting of <code>plt.imshow()</code> of matplotlib, large areas are displayed in yellow and small areas are displayed in purple.</p>
+<p>The threshold is a hyper parameter that can be set arbitrarily. This time, I have unified it to 0.3 throughout the article.</p>
+<h3 id="ask-for-a-bounding-box">Ask for a bounding box</h3>
+<p>Calculate a ** bounding box ** (a box that just encloses) that includes all 1s (True) obtained by binarization.</p>
+<p>This is implemented in Opencv&rsquo;s <code>cv2.boundingRect()</code> and can be achieved by just calling it.</p>
+<p><a href="https://docs.opencv.org/2.4/modules/imgproc/doc/structural_analysis_and_shape_descriptors.html#boundingrect">Structural Analysis and Shape Descriptors — OpenCV 2.4.13.7 documentation</a></p>
+<p>[Region (contour) features — OpenCV-Python Tutorials 1 documentation](<a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/(py_contour_features.html)">http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/(py_contour_features.html)</a></p>
+<p>Rectangle drawing in matplotlib uses <code>patches.Rectangle()</code>.</p>
+<p><a href="https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.patches.Rectangle.html">matplotlib.patches.Rectangle — Matplotlib 3.1.1 documentation</a></p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> matplotlib.patches <span style="color:#f92672">as</span> patches
+
+<span style="color:#75715e"># Convert to a format that OpenCV can handle</span>
+binarized_saliencymap <span style="color:#f92672">=</span> binarized_saliencymap<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8) <span style="color:#75715e"># ndarray, (h, w), np.uint8 (0 or 1)</span>
+
+box_x, box_y, box_width, box_height <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>boundingRect(binarized_saliencymap)
+<span style="color:#75715e"># box_x: int, upper left x coordinate for clipping, box_y: int, upper left y coordinate for clipping</span>
+<span style="color:#75715e"># box_width: int, crop width, box_height: int, crop height</span>
+
+<span style="color:#75715e"># Draw a bounding box</span>
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure()
+ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>axes()
+bounding_box <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x, box_y), width<span style="color:#f92672">=</span>box_width, height<span style="color:#f92672">=</span>box_height, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#00FF00&#39;</span>, fill<span style="color:#f92672">=</span>False)
+ax<span style="color:#f92672">.</span>imshow(binarized_saliencymap)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/7647e519-cd66-d4da-28ed-6cdb4ffedcff.png" alt="fig4.png">
+Figure: Result of getting bounding box</p>
+<p>You can get the bounding box as shown in this figure. The rectangle information has the upper left coordinates and the width and height values.</p>
+<h3 id="cut-out">cut out</h3>
+<p>Crop the image based on the obtained bounding box. Slice the ndarray of the image using the bounding box values.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">image_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;COCO_train2014_000000196971.jpg&#39;</span> <span style="color:#75715e"># Image path</span>
+image <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(image_path)[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8 (0-255)</span>
+
+cropped_image <span style="color:#f92672">=</span> image[box_y:box_y<span style="color:#f92672">+</span>box_height, box_x:box_x<span style="color:#f92672">+</span>box_width] <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8 (0-255)</span>
+
+<span style="color:#75715e"># Visualization</span>
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure()
+ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>axes()
+bounding_box <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x, box_y), width<span style="color:#f92672">=</span>box_width, height<span style="color:#f92672">=</span>box_height, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#00FF00&#39;</span>, fill<span style="color:#f92672">=</span>False)
+ax<span style="color:#f92672">.</span>imshow(image)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box)
+plt<span style="color:#f92672">.</span>show()
+
+plt<span style="color:#f92672">.</span>imshow(cropped_image)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/9d2146f5-195c-d7ce-ed5b-7c26375d6023.png" alt="fig5.png">
+Figure: Result of clipping with Ardizzone&rsquo;s method</p>
+<p>As shown in this figure, an image was obtained in which only the line of sight seemed to face.</p>
+<h3 id="overlay-with-the-saliency-map-in-color">Overlay with the Saliency Map in color</h3>
+<p>To make it easier to understand how it was processed, I will overlay the image with a colored Saliency Map and a bounding box. We will implement the function that makes the Saliency Map a color and the function that overlays the Saliency Map on the image.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">color_saliencymap</span>(saliencymap):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Visualize the Saliency Map by coloring it. 1 is red and 0 is blue.
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------------
+</span><span style="color:#e6db74">    saliencymap: ndarray, np.uint8, (h, w) or (h, w, rgb)
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    ----------------
+</span><span style="color:#e6db74">    saliencymap_colored: ndarray, np.uint8, (h, w, rgb)
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+    <span style="color:#66d9ef">assert</span> (saliencymap<span style="color:#f92672">.</span>ndim <span style="color:#f92672">==</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">or</span> (saliencymap<span style="color:#f92672">.</span>ndim <span style="color:#f92672">==</span> <span style="color:#ae81ff">3</span>)
+    
+    saliencymap_colored <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>applyColorMap(saliencymap, cv2<span style="color:#f92672">.</span>COLORMAP_JET)[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+    
+    <span style="color:#66d9ef">return</span> saliencymap_colored
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">overlay_saliencymap_and_image</span>(saliencymap_color, image):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Overlay the image with the Saliency Map.
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Parameters----------------
+</span><span style="color:#e6db74">    saliencymap_color : ndarray, (h, w, rgb), np.uint8
+</span><span style="color:#e6db74">    image : ndarray, (h, w, rgb), np.uint8
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    ----------------
+</span><span style="color:#e6db74">    overlaid_image : ndarray(h, w, rgb)
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">assert</span> saliencymap_color<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">3</span>
+    <span style="color:#66d9ef">assert</span> saliencymap_color<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+    <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">3</span>
+    <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+    im_size <span style="color:#f92672">=</span> (image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>])
+    saliencymap_color <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>resize(saliencymap_color, im_size, interpolation<span style="color:#f92672">=</span>cv2<span style="color:#f92672">.</span>INTER_CUBIC)
+    overlaid_image <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>addWeighted(src1<span style="color:#f92672">=</span>image, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, src2<span style="color:#f92672">=</span>saliencymap_color, beta<span style="color:#f92672">=</span><span style="color:#ae81ff">0.7</span>, gamma<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+    <span style="color:#66d9ef">return</span> overlaid_image
+
+saliencymap_colored <span style="color:#f92672">=</span> color_saliencymap(saliencymap) <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8</span>
+overlaid_image <span style="color:#f92672">=</span> overlay_saliencymap_and_image(saliencymap_colored, image) <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8</span>
+
+<span style="color:#75715e"># 可視化</span>
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure()
+ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>axes()
+bounding_box <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x, box_y), width<span style="color:#f92672">=</span>box_width, height<span style="color:#f92672">=</span>box_height, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#00FF00&#39;</span>, fill<span style="color:#f92672">=</span>False)
+ax<span style="color:#f92672">.</span>imshow(overlaid_image)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/cc509a78-090c-c9f2-86fc-f986d7dc2be7.png" alt="fig_6.png">
+図：カラーにしたSaliency Mapとバウンディングボックスを重ねた画像</p>
+<p>この図のように、Saliency Map上で赤くなるような視線が向く確率が高い箇所が囲えていることが分かります。</p>
+<h2 id="任意のアスペクト比への対応">任意のアスペクト比への対応</h2>
+<p>Ardizzoneの手法では、どのようなサイズ・アスペクト比になるかはSaliency Map次第です。しかし、今はあるアスペクト比に切り抜きたいわけなので、そこを考える必要があります。</p>
+<h3 id="saliency-mapの合計値が多くなるように切り抜く">Saliency Mapの合計値が多くなるように切り抜く</h3>
+<p>これは既存の手法が見つけられなかったため、以下のアルゴリズムで切り抜く範囲を決めることにしました。</p>
+<ul>
+<li>Ardizzoneの手法で求めた範囲を全て使った上で、指定したアスペクト比になるようにある方向に範囲を伸ばす</li>
+<li>なお、範囲を伸ばすと画像の外に飛び出てしまう場合は、その方向は画像全体を使い、逆の方向を狭めて調整する
+<ul>
+<li>狭める範囲は、Ardizzoneの手法で求めた範囲の中で、Saliency Mapの値の合計が最大になる範囲とする</li>
+</ul>
+</li>
+<li>伸ばす範囲は、Saliency Mapの値の合計が最大になる範囲とする</li>
+</ul>
+<p>ここまでで求めた範囲をできるだけ使いつつ、Saliency Mapの値の合計が最大になる範囲を探します。</p>
+<p>クロッピングのための「SaliencyBasedImageCroppingクラス」を作り、これまでのコードを以下にまとめます。</p>
+<details><summary>実装を見る場合はここをクリック</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> copy
+
+<span style="color:#f92672">import</span> cv2
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> matplotlib.patches <span style="color:#f92672">as</span> patches
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SaliencyBasedImageCropping</span>:
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Saliency Mapを利用して画像をクロッピングするためのクラス。ある閾値を超える範囲を全て使う手法[1]を利用する。
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    ＊もしも閾値を超えるピクセルがなかった場合は、画像全体を返す。
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    [1] Ardizzone, Edoardo, Alessandro Bruno, and Giuseppe Mazzola. &#34;Saliency based image cropping.&#34; International Conference on Image Analysis and Processing. Springer, Berlin, Heidelberg, 2013.
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------------
+</span><span style="color:#e6db74">    aspect_rate : tuple of int (x, y)
+</span><span style="color:#e6db74">        ここでアスペクト比を指定した場合は、[1]の手法で求めた範囲をできるだけ使いつつ、Saliency Mapの値の合計が最大になる範囲を探す。
+</span><span style="color:#e6db74">    min_size : tuple of int (w, h)
+</span><span style="color:#e6db74">        [1]の手法で求めた範囲の各軸がこの値より小さい場合は、範囲の中心を起点に均等に範囲を広げる。
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Attributes
+</span><span style="color:#e6db74">    ----------------
+</span><span style="color:#e6db74">    self.aspect_rate : tuple of int (x, y)
+</span><span style="color:#e6db74">    self.min_size : tuple of int (w, h)
+</span><span style="color:#e6db74">    im_size : tuple of int (w, h)
+</span><span style="color:#e6db74">    self.bounding_box_based_on_binary_saliency : list
+</span><span style="color:#e6db74">        [1]の手法で求めた範囲
+</span><span style="color:#e6db74">        box_x : int
+</span><span style="color:#e6db74">        box_y : int
+</span><span style="color:#e6db74">        box_width : int
+</span><span style="color:#e6db74">        box_height : int
+</span><span style="color:#e6db74">    self.bounding_box : list
+</span><span style="color:#e6db74">        アスペクト比を調整した最終的に切り抜く範囲
+</span><span style="color:#e6db74">        box_x : int
+</span><span style="color:#e6db74">        box_y : int
+</span><span style="color:#e6db74">        box_width : int
+</span><span style="color:#e6db74">        box_height : int
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">def</span> __init__(self, aspect_rate<span style="color:#f92672">=</span>None, min_size<span style="color:#f92672">=</span>(<span style="color:#ae81ff">200</span>, <span style="color:#ae81ff">200</span>)):
+        <span style="color:#66d9ef">assert</span> (aspect_rate <span style="color:#f92672">is</span> None)<span style="color:#f92672">or</span>((type(aspect_rate)<span style="color:#f92672">==</span>tuple)<span style="color:#f92672">and</span>(len(aspect_rate)<span style="color:#f92672">==</span><span style="color:#ae81ff">2</span>))
+        <span style="color:#66d9ef">assert</span> (type(min_size)<span style="color:#f92672">==</span>tuple)<span style="color:#f92672">and</span>(len(min_size)<span style="color:#f92672">==</span><span style="color:#ae81ff">2</span>)
+        self<span style="color:#f92672">.</span>aspect_rate <span style="color:#f92672">=</span> aspect_rate
+        self<span style="color:#f92672">.</span>min_size <span style="color:#f92672">=</span> min_size
+        self<span style="color:#f92672">.</span>im_size <span style="color:#f92672">=</span> None
+        self<span style="color:#f92672">.</span>bounding_box_based_on_binary_saliency <span style="color:#f92672">=</span> None
+        self<span style="color:#f92672">.</span>bounding_box <span style="color:#f92672">=</span> None
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_compute_bounding_box_based_on_binary_saliency</span>(self, saliencymap, threshhold):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Ardizzoneの手法[1]でSaliency Mapに基づいたクロッピング範囲を求める。
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Parameters:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        saliencymap : ndarray, (h, w), np.uint8
+</span><span style="color:#e6db74">            0&lt;=saliencymap&lt;=255
+</span><span style="color:#e6db74">            
+</span><span style="color:#e6db74">        threshhold : float
+</span><span style="color:#e6db74">            0&lt;threshhold&lt;255
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Returns:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        bounding_box_based_on_binary_saliency : list
+</span><span style="color:#e6db74">            box_x : int
+</span><span style="color:#e6db74">            box_y : int
+</span><span style="color:#e6db74">            box_width : int
+</span><span style="color:#e6db74">            box_height : int
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">assert</span> (threshhold<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">and</span>(threshhold<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">255</span>)
+        <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+        <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">2</span>
+        
+        binarized_saliencymap <span style="color:#f92672">=</span> saliencymap<span style="color:#f92672">&gt;</span>threshhold
+        <span style="color:#75715e"># Saliency Mapに閾値を超えるピクセルがなかったら、全てが超えた扱いにする。</span>
+        <span style="color:#66d9ef">if</span> saliencymap<span style="color:#f92672">.</span>sum()<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+            saliencymap<span style="color:#f92672">+=</span>True
+        binarized_saliencymap <span style="color:#f92672">=</span> (binarized_saliencymap<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8))<span style="color:#f92672">*</span><span style="color:#ae81ff">255</span>
+        <span style="color:#75715e"># binarized_saliencymap : ndarray, (h, w), uint8, 0 or 255</span>
+        
+        <span style="color:#75715e"># 小さな領域はモルフォロジー処理（オープニング）によって消す</span>
+        kernel_size <span style="color:#f92672">=</span> round(min(self<span style="color:#f92672">.</span>im_size)<span style="color:#f92672">*</span><span style="color:#ae81ff">0.02</span>)
+        kernel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones((kernel_size, kernel_size))
+        binarized_saliencymap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>morphologyEx(binarized_saliencymap, cv2<span style="color:#f92672">.</span>MORPH_OPEN, kernel)
+
+        box_x, box_y, box_width, box_height <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>boundingRect(binarized_saliencymap)
+        bounding_box_based_on_binary_saliency <span style="color:#f92672">=</span> [box_x, box_y, box_width, box_height]
+        <span style="color:#66d9ef">return</span> bounding_box_based_on_binary_saliencydef _expand_small_bounding_box_to_minimum_size(self, bounding_box):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        If the range is smaller than the specified size, it will be expanded. Extend the range evenly from the center of the range. If it goes out of the image, spread it to the opposite side.
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Parameters:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        bounding_box: list
+</span><span style="color:#e6db74">            box_x: int
+</span><span style="color:#e6db74">            box_y: int
+</span><span style="color:#e6db74">            box_width: int
+</span><span style="color:#e6db74">            box_height: int
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        bounding_box <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>copy(bounding_box) <span style="color:#75715e"># I want to keep the original list values, so a deep copy</span>
+        
+        <span style="color:#75715e"># axis=0 :x and witdth, axis=1 :y and hegiht</span>
+        <span style="color:#66d9ef">for</span> axis <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">2</span>):
+            <span style="color:#66d9ef">if</span> bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>]<span style="color:#f92672">&lt;</span>self<span style="color:#f92672">.</span>min_size[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]:
+                bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>] <span style="color:#f92672">-=</span> np<span style="color:#f92672">.</span>floor((self<span style="color:#f92672">.</span>min_size[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>])<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>int)
+                bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>min_size[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]
+                <span style="color:#66d9ef">if</span> bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span>:
+                    bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+                <span style="color:#66d9ef">if</span> (bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">+</span>bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>])<span style="color:#f92672">&gt;</span>self<span style="color:#f92672">.</span>im_size[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]:
+                    bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>] <span style="color:#f92672">-=</span> (bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">+</span>bounding_box[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>])<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>im_size[axis<span style="color:#f92672">+</span><span style="color:#ae81ff">0</span>]
+        <span style="color:#66d9ef">return</span> bounding_box
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_expand_bounding_box_to_specified_aspect_ratio</span>(self, bounding_box, saliencymap):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Expand the range so that it has the specified aspect ratio.
+</span><span style="color:#e6db74">        While using the range calculated by Ardizzone&#39;s method [1] as much as possible, search for the range where the sum of the Saliency Map values is maximum.
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------------
+</span><span style="color:#e6db74">        bounding_box: list
+</span><span style="color:#e6db74">            box_x: int
+</span><span style="color:#e6db74">            box_y: int
+</span><span style="color:#e6db74">            box_width: int
+</span><span style="color:#e6db74">            box_height: int
+</span><span style="color:#e6db74">        saliencymap: ndarray, (h, w), np.uint8
+</span><span style="color:#e6db74">            0&lt;=saliencymap&lt;=255
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+        <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">2</span>
+        
+        bounding_box <span style="color:#f92672">=</span> copy<span style="color:#f92672">.</span>copy(bounding_box)
+
+        <span style="color:#75715e"># axis=0 :x and witdth, axis=1 :y and hegiht</span>
+        <span style="color:#66d9ef">if</span> bounding_box[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">&gt;</span>bounding_box[<span style="color:#ae81ff">3</span>]:
+            long_length_axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            short_length_axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">else</span>:
+            long_length_axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+            short_length_axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        
+        <span style="color:#75715e"># In which direction to extend</span>
+        rate1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>aspect_rate[long_length_axis]<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[short_length_axis]
+        rate2 <span style="color:#f92672">=</span> bounding_box[<span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>long_length_axis]<span style="color:#f92672">/</span>bounding_box[<span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>short_length_axis]
+        <span style="color:#66d9ef">if</span> rate1<span style="color:#f92672">&gt;</span>rate2:
+            moved_axis <span style="color:#f92672">=</span> long_length_axis
+            fixed_axis <span style="color:#f92672">=</span> short_length_axis
+        <span style="color:#66d9ef">else</span>:
+            moved_axis <span style="color:#f92672">=</span> short_length_axis
+            fixed_axis <span style="color:#f92672">=</span> long_length_axis
+        
+        fixed_length <span style="color:#f92672">=</span> bounding_box[<span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>fixed_axis]
+        moved_length <span style="color:#f92672">=</span> int(round((fixed_length<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[fixed_axis])<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>aspect_rate[moved_axis]))
+        <span style="color:#66d9ef">if</span> moved_length<span style="color:#f92672">&gt;</span> self<span style="color:#f92672">.</span>im_size[moved_axis]:
+            <span style="color:#75715e"># If the image exceeds the size when stretched</span>
+            moved_axis, fixed_axis <span style="color:#f92672">=</span> fixed_axis, moved_axis
+            fixed_length <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>im_size[fixed_axis]
+            moved_length <span style="color:#f92672">=</span> int(round((fixed_length<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[fixed_axis])<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>aspect_rate[moved_axis]))
+            fixed_point <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            start_point <span style="color:#f92672">=</span> bounding_box[moved_axis]
+            end_point <span style="color:#f92672">=</span> bounding_box[moved_axis]<span style="color:#f92672">+</span>bounding_box[<span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>moved_axis]
+            <span style="color:#66d9ef">if</span> fixed_axis<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+                saliencymap_extracted <span style="color:#f92672">=</span> saliencymap[start_point:end_point, :]
+            <span style="color:#66d9ef">elif</span> fixed_axis<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+                saliencymap_extracted <span style="color:#f92672">=</span> saliencymap[:, start_point:end_point:]
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#75715e"># When stretched to fit within the size of the image</span>
+            start_point <span style="color:#f92672">=</span> int(bounding_box[moved_axis]<span style="color:#f92672">+</span>bounding_box[<span style="color:#ae81ff">2</span><span style="color:#f92672">+</span>moved_axis]<span style="color:#f92672">-</span>moved_length)
+            <span style="color:#66d9ef">if</span> start_point<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span>:
+                start_point <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            end_point <span style="color:#f92672">=</span> int(bounding_box[moved_axis]<span style="color:#f92672">+</span>moved_length)
+            <span style="color:#66d9ef">if</span> end_point<span style="color:#f92672">&gt;</span>self<span style="color:#f92672">.</span>im_size[moved_axis]:
+                end_point <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>im_size[moved_axis]
+            <span style="color:#66d9ef">if</span> fixed_axis<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+                fixed_point <span style="color:#f92672">=</span> bounding_box[fixed_axis]
+                saliencymap_extracted <span style="color:#f92672">=</span> saliencymap[start_point:end_point, fixed_point:fixed_point<span style="color:#f92672">+</span>fixed_length]
+            <span style="color:#66d9ef">elif</span> fixed_axis<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+                fixed_point <span style="color:#f92672">=</span> bounding_box[fixed_axis]
+                saliencymap_extracted <span style="color:#f92672">=</span> saliencymap[fixed_point:fixed_point<span style="color:#f92672">+</span>fixed_length, start_point:end_point]
+        saliencymap_summed_1d <span style="color:#f92672">=</span> saliencymap_extracted<span style="color:#f92672">.</span>sum(moved_axis)
+        self<span style="color:#f92672">.</span>saliencymap_summed_slided <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>convolve(saliencymap_summed_1d, np<span style="color:#f92672">.</span>ones(moved_length),<span style="color:#e6db74">&#39;valid&#39;</span>)
+        moved_point <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(self<span style="color:#f92672">.</span>saliencymap_summed_slided)<span style="color:#f92672">.</span>argmax() <span style="color:#f92672">+</span> start_point
+        
+        <span style="color:#66d9ef">if</span> fixed_axis<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+            bounding_box <span style="color:#f92672">=</span> [fixed_point, moved_point, fixed_length, moved_length]
+        <span style="color:#66d9ef">elif</span> fixed_axis<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+            bounding_box <span style="color:#f92672">=</span> [moved_point, fixed_point, moved_length, fixed_length]
+        <span style="color:#66d9ef">return</span> bounding_box
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">crop_center</span>(self, image):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Crop the center of the image with the specified aspect ratio without using Saliency Map.
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Parameters:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        image: ndarray, (h, w, rgb), uint8
+</span><span style="color:#e6db74">            
+</span><span style="color:#e6db74">        Returns:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        cropped_image :ndarray, (h, w, rgb), uint8
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+        <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">3</span>
+        
+        im_size <span style="color:#f92672">=</span> (image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]) <span style="color:#75715e"># tuple of int, (width, height)center = (int(round(im_size[0]/2)), int(round(im_size[1]/2))) # tuple of int, (x, y)</span>
+        
+        <span style="color:#66d9ef">if</span> im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">&gt;</span>im_size[<span style="color:#ae81ff">1</span>]:
+            box_y <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            box_height <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">1</span>]
+            box_width <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">1</span>])<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">0</span>]))
+            <span style="color:#66d9ef">if</span> box_width<span style="color:#f92672">&gt;</span>im_size[<span style="color:#ae81ff">0</span>]:
+                box_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+                box_width <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">0</span>]
+                box_height <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">0</span>])<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">1</span>]))
+                box_y <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>(box_height<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+            <span style="color:#66d9ef">else</span>:
+                box_x <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>(box_width<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+
+        <span style="color:#66d9ef">else</span>:
+            box_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+            box_width <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">0</span>]
+            box_height <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">0</span>])<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">1</span>]))
+            <span style="color:#66d9ef">if</span> box_height<span style="color:#f92672">&gt;</span>im_size[<span style="color:#ae81ff">1</span>]:
+                box_y <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+                box_height <span style="color:#f92672">=</span> im_size[<span style="color:#ae81ff">1</span>]
+                box_width <span style="color:#f92672">=</span> int(round((im_size[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">1</span>])<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>aspect_rate[<span style="color:#ae81ff">0</span>]))
+                box_y <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>(box_width<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+            <span style="color:#66d9ef">else</span>:
+                box_y <span style="color:#f92672">=</span> int(round(center[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>(box_height<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)))
+        
+        cropped_image <span style="color:#f92672">=</span> image[box_y:box_y<span style="color:#f92672">+</span>box_height, box_x:box_x<span style="color:#f92672">+</span>box_width]
+        <span style="color:#66d9ef">return</span> cropped_image
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">crop</span>(self, image, saliencymap, threshhold<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>):
+        <span style="color:#e6db74">&#34;&#34;&#34;     
+</span><span style="color:#e6db74">        Saliency Mapを用いてクロッピングする。
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Parameters:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        image : ndarray, (h, w, rgb), np.uint8
+</span><span style="color:#e6db74">        saliencymap : ndarray, (h, w), np.uint8
+</span><span style="color:#e6db74">            Saliency map&#39;s ndarray need not be the same size as image&#39;s ndarray. Saliency map is resized within this method.
+</span><span style="color:#e6db74">        threshhold : float
+</span><span style="color:#e6db74">            0 &lt; threshhold &lt;1
+</span><span style="color:#e6db74">            
+</span><span style="color:#e6db74">        Returns:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        cropped_image : ndarray, (h, w, rgb), uint8
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">assert</span> (threshhold<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">and</span>(threshhold<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+        <span style="color:#66d9ef">assert</span> image<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">3</span>
+        <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>dtype<span style="color:#f92672">==</span>np<span style="color:#f92672">.</span>uint8
+        <span style="color:#66d9ef">assert</span> saliencymap<span style="color:#f92672">.</span>ndim<span style="color:#f92672">==</span><span style="color:#ae81ff">2</span>
+        
+        threshhold <span style="color:#f92672">=</span> threshhold<span style="color:#f92672">*</span><span style="color:#ae81ff">255</span> <span style="color:#75715e"># scale to 0 - 255</span>
+        self<span style="color:#f92672">.</span>im_size <span style="color:#f92672">=</span> (image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], image<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]) <span style="color:#75715e"># (width, height)</span>
+        saliencymap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>resize(saliencymap, self<span style="color:#f92672">.</span>im_size, interpolation<span style="color:#f92672">=</span>cv2<span style="color:#f92672">.</span>INTER_CUBIC)
+
+        <span style="color:#75715e"># compute bounding box based on saliency map</span>
+        bounding_box_based_on_binary_saliency <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_compute_bounding_box_based_on_binary_saliency(saliencymap, threshhold)
+        bounding_box <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_expand_small_bounding_box_to_minimum_size(bounding_box_based_on_binary_saliency)
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>aspect_rate <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+            bounding_box <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_expand_bounding_box_to_specified_aspect_ratio(bounding_box, saliencymap)
+            
+        box_y <span style="color:#f92672">=</span> bounding_box[<span style="color:#ae81ff">1</span>]
+        box_x <span style="color:#f92672">=</span> bounding_box[<span style="color:#ae81ff">0</span>]
+        box_height <span style="color:#f92672">=</span> bounding_box[<span style="color:#ae81ff">3</span>]
+        box_width <span style="color:#f92672">=</span> bounding_box[<span style="color:#ae81ff">2</span>]
+        
+        cropped_image <span style="color:#f92672">=</span> image[box_y:box_y<span style="color:#f92672">+</span>box_height, box_x:box_x<span style="color:#f92672">+</span>box_width]
+        
+        self<span style="color:#f92672">.</span>bounding_box_based_on_binary_saliency <span style="color:#f92672">=</span> bounding_box_based_on_binary_saliency
+        self<span style="color:#f92672">.</span>bounding_box  <span style="color:#f92672">=</span> bounding_box
+        
+        <span style="color:#66d9ef">return</span> cropped_image
+
+<span style="color:#75715e"># -------------------</span>
+<span style="color:#75715e"># SETTING</span>
+threshhold <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.3</span> <span style="color:#75715e"># 閾値を設定, float (0&lt;threshhold&lt;1)</span>
+saliencymap_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;COCO_train2014_000000196971.png&#39;</span> <span style="color:#75715e"># Saliency Mapのパス</span>
+image_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;COCO_train2014_000000196971.jpg&#39;</span> <span style="color:#75715e"># 画像のパス</span>
+<span style="color:#75715e"># -------------------</span>
+
+saliencymap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(saliencymap_path)[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8 (0-255)</span>
+saliencymap <span style="color:#f92672">=</span> saliencymap[:, :, <span style="color:#ae81ff">0</span>] <span style="color:#75715e"># ndarray, (h, w), np.uint8 (0-255)</span>
+image <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(image_path)[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8 (0-255)</span>
+
+<span style="color:#75715e"># Saliency Mapを用いてクロップした画像の可視化</span>
+cropper <span style="color:#f92672">=</span> SaliencyBasedImageCropping(aspect_rate<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+cropped_image <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>crop(image, saliencymap, threshhold<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>)
+plt<span style="color:#f92672">.</span>imshow(cropped_image)
+plt<span style="color:#f92672">.</span>show()
+
+<span style="color:#75715e"># Saliency Mapとバウンディングボックスの可視化</span>
+<span style="color:#75715e"># 指定したアスペクト比に合わせたものが赤、合わせる前が緑</span>
+saliencymap_colored <span style="color:#f92672">=</span> color_saliencymap(saliencymap) <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8</span>
+overlaid_image <span style="color:#f92672">=</span> overlay_saliencymap_and_image(saliencymap_colored, image) <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8</span>
+box_x, box_y, box_width, box_height <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>bounding_box
+box_x_0, box_y_0, box_width_0, box_height_0 <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>bounding_box_based_on_binary_saliency
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure()
+ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>axes()
+bounding_box <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x, box_y), width<span style="color:#f92672">=</span>box_width, height<span style="color:#f92672">=</span>box_height, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#FF0000&#39;</span>, fill<span style="color:#f92672">=</span>False)
+bounding_box_based_on_binary_saliency <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x_0, box_y_0), width<span style="color:#f92672">=</span>box_width_0, height<span style="color:#f92672">=</span>box_height_0, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#00FF00&#39;</span>, fill<span style="color:#f92672">=</span>False)
+ax<span style="color:#f92672">.</span>imshow(overlaid_image)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box_based_on_binary_saliency)
+plt<span style="color:#f92672">.</span>show()
+
+<span style="color:#75715e"># 比較として中心をクロップした画像の可視化</span>
+center_cropped_image <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>crop_center(image)
+plt<span style="color:#f92672">.</span>imshow(center_cropped_image)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p>Saliency Mapが最大値になる範囲を見つける上では、<code>np.convolve()</code>を利用しています。</p>
+<p><a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.convolve.html">numpy.convolve — NumPy v1.17 Manual</a></p>
+<p>これは1次元の畳み込みを行う関数です。合計したい長さの全て1の配列と畳み込むことで、以下のように一定の範囲ごとの合計を計算できます。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">array_1d <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">4</span>])<span style="color:#66d9ef">print</span>(np<span style="color:#f92672">.</span>convolve(array_1d, np<span style="color:#f92672">.</span>ones(<span style="color:#ae81ff">2</span>),<span style="color:#e6db74">&#39;valid&#39;</span>)) <span style="color:#75715e"># [3. 5. 7.]</span>
+</code></pre></div><p>Since the speed decreases when using a simple for statement on Python, I will combine NumPy functions as much as possible.</p>
+<p>In addition, in the binarization process, we have added an implementation that erases very small areas by morphological transformation. In particular, when such a region is easily generated when the Saliency Map is obtained by deep learning after this, this implementation is added.</p>
+<p><a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html">Morphology transformation — OpenCV-Python Tutorials 1 documentation</a></p>
+<h3 id="view-results">View results</h3>
+<p>The green bounding box shows before adjusting the aspect ratio, and the red bounding box shows after adjusting.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/76d0b820-f88d-1e0e-ab91-62e4753c3973.png" alt="fig_7.png">
+Figure: Results of cropping with a 1:3 aspect ratio using Saliency Map</p>
+<p>As shown in this figure (a), a cat and a hand soap in the vertical range? I succeeded in putting in and cutting out. Compared to the diagram (b), which was only cut out at the center that was first implemented, it gives a better feeling of what humans want to see.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/927ce4f8-f6bf-8e24-8598-12852ca1fec3.png" alt="fig8.png">
+Figure: Results of cropping with a 1:1 aspect ratio using Saliency Map</p>
+<p>This is the case for squares (1:1). When the center is cut out (figure (b)), the cat is firmly included, but when using Saliency Map (figure (a)), it is cut out in a narrower area, so it is displayed in the same size. If the cat is getting bigger. In cropping, it is important not only that an object is captured, but that it is large enough.</p>
+<h2 id="implement-a-model-salgan-that-estimates-saliency-map-using-deep-learning-with-pytorch">Implement a model (SalGAN) that estimates Saliency Map using deep learning with PyTorch</h2>
+<p>It is not possible to crop the image that you prepared by yourself so far. I want to cut out the image of the Christmas tree taken by myself, rather than the image of the SALICON dataset, so I will use deep learning to create an estimation model for the Saliency Map.</p>
+<p>If you look at the benchmark site &ldquo;MIT Saliency Benchmark&rdquo; <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup> of the Saliency Map task, there are various methods, but this time I will try to implement SalGAN <sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup>. The score does not seem to be very high, but the mechanism seemed simple, so I chose this.</p>
+<p>The author implementation <sup id="fnref:5"><a href="#fn:5" class="footnote-ref" role="doc-noteref">5</a></sup> was also released, but since the framework is not so familiar with Lasagne (Theano), I will write it in PyTorch while referring to it.</p>
+<h3 id="what-is-salgan">What is SalGAN?</h3>
+<p>&ldquo;SalGAN: Visual Saliency Prediction with Generative Adversarial Networks&rdquo; is a paper published in 2017. As the name implies, it is a method to estimate the Saliency Map using <strong>GAN (Generative Adversarial Networks)</strong>.</p>
+<p>I will omit the explanation of GAN because there are already many easy-to-understand articles. For example, <a href="https://qiita.com/triwave33/items/1890ccc71fab6cbca87e">Unable to hear GAN (1) Basic structure understanding-Qiita</a> is recommended. If you know a typical GAN method that is well implemented and explained, you can implement it by considering the difference.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/f6f46fda-6acf-585c-6f25-bf17b47958b8.png" alt="fig_salgan.png">
+Figure: Overall structure of SalGAN (cited from paper <sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup>)</p>
+<p>Since the Saliency Map has a probability (0 to 1) that there is a viewpoint for each pixel, it can be said that it is a binary classification problem for each pixel. It is close to one-class segmentation. Since we want to input an image and output an image (Saliency Map), it becomes an <strong>Encoder-Decoder model</strong> using CNN as shown in this figure. Pix2Pix<sup id="fnref:6"><a href="#fn:6" class="footnote-ref" role="doc-noteref">6</a></sup> is famous for image-to-image using GAN, but it does not have a U-Net structure like that.</p>
+<p>The Encoder-Decoder model can also be trained to reduce the output Saliency Map and the <strong>Binary Cross Entropy</strong> of correct data. However, in addition to this, SalGAN is trying to improve the accuracy by adding a network (<strong>Discriminator</strong>) that classifies the Saliency Map as correct data or estimated data.</p>
+<p>The loss function of the Encoder-Decoder part (<strong>Generator</strong>) is as follows. In addition to the usual Adversarial Loss, the estimated Saliency Map and the Binary Cross Entropy term of the correct answer data are added. Adjust the percentage with the hyperparameter $\alpha$.</p>
+<p>$$
+\mathcal{L}_{BCE} = -\frac{1}{N}\sum_{j=1}^{N}(S_{j}\log{(\hat{S}\ _{j})}+(1-S_{j})\log{(1-\hat{S}_{j})}).
+$$</p>
+<p>$$
+\mathcal{L} = \alpha\cdot\mathcal{L}_{BCE} + L(D(I, \hat{S}), 1).
+$$</p>
+<p>The Discriminator loss function is It is a general shape.</p>
+<p>$$
+\mathcal{L}_{\mathcal{D}} = L(D(I, S), 1)+L(D(I, \hat{S}),0).
+$$</p>
+<h3 id="read-a-little-more">read a little more</h3>
+<p>While quoting the paper, I will understand the information necessary for implementation. Looking at the whole structure, I found it, but I&rsquo;m looking for a place where there is information that I want to know a little more.</p>
+<blockquote>
+<p>The encoder part of the network is identical in architecture to VGG-16 (Simonyan and Zisserman, 2015), omitting the final pooling and fully connected layers.The network is initialized with the weights of a VGG-16 model trained on the ImageNet data set for object classification (Deng et al., 2009).Only the last two groups of convolutional layers in VGG-16 are modified during the training for saliency prediction, while the earlier layers remain fixed from the original VGG-16 model.</p>
+</blockquote>
+<ul>
+<li>Use VGG16 for CNN of Encoder part of Generator
+-Excluding the final pooling layer and fully connected layer
+-Initialize the weights learned by ImageNet
+-Learn only the last two groups of convolutional layers
+-The weights of the previous three groups of convolutional layers are fixed as the weights learned by ImageNet</li>
+</ul>
+<blockquote>
+<p>The decoder architecture is structured in the same way as the encoder, but with the ordering of layers reversed, and with pooling layers being replaced by upsampling layers. Again, ReLU non-linearities are used in all convolution layers, and a final 1 × 1 convolution layer with sigmoid non-linearity is added to
+produce the saliency map.The weights for the decoder are randomly initialized.The final output of the network is a saliency map in the same size to input image.</p>
+</blockquote>
+<ul>
+<li>Decoder is the same as Encoder but inserts upsampling layer instead of pooling layer
+-The last layer is a 1x1 convolution followed by a sigmoid function
+-Weights are initialized randomly
+-Output is the same size as input</li>
+</ul>
+<blockquote>
+<p>The input to the discriminator network is an RGBS image of size 256 × 192 × 4 containing both the source
+image channels and (predicted or ground truth) saliency.-Input not only Saliency Map but also original image to Discriminator in 4 channels
+-Input images as 256×192</p>
+</blockquote>
+<blockquote>
+<p>We train the networks on the 15,000 images from the SALICON training set using a batch size of 32.</p>
+</blockquote>
+<ul>
+<li>Uses 15,000 images from the SALICON dataset
+-Batch size is 32</li>
+</ul>
+<p>I don&rsquo;t want to reproduce the paper this time, so I didn&rsquo;t pay attention to the details of the implementation. For example, instead of ReLU in the paper, we use LeakyReLU, which is generally effective when used.</p>
+<h3 id="write-code">write code</h3>
+<p>I will write the code. Since the basic is GAN of Encoder-Decoder model by CNN, I will refer to the implementation of a similar existing method. For example, eriklindernoren&rsquo;s GitHub has various GANs implemented on PyTorch. DCGAN implementation <sup id="fnref:7"><a href="#fn:7" class="footnote-ref" role="doc-noteref">7</a></sup> looks good.</p>
+<h3 id="create-a-class-for-generator-and-discriminator">Create a class for Generator and Discriminator</h3>
+<p>The generator uses VGG16 which has been learned with ImageNet, but this is prepared in torchvision[^9]. In SalGAN, the weight is fixed on the front side and learning is done on the rear side, so describe it by separating layers such as <code>torchvision.models.vgg16(pretrained=True).features[:17]</code>. You can check what number and what layer is <code>print(torchvision.models.vgg16(pretrained=True).features)</code>.</p>
+<p><a href="https://pytorch.org/docs/stable/torchvision/models.html#id2">torchvision.models — PyTorch master documentation</a></p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> torch <span style="color:#f92672">import</span> nn
+<span style="color:#f92672">import</span> torchvision
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Generator</span>(nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self, pretrained<span style="color:#f92672">=</span>True):
+        super()<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>encoder_first <span style="color:#f92672">=</span> torchvision<span style="color:#f92672">.</span>models<span style="color:#f92672">.</span>vgg16(pretrained<span style="color:#f92672">=</span>True)<span style="color:#f92672">.</span>features[:<span style="color:#ae81ff">17</span>] <span style="color:#75715e"># Fixed weighted part</span>
+        self<span style="color:#f92672">.</span>encoder_last <span style="color:#f92672">=</span> torchvision<span style="color:#f92672">.</span>models<span style="color:#f92672">.</span>vgg16(pretrained<span style="color:#f92672">=</span>True)<span style="color:#f92672">.</span>features[<span style="color:#ae81ff">17</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#75715e"># Learning part</span>
+        self<span style="color:#f92672">.</span>decoder <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Sequential(
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Upsample(scale_factor<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Upsample(scale_factor<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Upsample(scale_factor<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Upsample(scale_factor<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>),
+                    nn<span style="color:#f92672">.</span>Sigmoid())
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, x):
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>encoder_first(x)
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>encoder_last(x)
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>decoder(x)
+        <span style="color:#66d9ef">return</span> x
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Discriminator</span>(nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self):
+        super()<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>main <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Sequential(
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(inplace<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(inplace<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>MaxPool2d(<span style="color:#ae81ff">2</span>, stride<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(inplace<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(inplace<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>MaxPool2d(<span style="color:#ae81ff">2</span>, stride<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(inplace<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>Conv2d(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+                    nn<span style="color:#f92672">.</span>LeakyReLU(inplace<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>MaxPool2d(<span style="color:#ae81ff">2</span>, stride<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>))
+        self<span style="color:#f92672">.</span>classifier <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Sequential(
+                    nn<span style="color:#f92672">.</span>Linear(<span style="color:#ae81ff">64</span><span style="color:#f92672">*</span><span style="color:#ae81ff">32</span><span style="color:#f92672">*</span><span style="color:#ae81ff">24</span>, <span style="color:#ae81ff">100</span>, bias<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>Tanh(),
+                    nn<span style="color:#f92672">.</span>Linear(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">2</span>, bias<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>Tanh(),
+                    nn<span style="color:#f92672">.</span>Linear(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>, bias<span style="color:#f92672">=</span>True),
+                    nn<span style="color:#f92672">.</span>Sigmoid())
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, x):
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>main(x)
+        x <span style="color:#f92672">=</span> x<span style="color:#f92672">.</span>view(x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>classifier(x)
+        <span style="color:#66d9ef">return</span> x
+</code></pre></div></div></summary>
+<h3 id="create-a-dataset-class">create a dataset class</h3>
+<p>You need a dataset class to read the SALICON dataset. It is a little troublesome to describe according to the prepared data set and task. The PyTorch tutorial will be helpful when it comes to writing.</p>
+<p><a href="https://pytorch.org/tutorials/beginner/data_loading_tutorial.html">Writing Custom Datasets, DataLoaders and Transforms — PyTorch Tutorials 1.3.1 documentation</a></p>
+<p>Preprocessing using <code>torchvision.transforms</code> is also described here. This time, we will only resize to 192 x 256 and normalize.</p>
+<p><a href="https://pytorch.org/docs/stable/torchvision/transforms.html">torchvision.transforms — PyTorch master documentation</a>TheSALICONdatasetcanbedownloadedfrom<a href="http://salicon.net/challenge-2017/">LSUN'17SaliencyPredictionChallenge|SALICON</a>.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> os
+
+<span style="color:#f92672">import</span> torch.utils.data <span style="color:#f92672">as</span> data
+<span style="color:#f92672">import</span> torchvision.transforms <span style="color:#f92672">as</span> transforms
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SALICONDataset</span>(data<span style="color:#f92672">.</span>Dataset):
+    <span style="color:#66d9ef">def</span> __init__(self, root_dataset_dir, val_mode <span style="color:#f92672">=</span> False):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Dataset class for reading SALICON datasets
+</span><span style="color:#e6db74">        
+</span><span style="color:#e6db74">        Parameters:
+</span><span style="color:#e6db74">        -----------------
+</span><span style="color:#e6db74">        root_dataset_dir :str
+</span><span style="color:#e6db74">            Directory path above the SALICON dataset
+</span><span style="color:#e6db74">        val_mode: bool (default: False)
+</span><span style="color:#e6db74">            If it is False, read Train data, and if True, read Validation data.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        self<span style="color:#f92672">.</span>root_dataset_dir <span style="color:#f92672">=</span> root_dataset_dir
+        self<span style="color:#f92672">.</span>imgsets_dir <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>root_dataset_dir,<span style="color:#e6db74">&#39;SALICON/image_sets&#39;</span>)
+        self<span style="color:#f92672">.</span>img_dir <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>root_dataset_dir,<span style="color:#e6db74">&#39;SALICON/imgs&#39;</span>)
+        self<span style="color:#f92672">.</span>distribution_target_dir <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>root_dataset_dir,<span style="color:#e6db74">&#39;SALICON/algmaps&#39;</span>)
+        self<span style="color:#f92672">.</span>img_tail <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;.jpg&#39;</span>
+        self<span style="color:#f92672">.</span>distribution_target_tail <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;.png&#39;</span>
+        self<span style="color:#f92672">.</span>transform <span style="color:#f92672">=</span> transforms<span style="color:#f92672">.</span>Compose([transforms<span style="color:#f92672">.</span>Resize((<span style="color:#ae81ff">192</span>, <span style="color:#ae81ff">256</span>)), transforms<span style="color:#f92672">.</span>ToTensor(), transforms<span style="color:#f92672">.</span>Normalize([<span style="color:#ae81ff">0.5</span>], [<span style="color:#ae81ff">0.5</span>])])
+        self<span style="color:#f92672">.</span>distribution_transform <span style="color:#f92672">=</span> transforms<span style="color:#f92672">.</span>Compose([transforms<span style="color:#f92672">.</span>Resize((<span style="color:#ae81ff">192</span>, <span style="color:#ae81ff">256</span>)), transforms<span style="color:#f92672">.</span>ToTensor()])
+        
+        <span style="color:#66d9ef">if</span> val_mode:
+            train_or_val <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;val&#34;</span>
+        <span style="color:#66d9ef">else</span>:
+            train_or_val <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;train&#34;</span>
+        imgsets_file <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>imgsets_dir,<span style="color:#e6db74">&#39;{}.txt&#39;</span><span style="color:#f92672">.</span>format(train_or_val))
+        files <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> data_id <span style="color:#f92672">in</span> open(imgsets_file)<span style="color:#f92672">.</span>readlines():
+            data_id <span style="color:#f92672">=</span> data_id<span style="color:#f92672">.</span>strip()
+            img_file <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>img_dir,<span style="color:#e6db74">&#39;{0}{1}&#39;</span><span style="color:#f92672">.</span>format(data_id, self<span style="color:#f92672">.</span>img_tail))
+            distribution_target_file <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>distribution_target_dir,<span style="color:#e6db74">&#39;{0}{1}&#39;</span><span style="color:#f92672">.</span>format(data_id, self<span style="color:#f92672">.</span>distribution_target_tail))
+            files<span style="color:#f92672">.</span>append({
+                <span style="color:#e6db74">&#39;img&#39;</span>: img_file,
+                <span style="color:#e6db74">&#39;distribution_target&#39;</span>: distribution_target_file,
+                <span style="color:#e6db74">&#39;data_id&#39;</span>: data_id
+            })
+        self<span style="color:#f92672">.</span>files <span style="color:#f92672">=</span> files
+        
+    <span style="color:#66d9ef">def</span> __len__(self):
+        <span style="color:#66d9ef">return</span> len(self<span style="color:#f92672">.</span>files)
+
+    <span style="color:#66d9ef">def</span> __getitem__(self, index):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        -----------
+</span><span style="color:#e6db74">        data: list
+</span><span style="color:#e6db74">            [img, distribution_target, data_id]
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        data_file <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>files[index]
+        data <span style="color:#f92672">=</span> []
+
+        img_file <span style="color:#f92672">=</span> data_file[<span style="color:#e6db74">&#39;img&#39;</span>]
+        img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(img_file)
+        data<span style="color:#f92672">.</span>append(img)
+
+        distribution_target_file <span style="color:#f92672">=</span> data_file[<span style="color:#e6db74">&#39;distribution_target&#39;</span>]
+        distribution_target <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(distribution_target_file)
+        data<span style="color:#f92672">.</span>append(distribution_target)
+        
+        <span style="color:#75715e"># transform</span>
+        data[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>transform(data[<span style="color:#ae81ff">0</span>])
+        data[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>distribution_transform(data[<span style="color:#ae81ff">1</span>])
+
+        data<span style="color:#f92672">.</span>append(data_file[<span style="color:#e6db74">&#39;data_id&#39;</span>])
+        <span style="color:#66d9ef">return</span> data
+</code></pre></div></div></details>
+<h3 id="learn">learn</h3>
+<p>Write the code for the rest of your learning. The point is how to calculate the loss function and how to learn the Generator and Discriminator.</p>
+<p>It takes about several hours using the GPU to learn the same 120 epochs as the paper.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime
+
+<span style="color:#f92672">import</span> torch
+<span style="color:#f92672">from</span> torch.autograd <span style="color:#f92672">import</span> Variable
+
+<span style="color:#75715e">#-----------------</span>
+<span style="color:#75715e"># SETTING</span>
+root_dataset_dir <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># path to directory above SALICON dataset</span>
+alpha <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.005</span> Hyperparameter of <span style="color:#75715e"># Generator&#39;s loss function. The recommended value for papers is 0.005</span>
+epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">120</span>
+batch_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">32</span> <span style="color:#75715e"># 32 in the paper</span>
+<span style="color:#75715e">#-----------------</span>
+
+<span style="color:#75715e"># Use start time as filename</span>
+start_time_stamp <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{0:%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">-%H%M%S}&#39;</span><span style="color:#f92672">.</span>format(datetime<span style="color:#f92672">.</span>now())
+
+save_dir <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;./log/&#34;</span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(save_dir):
+    os<span style="color:#f92672">.</span>makedirs(save_dir)
+
+DEVICE <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>device(<span style="color:#e6db74">&#34;cuda:0&#34;</span> <span style="color:#66d9ef">if</span> torch<span style="color:#f92672">.</span>cuda<span style="color:#f92672">.</span>is_available() <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#34;cpu&#34;</span>)
+
+<span style="color:#75715e">#Load data loader</span>
+train_dataset <span style="color:#f92672">=</span> SALICONDataset(
+                    root_dataset_dir,
+                )
+train_loader <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>utils<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>DataLoader(train_dataset, batch_size <span style="color:#f92672">=</span> batch_size, shuffle<span style="color:#f92672">=</span>True, num_workers <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>, pin_memory<span style="color:#f92672">=</span>True, sampler<span style="color:#f92672">=</span>None)
+val_dataset <span style="color:#f92672">=</span> SALICONDataset(
+                    root_dataset_dir,
+                    val_mode<span style="color:#f92672">=</span>True
+                )
+val_loader <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>utils<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>DataLoader(val_dataset, batch_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, shuffle<span style="color:#f92672">=</span>False, num_workers <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>, pin_memory<span style="color:#f92672">=</span>True, sampler<span style="color:#f92672">=</span>None)
+
+<span style="color:#75715e"># Load model and loss function</span>
+loss_func <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>BCELoss()<span style="color:#f92672">.</span>to(DEVICE)
+generator <span style="color:#f92672">=</span> Generator()<span style="color:#f92672">.</span>to(DEVICE)
+discriminator <span style="color:#f92672">=</span> Discriminator()<span style="color:#f92672">.</span>to(DEVICE)
+
+<span style="color:#75715e">#Define optimization method (use settings in the paper)</span>
+optimizer_G <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>optim<span style="color:#f92672">.</span>Adagrad((
+                {<span style="color:#e6db74">&#39;params&#39;</span>: generator<span style="color:#f92672">.</span>encoder_last<span style="color:#f92672">.</span>parameters()},
+                {<span style="color:#e6db74">&#39;params&#39;</span>: generator<span style="color:#f92672">.</span>decoder<span style="color:#f92672">.</span>parameters()}
+            ], lr<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0001</span>, weight_decay<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span><span style="color:#f92672">*</span><span style="color:#ae81ff">0.0001</span>)
+optimizer_D <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>optim<span style="color:#f92672">.</span>Adagrad(discriminator<span style="color:#f92672">.</span>parameters(), lr<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0001</span>, weight_decay<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span><span style="color:#f92672">*</span><span style="color:#ae81ff">0.0001</span>)
+
+<span style="color:#75715e">#Learning</span>
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(epochs):
+    n_updates <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># iteration count</span>
+    n_discriminator_updates <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    n_generator_updates <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    d_loss_sum <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    g_loss_sum <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    
+    <span style="color:#66d9ef">for</span> i, data <span style="color:#f92672">in</span> enumerate(train_loader):
+        imgs <span style="color:#f92672">=</span> data[<span style="color:#ae81ff">0</span>] <span style="color:#75715e"># ([batch_size, rgb, h, w])</span>
+        salmaps <span style="color:#f92672">=</span> data[<span style="color:#ae81ff">1</span>] <span style="color:#75715e"># ([batch_size, 1, h, w])</span>
+
+        Create a label <span style="color:#66d9ef">for</span> <span style="color:#75715e">#Discriminator</span>
+        valid <span style="color:#f92672">=</span> Variable(torch<span style="color:#f92672">.</span>FloatTensor(imgs<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>fill_(<span style="color:#ae81ff">1.0</span>), requires_grad<span style="color:#f92672">=</span>False)<span style="color:#f92672">.</span>to(DEVICE)
+        fake <span style="color:#f92672">=</span> Variable(torch<span style="color:#f92672">.</span>FloatTensor(imgs<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>fill_(<span style="color:#ae81ff">0.0</span>), requires_grad<span style="color:#f92672">=</span>False)<span style="color:#f92672">.</span>to(DEVICE)imgs <span style="color:#f92672">=</span> Variable(imgs)<span style="color:#f92672">.</span>to(DEVICE)
+        real_salmaps <span style="color:#f92672">=</span> Variable(salmaps)<span style="color:#f92672">.</span>to(DEVICE)
+
+        <span style="color:#75715e"># Alternately learn Generator and Discriminator for each iteration</span>
+        <span style="color:#66d9ef">if</span> n_updates <span style="color:#f92672">%</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            <span style="color:#75715e"># -----------------</span>
+            <span style="color:#75715e"># Train Generator</span>
+            <span style="color:#75715e"># -----------------</span>
+
+            optimizer_G<span style="color:#f92672">.</span>zero_grad()
+            gen_salmaps <span style="color:#f92672">=</span> generator(imgs)
+            
+            Combine the original image <span style="color:#66d9ef">with</span> the generated Saliency Map <span style="color:#66d9ef">for</span> input to <span style="color:#75715e">#Discriminator to create a 4-channel array</span>
+            fake_d_input <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat((imgs, gen_salmaps<span style="color:#f92672">.</span>detach()), <span style="color:#ae81ff">1</span>) <span style="color:#75715e"># ([batch_size, rgbs, h, w])</span>
+            
+            Calculate the loss function of <span style="color:#75715e"># Generator</span>
+            g_loss1 <span style="color:#f92672">=</span> loss_func(gen_salmaps, real_salmaps)
+            g_loss2 <span style="color:#f92672">=</span> loss_func(discriminator(fake_d_input), valid)
+            g_loss <span style="color:#f92672">=</span> alpha<span style="color:#f92672">*</span>g_loss1 <span style="color:#f92672">+</span> g_loss2
+            
+            g_loss<span style="color:#f92672">.</span>backward()
+            optimizer_G<span style="color:#f92672">.</span>step()
+            
+            g_loss_sum <span style="color:#f92672">+=</span> g_loss<span style="color:#f92672">.</span>item()
+            n_generator_updates <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#75715e">#---------------------</span>
+            <span style="color:#75715e"># Train Discriminator</span>
+            <span style="color:#75715e">#---------------------</span>
+
+            optimizer_D<span style="color:#f92672">.</span>zero_grad()
+            
+            Combine the original image <span style="color:#66d9ef">with</span> the correct answer Saliency Map <span style="color:#66d9ef">for</span> input to <span style="color:#75715e">#Discriminator to create a 4-channel array</span>
+            real_d_input <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat((imgs, real_salmaps), <span style="color:#ae81ff">1</span>) <span style="color:#75715e"># ((batch_size, rgbs, h, w])</span>
+
+            <span style="color:#75715e">#Calculate loss function of Discriminator</span>
+            real_loss <span style="color:#f92672">=</span> loss_func(discriminator(real_d_input), valid)
+            fake_loss <span style="color:#f92672">=</span> loss_func(discriminator(fake_d_input), fake)
+            d_loss <span style="color:#f92672">=</span> (real_loss <span style="color:#f92672">+</span> fake_loss) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>
+
+            d_loss<span style="color:#f92672">.</span>backward()
+            optimizer_D<span style="color:#f92672">.</span>step()
+            
+            d_loss_sum <span style="color:#f92672">+=</span> d_loss<span style="color:#f92672">.</span>item()
+            n_discriminator_updates <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            
+        n_updates <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">if</span> n_updates<span style="color:#f92672">%</span><span style="color:#ae81ff">10</span><span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+            <span style="color:#66d9ef">if</span> n_discriminator_updates<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">0</span>:
+                <span style="color:#66d9ef">print</span>(
+                    <span style="color:#e6db74">&#34;[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">/</span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> (</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">/</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">)] [loss D: </span><span style="color:#e6db74">%f</span><span style="color:#e6db74">, G: </span><span style="color:#e6db74">%f</span><span style="color:#e6db74">]&#34;</span>
+                    <span style="color:#f92672">%</span> (epoch, epochs<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, i, len(train_loader), d_loss_sum<span style="color:#f92672">/</span>n_discriminator_updates ,g_loss_sum<span style="color:#f92672">/</span>n_generator_updates)
+                )
+            <span style="color:#66d9ef">else</span>:
+                <span style="color:#66d9ef">print</span>(
+                    <span style="color:#e6db74">&#34;[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">/</span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> (</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">/</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">)] [loss G: </span><span style="color:#e6db74">%f</span><span style="color:#e6db74">]&#34;</span>
+                    <span style="color:#f92672">%</span> (epoch, epochs<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, i, len(train_loader), g_loss_sum<span style="color:#f92672">/</span>n_generator_updates)
+                )
+    
+    <span style="color:#75715e"># Save weight</span>
+    <span style="color:#75715e">#5 Save each epoch and last epoch</span>
+    <span style="color:#66d9ef">if</span> ((epoch<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">%</span><span style="color:#ae81ff">5</span><span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">or</span>(epoch<span style="color:#f92672">==</span>epochs<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        generator_save_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}.pkl&#39;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(save_dir, <span style="color:#e6db74">&#34;{}_generator_epoch{}&#34;</span><span style="color:#f92672">.</span>format(start_time_stamp, epoch)))
+        discriminator_save_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}.pkl&#39;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(save_dir, <span style="color:#e6db74">&#34;{}_discriminator_epoch{}&#34;</span><span style="color:#f92672">.</span>format(start_time_stamp, epoch)))
+        torch<span style="color:#f92672">.</span>save(generator<span style="color:#f92672">.</span>state_dict(), generator_save_path)
+        torch<span style="color:#f92672">.</span>save(discriminator<span style="color:#f92672">.</span>state_dict(), discriminator_save_path)
+        
+    <span style="color:#75715e"># Visualize part of the validation data for each epoch</span>
+    <span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;validation&#34;</span>)
+        <span style="color:#66d9ef">for</span> i, data <span style="color:#f92672">in</span> enumerate(val_loader):
+            image <span style="color:#f92672">=</span> Variable(data[<span style="color:#ae81ff">0</span>])<span style="color:#f92672">.</span>to(DEVICE)
+            gen_salmap <span style="color:#f92672">=</span> generator(imgs)
+            gen_salmap_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(gen_salmaps<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>cpu())[<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>]
+            
+            plt<span style="color:#f92672">.</span>imshow(np<span style="color:#f92672">.</span>array(image[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>cpu())<span style="color:#f92672">.</span>transpose(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>))
+            plt<span style="color:#f92672">.</span>show()
+            plt<span style="color:#f92672">.</span>imshow(gen_salmap_np)
+            plt<span style="color:#f92672">.</span>show()
+            <span style="color:#66d9ef">if</span> i<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>:
+                <span style="color:#66d9ef">break</span>
+</code></pre></div></div></details>
+<h3 id="estimate-the-saliency-map">Estimate the Saliency Map</h3>
+<p>Input the image into the learned SalGAN and estimate the Saliency Map. Let&rsquo;s see how it is estimated with images that are not used for learning.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">generator_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># Path of the generator weight file (pkl) obtained by learning</span>
+image_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;COCO_train2014_000000196971.jpg&#34;</span> <span style="color:#75715e">#The path of the image you want to input</span>
+
+generator <span style="color:#f92672">=</span> Generator()<span style="color:#f92672">.</span>to(DEVICE)
+generator<span style="color:#f92672">.</span>load_state_dict(torch<span style="color:#f92672">.</span>load(generator_path))
+
+image_pil <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(image_path) <span style="color:#75715e"># It is assumed that PIL format image is input for transform.</span>
+image <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(image_pil)
+plt<span style="color:#f92672">.</span>imshow(image)
+plt<span style="color:#f92672">.</span>show()
+
+transform <span style="color:#f92672">=</span> transforms<span style="color:#f92672">.</span>Compose([transforms<span style="color:#f92672">.</span>Resize((<span style="color:#ae81ff">192</span>, <span style="color:#ae81ff">256</span>)), transforms<span style="color:#f92672">.</span>ToTensor(), transforms<span style="color:#f92672">.</span>Normalize([<span style="color:#ae81ff">0.5</span>], [<span style="color:#ae81ff">0.5</span>])]))
+image_torch <span style="color:#f92672">=</span> transform(image_pil)
+image_torch <span style="color:#f92672">=</span> image_torch<span style="color:#f92672">.</span>unsqueeze(<span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>to(DEVICE) <span style="color:#75715e"># (1, rgb, h, w)</span>
+<span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+    pred_saliencymap <span style="color:#f92672">=</span> generator(img_torch)
+    pred_saliencymap <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(pred_saliencymap<span style="color:#f92672">.</span>cpu())[<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>]
+pred_saliencymap <span style="color:#f92672">=</span> pred_saliencymap<span style="color:#f92672">/</span>pred_saliencymap<span style="color:#f92672">.</span>sum() <span style="color:#75715e"># scales the sum to 1</span>
+pred_saliencymap <span style="color:#f92672">=</span> ((pred<span style="color:#f92672">/</span>pred<span style="color:#f92672">.</span>max())<span style="color:#f92672">*</span><span style="color:#ae81ff">255</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8) <span style="color:#75715e"># Convert to np.uint8 so that it can be handled as an image</span>
+plt<span style="color:#f92672">.</span>imshow(pred_saliencymap)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/dfd36251-d3b2-6a18-2d14-081febe420f9.png" alt="fig_15.png"></p>
+<p>Figure: Example of Saliency Map estimated by SalGAN</p>
+<p>The Saliency Map of this figure (b) was estimated. Although it has a big impression compared to the correct answer data (Fig. (c)), the probability of convincing places around the pitcher and batter can be estimated to be high.</p>
+<p>If you want to train firmly, you need to validate with various indicators for Saliency Map as done in the paper. Since it has not been verified at this time, it is unknown how much results are obtained compared to SalGAN introduced in the paper. Since the main focus is on cropping this time, I want to move on because there was something qualitatively similar to that.</p>
+<h2 id="crop-the-image-with-the-estimated-saliency-map">Crop the image with the estimated Saliency Map</h2>
+<p>Now you have what you want to make. By combining the Saliency Map estimated by SalGAN with the cropping class, you can crop the image in a nice way.</p>
+<details>Click here to see the <summary> implementation</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># -------------------</span>
+<span style="color:#75715e"># SETTING</span>
+threshhold <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.3</span> <span style="color:#75715e"># set threshold, float (0&lt;threshhold&lt;1)</span>
+generator_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#75715e"># Path of the generator weight file (pkl) obtained by learningimage_path = &#34;COCO_train2014_000000196971.jpg&#34; # Path of the image you want to crop</span>
+<span style="color:#75715e"># -------------------</span>
+
+generator <span style="color:#f92672">=</span> Generator()<span style="color:#f92672">.</span>to(DEVICE)
+generator<span style="color:#f92672">.</span>load_state_dict(torch<span style="color:#f92672">.</span>load(generator_path))
+
+image_pil <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(image_path) <span style="color:#75715e"># It is assumed that PIL format image is input for transform.</span>
+image <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(image_pil)
+plt<span style="color:#f92672">.</span>imshow(image)
+plt<span style="color:#f92672">.</span>show()
+
+transform <span style="color:#f92672">=</span> transforms<span style="color:#f92672">.</span>Compose([transforms<span style="color:#f92672">.</span>Resize((<span style="color:#ae81ff">192</span>, <span style="color:#ae81ff">256</span>)), transforms<span style="color:#f92672">.</span>ToTensor(), transforms<span style="color:#f92672">.</span>Normalize([<span style="color:#ae81ff">0.5</span>], [<span style="color:#ae81ff">0.5</span>])]))
+image_torch <span style="color:#f92672">=</span> transform(image_pil)
+image_torch <span style="color:#f92672">=</span> image_torch<span style="color:#f92672">.</span>unsqueeze(<span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>to(DEVICE) <span style="color:#75715e"># (1, rgb, h, w)</span>
+<span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+    pred_saliencymap <span style="color:#f92672">=</span> generator(image_torch)
+    pred_saliencymap <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(pred_saliencymap<span style="color:#f92672">.</span>cpu())[<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>]
+pred_saliencymap <span style="color:#f92672">=</span> pred_saliencymap<span style="color:#f92672">/</span>pred_saliencymap<span style="color:#f92672">.</span>sum() <span style="color:#75715e"># scales the sum to 1</span>
+pred_saliencymap <span style="color:#f92672">=</span> ((pred_saliencymap<span style="color:#f92672">/</span>pred_saliencymap<span style="color:#f92672">.</span>max())<span style="color:#f92672">*</span><span style="color:#ae81ff">255</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8) <span style="color:#75715e"># Convert to np.uint8 so that it can be handled as an image</span>
+plt<span style="color:#f92672">.</span>imshow(pred_saliencymap)
+plt<span style="color:#f92672">.</span>show()
+
+Visualization of cropped image using <span style="color:#75715e"># Saliency Map</span>
+cropper <span style="color:#f92672">=</span> SaliencyBasedImageCropping(aspect_rate<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+cropped_image <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>crop(image, pred_saliencymap, threshhold<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>)
+plt<span style="color:#f92672">.</span>imshow(cropped_image)
+plt<span style="color:#f92672">.</span>show()
+
+<span style="color:#75715e"># Saliency Map and bounding box visualization</span>
+<span style="color:#75715e">#Red according to the specified aspect ratio, green before matching</span>
+saliencymap_colored <span style="color:#f92672">=</span> color_saliencymap(pred_saliencymap) <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8</span>
+overlaid_image <span style="color:#f92672">=</span> overlay_saliencymap_and_image(saliencymap_colored, image) <span style="color:#75715e"># ndarray, (h, w, rgb), np.uint8</span>
+box_x, box_y, box_width, box_height <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>bounding_box
+box_x_0, box_y_0, box_width_0, box_height_0 <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>bounding_box_based_on_binary_saliency
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure()
+ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>axes()
+bounding_box <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x, box_y), width<span style="color:#f92672">=</span>box_width, height<span style="color:#f92672">=</span>box_height, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#FF0000&#39;</span>, fill<span style="color:#f92672">=</span>False)
+bounding_box_based_on_binary_saliency <span style="color:#f92672">=</span> patches<span style="color:#f92672">.</span>Rectangle(xy<span style="color:#f92672">=</span>(box_x_0, box_y_0), width<span style="color:#f92672">=</span>box_width_0, height<span style="color:#f92672">=</span>box_height_0, ec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#00FF00&#39;</span>, fill<span style="color:#f92672">=</span>False)
+ax<span style="color:#f92672">.</span>imshow(overlaid_image)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box)
+ax<span style="color:#f92672">.</span>add_patch(bounding_box_based_on_binary_saliency)
+plt<span style="color:#f92672">.</span>show()
+
+<span style="color:#75715e"># Visualization of cropped image for comparison</span>
+center_cropped_image <span style="color:#f92672">=</span> cropper<span style="color:#f92672">.</span>crop_center(image)
+plt<span style="color:#f92672">.</span>imshow(center_cropped_image)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div></div></details>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/5fce0e4a-342e-206e-3d46-133b0c85f641.png" alt="fig_12.png">
+Figure: Comparison of cutouts using correct answer data and SalGAN (baseball image)</p>
+<p>With the correct answer data in Figure (a) and SalGAN in Figure (b), almost the same result of cutting out the batter was obtained. Which line of sight, the batter or pitcher, directs? It doesn&rsquo;t seem that he has learned enough, but I am glad that he has survived in the same way.</p>
+<p>Isn&rsquo;t this kind of story a cherry picking that only shows results that went well? I have a question. If we measure this outcome quantitatively, I think we can see how these two types overlap with the SALICON dataset. IoU-like calculations in object detection tasks. However, since it is a story that I tried to make it to the last, I will omit it.</p>
+<p>I used the image of the cat that appeared in the first half of the article because it was cute, but it is actually Train data, so it is not suitable for verification. But let&rsquo;s take a look.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/48a128f5-113b-8338-34ff-17d2b65cfadf.png" alt="fig_11.png">
+Figure: Comparison of cutouts using correct data and SalGAN (cat image)</p>
+<p>Similar results were obtained here as well. It was good.</p>
+<h3 id="cut-out-the-christmas-tree">Cut out the Christmas tree</h3>
+<p>Finally we will return to the first Christmas tree image. If you can make a reasonable cutout with a picture you took that is not in the data set, you have achieved your purpose.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/173282/0ddf8d80-e7bb-a375-5d17-41d252d1959c.png" alt="fig_13.png">
+Figure: Comparison of cutouts using SalGAN and simply centering it (Christmas tree image)</p>
+<p>Perfect results have been obtained. The picture (a) with the Christmas tree looks better than the picture (b) without it. AI? With the power of, we have completed a system that can automatically do things that are similar to what people do. This may reduce disappointment by cutting out blank areas, or reduce the work of manually cutting out images.</p>
+<h2 id="summary">Summary</h2>
+<p>The contents were such as the implementation of two papers of cropping <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup> using Saliency Map and SalGAN<sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup> that estimates Saliency Map + alpha.</p>
+<p>It is possible to make such a thing only by the information published. Even those who stopped by moving something like a tutorial in deep learning or machine learning would like to try a little and make something like this!</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>Introduction of neural network that optimally and automatically crops images <a href="https://blog.twitter.com/ja_jp/topics/product/2018/0125ML-CR.html">https://blog.twitter.com/ja_jp/topics/product/2018/0125ML-CR.html</a> <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>E. Ardizzone, A. Bruno, G. Mazzola, Saliency Based Image Cropping, ICIAP, 2013 <a href="https://www.academia.edu/35825403/Saliency_based_image_cropping">https://www.academia.edu/35825403/Saliency_based_image_cropping</a> <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>MIT Saliency Benchmark <a href="http://saliency.mit.edu/results_mit300.html">http://saliency.mit.edu/results_mit300.html</a> <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p>Pan, Junting, et al. &ldquo;Salgan: Visual saliency prediction with generative adversarial networks.&rdquo; arXiv preprint arXiv:1701.01081 (2017).https://arxiv.org/abs/1701.01081 <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:5" role="doc-endnote">
+<p>imatge-upc/salgan: SalGAN: Visual Saliency Prediction with Generative Adversarial Networks <a href="https://github.com/imatge-upc/salgan">https://github.com/imatge-upc/salgan</a> <a href="#fnref:5" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:6" role="doc-endnote">
+<p>Isola, Phillip, et al. &ldquo;Image-to-image translation with conditional adversarial networks.&rdquo; Proceedings of the IEEE conference on computer vision and pattern recognition. 2017. <a href="https://arxiv.org/abs/1611.07004">https://arxiv.org/abs/1611.07004</a> <a href="#fnref:6" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:7" role="doc-endnote">
+<p>PyTorch-GAN/dcgan.py at master <a href="#fnref:7" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

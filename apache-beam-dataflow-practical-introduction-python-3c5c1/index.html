@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Apache Beam (Dataflow) practical introduction [Python] | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Apache Beam (Dataflow) practical introduction [Python]</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 3, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googleclouddataflow">GoogleCloudDataflow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/apachebeam">ApacheBeam</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This article is based on the content of <a href="https://beam.apache.org/documentation/">Apache Beam Documentation</a>.</p>
+<p>A batch process program is implemented with Apache Beam Python SDK, and the procedure and method to execute with Cloud Dataflow are summarized. It also touches on some of the basic Apache Beam concepts, testing and design.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/04e4bcbf-c848-999e-775c-6863e5a228c2.png" alt="beam-logo-full-color-name-right-500.png"></p>
+<h1 id="getting-started-with-apache-beam-sdk">Getting Started with Apache Beam SDK</h1>
+<p>Apache Beam SDK can be selected from <strong>Java</strong>, <strong>Python</strong>, <strong>Go</strong>, and provides the following <strong>Functions that simplify the distributed processing mechanism</strong> doing.</p>
+<ul>
+<li><strong>Pipeline:</strong> Encapsulate the entire processing task (pipeline). Processing tasks include reading input data, converting, and writing output data.</li>
+<li>**PCollection: ** An object that represents the dataset for distributed processing. Normally, you would read the data from an external data source and create a PCollection, but you can also create it from in-memory.</li>
+<li>**Transform: **Provides the function of data transformation processing. Every Transform takes one or more PCollections as input, does some processing on the elements of that PCollection, and outputs zero or more PCollections.</li>
+<li>**I/O Transform: ** Provides a function (Read/Write Transform) that can read and write data to various external storage systems (GCS, BigQuery, etc.).</li>
+</ul>
+<h1 id="apache-beam-execution-environment">Apache Beam execution environment</h1>
+<p>The program created by Apache Beam SDK can be executed on the following distributed data processing system. In Apache Beam, this execution environment is called a <em>runner</em>*.</p>
+<ul>
+<li>**DirectRunner: ** On the local machine (used for testing, etc.)</li>
+<li>**SparkRunner: ** Apache Spark</li>
+<li>**DataflowRunner: ** Google Cloud Dataflow</li>
+<li><a href="https://beam.apache.org/documentation/#available-runners">See here for other</a></li>
+</ul>
+<p>This time, it runs on two execution environments, DirectRunner and DataflowRunner.</p>
+<p>#Pipeline implementation
+A general (simple) Apache Beam program is created and operates as follows.</p>
+<ol>
+<li>Create <strong>Pipeline object</strong> and set the execution options.</li>
+<li>Use <strong>Read Transform</strong> to read data from an external storage system or in-memory and create a <strong>PCollection</strong>.</li>
+<li><strong>Apply</strong>Transform the PCollection. Transform can transform elements in PCollection with various logics.</li>
+<li>Apply the Write Transform** to write the PCollection transformed by the Transform to an external source.</li>
+</ol>
+<p>In the case of this processing flow, it becomes a simple pipeline as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/58a48d11-fe53-94e0-4be6-d9d136217570.png" alt="image.png"></p>
+<p>Let&rsquo;s actually implement a simple pipeline like this in Python. The operating environment is as follows.</p>
+<ul>
+<li>Python version: 2.7 or higher for 2 series or 3.5 or higher for 3 series</li>
+<li>Apache Beam version: 2.15.*</li>
+</ul>
+<h2 id="install-apache-beam-sdk">Install Apache Beam SDK</h2>
+<p>If you do not need the additional package, install it with the following command.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">pip install apache-beam
+</code></pre></div><p>This time, it is supposed to run on Dataflow (GCP), so install the additional package of GCP.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">pip install apache-beam<span style="color:#f92672">[</span>gcp<span style="color:#f92672">]</span>
+</code></pre></div><h2 id="completion-code">Completion code</h2>
+<p>This is the completed code. Each of them is explained below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:pipeline.py" data-lang="Python:pipeline.py"><span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> PipelineOptions
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> StandardOptions
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyOptions</span>(PipelineOptions):
+    <span style="color:#e6db74">&#34;&#34;&#34;Custom option.&#34;&#34;&#34;</span>
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_add_argparse_args</span>(cls, parser):
+        parser<span style="color:#f92672">.</span>add_argument(
+            <span style="color:#e6db74">&#39;--input&#39;</span>,
+            default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./input.txt&#39;</span>,
+            help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Input path for the pipeline&#39;</span>)
+
+        parser<span style="color:#f92672">.</span>add_argument(
+            <span style="color:#e6db74">&#39;--output&#39;</span>,
+            default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./output.txt&#39;</span>,
+            help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Output path for the pipeline&#39;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ComputeWordLength</span>(beam<span style="color:#f92672">.</span>DoFn):
+    <span style="color:#e6db74">&#34;&#34;&#34;Conversion process to find the number of characters.&#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process</span>(self, element):
+        <span style="color:#66d9ef">yield</span> len(element)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>():
+    options <span style="color:#f92672">=</span> MyOptions()
+    <span style="color:#75715e"># options.view_as(StandardOptions).runner =&#39;DirectRunner&#39;</span>
+    p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>options)
+
+    (p
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ReadFromText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(options<span style="color:#f92672">.</span>input) Apply the I<span style="color:#f92672">/</span>O Transform <span style="color:#f92672">and</span> read the data to the path specified <span style="color:#f92672">in</span> the option
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ComputeWordLength&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>ParDo(ComputeWordLength()) <span style="color:#75715e"># Apply Transform</span>
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;WriteToText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>WriteToText(options<span style="color:#f92672">.</span>output)) Apply the <span style="color:#75715e"># I/O Transform and write the data to the path specified in the option.</span>
+
+    p<span style="color:#f92672">.</span>run()
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    run()
+
+</code></pre></div><h2 id="pipeline">Pipeline</h2>
+<p>The Pipeline object encapsulates all of your data processing tasks. Apache Beam programs usually first create a Pipeline object to create a PCollection and apply a Transform.</p>
+<h3 id="creating-a-pipeline">Creating a Pipeline</h3>
+<p>To use the Apache Beam program, you must first create an instance of the Apache Beam SDK Pipeline (usually in the main function). And when you create the Pipeline, set the run options.</p>
+<p>The following code is an example of creating an instance of Pipeline.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> PipelineOptions
+
+
+options <span style="color:#f92672">=</span> PipelineOptions() <span style="color:#75715e"># execution options</span>
+p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>options)
+</code></pre></div><h3 id="pipelineoptions-settings">PipelineOptions settings</h3>
+<p>You can use PipelineOptions to set the runners that will run your pipeline, and any *specific options you may need for the selected runners. Examples might include information such as project ID and file storage location.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> PipelineOptions
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> StandardOptions
+
+
+options <span style="color:#f92672">=</span> PipelineOptions()
+options<span style="color:#f92672">.</span>view_as(StandardOptions)<span style="color:#f92672">.</span>runner <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;DirectRunner&#39;</span> <span style="color:#75715e"># runner specification</span>
+
+p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>options)
+</code></pre></div><p>Options can be set programmatically or passed from command line arguments. An example is described in <a href="Runwith#cloud-dataflow-">Run with Cloud Dataflow</a> below.</p>
+<h4 id="adding-custom-options">Adding custom options</h4>
+<p>You can add <strong>custom options</strong> in addition to the standard PipelineOptions. The following example adds an option to specify the input and output paths. Custom options can also specify a description or default value that is displayed when the user passes <code>--help</code> from a command line argument.</p>
+<p>Custom options can be created by <strong>inheriting PipelineOptions</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyOptions</span>(PipelineOptions):
+    <span style="color:#e6db74">&#34;&#34;&#34;Custom option.&#34;&#34;&#34;</span>
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_add_argparse_args</span>(cls, parser):
+        parser<span style="color:#f92672">.</span>add_argument(
+            <span style="color:#e6db74">&#39;--input&#39;</span>, <span style="color:#75715e"># option name</span>
+            default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./input.txt&#39;</span>, <span style="color:#75715e"># default value</span>
+            help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Input path for the pipeline&#39;</span>) <span style="color:#75715e"># descriptionparser.add_argument(</span>
+            <span style="color:#e6db74">&#39;--output&#39;</span>,
+            default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;./output.txt&#39;</span>,
+            help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Output path for the pipeline&#39;</span>)
+</code></pre></div><p>Pass the created option as follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>MyOptions())
+</code></pre></div><p>To set a custom option to a value other than the default value, pass the value from the command line argument as follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">- -input<span style="color:#f92672">=</span>value --output<span style="color:#f92672">==</span>value
+</code></pre></div><h2 id="pcollection">PCollection</h2>
+<p>PCollection is an object that represents a dataset for distributed processing. In the Apache Beam pipeline, Transform uses PCollection as input and output. Therefore, if you want to process the data in your pipeline, you need to create a PCollection.</p>
+<p>After creating the Pipeline object, we first need to somehow create at least one PCollection.</p>
+<h3 id="create-pcollection">Create PCollection</h3>
+<p>Read data from an external source using an I/O Transform or create a PCollection from in-memory. The latter is mainly useful for testing and debugging.</p>
+<h4 id="create-pcollection-from-external-source">Create PCollection from external source</h4>
+<p>Use an I/O Transform to create a PCollection from an external source. To read the data, apply the Read Transform provided by each I/O Transform to the Pipeline object.</p>
+<p>Here&rsquo;s how to apply a Read Transform to a Pipeline to create a PCollection.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">lines <span style="color:#f92672">=</span> p <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ReadFromText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(<span style="color:#e6db74">&#39;gs://some/input-data.txt&#39;</span>)
+</code></pre></div><h4 id="create-pcollection-from-in-memory">Create PCollection from in-memory</h4>
+<p>Use Create Transform to create a PCollection from in-memory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">lines <span style="color:#f92672">=</span> (p <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ReadFromInMemory&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>Create([<span style="color:#e6db74">&#39;To be, or not to be: that is the question:&#39;</span>,<span style="color:#e6db74">&#39;Whether </span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">tis nobler in the mind to suffer&#39;</span>,<span style="color:#e6db74">&#39;The slings and arrows of outrageous fortune,&#39;</span>,<span style="color:#e6db74">&#39;Or to take arms against a sea of troubles,&#39;</span>]))
+</code></pre></div><h2 id="transform">Transform</h2>
+<p>Transform provides a <strong>generic processing framework</strong>. The Transform will be applied to each element of the input PCollection.</p>
+<p>Apache Beam SDK provides various Transforms that can be applied to PCollection. This includes generic <strong>Core transforms</strong> such as ParDo and Combine, as well as <strong>Composite transforms</strong> that combines one or more Core transforms. Various Transforms are provided, so please refer to <a href="https://qiita.com/esaki01/items/f3367fc9c54ba03ff1ff">here</a> etc.</p>
+<h3 id="apply-transform">Apply Transform</h3>
+<p>A pipe operator <code>|</code> is provided for each Transform of the Apache Beam SDK, so you can apply the Transform by applying that method to the input PCollection.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">[Output PCollection] <span style="color:#f92672">=</span> [Input PCollection] <span style="color:#f92672">|</span> [Transform]
+</code></pre></div><p>You can also chain Transforms to create a pipeline as follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">[Output PCollection] <span style="color:#f92672">=</span> ([Initial Input PCollection]
+                             <span style="color:#f92672">|</span> [First Transform]
+                             <span style="color:#f92672">|</span> [Second Transform]
+                             <span style="color:#f92672">|</span> [Third Transform])
+</code></pre></div><p>Since this pipeline has the same flow as the implementation example this time, it becomes a pipeline with such a shape.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/58a48d11-fe53-94e0-4be6-d9d136217570.png" alt="image.png"></p>
+<p>Transform creates a new PCollection with no changes to the input PCollection. **Transform does not change the input PCollection. ** PCollection is by definition immutable. Therefore, you can branch multiple PCollections by applying multiple Transforms to the same PCollection.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">[Output PCollection] <span style="color:#f92672">=</span> [Initial Input PCollection]
+
+[Output PCollection A] <span style="color:#f92672">=</span> [Output PCollection] <span style="color:#f92672">|</span> [Transform A]
+[Output PCollection B] <span style="color:#f92672">=</span> [Output PCollection] <span style="color:#f92672">|</span> [Transform B]
+</code></pre></div><p>The shape of this pipeline looks like this:</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/17777106-a10d-0a91-36c1-e0559b68f44d.png" alt="image.png"></p>
+<h2 id="io-transform">I/O Transform</h2>
+<p>When you create a pipeline, you often need to read data from external sources such as files or databases. Similarly, data can be output from the pipeline to an external storage system.</p>
+<p>Apache Beam SDK provides I/O Transform for <a href="https://beam.apache.org/documentation/io/built-in/">Common Data Storage Type</a>. If you want to read or write unsupported data storage, you must implement your own I/O Transform.</p>
+<h3 id="read-data">Read data</h3>
+<p>Read Transform transforms read data from an external source into a PCollection. You can use Read Transform at any time while building your pipeline, but generally you will do it first.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">lines <span style="color:#f92672">=</span> pipeline <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(<span style="color:#e6db74">&#39;gs://some/input-data.txt&#39;</span>)
+</code></pre></div><h3 id="writing-data">Writing data</h3>
+<p>Write Transform writes the data in a PCollection to an external data source. To output the results of your pipeline, you almost always use Write Transform at the end of your pipeline.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">output <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>WriteToText(<span style="color:#e6db74">&#39;gs://some/output-data&#39;</span>)
+</code></pre></div><h3 id="reading-from-multiple-files">Reading from multiple files</h3>
+<p>Many Read Transforms support reading from multiple input files that match the glob operator. The following example uses the glob operator (*) to read all matching input files that have the prefix &ldquo;input-&rdquo; and the suffix &ldquo;.csv&rdquo; at the specified location.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">lines <span style="color:#f92672">=</span> p <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ReadFromText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(<span style="color:#e6db74">&#39;path/to/input-*.csv&#39;</span>)
+</code></pre></div><h3 id="writing-to-multiple-files">Writing to multiple files</h3>
+<p>Write Transform writes to multiple files by default. The filename is then used as the prefix for all output files.</p>
+<p>The following example writes multiple files to one location. Each file is given the prefix &ldquo;numbers&rdquo; and the suffix &ldquo;.csv&rdquo;.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">output <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;WriteToText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>WriteToText(<span style="color:#e6db74">&#39;/path/to/numbers&#39;</span>, file_name_suffix<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;.csv&#39;</span>)
+</code></pre></div><p>#Run pipeline
+Now let&rsquo;s run the pipeline using Completion Code (#Completion Code). As the execution environment, execute it both locally and in Cloud Dataflow.</p>
+<p>Prepare a text file that contains the following strings for input.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-input.txt" data-lang="input.txt">good morning.
+good afternoon.
+good evening.
+</code></pre></div><h2 id="run-locally">run locally</h2>
+<p>To run the pipeline locally, set the PipelineOptions to <code>DirectRunner</code> as the runner, but unless you have a specific setting, you don&rsquo;t need to explicitly specify the runner.</p>
+<p>Run the following command from the command line. Rewrite the input and output paths according to the environment.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">python pipeline.py --input<span style="color:#f92672">=</span>./input.txt --output<span style="color:#f92672">=</span>./output.txt
+</code></pre></div><p>Since this implementation example is a pipeline that counts the number of characters in a word, the following result is output.
+By default, <code>beam.io.WriteToText</code> adds the string <code>00000-of-00001</code> to the suffix of the file name and writes it in multiple files. If you want to write to a single file, you can leave the <code>shard_name_template</code> argument empty.</p>
+<pre><code class="language-output.txt-00000-of-00001" data-lang="output.txt-00000-of-00001">13
+15
+13
+</code></pre><h2 id="run-with-cloud-dataflow">Run with Cloud Dataflow</h2>
+<p><a href="https://cloud.google.com/dataflow/?hl=ja">Cloud Dataflow</a>isafullymanagedservicethatprocessesdatainstreammodeorbatchmodeprovidedbyGCP(GoogleCloudPlatfom). .. Users can process enormous amounts of data without paying attention to the operation of infrastructure such as servers, by using a virtually unlimited amount of data on a pay-as-you-go basis.Running a pipeline in Cloud Dataflow creates a job in your GCP project that uses Compute Engine and Cloud Storage resources. To use Cloud Dataflow, please enable <strong>Dataflow API in GCP</strong>.</p>
+<p>Cloud Dataflow requires a few modifications to execute the Completion Code (#Completion Code). Modify it as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:pipeline.py" data-lang="Python:pipeline.py"><span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> GoogleCloudOptions
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> PipelineOptions
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> StandardOptions
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> WorkerOptions
+
+
+GCP_PROJECT_ID <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;my-project-id&#39;</span>
+GCS_BUCKET_NAME <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gs://my-bucket-name&#39;</span>
+JOB_NAME <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;compute-word-length&#39;</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyOptions</span>(PipelineOptions):
+    <span style="color:#e6db74">&#34;&#34;&#34;Custom option.&#34;&#34;&#34;</span>
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_add_argparse_args</span>(cls, parser):
+        parser<span style="color:#f92672">.</span>add_argument(
+            <span style="color:#e6db74">&#39;--input&#39;</span>,
+            default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}/input.txt&#39;</span><span style="color:#f92672">.</span>format(GCS_BUCKET_NAME), <span style="color:#75715e"># put input.txt in GCS</span>
+            help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Input for the pipeline&#39;</span>)
+
+        parser<span style="color:#f92672">.</span>add_argument(
+            <span style="color:#e6db74">&#39;--output&#39;</span>,
+            default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}/output.txt&#39;</span><span style="color:#f92672">.</span>format(GCS_BUCKET_NAME), <span style="color:#75715e"># Output to GCS</span>
+            help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Output for the pipeline&#39;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ComputeWordLength</span>(beam<span style="color:#f92672">.</span>DoFn):
+    <span style="color:#e6db74">&#34;&#34;&#34;Conversion process to find the number of characters.&#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process</span>(self, element):
+        <span style="color:#66d9ef">yield</span> len(element)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>():
+    options <span style="color:#f92672">=</span> MyOptions()
+
+    <span style="color:#75715e"># GCP option</span>
+    google_cloud_options <span style="color:#f92672">=</span> options<span style="color:#f92672">.</span>view_as(GoogleCloudOptions)
+    google_cloud_options<span style="color:#f92672">.</span>project <span style="color:#f92672">=</span> GCP_PROJECT_ID <span style="color:#75715e"># Project ID</span>
+    google_cloud_options<span style="color:#f92672">.</span>job_name <span style="color:#f92672">=</span> JOB_NAME <span style="color:#75715e"># any job name</span>
+    google_cloud_options<span style="color:#f92672">.</span>staging_location <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}/binaries&#39;</span><span style="color:#f92672">.</span>format(GCS_BUCKET_NAME) <span style="color:#75715e"># GCS path for staging files</span>
+    google_cloud_options<span style="color:#f92672">.</span>temp_location <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}/temp&#39;</span><span style="color:#f92672">.</span>format(GCS_BUCKET_NAME) <span style="color:#75715e"># GCS path for temporary files</span>
+
+    <span style="color:#75715e">#Worker options</span>
+    options<span style="color:#f92672">.</span>view_as(WorkerOptions)<span style="color:#f92672">.</span>autoscaling_algorithm <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;THROUGHPUT_BASED&#39;</span> <span style="color:#75715e"># enable automatic scaling</span>
+
+    <span style="color:#75715e"># Standard option</span>
+    options<span style="color:#f92672">.</span>view_as(StandardOptions)<span style="color:#f92672">.</span>runner <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;DataflowRunner&#39;</span> <span style="color:#75715e"># Specify Dataflow Runner</span>
+
+    p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>options)
+
+    (p
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ReadFromText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(options<span style="color:#f92672">.</span>input)
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ComputeWordLength&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>ParDo(ComputeWordLength())
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;WriteToText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>WriteToText(options<span style="color:#f92672">.</span>output, shard_name_template<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>))
+
+    p<span style="color:#f92672">.</span>run()
+    <span style="color:#75715e"># p.run().wait_until_finish() # Block until pipeline completes</span>
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    run()
+
+</code></pre></div><p>See <a href="https://cloud.google.com/dataflow/docs/guides/specifying-exec-params?hl=ja#-cloud-dataflow--">here</a> for other Dataflow options.
+The <code>streaming</code> option must be set to <code>true</code> to perform streaming.</p>
+<p>This can be executed with the same command.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">python pipeline.py --input<span style="color:#f92672">=</span>gs://my-project-id/input.txt --output<span style="color:#f92672">=</span>gs://my-project-id/output.txt
+</code></pre></div><p>Options set programmatically can also be passed from command line arguments like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">python pipeline.py <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --input<span style="color:#f92672">=</span>gs://my-project-id/input.txt <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --output<span style="color:#f92672">=</span>gs://my-project-id/output.txt <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --runner<span style="color:#f92672">=</span>DataflowRunner <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --project<span style="color:#f92672">=</span>my-project-id <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --temp_location<span style="color:#f92672">=</span>gs://my-project-id/tmp/
+  ...
+</code></pre></div><p>You can monitor your pipeline by accessing the Dataflow service from GCP. The UI looks like this and the results are printed to the specified path.</p>
+<img width="1025" alt="Screenshot 2020-01-03 15.36.16.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/d8b8774c-f79f-b591-16af-7bda22126114.png">
+<p>If you want to execute such Dataflow batch process regularly, it is convenient to use <strong>Dataflow template</strong>. For details, please refer to <a href="https://cloud.google.com/dataflow/docs/guides/templates/overview?hl=ja">here</a>.</p>
+<h1 id="pipeline-testing">Pipeline testing</h1>
+<p>When testing pipelines, local unit testing can often save a lot of debugging time and effort **than debugging remote execution such as Dataflow.</p>
+<p>You need to install the following to resolve the dependencies:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash">pip install nose
+</code></pre></div><h2 id="implementation-example">Implementation example</h2>
+<p>To test your pipeline, use the <code>TestPipeline</code> object. Instead of reading the input from an external source, use <code>apache_beam.Create</code> to create a PCollection from in-memory. Compare the output results with <code>assert_that</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:test_pipeline.py" data-lang="Python:test_pipeline.py"><span style="color:#f92672">from</span> unittest <span style="color:#f92672">import</span> TestCase
+
+<span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.testing.test_pipeline <span style="color:#f92672">import</span> TestPipeline
+<span style="color:#f92672">from</span> apache_beam.testing.util <span style="color:#f92672">import</span> assert_that, equal_to
+
+<span style="color:#f92672">from</span> src.pipeline <span style="color:#f92672">import</span> ComputeWordLength
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PipelineTest</span>(TestCase):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_pipeline</span>(self):
+        expected <span style="color:#f92672">=</span> [
+            <span style="color:#ae81ff">13</span>,
+            <span style="color:#ae81ff">15</span>,
+            <span style="color:#ae81ff">13</span>
+        ]
+
+        inputs <span style="color:#f92672">=</span> [
+            <span style="color:#e6db74">&#39;good morning.&#39;</span>,
+            <span style="color:#e6db74">&#39;good afternoon.&#39;</span>,
+            <span style="color:#e6db74">&#39;good evening.&#39;</span>
+        ]
+
+        <span style="color:#66d9ef">with</span> TestPipeline() <span style="color:#66d9ef">as</span> p:
+            actual <span style="color:#f92672">=</span> (p
+                      <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>Create(inputs)
+                      <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>ParDo(ComputeWordLength()))
+
+            assert_that(actual, equal_to(expected))
+</code></pre></div><h1 id="pipeline-design">Pipeline design</h1>
+<p>In <a href="applicationof#transform-">above</a>,Ialreadybrieflyexplainedthedesign(processingflow) when creating a simple pipeline and a branching pipeline. Here are some other common pipeline designs.</p>
+<h2 id="pipeline-with-a-transform-that-produces-multiple-pcollections">Pipeline with a Transform that produces multiple PCollections</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/2aa562e1-1904-24de-0b9f-c206bee6d60e.png" alt="image.png"></p>
+<p>It can be achieved by using a feature called <a href="https://beam.apache.org/documentation/programming-guide/#additional-outputs">Additional outputs</a> of Apache Beam.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExtractWord</span>(beam<span style="color:#f92672">.</span>DoFn):
+
+   <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process</span>(element):
+        <span style="color:#66d9ef">if</span> element<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;A&#39;</span>):
+            <span style="color:#66d9ef">yield</span> pvalue<span style="color:#f92672">.</span>TaggedOutput(<span style="color:#e6db74">&#39;a&#39;</span>, element) <span style="color:#75715e"># Add tag name (&#39;a&#39; if element starts with&#39;A&#39;)</span>
+        <span style="color:#66d9ef">elif</span> element<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;B&#39;</span>):<span style="color:#66d9ef">yield</span> pvalue<span style="color:#f92672">.</span>TaggedOutput(<span style="color:#e6db74">&#39;b&#39;</span>, element) <span style="color:#75715e"># Add a tag name (&#39;b&#39; if the element starts with&#39;B&#39;)</span>
+
+
+mixed_col <span style="color:#f92672">=</span> db_row_col <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>ParDo(ExtractWord())<span style="color:#f92672">.</span>with_outputs()
+
+mixed_col<span style="color:#f92672">.</span>a <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>ParDo(<span style="color:#f92672">...</span>) <span style="color:#75715e">#. Can be accessed by tag name</span>
+mixed_col<span style="color:#f92672">.</span>b <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>ParDo(<span style="color:#f92672">...</span>)
+</code></pre></div><h2 id="pipeline-with-a-transform-that-joins-the-pcollection">Pipeline with a Transform that joins the PCollection</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/d4c43b51-ee17-baa0-8d2d-bf183bd52d64.png" alt="image.png"></p>
+<p>This can be achieved by using <code>Flatten</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">col_list <span style="color:#f92672">=</span> (a_col, b_col) <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>Flatten()
+</code></pre></div><h2 id="pipeline-with-multiple-input-sources">Pipeline with multiple input sources</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/08b86d01-d213-d307-c793-4a3910704ee0.png" alt="image.png"></p>
+<p>You can create PCollection from each input source and join with <code>CoGroupByKey</code> etc.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">user_address <span style="color:#f92672">=</span> p <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(<span style="color:#f92672">...</span>)
+user_order <span style="color:#f92672">=</span> p <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>ReadFromText(<span style="color:#f92672">...</span>)
+
+joined_col <span style="color:#f92672">=</span> (user_address, user_order) <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>CoGroupByKey()
+
+joined_col <span style="color:#f92672">|</span> beam<span style="color:#f92672">.</span>ParDo(<span style="color:#f92672">...</span>)
+</code></pre></div><h1 id="other-useful-features">Other useful features</h1>
+<p>You may also want to know the following features so that you can support various use cases.</p>
+<h2 id="composite-transforms">Composite transforms</h2>
+<p>Composite transforms are a combination of multiple Transforms (ParDo, Combine, GroupByKey&hellip;). Nesting multiple Transforms makes your code more modular and easier to understand.</p>
+<h3 id="implementation-example-1">Implementation example</h3>
+<p>To implement Composite transforms, you need to extend the Transform class and override the expand method.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#e6db74">&#34;&#34;&#34;A pipeline that counts the number of words in a sentence.&#34;&#34;&#34;</span>
+<span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> PipelineOptions
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ComputeWordCount</span>(beam<span style="color:#f92672">.</span>PTransform):
+    <span style="color:#e6db74">&#34;&#34;&#34;Counting the number of words Composite transforms.&#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">expand</span>(self, pcoll):
+        <span style="color:#66d9ef">return</span> (pcoll
+                <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;SplitWithHalfSpace&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>Map(<span style="color:#66d9ef">lambda</span> element: element<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;&#39;</span>))
+                <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ComputeArraySize&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>Map(<span style="color:#66d9ef">lambda</span> element: len(element)))
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>():
+    p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>PipelineOptions())
+
+    inputs <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;There is no time like the present.&#39;</span>,<span style="color:#e6db74">&#39;Time is money.&#39;</span>]
+
+    (p
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;Create&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>Create(inputs)
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ComputeWordCount&#39;</span> <span style="color:#f92672">&gt;&gt;</span> ComputeWordCount()
+     <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;WriteToText&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>WriteToText(<span style="color:#e6db74">&#39;output destination path&#39;</span>))
+
+    p<span style="color:#f92672">.</span>run()
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    run()
+    
+</code></pre></div><pre><code class="language-Bash:output" data-lang="Bash:output">7
+3
+</code></pre><h2 id="side-inputs">Side inputs</h2>
+<p>Side inputs is a function that allows you to pass an additional input (secondary input) to the Transform in addition to the normal input (primary input) PCollection.</p>
+<h3 id="implementation-example-2">Implementation example</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#e6db74">&#34;&#34;&#34;A pipeline that outputs only strings with more than average number of characters.&#34;&#34;&#34;</span>
+<span style="color:#f92672">import</span> apache_beam <span style="color:#f92672">as</span> beam
+<span style="color:#f92672">from</span> apache_beam.options.pipeline_options <span style="color:#f92672">import</span> PipelineOptions
+<span style="color:#f92672">from</span> apache_beam <span style="color:#f92672">import</span> pvalue
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FilterMeanLengthFn</span>(beam<span style="color:#f92672">.</span>DoFn):
+    <span style="color:#e6db74">&#34;&#34;&#34;Filter strings with more than average characters.&#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#75715e"># mean_word_length is a secondary input</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process</span>(self, element, mean_word_length):
+        <span style="color:#66d9ef">if</span> len(element) <span style="color:#f92672">&gt;=</span> mean_word_length:
+            <span style="color:#66d9ef">yield</span> element
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>():
+    p <span style="color:#f92672">=</span> beam<span style="color:#f92672">.</span>Pipeline(options<span style="color:#f92672">=</span>PipelineOptions())
+
+    inputs <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;good morning.&#34;</span>, <span style="color:#e6db74">&#34;good afternoon.&#34;</span>, <span style="color:#e6db74">&#34;good evening.&#34;</span>]
+
+    <span style="color:#75715e"># Secondary input</span>
+    mean_word_length <span style="color:#f92672">=</span> word_lengths <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;ComputeMeanWordLength&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>CombineGlobally(beam<span style="color:#f92672">.</span>combiners<span style="color:#f92672">.</span>MeanCombineFn())
+
+    <span style="color:#75715e"># Primary input</span>
+    output <span style="color:#f92672">=</span> (p
+              <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;Create&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>Create(inputs)
+              <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;FilterMeanLength&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>ParDo(FilterMeanLengthFn(), pvalue<span style="color:#f92672">.</span>AsSingleton(mean_word_length)) <span style="color:#75715e"># Insert secondary input in the second argument of ParDo</span>
+              <span style="color:#f92672">|</span><span style="color:#e6db74">&#39;write to text&#39;</span> <span style="color:#f92672">&gt;&gt;</span> beam<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>WriteToText(<span style="color:#e6db74">&#39;output destination path&#39;</span>))
+
+    p<span style="color:#f92672">.</span>run()<span style="color:#f92672">.</span>wait_until_finish()
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    run()
+
+</code></pre></div><p>The letters &ldquo;good morning.&rdquo;, &ldquo;good afternoon.&rdquo;, and &ldquo;good evening.&rdquo; are &ldquo;13&rdquo;, &ldquo;15&rdquo;, and &ldquo;13&rdquo;, respectively, and the average is about 13.67, so the output is as follows.</p>
+<pre><code class="language-Bash:output" data-lang="Bash:output">good afternoon.
+</code></pre><h1 id="whats-happening-in-the-pipeline">What&rsquo;s happening in the pipeline?</h1>
+<p>A little bit about &ldquo;what&rsquo;s happening in the pipeline&rdquo;.</p>
+<h2 id="serialization-and-communication">Serialization and communication</h2>
+<p>One of the most expensive operations in distributed pipeline processing is <strong>serializing elements between machines for communication</strong>. The Apache Beam runner serializes the elements of PCollection for reasons such as communication between machines. Communicate the elements between the Transform and the Transform in the next step using the following technique:</p>
+<ol>
+<li>Serialize the element and route it to the worker</li>
+<li>Serialize the element and redistribute it across multiple workers</li>
+<li>If you use Side inputs, you need to serialize the element and broadcast to all workers</li>
+<li>When the Transform and the Transform of the next step are executed by the same worker, the communication of the element is performed using the in-memory (the communication cost can be reduced by not serializing).</li>
+</ol>
+<h2 id="bundled-and-persistent">Bundled and persistent</h2>
+<p>Apache Beam focuses on the <a href="https://en.wikipedia.org/wiki/Embarrassingly_parallel">Embarassingly parallel</a> issue. Apache Beam attaches great importance to processing elements in parallel, so it is difficult to express operations such as <strong>assigning a sequence number to each element of PCollection</strong>. Such algorithms are much more likely to have scalability issues.</p>
+<p><strong>Processing all elements in parallel</strong> also has some drawbacks. For example, writing an element to a destination. In output processing, it is impossible to batch process all elements in parallel.</p>
+<p>Therefore, the Apache Beam runner does not process all the elements at the same time, but bundles and processes the elements of PCollection. Streaming processes tend to be bundled and processed in smaller units, and batch processes tend to be bundled and processed in larger units.</p>
+<h2 id="parallel-processing">Parallel processing</h2>
+<h3 id="parallel-processing-in-transform">Parallel processing in Transform</h3>
+<p>When executing a single ParDo, Apache Beam runner may split the PCollection element into two and bundle them (Bundle).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/25fd4dd4-5ae4-2345-f531-6dd27b27604a.png" alt="image.png"></p>
+<p>When the ParDo executes, the worker processes the two Bundles in parallel as shown below.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/9c9291c2-bfc4-42af-56d8-1d4184c9ef49.png" alt="image.png"></p>
+<p>The maximum parallelism of a Transform depends on the number of elements in the PCollection, because a single element cannot be split. The maximum number of parallel processing in this case is <strong>9</strong> as seen from the figure.</p>
+<ul>
+<li>It seems that a function (Splittable ParDo) that can split a single element into multiple Bundles is under development.</li>
+</ul>
+<h3 id="parallel-processing-between-transforms">Parallel processing between transforms</h3>
+<p>ParDo can be dependent parallel. For example, if ParDo1&rsquo;s output needs to be processed by the same worker as follows, ParDo1 and ParDo2 are dependent parallel.<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/7315b3ca-73f1-9311-d200-cd1d90d0c50b.png" alt="image.png"></p>
+<p>In Worker1, ParDo1 is executed for the elements of Bundle A, becoming Bundle C. Next, ParDo2 is executed for the elements of Bundle C. Similarly, on Worker2, ParDo1 is executed on the elements of Bundle B to become Bundle D. Then ParDo2 is executed for the elements of Bundle D.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/4a31e69a-8b26-6f76-a1ad-1a4fac10ed23.png" alt="image.png"></p>
+<p>By doing the ParDo this way, Apache Beam runners can avoid redistributing the elements across the workers. And this can save communication costs. However, **Maximum parallelism will now depend on the maximum parallelism of the first ParDo in dependent parallelism. **</p>
+<h2 id="behavior-when-a-failure-occurs">Behavior when a failure occurs</h2>
+<h3 id="behavior-at-the-time-of-failure-in-transform">Behavior at the time of failure in Transform</h3>
+<p>If the operation on the elements in the Bundle fails, the entire Bundle will fail. So you have to retry the operation (otherwise the whole pipeline will fail).</p>
+<p>In the following example, Worker1 successfully handles all five elements of Bundle A. Worker2 processes the four elements of Bundle B, but the first two elements of Bundle B are processed successfully, and the third element fails.</p>
+<p>After that, the Apache Beam runner retries all the elements in Bundle B, and the process completes successfully the second time. As you can see, **retry does not necessarily occur in the same Worker as the original processing attempt. **</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/cbb45e96-180b-5df3-3e7d-eba71f18b3d5.png" alt="image.png"></p>
+<h3 id="behavior-when-a-failure-occurs-between-transforms">Behavior when a failure occurs between transforms</h3>
+<p>If, after processing ParDo1, the elements in ParDo2 could not be processed, these two Transforms would have failed at the same time.</p>
+<p>In the following example, Worker2 successfully executes ParDo1 for all elements in Bundle B. However, ParDo2 fails because it cannot process the elements of Bundle D.</p>
+<p>As a result, the Apache Beam runner needs to discard the output of ParDo2 and execute the process again. At that time, the Bundle of ParDo1 must also be destroyed and all elements of the **Bundle must be retried. **</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/244338/b9fb238a-6b54-57af-3240-651936be27c6.png" alt="image.png"></p>
+<p>#Summary
+I tried to summarize the contents learned from the contents of Apache Beam Documentation.
+Please point out any mistakes! :bow:</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

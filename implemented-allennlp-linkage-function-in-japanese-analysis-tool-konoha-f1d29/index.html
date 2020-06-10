@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Implemented AllenNLP linkage function in Japanese analysis tool Konoha | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Implemented AllenNLP linkage function in Japanese analysis tool Konoha</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 3, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-speech-processing"> natural speech processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nlp"> NLP</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/allennlp"> AllenNLP</a></code></small>
+
+</p>
+<pre><code>### Introduction
+</code></pre>
+<p><a href="https://github.com/himkt/konoha">&lt;img src=&quot;https://github-link-card.s3.ap-northeast-1.amazonaws.com/himkt/konoha.png&quot;width=&quot;460px&quot;&gt;</a></p>
+<p>We are developing a morphological analysis library called <a href="https://qiita.com/klis/items/bb9ffa4d9c886af0f531">konoha</a>.
+We have implemented the AllenNLP integration for this library, so this time we will introduce it.
+By using this function, Japanese text can be passed to the <code>allennlp train</code> command without any preprocessing such as segmentation.</p>
+<h3 id="allennlp">AllenNLP</h3>
+<p><a href="https://allennlp.org/">AllenNLP</a> is a natural language processing library developed by Allen Institute for Artificial Intelligence.
+AllenNLp is a very powerful tool, but if you want to handle Japanese data, it may be necessary to perform pre-processing that performs morphological analysis beforehand.
+Thanks to <a href="https://spacy.io/">Spacy</a>and<a href="https://megagonlabs.github.io/ginza/">Ginza</a>,theunitsadoptedbyUniversalDependencies(UniDic) are: It seems possible to handle Japanese data with AllenNLP,
+In some cases, I would like to personally use MeCab (IPADic), Sudachi, or Sentencepiece.</p>
+<h3 id="konoha-integration-for-allennlp">Konoha integration for AllenNLP</h3>
+<p>We implemented AllenNLP integration in Konoha to use the above morphological analyzer.
+(Https://github.com/himkt/konoha/pull/71)
+By using this function, many Japanese morphological analyzers can be used in AllenNLP.
+Below, we will demonstrate the integration using sample data.</p>
+<h3 id="data-set">data set</h3>
+<p>This time, we will use a classification problem data set as a demo.
+The learning/test data is in JSONL format that can be read by AllenNLP&rsquo;s <code>text_classification_json</code>.
+Each line has a key for <code>id</code>, <code>text</code>, and <code>label</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">124</span>, <span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;\&#34;TensorFlow2.0 doesn&#39;t come, so it&#39;s good! The next day I switched to PyTorch, I have a face when TensorFlow 2.0 preview appears \&#34;&#34;</span>, <span style="color:#f92672">&#34;label&#34;</span>: <span style="color:#ae81ff">2</span>}
+{<span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">164</span>, <span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;\&#34; The moment when I got a search keyword for my research, there was a new study that I didn&#39;t recognize, and when my body temperature dropped \&#34;&#34;</span>, <span style="color:#f92672">&#34;label&#34;</span>: <span style="color:#ae81ff">1</span>}
+</code></pre></div><p>The data can be downloaded from the link below.</p>
+<ul>
+<li><a href="https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/train.jsonl">https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/train.jsonl</a></li>
+<li><a href="https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/test.jsonl">https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/test.jsonl</a></li>
+</ul>
+<h3 id="install-konoha">Install Konoha</h3>
+<p>This time, we use <a href="https://mocobeta.github.io/janome/">Janome</a> as a morphological analyzer.
+Install Konoha with the following command.</p>
+<pre><code>pip install'konoha[janome,allennlp]'
+</code></pre><p>Konoha supports Janome, MeCab, Sudachi, KyTea, Sentencepiece.
+For example, if you want to use MeCab, change the option like <code>pip install'konoha[allennlp,mecab]'</code>.
+To install Konoha with all the features currently available, run the command <code>pip install'konoha[all_with_integrations]'</code>.</p>
+<h3 id="jsonnet-configuration-file">Jsonnet configuration file</h3>
+<p>The Jsonnet file is shown below.
+If you want to use a morphological analyzer other than Janome,
+Change <code>tokenizer_name:'janome'</code> in the <code>tokenizer</code> section to the name of the analyzer you want to use.
+(Eg. <code>tokenizer_name:'mecab'</code>)</p>
+<pre><code class="language-jsonnet" data-lang="jsonnet">{
+  dataset_reader: {
+    lazy: false,
+    type:'text_classification_json',
+    tokenizer: {
+      type:'konoha',
+      tokenizer_name:'janome',
+    },
+    token_indexers: {
+      tokens: {
+        type:'single_id',
+        lowercase_tokens: true,
+      },
+    },
+  },
+  datasets_for_vocab_creation: ['train'],
+  train_data_path:'https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/train.jsonl',
+  validation_data_path:'https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/test.jsonl',
+  model: {
+    type:'basic_classifier',
+    text_field_embedder: {
+      token_embedders: {
+        tokens: {
+          embedding_dim: 128,
+        },
+      },
+    },
+    seq2vec_encoder: {
+      type:'cnn',
+      num_filters: 128,
+      embedding_dim: 128,
+      output_dim: 128,
+    },
+    dropout: 0.3,
+  },
+  iterator: {
+    batch_size: 10,
+    type:'basic',
+  },
+
+  trainer: {
+    cuda_device: -1,
+    num_epochs: 30,
+    optimizer: {
+      lr: 0.1,
+      type:'adam',
+    },
+    validation_metric:'+accuracy',
+  },
+}
+</code></pre><h3 id="allennlp-execution-command">AllenNLP execution command</h3>
+<p>You can execute learning with the following command.</p>
+<pre><code>allennlp train example.jsonnet -s result --include-package konoha
+</code></pre><p>By using <code>--include-package konoha</code>, you can use the integration function of Konoha.</p>
+<p>After learning, check the prediction result with the following command.</p>
+<pre><code>allennlp predict --include-package konoha --use-dataset-reader result https://konoha-demo.s3-ap-northeast-1.amazonaws.com/himkt-tweet/test.jsonl
+</code></pre><p>As shown below, you can confirm that the Japanese plaintext is morphologically analyzed and the label is predicted.</p>
+<pre><code>input 106: Instance with fields:
+         tokens: TextField of length 38 with text:
+                [&quot;, TensorFlow,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, (,,,,,,,,,,,,, (,,,,,,,,,,,,, (,,,,,,,,,,,,,,
+                So much, angry, without, well, good, hey, ... (, half, beso, &quot;, like, na, feel, &quot;]
+                and TokenIndexers: {'tokens':'SingleIdTokenIndexer'}
+         label: LabelField with label: 2 in namespace:'labels'.'
+</code></pre><h3 id="in-conclusion">in conclusion</h3>
+<p>We introduced the AllenNLP integration function of <a href="https://github.com/himkt/konoha">konoha</a>.
+We hope you find it useful when handling Japanese data in AllenNLP.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

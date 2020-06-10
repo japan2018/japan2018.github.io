@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Natural language processing] I tried to visualize the comments of each member in the Slack community | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Natural language processing] I tried to visualize the comments of each member in the Slack community</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 10, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nlp"> NLP</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/slack"> Slack</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/wordcloud"> wordcloud</a></code></small>
+
+</p>
+<pre><code>## About this article
+</code></pre>
+<p>In this article, I will introduce a method to visualize what each member says in the Slack community with Wordcloud.</p>
+<p>The source code can be found here [https://github.com/sota0121/slack-msg-analysis) :octocat:</p>
+<p>I would also like to read: <a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4">[Natural language processing] I tried to visualize the topics raised this week in the Slack community</a></p>
+<h2 id="table-of-contents">table of contents</h2>
+<ol>
+<li>Usage and output example</li>
+<li>Get message from Slack</li>
+<li>Pre-processing: table creation/cleaning/morphological analysis/normalization/stopword removal</li>
+<li>Pre-processing: Extracting important words (tf-idf)</li>
+<li>Visualization processing with Wordcloud</li>
+<li>Bonus</li>
+</ol>
+<p><font color=red> *I would like to summarize the preprocessing in another article in the future</font></p>
+<h2 id="1-usage-and-output-example">1. Usage and output example</h2>
+<h3 id="11-how-to-use">1.1. How to use</h3>
+<p>For details, see Getting started in <a href="https://github.com/sota0121/slack-msg-analysis/blob/master/README.md">README</a>.
+The flow is like this.</p>
+<ol>
+<li>Build a virtual environment with <code>docker-compose up -d</code></li>
+<li>Enter the shell with <code>docker exec -it ds-py3 bash</code></li>
+<li>Run <code>run_wordcloud_by_user.sh</code></li>
+</ol>
+<h3 id="12-output-example">1.2. Output example</h3>
+<p>This is an example of actual output. Words of different members are written on Wordcloud.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/181972/d2f5acc6-847d-1624-da35-12fc20bf38fb.gif" alt="anim_.gif"></p>
+<h2 id="2-get-message-from-slack">2. Get message from Slack</h2>
+<p>See this article.</p>
+<p>[[Natural language processing] I tried to visualize the hot topic in the Slack community this week-2. Get a message from Slack](<a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#2-slack%E3%81%8B%E3%82%89%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%82%92%E5%8F%96%25(E5%BE%97)">https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#2-slack%E3%81%8B%E3%82%89%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%82%92%E5%8F%96%(E5%BE%97)</a></p>
+<h2 id="3-pre-processing-table-creationcleaningmorphological-analysisnormalizationstopword-removal">3. Pre-processing: table creation/cleaning/morphological analysis/normalization/stopword removal</h2>
+<p>It is the same as <a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4">this article</a>, so I will omit it.
+For details, please refer to the link.</p>
+<ul>
+<li>[Pre-processing: Create Message Mart Table](<a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#3-%E5%89%8D%E5%87%A6%E7%90%86%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%83%9E%E3%83%BC%E3%83%88%E3%83%86%25(E3%83%BC%E3%83%96%E3%83%AB%E4%BD%9C%E6%88%90)">https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#3-%E5%89%8D%E5%87%A6%E7%90%86%E3%83%A1%E3%83%83%E3%82%BB%E3%83%BC%E3%82%B8%E3%83%9E%E3%83%BC%E3%83%88%E3%83%86%(E3%83%BC%E3%83%96%E3%83%AB%E4%BD%9C%E6%88%90)</a></li>
+<li><a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#4-%E5%89%8D%E5%87%A6%E7%90%86%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0">Pretreatment: Cleaning</a></li>
+<li><a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#5-%E5%89%8D%E5%87%A6%E7%90%86%E5%BD%A2%E6%85%8B%E7%B4%A0%E8%A7%A3%E6%9E%90janome">Pre-processing: Morphological analysis (Janome)</a></li>
+<li>[Pre-processing: Normalization](<a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#6-%E5%89%8D%E5%87%A6%E7%90%86%E6%AD%A3%25(E8%A6%8F%E5%8C%96)">https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#6-%E5%89%8D%E5%87%A6%E7%90%86%E6%AD%A3%(E8%A6%8F%E5%8C%96)</a></li>
+<li>[Pre-processing: Stop word removal](<a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#7-%E5%89%8D%E5%87%A6%E7%90%86%E3%82%B9(%E3%83%88%E3%83%83%E3%83%97%E3%83%AF%E3%83%BC%E3%83%89%E9%99%A4%E5%8E%BB)">https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#7-%E5%89%8D%E5%87%A6%E7%90%86%E3%82%B9(%E3%83%88%E3%83%83%E3%83%97%E3%83%AF%E3%83%BC%E3%83%89%E9%99%A4%E5%8E%BB)</a></li>
+</ul>
+<h2 id="4-pre-processing-important-phrase-extraction-tf-idf">4. Pre-processing: Important phrase extraction (tf-idf)</h2>
+<h3 id="41-what-is-tf-idf">4.1. What is tf-idf?</h3>
+<p>tf-idf is, for each word present in a document,
+It can be said to be an index for scoring in terms of &ldquo;is it important for understanding the context of the document?&rdquo;</p>
+<p>For details, please refer to <a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#81-tf-idf%E3%81%A8%E3%81%AF">this article</a>.</p>
+<h3 id="42-tf-idf-word-scoring-implementation">4.2. Tf-idf word scoring implementation</h3>
+<h4 id="421-what-is-a-documentall-documents">4.2.1. What is a document/all documents?</h4>
+<p>The purpose of this time is to see the characteristics of a member&rsquo;s statement.
+Therefore, we thought we should be able to understand <strong>the characteristics of one member for all posts in the Slack community</strong>.</p>
+<p>Therefore,</p>
+<ul>
+<li>** All documents **: All posts by all channels and all users so far</li>
+<li><strong>1 document</strong>: All posts by a member</li>
+</ul>
+<p>Was calculated as tf-idf.</p>
+<h4 id="422-implementation">4.2.2. Implementation</h4>
+<p>Write the process flow easily.</p>
+<ol>
+<li>Grouping by members who speak messages</li>
+<li>Calculate tf-idf with one group of messages as one document</li>
+<li>Extract words with tf-idf score above threshold (output as dictionary)</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:important_word_extraction.py" data-lang="python:important_word_extraction.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime, date, timedelta, timezone
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">from</span> sklearn.feature_extraction.text <span style="color:#f92672">import</span> TfidfVectorizer
+JST <span style="color:#f92672">=</span> timezone(timedelta(hours<span style="color:#f92672">=+</span><span style="color:#ae81ff">9</span>),<span style="color:#e6db74">&#39;JST&#39;</span>)
+
+<span style="color:#75715e"># Group messages by user</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">group_msgs_by_user</span>(df_msgs: pd<span style="color:#f92672">.</span>DataFrame) <span style="color:#f92672">-&gt;</span> dict:
+    ser_uid <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>uid
+    ser_wktmsg <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>wakati_msg
+    <span style="color:#75715e"># Get uid list without duplication</span>
+    ser_uid_unique <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>drop_duplicates(subset<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;uid&#39;</span>)<span style="color:#f92672">.</span>uid
+    <span style="color:#75715e"># Group by uid without duplication</span>
+    dict_msgs_by_user <span style="color:#f92672">=</span> {}
+    <span style="color:#66d9ef">for</span> uid <span style="color:#f92672">in</span> ser_uid_unique:
+        <span style="color:#75715e"># Get all wktmsg corresponding to the uid</span>
+        extracted <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;uid == @uid&#39;</span>)
+        Add <span style="color:#75715e">#key, value to the output dictionary</span>
+        dict_msgs_by_user[uid] <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join(extracted<span style="color:#f92672">.</span>wakati_msg<span style="color:#f92672">.</span>dropna()<span style="color:#f92672">.</span>values<span style="color:#f92672">.</span>tolist())
+    <span style="color:#66d9ef">return</span> dict_msgs_by_user
+
+<span style="color:#75715e"># tf-Extract important words with reference to idf score and return as dictionary</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">extract_important_word_by_key</span>(feature_names: list, bow_df: pd<span style="color:#f92672">.</span>DataFrame, uids: list) <span style="color:#f92672">-&gt;</span> dict:
+    <span style="color:#75715e">#&gt; Look at each line and extract important words (tfidf top X words)</span>
+    dict_important_words_by_user <span style="color:#f92672">=</span> {}
+    <span style="color:#66d9ef">for</span> uid, (i, scores) <span style="color:#f92672">in</span> zip(uids, bow_df<span style="color:#f92672">.</span>iterrows()):
+        <span style="color:#75715e"># Make a table of the user&#39;s words and tfidf score</span>
+        words_score_tbl <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame()
+        words_score_tbl[<span style="color:#e6db74">&#39;scores&#39;</span>] <span style="color:#f92672">=</span> scores
+        words_score_tbl[<span style="color:#e6db74">&#39;words&#39;</span>] <span style="color:#f92672">=</span> feature_names
+        <span style="color:#75715e"># tfidf Sort by score in descending order</span>
+        words_score_tbl <span style="color:#f92672">=</span> words_score_tbl<span style="color:#f92672">.</span>sort_values(<span style="color:#e6db74">&#39;scores&#39;</span>, ascending<span style="color:#f92672">=</span>False)
+        words_score_tbl <span style="color:#f92672">=</span> words_score_tbl<span style="color:#f92672">.</span>reset_index()
+        <span style="color:#75715e"># extract :tf-idf score &gt;0.001</span>
+        important_words <span style="color:#f92672">=</span> words_score_tbl<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;scores&gt; 0.001&#39;</span>)
+        <span style="color:#75715e">#Create dictionary for the user&#39;uid0&#39;: {&#39;w0&#39;: 0.9,&#39;w1&#39;: 0.87}</span>
+        d <span style="color:#f92672">=</span> {}
+        <span style="color:#66d9ef">for</span> i, row <span style="color:#f92672">in</span> important_words<span style="color:#f92672">.</span>iterrows():
+            d[row<span style="color:#f92672">.</span>words] <span style="color:#f92672">=</span> row<span style="color:#f92672">.</span>scores
+        <span style="color:#75715e">#Add to table only if there is at least one word in the user&#39;s dictionary</span>
+        <span style="color:#66d9ef">if</span> len(d<span style="color:#f92672">.</span>keys())<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
+            dict_important_words_by_user[uid] <span style="color:#f92672">=</span> d
+    <span style="color:#66d9ef">return</span> dict_important_words_by_user
+
+<span style="color:#75715e"># Extract important words for each user</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">extraction_by_user</span>(input_root: str, output_root: str) <span style="color:#f92672">-&gt;</span> dict:
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 1. load messages (processed)</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    msg_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;messages_cleaned_wakati_norm_rmsw.csv&#39;</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load: {0}&#39;</span><span style="color:#f92672">.</span>format(msg_fpath))
+    df_msgs <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(msg_fpath)
+    <span style="color:#75715e"># ---------------------------------------------# 2. group messages by user</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;group messages by user and save it.&#39;</span>)
+    msgs_grouped_by_user <span style="color:#f92672">=</span> group_msgs_by_user(df_msgs)
+    msg_grouped_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;messages_grouped_by_user.json&#39;</span>
+    <span style="color:#66d9ef">with</span> open(msg_grouped_fpath,<span style="color:#e6db74">&#39;w&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        json<span style="color:#f92672">.</span>dump(msgs_grouped_by_user, f, ensure_ascii<span style="color:#f92672">=</span>False, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>)
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 4. Calculate tf-idf for all documents</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;tfidf vectorizing ...&#39;</span>)
+    <span style="color:#75715e">#&gt; A matrix is created in which the words in all documents are columns and the number of documents (=user) is a row. Each element has a tf-idf value</span>
+    tfidf_vectorizer <span style="color:#f92672">=</span> TfidfVectorizer(token_pattern<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;(?u)</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">b</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">w+</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">b&#39;</span>)
+
+    bow_vec <span style="color:#f92672">=</span> tfidf_vectorizer<span style="color:#f92672">.</span>fit_transform(msgs_grouped_by_user<span style="color:#f92672">.</span>values())
+    bow_array <span style="color:#f92672">=</span> bow_vec<span style="color:#f92672">.</span>toarray()
+    bow_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(bow_array,
+                        index<span style="color:#f92672">=</span>msgs_grouped_by_user<span style="color:#f92672">.</span>keys(),
+                        columns<span style="color:#f92672">=</span>tfidf_vectorizer<span style="color:#f92672">.</span>get_feature_names())
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 5. Extract important words based on tf-idf</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;extract important words ...&#39;</span>)
+    d_word_score_by_uid <span style="color:#f92672">=</span> extract_important_word_by_key(tfidf_vectorizer<span style="color:#f92672">.</span>get_feature_names(), bow_df, msgs_grouped_by_user<span style="color:#f92672">.</span>keys())
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 6. uid =&gt; uname conversion</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Convert key of key words for each user from uid to uname...&#39;</span>)
+    user_tbl <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;../../data/020_intermediate/users.csv&#39;</span>)
+    d_word_score_by_uname <span style="color:#f92672">=</span> {}
+    <span style="color:#66d9ef">for</span> uid, val <span style="color:#f92672">in</span> d_word_score_by_uid<span style="color:#f92672">.</span>items():
+        <span style="color:#75715e"># Search uname by speaker&#39;s uid (may not exist if not active user)</span>
+        target <span style="color:#f92672">=</span> user_tbl<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;uid == @uid&#39;</span>)
+        <span style="color:#66d9ef">if</span> target<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+            uname <span style="color:#f92672">=</span> target<span style="color:#f92672">.</span>iloc[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;uname&#39;</span>]
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">continue</span>
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;uname:&#39;</span>, uname,<span style="color:#e6db74">&#39;type of uname:&#39;</span>, type(uname))
+        d_word_score_by_uname[uname] <span style="color:#f92672">=</span> val
+    <span style="color:#66d9ef">return</span> d_word_score_by_uname
+</code></pre></div><h4 id="423-output-dictionary">4.2.3. Output dictionary</h4>
+<p>With Wordcloud described in the next chapter, you can generate a Wordcloud that changes the display size of words according to the score by inputting a dictionary called <code>{ &quot;word&quot;: score }</code>.</p>
+<p><a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4">[Natural language processing] I tried to visualize the hot topics this week in the Slack community</a></p>
+<p>In the article, I output Wordcloud when grouping by &ldquo;Period&rdquo;.</p>
+<p>In this article, we have grouped by &ldquo;members&rdquo;, but the output dictionary is in the same format **.</p>
+<p>By doing so, it can be realized with the same process ** except &ldquo;Scoring process of tf-idf&rdquo;. I want to go to <a href="https://qiita.com/yatmsu/items/b4a84c4ae78fd67a364c">DRY</a>.</p>
+<p>The dictionary actually output this time is here.
+(User name is hidden)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json:important_word_tfidf_by_user.json" data-lang="json:important_word_tfidf_by_user.json">{
+    <span style="color:#f92672">&#34;USER_001&#34;</span>: {
+        <span style="color:#f92672">&#34;Participation&#34;</span>: <span style="color:#ae81ff">0.1608918987478819</span>,
+        <span style="color:#f92672">&#34;Environment&#34;</span>: <span style="color:#ae81ff">0.15024077008089046</span>,
+        <span style="color:#f92672">&#34;Good product&#34;</span>: <span style="color:#ae81ff">0.1347222699467748</span>,
+        <span style="color:#f92672">&#34;node&#34;</span>: <span style="color:#ae81ff">0.1347222699467748</span>,
+        <span style="color:#f92672">&#34;Description&#34;</span>: <span style="color:#ae81ff">0.13378417526975775</span>,
+        <span style="color:#f92672">&#34;Cybersecurity&#34;</span>: <span style="color:#ae81ff">0.12422689899152742</span>,
+        <span style="color:#f92672">&#34;r&#34;</span>: <span style="color:#ae81ff">0.12354794954617476</span>,
+        <span style="color:#f92672">&#34;Select&#34;</span>: <span style="color:#ae81ff">0.11973696610170319</span>,
+        <span style="color:#f92672">&#34;Replace&#34;</span>: <span style="color:#ae81ff">0.11678031479185731</span>,
+        <span style="color:#f92672">&#34;Final&#34;</span>: <span style="color:#ae81ff">0.11632792524420342</span>,
+        <span style="color:#f92672">&#34;Lecture&#34;</span>: <span style="color:#ae81ff">0.11467215023122095</span>,
+        <span style="color:#f92672">&#34;Public&#34;</span>: <span style="color:#ae81ff">0.11324407267324783</span>,
+        <span style="color:#f92672">&#34;Analysis&#34;</span>: <span style="color:#ae81ff">0.11324407267324783</span>,
+        <span style="color:#f92672">&#34;Due date&#34;</span>: <span style="color:#ae81ff">0.11100429535028021</span>,
+        <span style="color:#f92672">&#34;How to write&#34;</span>: <span style="color:#ae81ff">0.10628494383660991</span>,
+        <span style="color:#f92672">&#34;Deep Learning&#34;</span>: <span style="color:#ae81ff">0.10229478898619786</span>,
+        <span style="color:#960050;background-color:#1e0010">:</span>
+    },
+    <span style="color:#f92672">&#34;USER_002&#34;</span>: {
+        <span style="color:#f92672">&#34;Data&#34;</span>: <span style="color:#ae81ff">0.170245452132736</span>,
+        <span style="color:#f92672">&#34;Participation&#34;</span>: <span style="color:#ae81ff">0.15825283334154341</span>,
+        <span style="color:#f92672">&#34;Lecture&#34;</span>: <span style="color:#ae81ff">0.13785592895847276</span>,
+        <span style="color:#f92672">&#34;Please&#34;</span>: <span style="color:#ae81ff">0.1265412327351908</span>,
+        <span style="color:#f92672">&#34;Recruitment&#34;</span>: <span style="color:#ae81ff">0.12204781908784276</span>,
+        <span style="color:#f92672">&#34;Article&#34;</span>: <span style="color:#ae81ff">0.1197561921672133</span>,
+        <span style="color:#f92672">&#34;Environment&#34;</span>: <span style="color:#ae81ff">0.11083230914864184</span>,
+        <span style="color:#f92672">&#34;Food&#34;</span>: <span style="color:#ae81ff">0.1091835225326696</span>,
+        <span style="color:#f92672">&#34;Shared&#34;</span>: <span style="color:#ae81ff">0.10371152197590257</span>,
+        <span style="color:#f92672">&#34;Corona&#34;</span>: <span style="color:#ae81ff">0.10081254351124691</span>,
+        <span style="color:#f92672">&#34;Roundreading&#34;</span>: <span style="color:#ae81ff">0.10025885742434383</span>,
+        <span style="color:#f92672">&#34;Planning&#34;</span>: <span style="color:#ae81ff">0.09899869065055528</span>,
+        <span style="color:#f92672">&#34;Development&#34;</span>: <span style="color:#ae81ff">0.09571338092513401</span>,
+        <span style="color:#f92672">&#34;Goal&#34;</span>: <span style="color:#ae81ff">0.09253887576557392</span>,
+        <span style="color:#f92672">&#34;Job&#34;</span>: <span style="color:#ae81ff">0.09094257214685446</span>,
+        <span style="color:#f92672">&#34;Project&#34;</span>: <span style="color:#ae81ff">0.08910924912513929</span>,
+        <span style="color:#f92672">&#34;Information&#34;</span>: <span style="color:#ae81ff">0.08772258523428605</span>,
+        <span style="color:#f92672">&#34;Languages&#34;</span>: <span style="color:#ae81ff">0.08636683271048684</span>,
+        <span style="color:#f92672">&#34;channel&#34;</span>: <span style="color:#ae81ff">0.08295159680178281</span>,
+        <span style="color:#f92672">&#34;Release&#34;</span>: <span style="color:#ae81ff">0.0818876418995022</span>,
+        <span style="color:#f92672">&#34;youtube&#34;</span>: <span style="color:#ae81ff">0.07956948308804826</span>,
+        <span style="color:#f92672">&#34;Team&#34;</span>: <span style="color:#ae81ff">0.07956948308804826</span>,
+        <span style="color:#f92672">&#34;Basic&#34;</span>: <span style="color:#ae81ff">0.07444492553072463</span>,
+        <span style="color:#960050;background-color:#1e0010">:</span>
+    },
+    <span style="color:#960050;background-color:#1e0010">:</span>
+}
+</code></pre></div><h2 id="5-visualization-with-wordcloud">5. Visualization with Wordcloud</h2>
+<p>Please refer to this article.</p>
+<p>[[Natural language processing] I tried to visualize the hot topic in the Slack community this week-9. Visualization processing with Wordcloud](<a href="https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#9-wordcloud%E3%81%A7(%E5%8F%AF%E8%A6%96%E5%8C%96%E5%87%A6%E7%90%86)">https://qiita.com/masso/items/41630aa02f1fd6cfa0a4#9-wordcloud%E3%81%A7(%E5%8F%AF%E8%A6%96%E5%8C%96%E5%87%A6%E7%90%86)</a></p>
+<h2 id="6-bonus">6. Bonus</h2>
+<h3 id="articles-that-are-especially-helpful">Articles that are especially helpful</h3>
+<ul>
+<li><a href="https://qiita.com/Hironsan/items/2466fe0f344115aff177">Type of preprocessing in natural language processing and its power | Qiita</a></li>
+<li><a href="https://medium.com/voice-tech-podcast/nlp-pipeline-101-with-basic-code-example-feature-extraction-ea9894ed8daf">NLP Pipeline 101 With Basic Code Example — Feature Extraction</a></li>
+</ul>
+<p>Other reference materials (large amount) are summarized in <a href="https://github.com/sota0121/slack-msg-analysis/blob/master/references/REFERENCE_LINK.md">here :octocat: </a>.</p>
+<h3 id="advertising">Advertising</h3>
+<p>This time, I&rsquo;m using data from the Slack community called the Data Learning Guild.
+Data Learning Guild is an online community of data analytics personnel. If you are interested, please check here.</p>
+<p><a href="https://data-learning.com/guild">Data Learning Guild Official Homepage</a></p>
+<p><a href="https://qiita.com/advent-calendar/2019/data-learning-guild">Data Learning Guild 2019 Advent Calendar</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to predict the deterioration of the lithium ion battery using Qore SDK | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to predict the deterioration of the lithium ion battery using Qore SDK</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 12, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/hour-series-analysis"> hour series analysis</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/battery"> battery</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lstm"> LSTM</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/qoresdk"> QoreSDK</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Hi everyone, this is kon2 :sunny::sunny:
+I am a student who usually studies negative electrode materials for lithium batteries at university.</p>
+<p>Lithium-ion batteries are widely used in everyday life such as mobile phones and electric vehicles.
+Since you recently won the Nobel Prize, you often hear the name.</p>
+<p>Although lithium-ion batteries have been in commercial use for more than 40 years, they are still an active research field, and the use of machine learning has recently been drawing attention.
+For example, development of new electrode materials and electrolytes, optimization of battery composition (electrode film thickness, electrolyte concentration, additives&hellip;), prediction of battery life, etc.</p>
+<p>This time, I will try using the Qore SDK provided by Quantum Core Co., Ltd. for a limited time to predict the discharge capacity of a lithium-ion battery in time series: v::v::v:</p>
+<p>The introduction and usage of Qore SDK are explained in the following articles.
+<a href="https://qiita.com/ryoppippi/items/f607c8828238094eade0">World of Reservoir Computing ~With Qore~</a>
+<a href="https://qiita.com/sk1010k/items/d8ca3332e6a1f1f939a1">Introduction of Qore SDK and arrhythmia detection with Qore</a></p>
+<p>Since it is a great deal of effort, I performed similar learning using LSTM, which is a type of deep learning, and compared the results.</p>
+<h1 id="acquisition-of-chargedischarge-data">Acquisition of charge/discharge data</h1>
+<p>For charge and discharge data, the data published on the following pages by CALCE (Center for Advanced Life Cycle Engineering) of the University of Maryland are used.</p>
+<p><a href="https://calce.umd.edu/data#CS2">https://calce.umd.edu/data#CS2</a></p>
+<p>In this analysis, charge/discharge data of CS2 Battery (CS2-35, CS2-36, CS2-37, CS2-38) is used.
+After downloading in Zip format, the xlsx file in the unzipped folder is the charge/discharge data.</p>
+<p>Since it is divided into multiple data and the number of cycles is also different, the data is properly shaped and preprocessed.</p>
+<p>I will not explain preprocessing in this article, I posted it on GitHub in Jupyter-Notebook format, so please refer to this: point_down::point_down::point_down:</p>
+<p><a href="https://github.com/konkon3249/BatteryDatasetPreprocessing/blob/master/Preprocessing_CS2_35.ipynb">https://github.com/konkon3249/BatteryDatasetPreprocessing/blob/master/Preprocessing_CS2_35.ipynb</a></p>
+<p>Here is the charge/discharge curve of battery CS2-35 after pretreatment. The total number of cycles was 887.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/3f0c96fe-3f97-d824-3908-faecb4ed8ce3.png" alt="Download.png"></p>
+<p>The charge curve extends to the upper right, and the discharge curve extends to the lower left. As the color changes from blue to purple, it indicates that the cycle is progressing.</p>
+<p>What you want to know here is the maximum discharge capacity (Discharge Capacity) of each cycle of the battery. The figure below plots this against the number of cycles.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/39016120-180d-a1bf-ded5-c90d8f159c5e.png" alt="Download (1).png"></p>
+<p>You can see that the discharge capacity is decreasing with each cycle.
+Generally, when the capacity decreases by 20% (this time 1.1 × 0.8 = 0.88 Ah), the life is the standard, so this battery will last about 580 cycles.</p>
+<h1 id="qore-time-series-analysis">Qore time series analysis</h1>
+<p>Since the relationship between the discharge capacity of the secondary battery and the number of cycles can be regarded as time series data, predictions such as ARIMA (not deep learning) and LSTM (deep learning) have been performed so far.</p>
+<p><a href="https://www.sciencedirect.com/science/article/pii/S0026271416303018?via%3Dihub">Lithium-ion batteries remaining useful life prediction based on a mixture of empirical mode decomposition and ARIMA model</a>(ArticleusingARIMA)
+<a href="https://ieeexplore.ieee.org/document/8289406">Long Short-Term Memory Recurrent Neural Network for Remaining Useful Life Prediction of Lithium-Ion Batteries</a>(LSTMpaper)
+<a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5795929/">Assessing the Health of LiFePO4 Traction Batteries through Monotonic Echo State Networks
+</a>(PaperusingEchoStateNetwork)</p>
+<p>The final paper uses Echo State Networks, a type of reservoir computing, for prediction.
+I didn&rsquo;t think there was someone who was already doing it.</p>
+<p>Anyway, the reservoir computing provided by QoreSDK is good at time series analysis, so I will use it to perform similar time series analysis.</p>
+<p>Click here for a list of the learning data used this time.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/20b82c3b-926b-2548-00ff-e9a019ecd75b.png" alt="Download (2).png"></p>
+<p>From the charge/discharge data of these four lithium-ion batteries, three types (#35, 37, 38) are used as teacher data and one type (#36) is used as test data for time series analysis.</p>
+<p>The time series analysis is also published in Jupyter-notebook, so please take a look.</p>
+<p><a href="https://github.com/konkon3249/BatteryLifePrediction">https://github.com/konkon3249/BatteryLifePrediction</a></p>
+<p>Below is a brief explanation.</p>
+<p>#Load data and create teacher data</p>
+<p>First, load the data in csv format.
+As a precaution, we also perform missing value processing.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">df_35 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;CS2_35.csv&#39;</span>,index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>dropna()
+df_36 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;CS2_36.csv&#39;</span>,index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>dropna()
+df_37 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;CS2_37.csv&#39;</span>,index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>dropna()
+df_38 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;CS2_38.csv&#39;</span>,index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>dropna()
+</code></pre></div><p>Create teaching data for time series analysis using the following functions. I also referred to the following article using the Qore SDK: thumbsup::thumbsup::thumbsup:</p>
+<p><a href="https://qiita.com/saitoxu/items/93cf462b4256cb4cea4d">Regression task using Qore SDK</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">ConvertData</span>(dataset,t_width):
+    
+    X_trains <span style="color:#f92672">=</span> []
+    y_trains <span style="color:#f92672">=</span> []
+    
+    <span style="color:#66d9ef">for</span> df <span style="color:#f92672">in</span> dataset:
+        t_length <span style="color:#f92672">=</span> len(df)
+
+        train_x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(t_length)
+        capacity <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(df[<span style="color:#e6db74">&#39;capacity&#39;</span>])
+        train_y <span style="color:#f92672">=</span> capacity
+        
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(t_length<span style="color:#f92672">-</span>t_width):
+            X_trains<span style="color:#f92672">.</span>append(train_y[i:i <span style="color:#f92672">+</span> t_width])
+            y_trains<span style="color:#f92672">.</span>append(train_y[i <span style="color:#f92672">+</span> t_width])
+
+    X_trains <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(X_trains)
+    y_trains <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(y_trains)
+    
+    <span style="color:#66d9ef">return</span> X_trains,y_trains
+
+X_train,y_train <span style="color:#f92672">=</span> ConvertData([df_35,df_37,df_38],<span style="color:#ae81ff">50</span>)
+X_test,y_test <span style="color:#f92672">=</span> ConvertData([df_36],<span style="color:#ae81ff">50</span>)
+
+</code></pre></div><p>Check the dimensions of the teacher data obtained by this process.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(X_train<span style="color:#f92672">.</span>shape,X_test<span style="color:#f92672">.</span>shape,y_train<span style="color:#f92672">.</span>shape,y_test<span style="color:#f92672">.</span>shape)
+<span style="color:#f92672">&gt;&gt;</span> (<span style="color:#ae81ff">2588</span>, <span style="color:#ae81ff">50</span>) (<span style="color:#ae81ff">873</span>, <span style="color:#ae81ff">50</span>) (<span style="color:#ae81ff">2588</span>,) (<span style="color:#ae81ff">873</span>,)
+</code></pre></div><p>There is too much data to throw into the API, so reduce the number of teacher data to 500.
+Data will be randomly selected.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">idx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">0</span>,X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">1</span>)
+idx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>permutation(idx)
+idx_lim <span style="color:#f92672">=</span> idx[:<span style="color:#ae81ff">500</span>]
+
+X_train <span style="color:#f92672">=</span> X_train[idx_lim]
+y_train <span style="color:#f92672">=</span> y_train[idx_lim]
+</code></pre></div><p>Finally, transform the teacher data into dimensions (number of data, time, real data).
+However, the last dimension is 1, because it is not multivariate.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">X_train <span style="color:#f92672">=</span> X_train<span style="color:#f92672">.</span>reshape([X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], <span style="color:#ae81ff">1</span>])
+X_test <span style="color:#f92672">=</span> X_test<span style="color:#f92672">.</span>reshape([X_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], X_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], <span style="color:#ae81ff">1</span>])
+<span style="color:#66d9ef">print</span>(X_train<span style="color:#f92672">.</span>shape,X_test<span style="color:#f92672">.</span>shape,y_train<span style="color:#f92672">.</span>shape,y_test<span style="color:#f92672">.</span>shape)
+<span style="color:#f92672">&gt;&gt;</span> (<span style="color:#ae81ff">500</span>, <span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">1</span>) (<span style="color:#ae81ff">873</span>, <span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">1</span>) (<span style="color:#ae81ff">500</span>,) (<span style="color:#ae81ff">873</span>,)
+</code></pre></div><p>I feel like this.</p>
+<p>Learning time series data using # Qore SDK</p>
+<p>Learning does not require optimization of the network structure or parameters, it is just an API, so it is very easy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">%%</span>time
+client <span style="color:#f92672">=</span> WebQoreClient(username, password, endpoint<span style="color:#f92672">=</span>endpoint)
+time_ <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>regression_train(X_train, y_train)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Time:&#39;</span>, time_[<span style="color:#e6db74">&#39;train_time&#39;</span>],<span style="color:#e6db74">&#39;s&#39;</span>)
+
+<span style="color:#f92672">&gt;&gt;</span> Time: <span style="color:#ae81ff">1.784491777420044</span> s
+<span style="color:#f92672">&gt;&gt;</span> Wall time: <span style="color:#ae81ff">2.26</span> s
+</code></pre></div><p>Moreover, the results are returned immediately.
+It&rsquo;s so fast that I&rsquo;m worried that I&rsquo;m really learning.Let&rsquo;s check. First from the training data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Inference</span>
+res <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>regression_predict(X_train)
+
+<span style="color:#75715e">#plot</span>
+fig<span style="color:#f92672">=</span>plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">4</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">150</span>)
+plt<span style="color:#f92672">.</span>plot(res[<span style="color:#e6db74">&#39;Y&#39;</span>],alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.7</span>,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Prediction&#39;</span>)
+plt<span style="color:#f92672">.</span>plot(y_train,alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.7</span>,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;True&#39;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upper right&#39;</span>,fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">12</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/feb98234-2dc4-1db9-ea93-7500e5d5aa7a.png" alt="Download (6).png"></p>
+<p>As far as the predicted values of the training data are concerned, learning seems to be done properly.
+Next, the predicted result of the discharge capacity of the battery (#36) for 300 to 800 cycles is displayed as the test data.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/2800c47f-9c49-fd48-40ff-5aa861f9fcdb.png" alt="Download (7).png"></p>
+<p>Blue is the predicted value and orange is the experimental value.
+Isn&rsquo;t it quite predictable?</p>
+<p>I used scikit-learn to display the error (MSE) (for later comparison with LSTM).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> mean_squared_error
+<span style="color:#66d9ef">print</span>(mean_squared_error(y_test[<span style="color:#ae81ff">300</span>:<span style="color:#ae81ff">800</span>], res[<span style="color:#e6db74">&#39;Y&#39;</span>]))
+<span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">0.00025365167122575003</span>
+</code></pre></div><p>Let&rsquo;s actually predict the discharge capacity from 500 to 550 cycles as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#75715e"># Future prediction of discharge capacity</span>
+initial <span style="color:#f92672">=</span> X_test[<span style="color:#ae81ff">500</span>]
+results <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> tqdm(range(<span style="color:#ae81ff">50</span>)):
+    <span style="color:#66d9ef">if</span>(i <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>):
+        res <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>regression_predict([initial])[<span style="color:#e6db74">&#39;Y&#39;</span>]
+        results<span style="color:#f92672">.</span>append(res[<span style="color:#ae81ff">0</span>])
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">else</span>:
+        initial <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>vstack((initial[<span style="color:#ae81ff">1</span>:],np<span style="color:#f92672">.</span>array(res)))
+        res <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>regression_predict([initial])[<span style="color:#e6db74">&#39;Y&#39;</span>]
+        results<span style="color:#f92672">.</span>append(res[<span style="color:#ae81ff">0</span>])
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e">#plot</span>
+fig<span style="color:#f92672">=</span>plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>,<span style="color:#ae81ff">4</span>),dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">150</span>)
+plt<span style="color:#f92672">.</span>plot(np<span style="color:#f92672">.</span>linspace(<span style="color:#ae81ff">501</span>,<span style="color:#ae81ff">550</span>,<span style="color:#ae81ff">50</span>),results,<span style="color:#e6db74">&#39;o-&#39;</span>,ms<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>,lw<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;predict&#39;</span>)
+plt<span style="color:#f92672">.</span>plot(np<span style="color:#f92672">.</span>linspace(<span style="color:#ae81ff">401</span>,<span style="color:#ae81ff">550</span>,<span style="color:#ae81ff">150</span>),y_test[<span style="color:#ae81ff">400</span>:<span style="color:#ae81ff">550</span>],<span style="color:#e6db74">&#39;o-&#39;</span>,lw<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,ms<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;true&#39;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upper right&#39;</span>,fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">12</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;Number of Cycle&#39;</span>,fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">13</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;Discharge Capacity (Ah)&#39;</span>,fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">13</span>)
+</code></pre></div><p>The results are as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/ca87efbf-245e-3ff5-7c57-80dab4009668.png" alt="Download (18).png"></p>
+<p>I have a good prediction!</p>
+<p>Learning with #LSTM</p>
+<p>Since it is a great deal, I will compare it with LSTM.
+First, change the dimension of correct data from (N,) to (N, 1).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">X_train <span style="color:#f92672">=</span> X_train<span style="color:#f92672">.</span>reshape([X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], <span style="color:#ae81ff">1</span>])
+X_test <span style="color:#f92672">=</span> X_test<span style="color:#f92672">.</span>reshape([X_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], X_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>], <span style="color:#ae81ff">1</span>])
+y_train <span style="color:#f92672">=</span> y_train<span style="color:#f92672">.</span>reshape([y_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1</span>])
+y_test <span style="color:#f92672">=</span> y_test<span style="color:#f92672">.</span>reshape([y_test<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1</span>])
+<span style="color:#66d9ef">print</span>(X_train<span style="color:#f92672">.</span>shape,X_test<span style="color:#f92672">.</span>shape,y_train<span style="color:#f92672">.</span>shape,y_test<span style="color:#f92672">.</span>shape)
+<span style="color:#f92672">&gt;&gt;</span> (<span style="color:#ae81ff">500</span>, <span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">1</span>) (<span style="color:#ae81ff">873</span>, <span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">1</span>) (<span style="color:#ae81ff">500</span>, <span style="color:#ae81ff">1</span>) (<span style="color:#ae81ff">873</span>, <span style="color:#ae81ff">1</span>)
+</code></pre></div><p>The parameters of LSTM are as follows.</p>
+<p>hidden layer: 3
+optimizer: rmsprop
+loss function: mean squared error
+batch size: 50
+epochs:100</p>
+<p>Build and learn the model like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># LSTM model construction</span>
+length_of_sequence <span style="color:#f92672">=</span> X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]
+in_out_neurons <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+n_hidden <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+
+model <span style="color:#f92672">=</span> Sequential()
+model<span style="color:#f92672">.</span>add(LSTM(n_hidden, batch_input_shape<span style="color:#f92672">=</span>(None, length_of_sequence, in_out_neurons),
+               return_sequences<span style="color:#f92672">=</span>False))
+model<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">1</span>))
+model<span style="color:#f92672">.</span>add(Activation(<span style="color:#e6db74">&#34;linear&#34;</span>))
+model<span style="color:#f92672">.</span>compile(loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;mean_squared_error&#34;</span>, optimizer<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;rmsprop&#34;</span>)
+
+<span style="color:#75715e">#Model learning</span>
+<span style="color:#f92672">%%</span>time
+early_stopping <span style="color:#f92672">=</span> EarlyStopping(monitor<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;val_loss&#39;</span>, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;auto&#39;</span>, patience<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+history <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fit(X_train, y_train,
+          batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">50</span>,
+          epochs<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>,
+          validation_split<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>,
+          callbacks<span style="color:#f92672">=</span>[early_stopping,PlotLossesKeras()]
+          )
+
+</code></pre></div><p>Using GPU (GTX1070), the calculation time was 1 min 27 s.
+The transition of Loss during learning is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/c0347447-e287-7471-b8ae-e64c5f1cdf09.png" alt="Download (15).png"></p>
+<p>Click here for the results of predicting the discharge capacity of test data (CS2-36) using this model as in the case of Qore.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/72bbb73c-30f2-417e-9d0f-8ccb77b80c2e.png" alt="Download (17).png"></p>
+<p>I can predict it in the same way. The MSE was 0.00021017.
+Then, as before, predict the discharge capacity from 500 to 550 cycles as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">initial <span style="color:#f92672">=</span> X_test[<span style="color:#ae81ff">500</span>]
+results <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> tqdm(range(<span style="color:#ae81ff">50</span>)):
+    <span style="color:#66d9ef">if</span>(i <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>):
+        initial <span style="color:#f92672">=</span> initial<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">1</span>)
+        res <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict(initial)
+        results<span style="color:#f92672">.</span>append(res[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>])
+    <span style="color:#66d9ef">else</span>:
+        initial <span style="color:#f92672">=</span> initial<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">1</span>)
+        initial <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>vstack((initial[<span style="color:#ae81ff">1</span>:],np<span style="color:#f92672">.</span>array(res)))
+        initial <span style="color:#f92672">=</span> initial<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">1</span>)
+        res <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict([initial])
+        results<span style="color:#f92672">.</span>append(res[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>])
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/1f6a11d3-21b2-a82f-11c7-e10a58a270af.png" alt="Download (16).png"></p>
+<p>It seems that it has been done for the time being &hellip; It seems that the prediction is better when using Qore.</p>
+<p>Finally, here is a plot of the time series prediction results along with the Qore case.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/fc9eae1c-5e3d-6d1b-e71a-f0237f675d08.png" alt="Download (19).png"></p>
+<p>#Summary</p>
+<p>In this article, we made a time series prediction of the deterioration process (reduction of discharge capacity) of a lithium-ion battery using the Qore SDK and compared it with the case of using the commonly used LSTM.</p>
+<p>As a result, the error (mse) from the test data and the calculation time were as follows.</p>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="right">QoreSDK</th>
+<th align="right">LSTM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">MSE</td>
+<td align="right">2.5365e-4</td>
+<td align="right">2.1017e-4</td>
+</tr>
+<tr>
+<td align="center">Study Time</td>
+<td align="right"><b>1.78 s</b></td>
+<td align="right">87 s</td>
+</tr>
+</tbody>
+</table>
+<p>The error is a little smaller in LSTM, but the learning time is overwhelmingly faster in Qore.
+It&rsquo;s amazing to learn so far without adjusting the learning parameters.</p>
+<p>#Finally</p>
+<p>Actually, the prediction of battery deterioration that we conducted this time is still insufficient.
+This is probably because only the discharge capacity is used for time series prediction.</p>
+<p>In fact, there are many other parameters related to battery capacity. For example, the following data can be obtained from this dataset.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203101/885c2cca-08fa-5fd3-5479-b177655b9c4e.png" alt="Download (20).png"></p>
+<p>From the upper left, the relationship between discharge capacity, internal resistance, constant current charging time, constant voltage charging time and charge/discharge cycle is shown.
+Performing a multivariate time series analysis that includes data around this area should allow more accurate prediction of deterioration.
+(This time I couldn&rsquo;t help&hellip;)</p>
+<p>Thank you to <a href="https://www.qcore.co.jp/">Quantum Core</a> for providing such an API this time.Time series analysis was very amateur, but it was very interesting!
+If you want to play because it is for a limited time :point_down::point_down::point_down:</p>
+<p><a href="https://qiita.com/advent-calendar/2019/quantumcore_reservoir">Machine learning and applied technology other than deep learning by QuantumCore Advent Calendar 2019</a></p>
+<p>Well then.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

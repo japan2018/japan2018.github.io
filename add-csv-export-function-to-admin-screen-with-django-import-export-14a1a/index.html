@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Add CSV export function to admin screen with django-import-export | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Add CSV export function to admin screen with django-import-export</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 27, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django"> Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/csv"> CSV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/management-screen"> management screen</a></code></small>
+
+</p>
+<pre><code>It seems that there are various plugins when I check the admin site of Django.
+</code></pre>
+<p>Since I wanted to import/export the data of the management screen in a format such as CSV,
+I checked it and it was easy with <a href="https://django-import-export.readthedocs.io/en/stable/index.html">django-import-export</a>. A memorandum at that time.</p>
+<h5 id="install">Install</h5>
+<p>First install with pip</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ pip install django-import-export
+</code></pre></div><h5 id="configuration">Configuration</h5>
+<p>Add <code>import_export</code> to INSTALLED_APPS</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># settings.py</span>
+INSTALLED_APPS <span style="color:#f92672">=</span> (
+    <span style="color:#f92672">...</span>
+    <span style="color:#e6db74">&#39;import_export&#39;</span>,
+)
+</code></pre></div><h5 id="added-to-adminpy">Added to admin.py</h5>
+<p>Add settings for the target data.</p>
+<p>The sample model looks like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># models.py</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Book</span>(models<span style="color:#f92672">.</span>Model):
+    name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(<span style="color:#e6db74">&#39;Book name&#39;</span>, max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+    author <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(<span style="color:#e6db74">&#39;Book name&#39;</span>, max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+</code></pre></div><p>django-import-export settings.</p>
+<p>Add a class that inherits <code>ModelResource</code> for the target model.
+It seems that settings related information will be written here.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># admin.py</span>
+<span style="color:#f92672">from</span> django.contrib <span style="color:#f92672">import</span> admin
+<span style="color:#f92672">from</span> import_export <span style="color:#f92672">import</span> resources
+<span style="color:#f92672">from</span> import_export.admin <span style="color:#f92672">import</span> ImportExportModelAdmin
+
+<span style="color:#f92672">from</span> .models <span style="color:#f92672">import</span> Book
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BookResource</span>(resources<span style="color:#f92672">.</span>ModelResource):
+    Setting django<span style="color:#f92672">-</span>import<span style="color:#f92672">-</span>export <span style="color:#66d9ef">for</span> <span style="color:#75715e"># Model</span>
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Meta</span>:
+        model <span style="color:#f92672">=</span> Book
+
+
+<span style="color:#a6e22e">@admin.register</span>(Book)
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BookAdmin</span>(ImportExportModelAdmin):
+    <span style="color:#75715e"># Use ImportExportModelAdmin</span>
+    ordering <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;id&#39;</span>]
+    list_display <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;title&#39;</span>,<span style="color:#e6db74">&#39;author&#39;</span>)
+
+    <span style="color:#75715e"># django-import-exports settings</span>
+    resource_class <span style="color:#f92672">=</span> BookResource
+</code></pre></div><p>Finally, prepare an Admin class that inherits ImportExportModelAdmin,
+Set a class that inherits <code>ModelResource</code> in resource_class OK!</p>
+<p>Then, the button is displayed like this. Easy (<em>&lsquo;ω`</em>)</p>
+<img width="221" alt="Screenshots 2019-11-27 13.38.26.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/478782/aaaac4b5-e0dd-97ff-6391-a57c9d27ad63.png">
+<h4 id="small-story">Small story</h4>
+<h5 id="export-only-disable-import">Export only: Disable Import</h5>
+<p>I thought I didn&rsquo;t need to import anything, so I disabled it.
+It seems that you should only use <code>ExportMixin</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># ...</span>
+<span style="color:#f92672">from</span> import_export.admin <span style="color:#f92672">import</span> ExportMixin
+
+<span style="color:#a6e22e">@admin.register</span>(Book)
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BookAdmin</span>(ExportMixin, admin<span style="color:#f92672">.</span>ModelAdmin):
+    OK <span style="color:#66d9ef">if</span> you add <span style="color:#75715e">#ExportMixin to admin.ModelAdmin</span>
+    ordering <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;id&#39;</span>]
+    list_display <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;title&#39;</span>,<span style="color:#e6db74">&#39;author&#39;</span>)
+
+    <span style="color:#75715e"># django-import-exports settings</span>
+    resource_class <span style="color:#f92672">=</span> BookResource
+</code></pre></div><h5 id="specify-exportable-format">Specify exportable format</h5>
+<p>By default, you can choose JSON or YML, but CSV is all you need.
+I tried to narrow down the parts that can be selected. OK if you specify formats</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># ...</span>
+<span style="color:#f92672">from</span> import_export.formats <span style="color:#f92672">import</span> base_formats
+
+<span style="color:#a6e22e">@admin.register</span>(Book)
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BookAdmin</span>(ImportExportModelAdmin):
+    ordering <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;id&#39;</span>]
+    list_display <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;title&#39;</span>,<span style="color:#e6db74">&#39;author&#39;</span>)
+
+    <span style="color:#75715e"># django-import-exports settings</span>
+    resource_class <span style="color:#f92672">=</span> BookResource
+    formats <span style="color:#f92672">=</span> [base_formats<span style="color:#f92672">.</span>CSV] <span style="color:#75715e"># formats can be specified</span>
+</code></pre></div><p>that&rsquo;s all!!</p>
+<h2 id="i-am-making-this">I am making this!</h2>
+<p>We have released the reading management app &ldquo;Reading How Match&rdquo; for reading!
+<a href="https://tsundoku.site">Loading How match</a> is developed by Nuxt.js+Firebase!</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/478782/572d4947-f40b-e4dc-1c9c-bc584cd2a66c.png" width="200"/>
+<p>If you don&rsquo;t mind, please try playing ヽ(=´▽`=)ﾉ</p>
+<p>If you have any requests, impressions or advice,
+Official account (<a href="https://twitter.com/MemoryLoverz">@MemoryLoverz</a>)anddevelopers(<a href="https://twitter.com/kira_puka">@kira_puka</a>)♪</p>
+<h1 id="referenced-sites">Referenced sites</h1>
+<ul>
+<li><a href="https://django-import-export.readthedocs.io/en/stable/index.html#">Django import / export — django-import-export 1.2.0 documentation</a></li>
+<li><a href="https://stackoverflow.com/questions/29252500/django-import-export-only-export">Django import-export: only export-Stack Overflow</a></li>
+<li><a href="https://stackoverflow.com/questions/45930421/how-to-have-only-csv-xls-xlsx-options-in-django-import-export">How to have only CSV, XLS, XLSX options in django-import-export?-Stack Overflow</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

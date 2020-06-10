@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Performance study of latest ensemble learning Sklearn Stacking (Compare LBGM, RGF, ET, RF, LR, KNN models with Heamy and Sklearn) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Performance study of latest ensemble learning Sklearn Stacking (Compare LBGM, RGF, ET, RF, LR, KNN models with Heamy and Sklearn)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> Machine Learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning"> MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scikit-learn">scikit-learn</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ensemblelearning">EnsembleLearning</a></code></small>
+
+</p>
+<pre><code># TL;DR
+</code></pre>
+<p>Stacking sklearn, it might be a standard because it was a very good child when I tried using it</p>
+<p>| library | layer1 | layer2 | public score | speed |
+| &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;- | &mdash;&mdash;- | &mdash;&mdash;&mdash;&mdash; | &mdash;&ndash; |
+| lgbm model | lgb |-| 0.74162 |-|
+heamy single stacking | lbg, rgf, et, rf, lr, knn | lr | 0.76076 | 64s |
+heamy multiple stacking | lgb, rgf, et, rf, lr, knn | lgb, lr | 0.74162 | 76s (64 + 12) |
+heamy single stacking nn | lgb, rgf, et, rf, lr, knn, nn | lgb, nn | 0.76076 | 119s |
+| heamy multiple stacking nn | lgb, rgf, et, rf, lr, knn, nn | lgb, nn | 0.75598 | 139s (119 + 20) |
+sklearn single stacking | lgb, rgf, et, rf, lr, knn | lr | 0.77511 | 30s |
+sklearn multiple stacking | lgb, rgf, et, rf, lr, knn | lgb, lr | 0.76555 | 28s |</p>
+<h1 id="abstract">Abstract</h1>
+<p>I am a software engineer <a href="http://bit.ly/2qGILex">r2en</a>of<a href="http://bit.ly/33fuxi1">white,inc</a>.
+At our company, we are doing consultant work centered on new businesses,
+Usually, engineers develop <a href="http://bit.ly/33iJeRe">Free cloud type tool to develop new business</a>,
+Engaged in consulting from new business to PoC development</p>
+<p><a href="http://bit.ly/33iJeRe"><img src="https://user-images.githubusercontent.com/17031124/70364775-4b5f7500-18d1-11ea-91bc-857813d89762.png" alt="image"></a></p>
+<p>This time, I conducted a technical study of machine learning, so I will share it in an article.
+Since the sentence will be longer from the following, I will write it in colloquial</p>
+<hr>
+<p>New in scikit-learn 0.22, Stacking of ensemble learning can be used for classification and regression respectively, so compare the feeling with Heamy that you are using</p>
+<p>Validate performance, accuracy, and speed using Kaggle&rsquo;s Titanic dataset</p>
+<p>The machine learning model used for the ensemble is lightgbm, regularized greedy forest, extremely randomized trees, random forest, logistic regression, K Nearest Neighbor, 3layer nural network.</p>
+<h1 id="introduction">Introduction</h1>
+<p>In the first place, ensemble learning refers to making a prediction by combining a plurality of machine learning models.</p>
+<p>Ensembled models are often more accurate than a single model, which is a method often adopted in analysis competitions.</p>
+<p>There are various methods for ensemble learning, such as averaging, weighted averaging, Stacking and Blending.</p>
+<p>Currently, self-made stacking, <a href="https://github.com/h2oai/pystacknet">pystacknet</a>,<a href="https://github.com/rushter/heamy">heamy</a>, etc. are used in the mainstream.</p>
+<p>Since the implementation involves a lot of amount, I will omit the details and refer to the following documents for more easy-to-understand explanations.</p>
+<p><a href="https://mlwave.com/kaggle-ensembling-guide/">Kaggle Ensembling Guide</a>
+<a href="https://www.amazon.co.jp/gp/product/4297108437/ref=ppx_yo_dt_b_asin_title_o04_s00?ie=UTF8&amp;psc=1">Kaggle and data analysis technology</a>
+<a href="https://blog.ikedaosushi.com/entry/2018/10/21/204842">Understand Stacking of Ensemble Method with Implementation and Diagram</a></p>
+<h1 id="environment">Environment</h1>
+<h4 id="verification-machine">Verification machine</h4>
+<pre><code>OS: macOS HighSierra 10.13.6(Retina, Early 2015)
+CPU: 3.1GHz Intel Core i7
+MEM: 16GB 1867MHz DDR3
+GPU: Intel Iris Graphics 6100 1536MB
+</code></pre><h4 id="verification-environment">Verification environment</h4>
+<p>Not tested
+using dockerfile
+I am using jupyter notebook
+If you want to try it again, please clone my repository from the link below
+Execution procedure is also described in .md</p>
+<p><a href="https://github.com/r2en/research_sklearn_stacking">https://github.com/r2en/research_sklearn_stacking</a></p>
+<h4 id="install">Install</h4>
+<p>I will also list how to install it yourself</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ pip install -U scikit-learn<span style="color:#f92672">==</span>0.22.0
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> sklearn
+sklearn<span style="color:#f92672">.</span>__version__
+<span style="color:#e6db74">&#39;0.22.0&#39;</span>
+</code></pre></div><h4 id="speed-measurement">Speed measurement</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> contextlib <span style="color:#f92672">import</span> contextmanager
+
+<span style="color:#a6e22e">@contextmanager</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">timer</span>(name):
+    t0 <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">yield</span>
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;[{name}] done in {time.time()-t0:.0f} s&#39;</span>)
+</code></pre></div><h4 id="verification-data">Verification data</h4>
+<p><a href="https://www.kaggle.com/c/titanic/data">Titanic: Machine Learning from Disaster</a></p>
+<p>Popular name Titanic competition</p>
+<p>Easy to read, easy to read, easy to see only the stack part, easy to try again,
+The minimum stacking requirement is satisfied because the distribution of learning and test is similar, not time series data.
+Adopted in the part</p>
+<p>However, because there are too few data to stack, there are disadvantages such as the evaluation index is easy to shake with the correct answer rate,
+To the last, please refer to the implementation method and the performance index somehow with the feeling that this kind of accuracy is for a dataset with n=1</p>
+<p>Based on data from each passenger boarding the Titanic, this competition predicts whether the Titanic survived a collision with an iceberg (Survived).</p>
+<p>Data explanatory variables and objective variables are as follows</p>
+<table>
+<thead>
+<tr>
+<th>Variable name</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PassengerId</td>
+<td>Unique ID for passenger identification</td>
+</tr>
+<tr>
+<td>Survived</td>
+<td>Life</td>
+</tr>
+<tr>
+<td>Pclass</td>
+<td>Ticket Class</td>
+</tr>
+<tr>
+<td>Name</td>
+<td>Name of the passenger</td>
+</tr>
+<tr>
+<td>Sex</td>
+<td>Gender</td>
+</tr>
+<tr>
+<td>Age</td>
+<td>Age</td>
+</tr>
+<tr>
+<td>SibSp</td>
+<td>Number of siblings/spouse aboard Titanic</td>
+</tr>
+<tr>
+<td>Parch</td>
+<td>Number of parents/children riding Titanic</td>
+</tr>
+<tr>
+<td>Ticket</td>
+<td>Ticket number</td>
+</tr>
+<tr>
+<td>Cabin</td>
+<td>Room Number</td>
+</tr>
+<tr>
+<td>Embarked</td>
+<td>Port of departure (Titanic port)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="preprocessing">Preprocessing</h4>
+<p>Since it is a performance comparison between ensembles and does not require a high ranking in the Titanic competition, at least the minimum preprocessing that can predict learning by any machine learning model is performed.</p>
+<p>Normalization is done so that the Nural Network model can be learned and predicted.</p>
+<p>As for &ldquo;Does it affect other models?&rdquo;, <a href="https://amalog.hateblo.jp/entry/decision-tree-scaling">Is the decision tree really dependent on transformation? </a> article description is easy to understand</p>
+<p>Even if it has some influence, it will be ignored this time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> numpy
+<span style="color:#f92672">import</span> pandas
+<span style="color:#f92672">from</span> sklearn.preprocessing <span style="color:#f92672">import</span> StandardScaler
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">first_dataset</span>():
+    
+    train <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;train.csv&#39;</span>)
+    test <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)
+    
+    datasets <span style="color:#f92672">=</span> [train, test]
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_title</span>(name):
+        <span style="color:#66d9ef">if</span> re<span style="color:#f92672">.</span>search(<span style="color:#e6db74">&#39; ([A-Za-z]+)\.&#39;</span>, name):
+            <span style="color:#66d9ef">return</span> re<span style="color:#f92672">.</span>search(<span style="color:#e6db74">&#39; ([A-Za-z]+)\.&#39;</span>, name)<span style="color:#f92672">.</span>group(<span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;&#34;</span>
+
+    
+    <span style="color:#66d9ef">for</span> dataset <span style="color:#f92672">in</span> datasets:
+
+        dataset[<span style="color:#e6db74">&#39;Cabin&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Cabin&#39;</span>]<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: <span style="color:#ae81ff">1</span> <span style="color:#66d9ef">if</span> type(x) <span style="color:#f92672">==</span> str <span style="color:#66d9ef">else</span> <span style="color:#ae81ff">0</span>)
+        
+        dataset[<span style="color:#e6db74">&#39;Age&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Age&#39;</span>]<span style="color:#f92672">.</span>fillna(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(int)
+        
+        dataset[<span style="color:#e6db74">&#39;Fare&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Fare&#39;</span>]<span style="color:#f92672">.</span>fillna(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(int)
+
+        dataset[<span style="color:#e6db74">&#39;Sex&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Sex&#39;</span>]<span style="color:#f92672">.</span>map( {<span style="color:#e6db74">&#39;female&#39;</span>: <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;male&#39;</span>: <span style="color:#ae81ff">1</span>} )<span style="color:#f92672">.</span>astype(int)
+        
+        dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Name&#39;</span>]<span style="color:#f92672">.</span>apply(get_title)
+        dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Title&#39;</span>]<span style="color:#f92672">.</span>replace([<span style="color:#e6db74">&#39;Lady&#39;</span>,<span style="color:#e6db74">&#39;Countess&#39;</span>,<span style="color:#e6db74">&#39;Capt&#39;</span>,<span style="color:#e6db74">&#39;Col&#39;</span>,<span style="color:#e6db74">&#39;Don&#39;</span>,<span style="color:#e6db74">&#39;Dr&#39;</span>,<span style="color:#e6db74">&#39;Major&#39;</span>,<span style="color:#e6db74">&#39;Rev&#39;</span>, <span style="color:#e6db74">&#39; Sir&#39;</span>,<span style="color:#e6db74">&#39;Jonkheer&#39;</span>,<span style="color:#e6db74">&#39;Dona&#39;</span>],<span style="color:#e6db74">&#39;Rare&#39;</span>)dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Title&#39;</span>]<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;Mlle&#39;</span>, <span style="color:#e6db74">&#39;Miss&#39;</span>)
+        dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Title&#39;</span>]<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;Ms&#39;</span>, <span style="color:#e6db74">&#39;Miss&#39;</span>)
+        dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Title&#39;</span>]<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;Mme&#39;</span>, <span style="color:#e6db74">&#39;Mrs&#39;</span>)
+        title_mapping <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;Mr&#34;</span>: <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#34;Miss&#34;</span>: <span style="color:#ae81ff">2</span>, <span style="color:#e6db74">&#34;Mrs&#34;</span>: <span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#34;Master&#34;</span>: <span style="color:#ae81ff">4</span>, <span style="color:#e6db74">&#34;Rare&#34;</span>: <span style="color:#ae81ff">5</span>}
+        dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Title&#39;</span>]<span style="color:#f92672">.</span>map(title_mapping)
+        dataset[<span style="color:#e6db74">&#39;Title&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Title&#39;</span>]<span style="color:#f92672">.</span>fillna(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+
+        dataset[<span style="color:#e6db74">&#39;Embarked&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Embarked&#39;</span>]<span style="color:#f92672">.</span>fillna(<span style="color:#e6db74">&#39;S&#39;</span>)
+        dataset[<span style="color:#e6db74">&#39;Embarked&#39;</span>] <span style="color:#f92672">=</span> dataset[<span style="color:#e6db74">&#39;Embarked&#39;</span>]<span style="color:#f92672">.</span>map( {<span style="color:#e6db74">&#39;S&#39;</span>: <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#39;C&#39;</span>: <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;Q&#39;</span>: <span style="color:#ae81ff">2</span>} )<span style="color:#f92672">.</span>astype(int)
+    
+        dataset<span style="color:#f92672">.</span>drop([<span style="color:#e6db74">&#39;PassengerId&#39;</span>, <span style="color:#e6db74">&#39;Ticket&#39;</span>, <span style="color:#e6db74">&#39;Name&#39;</span>], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, inplace<span style="color:#f92672">=</span>True)
+        
+    X_train <span style="color:#f92672">=</span> train<span style="color:#f92672">.</span>drop([<span style="color:#e6db74">&#39;Survived&#39;</span>], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    y_train <span style="color:#f92672">=</span> train[<span style="color:#e6db74">&#39;Survived&#39;</span>]
+    X_test <span style="color:#f92672">=</span> test
+    
+    std <span style="color:#f92672">=</span> StandardScaler()
+    std<span style="color:#f92672">.</span>fit(X_train)
+    X_train <span style="color:#f92672">=</span> std<span style="color:#f92672">.</span>transform(X_train)<span style="color:#f92672">.</span>astype(numpy<span style="color:#f92672">.</span>float32)
+    X_test <span style="color:#f92672">=</span> std<span style="color:#f92672">.</span>transform(X_test)<span style="color:#f92672">.</span>astype(numpy<span style="color:#f92672">.</span>float32)
+
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;X_train&#39;</span>: X_train, <span style="color:#e6db74">&#39;X_test&#39;</span>: X_test, <span style="color:#e6db74">&#39;y_train&#39;</span>: y_train}
+    
+df <span style="color:#f92672">=</span> first_dataset()
+</code></pre></div><h1 id="method">Method</h1>
+<h2 id="single-lightgbm">Single LightGBM</h2>
+<p>スタッキングすること自体が、有用かどうかを検証するため
+単体モデルの予測性能を測る</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> lightgbm <span style="color:#f92672">as</span> lgbm
+<span style="color:#f92672">from</span> sklearn.model_selection <span style="color:#f92672">import</span> train_test_split
+
+X_train, X_valid, y_train, y_valid <span style="color:#f92672">=</span> train_test_split(df[<span style="color:#e6db74">&#39;X_train&#39;</span>], df[<span style="color:#e6db74">&#39;y_train&#39;</span>], test_size<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+
+train_dataset <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>Dataset(data<span style="color:#f92672">=</span>X_train, label<span style="color:#f92672">=</span>y_train, free_raw_data<span style="color:#f92672">=</span>False)
+test_dataset <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>Dataset(data<span style="color:#f92672">=</span>X_valid, label<span style="color:#f92672">=</span>y_valid, free_raw_data<span style="color:#f92672">=</span>False)
+final_train_dataset <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>Dataset(data<span style="color:#f92672">=</span>df[<span style="color:#e6db74">&#39;X_train&#39;</span>], label<span style="color:#f92672">=</span>df[<span style="color:#e6db74">&#39;y_train&#39;</span>], free_raw_data<span style="color:#f92672">=</span>False)
+
+lgbm_params <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;boosting&#39;</span>: <span style="color:#e6db74">&#39;dart&#39;</span>, 
+    <span style="color:#e6db74">&#39;application&#39;</span>: <span style="color:#e6db74">&#39;binary&#39;</span>,
+    <span style="color:#e6db74">&#39;learning_rate&#39;</span>: <span style="color:#ae81ff">0.05</span>,
+    <span style="color:#e6db74">&#39;min_data_in_leaf&#39;</span>: <span style="color:#ae81ff">20</span>,
+    <span style="color:#e6db74">&#39;feature_fraction&#39;</span>: <span style="color:#ae81ff">0.7</span>,
+    <span style="color:#e6db74">&#39;num_leaves&#39;</span>: <span style="color:#ae81ff">41</span>,
+    <span style="color:#e6db74">&#39;metric&#39;</span>: <span style="color:#e6db74">&#39;binary_logloss&#39;</span>,
+    <span style="color:#e6db74">&#39;drop_rate&#39;</span>: <span style="color:#ae81ff">0.15</span>
+}
+
+evaluation_results <span style="color:#f92672">=</span> {}
+clf <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>train(train_set<span style="color:#f92672">=</span>train_dataset,
+                 params<span style="color:#f92672">=</span>lgbm_params,
+                 valid_sets<span style="color:#f92672">=</span>[train_dataset, test_dataset], 
+                 valid_names<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Train&#39;</span>, <span style="color:#e6db74">&#39;Test&#39;</span>],
+                 evals_result<span style="color:#f92672">=</span>evaluation_results,
+                 num_boost_round<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span>,
+                 early_stopping_rounds<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>,
+                 verbose_eval<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>
+                )
+                
+clf_final <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>train(train_set<span style="color:#f92672">=</span>final_train_dataset,
+                      params<span style="color:#f92672">=</span>lgbm_params,
+                      num_boost_round<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span>,
+                      verbose_eval<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+                      )
+
+y_pred <span style="color:#f92672">=</span> numpy<span style="color:#f92672">.</span>round(clf_final<span style="color:#f92672">.</span>predict(df[<span style="color:#e6db74">&#39;X_test&#39;</span>]))<span style="color:#f92672">.</span>astype(int)
+
+passengerId <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)[<span style="color:#e6db74">&#39;PassengerId&#39;</span>]
+dataframe <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;PassengerId&#39;</span>: passengerId, <span style="color:#e6db74">&#39;Survived&#39;</span>: y_pred})
+
+dataframe<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;submission_single_lgbm_model.csv&#39;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><h2 id="heamy-single-stacking">Heamy single Stacking</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> heamy.dataset <span style="color:#f92672">import</span> Dataset
+<span style="color:#f92672">from</span> heamy.estimator <span style="color:#f92672">import</span> Regressor, Classifier
+<span style="color:#f92672">from</span> heamy.pipeline <span style="color:#f92672">import</span> ModelsPipeline
+
+<span style="color:#f92672">from</span> rgf.sklearn <span style="color:#f92672">import</span> RGFClassifier
+<span style="color:#f92672">from</span> sklearn.neighbors <span style="color:#f92672">import</span> KNeighborsClassifier
+<span style="color:#f92672">from</span> sklearn.linear_model <span style="color:#f92672">import</span> LogisticRegression
+<span style="color:#f92672">from</span> sklearn.ensemble <span style="color:#f92672">import</span> RandomForestClassifier, ExtraTreesClassifier
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">ds <span style="color:#f92672">=</span> Dataset(preprocessor<span style="color:#f92672">=</span>first_dataset, use_cache<span style="color:#f92672">=</span>False)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">et_params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;n_estimators&#39;</span>: <span style="color:#ae81ff">100</span>, <span style="color:#e6db74">&#39;max_features&#39;</span>: <span style="color:#ae81ff">0.5</span>, <span style="color:#e6db74">&#39;max_depth&#39;</span>: <span style="color:#ae81ff">18</span>, <span style="color:#e6db74">&#39;min_samples_leaf&#39;</span>: <span style="color:#ae81ff">4</span>, <span style="color:#e6db74">&#39;n_jobs&#39;</span>: <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>}
+rf_params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;n_estimators&#39;</span>: <span style="color:#ae81ff">125</span>, <span style="color:#e6db74">&#39;max_features&#39;</span>: <span style="color:#ae81ff">0.2</span>, <span style="color:#e6db74">&#39;max_depth&#39;</span>: <span style="color:#ae81ff">25</span>, <span style="color:#e6db74">&#39;min_samples_leaf&#39;</span>: <span style="color:#ae81ff">4</span>, <span style="color:#e6db74">&#39;n_jobs&#39;</span>: <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>}
+rgf_params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;algorithm&#39;</span>: <span style="color:#e6db74">&#39;RGF_Sib&#39;</span>, <span style="color:#e6db74">&#39;loss&#39;</span>: <span style="color:#e6db74">&#39;Log&#39;</span>}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> keras.layers <span style="color:#f92672">import</span> Dense
+<span style="color:#f92672">from</span> keras.models <span style="color:#f92672">import</span> Sequential
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">NuralNetClassifier</span>(X_train, y_train, X_test, y_test<span style="color:#f92672">=</span>None):
+    input_dim <span style="color:#f92672">=</span> X_train<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]
+    
+    model <span style="color:#f92672">=</span> Sequential()
+    model<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">12</span>, input_dim<span style="color:#f92672">=</span>input_dim, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;relu&#39;</span>))
+    model<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">6</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;relu&#39;</span>))
+    model<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">1</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sigmoid&#39;</span>))
+    model<span style="color:#f92672">.</span>compile(loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;binary_crossentropy&#39;</span>, optimizer<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;adam&#39;</span>, metrics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;accuracy&#39;</span>])
+    model<span style="color:#f92672">.</span>fit(X_train, y_train, epochs<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>, batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+    y_pred <span style="color:#f92672">=</span> numpy<span style="color:#f92672">.</span>ravel(model<span style="color:#f92672">.</span>predict(X_test))
+    
+    <span style="color:#66d9ef">return</span> y_pred
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">LightGBMClassifier</span>(X_train, y_train, X_test, y_test<span style="color:#f92672">=</span>None):
+    lgbm_params <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;boosting&#39;</span>: <span style="color:#e6db74">&#39;dart&#39;</span>, 
+        <span style="color:#e6db74">&#39;application&#39;</span>: <span style="color:#e6db74">&#39;binary&#39;</span>,
+        <span style="color:#e6db74">&#39;learning_rate&#39;</span>: <span style="color:#ae81ff">0.05</span>,
+        <span style="color:#e6db74">&#39;min_data_in_leaf&#39;</span>: <span style="color:#ae81ff">20</span>,
+        <span style="color:#e6db74">&#39;feature_fraction&#39;</span>: <span style="color:#ae81ff">0.7</span>,
+        <span style="color:#e6db74">&#39;num_leaves&#39;</span>: <span style="color:#ae81ff">41</span>,
+        <span style="color:#e6db74">&#39;metric&#39;</span>: <span style="color:#e6db74">&#39;binary_logloss&#39;</span>,
+        <span style="color:#e6db74">&#39;drop_rate&#39;</span>: <span style="color:#ae81ff">0.15</span>
+    }
+    
+    X_train, X_valid, y_train, y_valid <span style="color:#f92672">=</span> train_test_split(X_train, y_train, test_size<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+    train_dataset <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>Dataset(data<span style="color:#f92672">=</span>X_train, label<span style="color:#f92672">=</span>y_train, free_raw_data<span style="color:#f92672">=</span>False)
+    test_dataset <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>Dataset(data<span style="color:#f92672">=</span>X_valid, label<span style="color:#f92672">=</span>y_valid, free_raw_data<span style="color:#f92672">=</span>False)
+    
+    final_train_dataset <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>Dataset(data<span style="color:#f92672">=</span>X_train, label<span style="color:#f92672">=</span>y_train, free_raw_data<span style="color:#f92672">=</span>False)
+    
+    evaluation_results <span style="color:#f92672">=</span> {}
+    
+    clf <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>train(train_set<span style="color:#f92672">=</span>train_dataset,
+                     params<span style="color:#f92672">=</span>lgbm_params,
+                     valid_sets<span style="color:#f92672">=</span>[train_dataset, test_dataset], 
+                     valid_names<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Train&#39;</span>, <span style="color:#e6db74">&#39;Test&#39;</span>],evals_result<span style="color:#f92672">=</span>evaluation_results,
+                     num_boost_round<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span>,
+                     early_stopping_rounds<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>,
+                     verbose_eval<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+                    )
+    
+    clf_final <span style="color:#f92672">=</span> lgbm<span style="color:#f92672">.</span>train(train_set<span style="color:#f92672">=</span>final_train_dataset,
+                          params<span style="color:#f92672">=</span>lgbm_params,
+                          num_boost_round<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span>,
+                          verbose_eval<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+                          )
+
+    y_pred <span style="color:#f92672">=</span> clf_final<span style="color:#f92672">.</span>predict(X_test)
+
+    
+    <span style="color:#66d9ef">return</span> y_pred
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">pipeline <span style="color:#f92672">=</span> ModelsPipeline(
+    Classifier(estimator<span style="color:#f92672">=</span>LightGBMClassifier, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False),
+    Classifier(estimator<span style="color:#f92672">=</span>NuralNetClassifier, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False),
+    Classifier(estimator<span style="color:#f92672">=</span>RGFClassifier, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False, parameters<span style="color:#f92672">=</span>rgf_params),
+    Classifier(estimator<span style="color:#f92672">=</span>ExtraTreesClassifier, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False, parameters<span style="color:#f92672">=</span>et_params),
+    Classifier(estimator<span style="color:#f92672">=</span>RandomForestClassifier, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False, parameters<span style="color:#f92672">=</span>rf_params),
+    Classifier(estimator<span style="color:#f92672">=</span>LogisticRegression, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False),
+    Classifier(estimator<span style="color:#f92672">=</span>KNeighborsClassifier, dataset<span style="color:#f92672">=</span>ds, use_cache<span style="color:#f92672">=</span>False)
+)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">stack_ds <span style="color:#f92672">=</span> pipeline<span style="color:#f92672">.</span>stack(k<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, seed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, add_diff<span style="color:#f92672">=</span>False, full_test<span style="color:#f92672">=</span>True)
+stacker <span style="color:#f92672">=</span> Classifier(dataset<span style="color:#f92672">=</span>stack_ds, estimator<span style="color:#f92672">=</span>LogisticRegression, use_cache<span style="color:#f92672">=</span>False)
+y_pred <span style="color:#f92672">=</span> stacker<span style="color:#f92672">.</span>predict()
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataframe <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;PassengerId&#39;</span>: pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)[<span style="color:#e6db74">&#39;PassengerId&#39;</span>], <span style="color:#e6db74">&#39;Survived&#39;</span>: numpy<span style="color:#f92672">.</span>round(y_pred)<span style="color:#f92672">.</span>astype(int)})
+dataframe<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;submission_heamy_single_stacking_model.csv&#39;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><h2 id="heamy-multiple-stacking">Heamy multiple Stacking</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> log_loss
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">pipeline2 <span style="color:#f92672">=</span> ModelsPipeline(
+    Classifier(estimator<span style="color:#f92672">=</span>LightGBMClassifier, dataset<span style="color:#f92672">=</span>stack_ds, use_cache<span style="color:#f92672">=</span>False),
+    Classifier(estimator<span style="color:#f92672">=</span>NuralNetClassifier, dataset<span style="color:#f92672">=</span>stack_ds, use_cache<span style="color:#f92672">=</span>False)
+)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">weights <span style="color:#f92672">=</span> pipeline2<span style="color:#f92672">.</span>find_weights(log_loss)
+predictions <span style="color:#f92672">=</span> pipeline2<span style="color:#f92672">.</span>weight(weights)<span style="color:#f92672">.</span>execute()
+</code></pre></div><pre><code>Best Score (log_loss): 0.3849248890947457
+Best Weights: [0.50000511 0.49999489]
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataframe <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;PassengerId&#39;</span>: pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)[<span style="color:#e6db74">&#39;PassengerId&#39;</span>], <span style="color:#e6db74">&#39;Survived&#39;</span>: numpy<span style="color:#f92672">.</span>round(predictions)<span style="color:#f92672">.</span>astype(int)})
+dataframe<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;submission_heamy_multiple_stacking_model.csv&#39;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><h2 id="sklearn-single-stacking">sklearn single Stacking</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sklearn.ensemble <span style="color:#f92672">import</span> StackingClassifier
+<span style="color:#f92672">from</span> keras.wrappers.scikit_learn <span style="color:#f92672">import</span> KerasClassifier
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">lgbm_params <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;boosting&#39;</span>: <span style="color:#e6db74">&#39;dart&#39;</span>, 
+        <span style="color:#e6db74">&#39;application&#39;</span>: <span style="color:#e6db74">&#39;binary&#39;</span>,
+        <span style="color:#e6db74">&#39;learning_rate&#39;</span>: <span style="color:#ae81ff">0.05</span>,
+        <span style="color:#e6db74">&#39;min_data_in_leaf&#39;</span>: <span style="color:#ae81ff">20</span>,
+        <span style="color:#e6db74">&#39;feature_fraction&#39;</span>: <span style="color:#ae81ff">0.7</span>,
+        <span style="color:#e6db74">&#39;num_leaves&#39;</span>: <span style="color:#ae81ff">41</span>,
+        <span style="color:#e6db74">&#39;metric&#39;</span>: <span style="color:#e6db74">&#39;binary_logloss&#39;</span>,
+        <span style="color:#e6db74">&#39;drop_rate&#39;</span>: <span style="color:#ae81ff">0.15</span>
+}
+keras_params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;epochs&#39;</span>: <span style="color:#ae81ff">10</span>, <span style="color:#e6db74">&#39;batch_size&#39;</span>: <span style="color:#ae81ff">10</span>}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">build_fn</span>():
+    clf <span style="color:#f92672">=</span> Sequential()
+    clf<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">12</span>, input_dim<span style="color:#f92672">=</span><span style="color:#ae81ff">9</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;relu&#39;</span>))
+    clf<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">6</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;relu&#39;</span>))
+    clf<span style="color:#f92672">.</span>add(Dense(<span style="color:#ae81ff">1</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sigmoid&#39;</span>))
+    clf<span style="color:#f92672">.</span>compile(loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;binary_crossentropy&#39;</span>, optimizer<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;adam&#39;</span>, metrics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;accuracy&#39;</span>])
+    <span style="color:#66d9ef">return</span> clf
+</code></pre></div><p>今回本当に申し訳ないが、KerasClassifierというsklearn準拠のラッパーおよび、自作でsklearn準拠のestimatorの中にkeras nnを差し込んだが、エラーを起こして動かなかった</p>
+<p>僕の実装力不足ですね</p>
+<p>なので、sklearnではnnを使用したアンサンブル学習ができてない</p>
+<p>しかし、heamyにも記載はしないが同様にNNを抜いたアンサンブルの環境での実験は行なっている為安心していただきたい</p>
+<p>下記が当該エラーになる</p>
+<pre><code>python3.7/dist-packages/sklearn/ensemble/_base.py in _validate_estimators(self)
+    249                 raise ValueError(
+    250                     &quot;The estimator {} should be a {}.&quot;.format(
+- -&gt; 251                         est.__class__.__name__, is_estimator_type.__name__[3:]
+    252                     )
+    253                 )
+
+ValueError: The estimator KerasClassifier should be a classifier.
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">estimators <span style="color:#f92672">=</span> [
+    (<span style="color:#e6db74">&#39;lgb&#39;</span>, lgbm<span style="color:#f92672">.</span>LGBMClassifier(<span style="color:#f92672">**</span>lgbm_params)),
+    <span style="color:#75715e">#(&#39;nn&#39;, KerasClassifier(build_fn=build_fn, **keras_params)),</span>
+    (<span style="color:#e6db74">&#39;rgf&#39;</span>, RGFClassifier(<span style="color:#f92672">**</span>rgf_params)),
+    (<span style="color:#e6db74">&#39;et&#39;</span>, ExtraTreesClassifier(<span style="color:#f92672">**</span>et_params)),
+    (<span style="color:#e6db74">&#39;rf&#39;</span>, RandomForestClassifier(<span style="color:#f92672">**</span>rf_params)),
+    (<span style="color:#e6db74">&#39;lr&#39;</span>, LogisticRegression()),
+    (<span style="color:#e6db74">&#39;knn&#39;</span>, KNeighborsClassifier())
+]
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clf <span style="color:#f92672">=</span> StackingClassifier(estimators<span style="color:#f92672">=</span>estimators, final_estimator<span style="color:#f92672">=</span>LogisticRegression())
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clf<span style="color:#f92672">.</span>fit(df[<span style="color:#e6db74">&#39;X_train&#39;</span>], df[<span style="color:#e6db74">&#39;y_train&#39;</span>])
+predictions <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>predict(df[<span style="color:#e6db74">&#39;X_test&#39;</span>])
+dataframe <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;PassengerId&#39;</span>: pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)[<span style="color:#e6db74">&#39;PassengerId&#39;</span>], <span style="color:#e6db74">&#39;Survived&#39;</span>: numpy<span style="color:#f92672">.</span>round(predictions)<span style="color:#f92672">.</span>astype(int)})
+dataframe<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;submission_sklearn_single_stacking_model.csv&#39;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><h2 id="sklearn-multiple-stacking">sklearn multiple Stacking</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">final_estimator <span style="color:#f92672">=</span> StackingClassifier(
+    estimators<span style="color:#f92672">=</span> [
+        (<span style="color:#e6db74">&#39;lgb&#39;</span>, lgbm<span style="color:#f92672">.</span>LGBMClassifier(<span style="color:#f92672">**</span>lgbm_params)),
+        (<span style="color:#e6db74">&#39;lr&#39;</span>, LogisticRegression())
+    ],
+    final_estimator<span style="color:#f92672">=</span>LogisticRegression()
+)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clf <span style="color:#f92672">=</span> StackingClassifier(
+    estimators<span style="color:#f92672">=</span> [
+        (<span style="color:#e6db74">&#39;lgb&#39;</span>, lgbm<span style="color:#f92672">.</span>LGBMClassifier(<span style="color:#f92672">**</span>lgbm_params)),
+        <span style="color:#75715e">#(&#39;nn&#39;, KerasClassifier(build_fn=build_fn, **keras_params)),</span>
+        (<span style="color:#e6db74">&#39;rgf&#39;</span>, RGFClassifier(<span style="color:#f92672">**</span>rgf_params)),
+        (<span style="color:#e6db74">&#39;et&#39;</span>, ExtraTreesClassifier(<span style="color:#f92672">**</span>et_params)),(<span style="color:#e6db74">&#39;rf&#39;</span>, RandomForestClassifier(<span style="color:#f92672">**</span>rf_params)),
+        (<span style="color:#e6db74">&#39;lr&#39;</span>, LogisticRegression()),
+        (<span style="color:#e6db74">&#39;knn&#39;</span>, KNeighborsClassifier())
+    ],
+    final_estimator<span style="color:#f92672">=</span>final_estimator
+)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clf<span style="color:#f92672">.</span>fit(df[<span style="color:#e6db74">&#39;X_train&#39;</span>], df[<span style="color:#e6db74">&#39;y_train&#39;</span>])
+predictions <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>predict(df[<span style="color:#e6db74">&#39;X_test&#39;</span>])
+dataframe <span style="color:#f92672">=</span> pandas<span style="color:#f92672">.</span>DataFrame((<span style="color:#e6db74">&#39;PassengerId&#39;</span>: pandas<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)[<span style="color:#e6db74">&#39;PassengerId&#39;</span>],<span style="color:#e6db74">&#39;Survived&#39;</span>: numpy<span style="color:#f92672">.</span>round(predictions)<span style="color:#f92672">.</span>astype(int)})
+dataframe<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;submission_sklearn_multiple_stacking_model.csv&#39;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><h1 id="result">Result</h1>
+<p>Since NuralNetwork cannot be used in sklearn stacking, it is unavoidable to increase the number of comparison targets, but the results are as follows.</p>
+<p>| library | layer1 | layer2 | public score | speed |
+| &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; | &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;- | &mdash;&mdash;- | &mdash;&mdash;&mdash;&mdash; | &mdash;&ndash; |
+| lgbm model | lgb |-| 0.74162 |-|
+heamy single stacking | lbg, rgf, et, rf, lr, knn | lr | 0.76076 | 64s |
+heamy multiple stacking | lgb, rgf, et, rf, lr, knn | lgb, lr | 0.74162 | 76s (64 + 12) |
+heamy single stacking nn | lgb, rgf, et, rf, lr, knn, nn | lgb, nn | 0.76076 | 119s |
+| heamy multiple stacking nn | lgb, rgf, et, rf, lr, knn, nn | lgb, nn | 0.75598 | 139s (119 + 20) |
+sklearn single stacking | lgb, rgf, et, rf, lr, knn | lr | 0.77511 | 30s |
+sklearn multiple stacking | lgb, rgf, et, rf, lr, knn | lgb, lr | 0.76555 | 28s |</p>
+<h1 id="discussion">Discussion</h1>
+<ul>
+<li>The highest precision was the result of sklearn, the second runner was the result of Heamy with NN</li>
+<li>The result that single stacking has better performance than multiple stacking &lt;- Because the number of data is small, it seems that the single stacking had better value for each library than the multi-stage stacking.</li>
+<li>Stacking of sklean is better than heamy</li>
+<li>Easy, easy-to-understand and maintainability is sklearn</li>
+<li>If you want to change the contents intricately, I feel heamy is better</li>
+<li>However, pipelines can be included in the stacking of sklearn, so a little complicated things can be done.</li>
+<li>Speed was overwhelmingly better for sklearn stacking</li>
+<li>I couldn&rsquo;t find any place to set the weight of each model in sklearn</li>
+</ul>
+<p>If NuralNetwork can be used, isn&rsquo;t stacking of sklearn very good?</p>
+<h1 id="reference">Reference</h1>
+<ul>
+<li><a href="https://scikit-learn.org/stable/auto_examples/release_highlights/plot_release_highlights_0_22_0.html">Release Highlights for scikit-learn 0.22</a></li>
+<li><a href="https://scikit-learn.org/stable/modules/ensemble.html#stacking">1.11.8. Stacked generalization¶</a></li>
+<li><a href="https://heamy.readthedocs.io/en/latest/usage.html">heamy documentation</a></li>
+<li><a href="https://github.com/rushter/heamy">github: heamy</a></li>
+<li><a href="https://www.kaggle.com/arthurtok/introduction-to-ensembling-stacking-in-python">Kaggle: Introduction to Ensembling/Stacking in Python</a></li>
+<li><a href="https://www.kaggle.com/rushter/stacking-using-heamy">Kaggle: Stacking using heamy</a></li>
+<li><a href="https://www.kaggle.com/justfor/ensembling-and-stacking-with-heamy#Forest-Cover--Ensembling-and-Stacking-with-heamy">Forest Cover -Ensembling and Stacking with heamy</a></li>
+<li><a href="https://blog.ikedaosushi.com/entry/2018/10/21/204842">Understand the stacking of ensemble method with implementation and diagram</a></li>
+<li><a href="https://mlwave.com/kaggle-ensembling-guide/">KAGGLE ENSEMBLING GUIDE</a></li>
+<li><a href="https://blog.ikedaosushi.com/entry/2018/12/15/212508">Highly implement Stacking/Blending commonly used in Kaggle as heamy and Stacknet as pystacknet</a></li>
+<li><a href="https://qiita.com/hokuto_HIRANO/items/2c35a81fbc95f0e4b7c1#%E6%9C%80%E5%BE%8C%E3%81%AB">Qiita: Python Ensemble (Stacking) Learning &amp; Machine Learning Tutorial in Kaggle</a></li>
+<li><a href="https://www.amazon.co.jp/gp/product/4297108437/ref=ppx_yo_dt_b_asin_title_o04_s00?ie=UTF8&amp;psc=1">Amazon: Kaggle and data analysis technology</a></li>
+<li><a href="https://github.com/h2oai/pystacknet">github: pystacknet</a></li>
+<li><a href="https://amalog.hateblo.jp/entry/decision-tree-scaling">Is the decision tree really transformation-independent? </a></li>
+<li><a href="http://nobunaga.hatenablog.jp/entry/2017/10/17/071849">Memo of Keras with scikit-learn</a></li>
+</ul>
+<p>*From the literature cited in the article and the literature taken up in Reference
+, Has not been approved for quoting, so if it is pointed out, we will delete it from the text
+All of these are very helpful. Thank you</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

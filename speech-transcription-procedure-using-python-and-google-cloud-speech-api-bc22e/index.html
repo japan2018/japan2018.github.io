@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Speech transcription procedure using Python and Google Cloud Speech API | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Speech transcription procedure using Python and Google Cloud Speech API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 15, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlecloudplatform"> GoogleCloudPlatform</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/speech-recognition"> Speech recognition</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlespeechapi"> GoogleSpeechAPI</a></code></small>
+
+</p>
+<pre><code>![Screenshot 2019-12-15 16.20.07.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/100780/160e795f-1baf-4446-2331-(eb4d0e37dbeb.png)
+</code></pre>
+<p>I have a podcast called <a href="https://shirokane-kougyou.fm/">Platinum Mining Industry.FM</a>, so I tried Google Cloud Speech API this time to transcribe the voice data.
+(*Google&rsquo;s transcription API is officially shaking with the names &ldquo;Google Cloud Speech API&rdquo; and &ldquo;Cloud Speech-to-Text. Maybe they are together. Mystery.&quot;)</p>
+<p>Please refer to here for the procedure to create recording and audio data.</p>
+<ul>
+<li><a href="https://qiita.com/ysdyt/items/9a95857aed85a19766b0">[Fiscal 2019 version] Introduction to Podcast distribution for those who aim for the minimum beautiful sound quality with the minimum effort-Qiita</a></li>
+</ul>
+<p>The following blogs are the most detailed on how to use the Google Cloud Speech API.</p>
+<ul>
+<li><a href="http://note103.hateblo.jp/entry/2018/07/23/115930">21st Century Transcription (3)-Cloud Speech-to-Text Edition-</a></li>
+</ul>
+<p>I think that the basics, including how to use Google Cloud Platform, can be executed by referring to the above blog, but I will note the procedure while supplementing what was a bit difficult to understand.</p>
+<h2 id="pre-processing-of-voice-data-until-input-to-speech-api">Pre-processing of voice data until input to Speech API</h2>
+<p>The input to the Speech API is based on the audio file format of <code>.flac</code>, not the mp3 file, so it is not a simple thing to just stick in the mp3 or wav at hand, and some preprocessing is required. This section describes the procedure from the audio file created by GarageBand application on Mac to the input format suitable for Speech API.</p>
+<h3 id="1-export-wave-file-with-garageband">1. Export WAVE file with GarageBand</h3>
+<ul>
+<li>Download edited audio data in GarageBand&gt; &ldquo;Share&quot;&gt; &ldquo;Export song to disk&quot;&gt; &ldquo;WAVE&rdquo; in &ldquo;uncompressed 16-bit&rdquo;</li>
+</ul>
+<h3 id="2-convert-wave-to-flac-file-with-audacity">2. Convert WAVE to FLAC file with Audacity</h3>
+<ul>
+<li>Throw the saved <code>.wav</code> file into Audacity&gt; Select &ldquo;16000&rdquo; from the sampling rate at the bottom left&gt; Select the waveform image part and focus&gt; &ldquo;Track&quot;&gt; &ldquo;Mix&quot;&gt; &ldquo;Stereo to mono&rdquo; Then the waveform data will be changed from two to one&gt; File&gt; Export&gt; Audio export&gt; Save as FLAC file (level 5 bit, depth 16 bit)&gt; (fill in the metadata if necessary, Ok without anything)</li>
+</ul>
+<p>The operation method with diagrams around here is detailed in the blog of <a href="http://note103.hateblo.jp/entry/2018/07/23/115930">here</a>.</p>
+<p>*The basis for setting the sampling rate to 16000 is <a href="https://cloud.google.com/speech-to-text/docs/best-practices">Best practices</a>officiallyannouncedbyGoogleCloudforusingSpeechAPI.?hl=ja).</p>
+<h3 id="3-install-voice-data-on-google-cloud-platform">3. Install voice data on Google Cloud Platform</h3>
+<ul>
+<li>How to register Google Cloud Platform, create project, create bucket, enable API, download credential file (json file), etc. [here](<a href="http://note103.hateblo.jp/entry/2018/Pleaserefertotheblogat(07/23/115930)">http://note103.hateblo.jp/entry/2018/Pleaserefertotheblogat(07/23/115930)</a>.</li>
+<li>Upload the flac file you just saved to Strage and save it (file permissions etc. do not need to be changed)</li>
+<li>The uploaded file will have a URI like &ldquo;gs://hoge_folder/hoge.flac&rdquo;</li>
+</ul>
+<h2 id="execute-code-in-cloud-shell-and-create-text-file">Execute code in Cloud Shell and create text file</h2>
+<p>I didn&rsquo;t quite understand how to tap the Speech API locally, so I will write down the method of transcribing by executing the code that hits the API on Google Cloud Plattform (on the browser).</p>
+<ul>
+<li>
+<p>Launch Cloud Shell by pressing the Cloud Shell button at the top right of the console</p>
+<p>-Launch a shell that accepts linux commands</p>
+</li>
+<li>
+<p>The code that executes the Speech API is below. Save the following code as <code>transcribe.py</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># !/usr/bin/env python</span>
+<span style="color:#75715e"># coding: utf-8</span>
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">import</span> io
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> codecs
+<span style="color:#f92672">import</span> datetime
+<span style="color:#f92672">import</span> locale
+  
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">transcribe_gcs</span>(gcs_uri):
+    <span style="color:#f92672">from</span> google.cloud <span style="color:#f92672">import</span> speech
+    <span style="color:#f92672">from</span> google.cloud.speech <span style="color:#f92672">import</span> enums
+    <span style="color:#f92672">from</span> google.cloud.speech <span style="color:#f92672">import</span> types
+    client <span style="color:#f92672">=</span> speech<span style="color:#f92672">.</span>SpeechClient()
+  
+    audio <span style="color:#f92672">=</span> types<span style="color:#f92672">.</span>RecognitionAudio(uri<span style="color:#f92672">=</span>gcs_uri)
+    config <span style="color:#f92672">=</span> types<span style="color:#f92672">.</span>RecognitionConfig(
+        sample_rate_hertz<span style="color:#f92672">=</span><span style="color:#ae81ff">16000</span>, <span style="color:#75715e">#according to the set parameter</span>
+        encoding<span style="color:#f92672">=</span>enums<span style="color:#f92672">.</span>RecognitionConfig<span style="color:#f92672">.</span>AudioEncoding<span style="color:#f92672">.</span>FLAC,
+        language_code<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ja-JP&#39;</span>)
+  
+    operation <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>long_running_recognize(config, audio)
+  
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Waiting for operation to complete...&#39;</span>)
+    operationResult <span style="color:#f92672">=</span> operation<span style="color:#f92672">.</span>result()
+  
+    d <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>today()
+    today <span style="color:#f92672">=</span> d<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">-%H%M%S&#34;</span>)
+    fout <span style="color:#f92672">=</span> codecs<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#39;output{}.txt&#39;</span><span style="color:#f92672">.</span>format(today),<span style="color:#e6db74">&#39;a&#39;</span>,<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+  
+    <span style="color:#66d9ef">for</span> result <span style="color:#f92672">in</span> operationResult<span style="color:#f92672">.</span>results:
+        <span style="color:#66d9ef">for</span> alternative <span style="color:#f92672">in</span> result<span style="color:#f92672">.</span>alternatives:
+            fout<span style="color:#f92672">.</span>write(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;{}</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>format(alternative<span style="color:#f92672">.</span>transcript))
+    fout<span style="color:#f92672">.</span>close()
+        
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser(
+        description<span style="color:#f92672">=</span>__doc__,
+        formatter_class<span style="color:#f92672">=</span>argparse<span style="color:#f92672">.</span>RawDescriptionHelpFormatter)
+    parser<span style="color:#f92672">.</span>add_argument(
+        <span style="color:#e6db74">&#39;path&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;GCS path for audio file to be recognized&#39;</span>)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+    transcribe_gcs(args<span style="color:#f92672">.</span>path)
+  
+</code></pre></div></li>
+<li>
+<p>Place the credential file (xxxx.json) in the same hierarchy as <code>transcribe.py</code>.</p>
+</li>
+<li>
+<p>Specify the module pip and credential file path. The following two are mandatory.</p>
+<p>-<code>sudo pip install google-cloud-speech</code>
+-<code>export GOOGLE_APPLICATION_CREDENTIALS=xxxx.json</code></p>
+</li>
+<li>
+<p>**Note! In Cloud Shell, the piped module and path settings are reset each time the session is cut off, so you have to re-execute the above two steps each time you launch the shell. **</p>
+</li>
+<li>
+<p>On Cloud Shell,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python transcribe.py gs://hoge_folder/hoge.flac
+</code></pre></div><p>Run</p>
+<p>-In the above code, if it goes well, &ldquo;Waiting for operation to complete&hellip;&rdquo; will be displayed and it will be in the waiting state
+-Approximately 75 minutes of audio file and 25 minutes of processing time
+-The generated .txt file is DLed locally with <code>dl hoge.txt</code></p>
+</li>
+</ul>
+<p>That is all for the transcription method using the Speech API.</p>
+<h2 id="transcription-accuracy-is-low">Transcription accuracy is low</h2>
+<p>I tried my best so far, but I was impressed that only 40% of the experience values were transcribed well in the words I spoke with the sound source I prepared. (If it is 40%, just reading the text will be so devastating that there is no point in transcribing it so that you do not know what you are talking about.)</p>
+<p>There is also a suspicion that the sound source is dirty, but I used <a href="https://shirokane-kougyou.fm/episode/1">here</a>, which is miso in the foreground, but there is little noise and it should be fairly clear and there should be no particular problem. ..
+And the text transcribed with Speech API is <a href="https://github.com/ysdyt/podcast_app/blob/master/text/001.txt">here</a>. Hmm.</p>
+<p>Then, it cannot be said that the Speech API has the performance that people say. For example, Google&rsquo;s Speech API is also used for transcribing <a href="http://rebuild.fm/">rebuild.fm</a>.Itisusedand80%seemstobeabletotranscribeitwell(IwastoldinanepisodesomewherebutIforgot).
+Actually, paid members can also search episodes for transcribed items, so it is expected that transcription can be done at a practical level.</p>
+<h3 id="whats-wrong">What&rsquo;s wrong?</h3>
+<p>Given that &ldquo;the sound source is clear&rdquo; &amp; &ldquo;Performance of Speech API is not low&rdquo;, what I personally think is &ldquo;sampling rate&rdquo; and &ldquo;presence or absence of noise reduction processing&rdquo;.</p>
+<h4 id="1-is-sampling-rate-16000-appropriatethe-rationale-for-setting-16000-with-this-parameter-is-that-google-cloud-has-officially-announced-best-practices-for-using-speech-api-httpscloudgooglecomspeech-to-textdocsbest--practiceshlja">1. Is &ldquo;Sampling rate 16000&rdquo; appropriate?The rationale for setting 16000 with this parameter is that Google Cloud has officially announced [Best Practices] for using Speech API (<a href="https://cloud.google.com/speech-to-text/docs/best">https://cloud.google.com/speech-to-text/docs/best</a> -practices?hl=ja).</h4>
+<p>However, in <a href="https://cloud.google.com/speech-to-text/docs/basics?hl=ja">another official page</a>, the sampling rate is described as follows, and 16000 must be But not the best, it seems to depend on the recording device.</p>
+<blockquote>
+<p>If available when encoding the source material, capture audio using a sample rate of 16,000 Hz. Values lower than this may reduce the accuracy of speech recognition, and higher levels have no noticeable effect on speech recognition quality.</p>
+</blockquote>
+<blockquote>
+<p>However, if the audio data was already recorded at an existing sample rate other than 16,000 Hz, do not resample the audio at 16,000 Hz. For example, most previous telephone voices used a sample rate of 8,000 Hz and may not produce accurate results. If you need to use such audio, pass it to the Speech API at the native sample rate.</p>
+</blockquote>
+<p><a href="https://www.mi7.co.jp/products/blue/yetistudio/YETI_Manual_JPN_print.pdf">Bleu&rsquo;s yeti</a> that I use for recording records by default at &ldquo;sampling rate: 48kHz&rdquo;. I suppose that re-sampling this at 16,000 Hz may have something to do with the deterioration of recognition accuracy.</p>
+<h4 id="2-shouldnt-noise-reduction-processing-be-applied-to-the-input-of-speech-api">2. Shouldn&rsquo;t noise reduction processing be applied to the input of Speech API?</h4>
+<p>Sites that teach podcast distribution methods recommend that you perform &ldquo;noise reduction processing&rdquo; (white noise reduction) on recorded sound sources using apps such as Audacity.</p>
+<p>However, according to the <a href="https://cloud.google.com/speech-to-text/docs/best-practices?hl=ja">Speech API formula</a>, the Speech API inputs a sound source with noise. It is stated that the accuracy of recognition generally decreases when noise reduction processing is performed.</p>
+<blockquote>
+<p>We recommend that you use a well-positioned microphone with high sound quality to produce the clearest audio possible. However, applying noise reduction signal processing before sending the voice to the service generally results in poorer recognition accuracy. This service is designed to handle noisy speech.</p>
+</blockquote>
+<p>The sound source I was input was noise-reduced by Audacity, so it is necessary to compare the transcription accuracy when this process is not performed.</p>
+<p>I would like to compare 1 &amp; 2 in the future and summarize the results. Maybe the Speech API is more capable.</p>
+<h2 id="3-references-that-were-particularly-useful">3 references that were particularly useful</h2>
+<ol>
+<li><a href="http://note103.hateblo.jp/entry/2018/07/23/115930">http://note103.hateblo.jp/entry/2018/07/23/115930</a> (Reference for general methods)</li>
+<li><a href="https://qiita.com/knyrc/items/7aab521edfc9bfb06625">https://qiita.com/knyrc/items/7aab521edfc9bfb06625</a> (supplement of 1 etc.)</li>
+<li><a href="https://qiita.com/kokky/items/659bde4cdc8ce5c78e29">https://qiita.com/kokky/items/659bde4cdc8ce5c78e29</a> (code reference)</li>
+</ol>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried Django 3.0 asynchronous server | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried Django 3.0 asynchronous server</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 5, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django3.0">Django3.0</a></code></small>
+
+</p>
+<pre><code>#Foreword
+</code></pre>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/3f6453ef-3bf7-b192-3cf7-dcdaf0dcf591.jpeg" alt="maxresdefault.jpg"></p>
+<p>Django 3.0 was officially released 3 days ago.
+<a href="https://docs.djangoproject.com/en/3.0/releases/3.0/">Release node link</a>
+I&rsquo;m very interested in the addition of <code>ASGI</code> support, among many changes,
+I want to actually use it. :sunny:</p>
+<h4 id="note-what-is-asgibriefcase">Note: What is ASGI?:briefcase:</h4>
+<pre><code>ASGI (Asynchronous Server Gateway Interface) is the spiritual successor to WSGI and aims to provide a standard interface between asynchronous-enabled Python web servers, frameworks, and applications.
+
+While WSGI provided the standard for synchronous Python apps, ASGI provides both asynchronous and synchronous apps with a backwards-compatible implementation of WSGI and multiple servers and application frameworks.
+</code></pre><p><a href="https://asgi.readthedocs.io/en/latest/">Document link</a></p>
+<p>#New project</p>
+<p>Create a virtual environment for testing</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"> mkvirtualenv django3.0
+</code></pre></div><p>Install Django</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"> pip3 install django
+</code></pre></div><p>After installation, make sure you have Django 3.0</p>
+<pre><code>(django3.0) ~ $ pip3 list
+Package Version
+- --------- -------
+asgiref 3.2.3
+Django 3.0
+pip 19.3.1
+pytz 2019.3
+setuptools 42.0.2
+sqlparse 0.3.0
+wheel 0.33.6
+</code></pre><p>Let&rsquo;s create a new project appropriately and start a server</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir django-test
+<span style="color:#f92672">&amp;&amp;</span>
+django-admin startproject newtest
+<span style="color:#f92672">&amp;&amp;</span>
+cd newtest/
+<span style="color:#f92672">&amp;&amp;</span>
+python3 manage.py runserver
+</code></pre></div><p>Let&rsquo;s access the 8000th, you can see the familiar rocket.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/800c40e9-d447-1111-ef2e-13652737f7ff.jpeg" alt="UNADJUSTEDNONRAW_thumb_38.jpg">
+So far, Yoshi! :relaxed::point_up:</p>
+<p>#Let&rsquo;s see the official document
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/593b9298-8ef4-1147-8af7-e61f91052a32.jpeg" alt="2019-12-05 19.17 Image.jpg"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">How to deploy with ASGI¶
+As well as WSGI, Django also supports deploying on ASGI, the emerging Python standard for asynchronous web servers and applications.
+
+Django’s startproject management command sets up a default ASGI configuration for you, which you can tweak as needed for your project, and direct any ASGI-compliant application server to use.
+
+Django includes getting-started documentation for the following ASGI servers:
+
+How to use Django with Daphne
+How to use Django with Uvicorn
+The application object¶
+Like WSGI, ASGI has you supply an application callable which the application server uses to communicate with your code.It&#39;s commonly provided as an object named application in a Python module accessible to the server.
+
+The startproject command creates a file &lt;project_name&gt;/asgi.py that contains such an application callable.
+
+It&#39;s not used by the development server (runserver), but can be used by any ASGI server either in development or in production.
+
+ASGI servers usually take the path to the application callable as a string; for most Django projects, this will look like myproject.asgi:application.
+
+Warning
+
+While Django’s default ASGI handler will run all your code in a synchronous thread, if you choose to run your own async handler you must be aware of async-safety.
+
+Do not call blocking synchronous functions or libraries in any async code.Django prevents you from doing this with the parts of Django that are not async-safe, but the same may not be true of third-party apps or Python libraries.
+
+Configuring the settings module¶
+When the ASGI server loads your application, Django needs to import the settings module — that&#39;s where your entire application is defined.
+
+Django uses the DJANGO_SETTINGS_MODULE environment variable to locate the appropriate settings module.It must contain the dotted path to the settings module.You can use a different value for development and production; it all depends on how you organize your settings.
+
+If this variable isn’t set, the default asgi.py sets it to mysite.settings, where mysite is the name of your project.
+
+Applying ASGI middleware¶
+To apply ASGI middleware, or to embed Django in another ASGI application, you can wrap Django’s application object in the asgi.py file. For example:
+
+from some_asgi_library import AmazingMiddleware
+application = AmazingMiddleware(application)
+</code></pre></div><p><a href="https://docs.djangoproject.com/en/3.0/howto/deployment/asgi/">Link</a></p>
+<h4 id="in-summary">In summary</h4>
+<ul>
+<li>Do not start the server with <code>python manage.py runserver</code>, it will start the usual wsgi server.</li>
+<li>It is recommended to use <code>Daphne</code> or <code>Uvicorn</code> when starting the server.</li>
+</ul>
+<p>What is <code>Daphne</code>? Let&rsquo;s open the official link and take a look <a href="https://docs.djangoproject.com/en/3.0/howto/deployment/asgi/daphne/">link</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">How to use Django with Daphne¶
+Daphne is a pure-Python ASGI server for UNIX, maintained by members of the Django project.It acts as the reference server for ASGI.
+
+Installing Daphne¶
+You can install Daphne with pip:
+
+python -m pip install daphne
+Running Django in Daphne¶
+When Daphne is installed, a daphne command is available which starts the Daphne server process.At its simplest, Daphne needs to be called with the location of a module containing an ASGI application object, followed by what the application is called (separated by a colon ).
+
+For a typical Django project, invoking Daphne would look like:
+
+daphne myproject.asgi:application
+This requires start one process listening on 127.0.0.1:8000.It requires that your project be on the Python path; to ensure that run this command from the same directory as your manage.py file.
+```When translated
+- install daphne with pip
+- Execute daphne myproject.asgi:application to start ASGI server
+- Access 127.0.0.1:8000
+
+Let&#39;s try :point_up:
+# Start ASGI server
+daphne installation
+
+</code></pre></div><p>pip3 install daphne</p>
+<pre><code>Server startup
+
+</code></pre><p>daphne [project name].asgi:application</p>
+<pre><code>When I accessed the number 8000, I could see the rocket again, though the characters were a little different. :eye:
+
+![2019-12-05 19.59 Image.jpg](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/376c524b-b629-4a6f-af20-e0d2e06a56eb.jpeg)
+
+# WebSocket test
+I'll open the browser and send a websocket message.
+![UNADJUSTEDNONRAW_mini_3b.jpg](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/ce4fe7a9-b117-9c19-ed26-b5889a347bfa.jpeg)
+
+I got back a `500`, the error message is below.
+
+</code></pre><p>2019-12-05 11:02:09,533 ERROR Exception inside application: Django can only handle ASGI/HTTP connections, not websocket.
+File &ldquo;/Envs/django3.0/lib/python3.7/site-packages/daphne/cli.py&rdquo;, line 30, in asgi
+await self.app(scope, receive, send)
+File &ldquo;/Envs/django3.0/lib/python3.7/site-packages/django/core/handlers/asgi.py&rdquo;, line 146, in <strong>call</strong>
+% scope[&lsquo;type&rsquo;]
+Django can only handle ASGI/HTTP connections, not websocket.</p>
+<pre><code>There seems to be something in line 146 of `asgi.py`, let's see.
+
+```python:asgi.py
+
+ async def __call__(self, scope, receive, send):
+        &quot;&quot;&quot;
+        Async entrypoint-parses the request and hands off to get_response.
+        &quot;&quot;&quot;
+        # Serve only HTTP connections.
+        # FIXME: Allow to override this.
+        if scope['type'] !='http':
+            raise ValueError(
+                'Django can only handle ASGI/HTTP connections, not %s.'
+                % scope['type']
+            )
+        # Receive the HTTP request body as a stream object.
+        try:
+            body_file = await self.read_body(receive)
+        except RequestAborted:
+            return
+        # Request is complete and can be served.
+        set_script_prefix(self.get_script_prefix(scope))
+</code></pre><p>Note the two-line comment below.</p>
+<pre><code> # Serve only HTTP connections.
+ # FIXME: Allow to override this.
+</code></pre><h3 id="currently-only-http-communication-is-permitted-please-fix-it-yourself-if-necessary">Currently, only http communication is permitted. Please fix it yourself if necessary!</h3>
+<h1 id="last">last</h1>
+<p>The following are possible conjectures.</p>
+<ul>
+<li>Maybe I don&rsquo;t even know Django</li>
+<li>ASGI communication is realized by other means instead of Websocket</li>
+<li>Full support for ASGI is yet to come</li>
+</ul>
+<p>Currently Django 3.0, if you want to use websocket, I recommend using the <code>django-channel</code> package.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Meteorology x Python-From weather data acquisition to spectrum analysis- | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Meteorology x Python-From weather data acquisition to spectrum analysis-</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 25, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scraping"> scraping</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/beautifulsoup"> BeautifulSoup</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/crawling"> crawling</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fourier-transform"> Fourier transform</a></code></small>
+
+</p>
+<pre><code>I've covered some ways to handle [Data from the Meteorological Agency](https://www.jma.go.jp/jma/menu/menureport.html)insomearticlessofar,butI'veseenadifferentdataacquisitionmethod(currentsituation).,Thismethodisthemostefficient), and I will try to lighten the analysis of the acquired data.
+</code></pre>
+<Past article>
+>・Meteorology x Python ~ Automatic acquisition of AMeDAS point data ~
+https://qiita.com/OSAKO/items/264c77b70843045bc12b
+・Meteorology x Python-Automatic acquisition of AMeDAS point data (extra edition)-
+https://qiita.com/OSAKO/items/505ecee67df424963e53
+・Weather x Ruby ~Ruby scraping using Mechanize~
+https://qiita.com/OSAKO/items/3c1cac0b5448be9ab243
+<p>#1. Crawling
+▶ I want to get the numeric values or character strings embedded in the following table format all at once. (Example: January 1, 2019 data in Tokyo)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/5a8ed8d3-2c2d-019e-9644-94dcec47920d.png" alt="image.png">
+<a href="https://www.data.jma.go.jp/obd/stats/etrn/view/daily_s1.php?prec_no=44&amp;block_no=47662&amp;year=2019&amp;month=01&amp;day=1&amp;view=">https://www.data.jma.go.jp/obd/stats/etrn/view/daily_s1.php?prec_no=44&amp;block_no=47662&amp;year=2019&amp;month=01&amp;day=1&amp;view=</a></p>
+<p>▶ First, get the urls of over 1000 points and implement a crawler to list them.
+<a href="https://www.data.jma.go.jp/obd/stats/etrn/index.php?prec_no=44&amp;block_no=47662&amp;year=&amp;month=&amp;day=&amp;view=">https://www.data.jma.go.jp/obd/stats/etrn/index.php?prec_no=44&amp;block_no=47662&amp;year=&amp;month=&amp;day=&amp;view=</a>
+↑Example of url you want to get (<font color="OrangeRed">** id of prec_no or block_no varies depending on the point **</font>)</p>
+<h2 id="procedure">Procedure</h2>
+<p>① First of all, from <a href="https://www.data.jma.go.jp/obd/stats/etrn/select/prefecture00.php?prec_no=&amp;block_no=&amp;year=&amp;month=&amp;day=&amp;view=">here url</a>Iwantaurltoaccess,sosearchhrefattributeunderareatagandlistit.(Get_area_linkmethodinthecodebelow)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/58b453f6-46a3-bab1-4555-faaf634854d4.png" alt="image.png">
+(2) By using the url of each area listed above as a key and searching the href attribute of each point in the same way, the target url in which id is included in prec_no and block_no can be obtained. (Get_station_link method in the code below)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/75aebe12-49ba-5975-2fda-852fd6e56c10.png" alt="image.png">
+③ After that, format the listed urls a little and save it in csv. (Data_arange method of the code below)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/1e8ea3b0-bb89-0220-2e91-46c1b9d8103a.png" alt="image.png"></p>
+<h2 id="program">Program</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-get_amedas_station_url.py" data-lang="get_amedas_station_url.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> urllib.request
+<span style="color:#f92672">from</span> bs4 <span style="color:#f92672">import</span> BeautifulSoup
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Get_amedas_station</span>:
+  <span style="color:#66d9ef">def</span> __init__(self):
+    url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/select/prefecture00.php?prec_no=&amp;block_no=&amp;year=&amp;month=&amp;day=&amp;view=&#39;</span>
+    html <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(url)
+    self<span style="color:#f92672">.</span>soup <span style="color:#f92672">=</span> BeautifulSoup(html,<span style="color:#e6db74">&#39;html.parser&#39;</span>)
+  
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_area_link</span>(self):
+    elements <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>soup<span style="color:#f92672">.</span>find_all(<span style="color:#e6db74">&#39;area&#39;</span>)
+    self<span style="color:#f92672">.</span>area_list <span style="color:#f92672">=</span> [element[<span style="color:#e6db74">&#39;alt&#39;</span>] <span style="color:#66d9ef">for</span> element <span style="color:#f92672">in</span> elements]
+    self<span style="color:#f92672">.</span>area_link_list <span style="color:#f92672">=</span> [element[<span style="color:#e6db74">&#39;href&#39;</span>] <span style="color:#66d9ef">for</span> element <span style="color:#f92672">in</span> elements]
+
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_station_link</span>(self):
+    out <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;station&#39;</span>,<span style="color:#e6db74">&#39;url&#39;</span>,<span style="color:#e6db74">&#39;area&#39;</span>])
+    <span style="color:#66d9ef">for</span> area, area_link <span style="color:#f92672">in</span> zip(self<span style="color:#f92672">.</span>area_list, self<span style="color:#f92672">.</span>area_link_list):
+      url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/select/&#39;</span><span style="color:#f92672">+</span> area_link
+      html <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(url)
+      soup <span style="color:#f92672">=</span> BeautifulSoup(html,<span style="color:#e6db74">&#39;html.parser&#39;</span>)
+      elements <span style="color:#f92672">=</span> soup<span style="color:#f92672">.</span>find_all(<span style="color:#e6db74">&#39;area&#39;</span>)
+      station_list <span style="color:#f92672">=</span> [element[<span style="color:#e6db74">&#39;alt&#39;</span>] <span style="color:#66d9ef">for</span> element <span style="color:#f92672">in</span> elements]
+      station_link_list <span style="color:#f92672">=</span> [element[<span style="color:#e6db74">&#39;href&#39;</span>]<span style="color:#f92672">.</span>strip(<span style="color:#e6db74">&#39;../&#39;</span>) <span style="color:#66d9ef">for</span> element <span style="color:#f92672">in</span> elements]
+      df1 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(station_list,columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;station&#39;</span>])
+      df2 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(station_link_list,columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;url&#39;</span>])
+      df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([df1, df2],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>assign(area<span style="color:#f92672">=</span>area)
+      out <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([out,df])
+      <span style="color:#66d9ef">print</span>(area)
+    self<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> out
+  
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">data_arange</span>(self):
+    out <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>out[<span style="color:#f92672">~</span>self<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>duplicated()]<span style="color:#f92672">.</span>assign(append<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/&#39;</span>)
+    out[<span style="color:#e6db74">&#39;amedas_url&#39;</span>] <span style="color:#f92672">=</span> out[<span style="color:#e6db74">&#39;append&#39;</span>] <span style="color:#f92672">+</span> out[<span style="color:#e6db74">&#39;url&#39;</span>]
+    out <span style="color:#f92672">=</span> out<span style="color:#f92672">.</span>loc[:,[<span style="color:#e6db74">&#39;area&#39;</span>,<span style="color:#e6db74">&#39;station&#39;</span>,<span style="color:#e6db74">&#39;amedas_url&#39;</span>]]
+    out<span style="color:#f92672">.</span>to_csv(<span style="color:#e6db74">&#39;amedas_url_list.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+  amedas <span style="color:#f92672">=</span> Get_amedas_station()
+  amedas<span style="color:#f92672">.</span>get_area_link()
+  amedas<span style="color:#f92672">.</span>get_station_link()
+  amedas<span style="color:#f92672">.</span>data_arange()
+</code></pre></div><p>#2. Scraping
+▶ Regarding the acquisition of AMeDAS data of the main subject, this time I wrote a program corresponding to different time scales of 1 day, 1 hour, 10 minutes data (However, since the code amount is relatively large and it may be wasteful, it is necessary. Improvement)
+▶Note that the observation item differs depending on which AMeDAS point is selected. (<font color="OrangeRed"><strong>Differs depending on whether the selected point is the weather station or not</strong></font>)</p>
+<p>&lt;For example, compare the observation items between Tokyo and Hachioji on each time scale. &gt;</p>
+<blockquote>
+<p><strong>・1 day data</strong>
+Tokyo
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/9c4f600c-d10c-affa-d276-7e58fd829e89.png" alt="image.png">
+Hachioji
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/48ef237b-178d-ac30-0d70-bb6c1bca6cf6.png" alt="image.png">
+<strong>・1 hour data</strong>
+Tokyo
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/75d6ac38-3701-2379-98cf-538f158f6761.png" alt="image.png">
+Hachioji
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/e031a046-1266-1172-be4f-5571fd9e3f5b.png" alt="image.png">
+<strong>・10-minute data</strong>
+Tokyo
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/4c0e1426-87bc-67ab-b2b2-7b6724645a53.png" alt="image.png">
+Hachioji
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/018516f0-518d-a16e-9e82-fb339450885d.png" alt="image.png"></p>
+</blockquote>
+<h2 id="program-1">Program</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-get_amedas_data.py" data-lang="get_amedas_data.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> urllib.request
+<span style="color:#f92672">from</span> bs4 <span style="color:#f92672">import</span> BeautifulSoup
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> timedelta
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime <span style="color:#66d9ef">as</span> dt
+<span style="color:#f92672">from</span> dateutil.relativedelta <span style="color:#f92672">import</span> relativedelta
+
+<span style="color:#75715e"># Method to search and list acquisition target data from url of each AMeDAS point</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">search_data</span>(url):
+  html <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(url)
+  time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+  soup <span style="color:#f92672">=</span> BeautifulSoup(html,<span style="color:#e6db74">&#39;html.parser&#39;</span>)element <span style="color:#f92672">=</span> soup<span style="color:#f92672">.</span>find_all(<span style="color:#e6db74">&#39;tr&#39;</span>, attrs<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;class&#39;</span>:<span style="color:#e6db74">&#39;mtx&#39;</span>,<span style="color:#e6db74">&#39;style&#39;</span>:<span style="color:#e6db74">&#39;text-align:right;&#39;</span>})
+  out <span style="color:#f92672">=</span> [list(map(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">.</span>text, ele)) <span style="color:#66d9ef">for</span> ele <span style="color:#f92672">in</span> element]
+  <span style="color:#66d9ef">return</span> out
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Get_amedas_data</span>:
+  <span style="color:#66d9ef">def</span> __init__(self,area_name,station_name):
+    <span style="color:#75715e"># Reference the target url from the specified area and point</span>
+    self<span style="color:#f92672">.</span>st_name <span style="color:#f92672">=</span> station_name
+    self<span style="color:#f92672">.</span>a_name <span style="color:#f92672">=</span> area_name
+    amedas_url_list <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;amedas_url_list.csv&#39;</span>,encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+    df <span style="color:#f92672">=</span> amedas_url_list[(amedas_url_list[<span style="color:#e6db74">&#39;area&#39;</span>]<span style="color:#f92672">==</span>self<span style="color:#f92672">.</span>a_name) <span style="color:#f92672">&amp;</span> (amedas_url_list[<span style="color:#e6db74">&#39;station&#39;</span>]<span style="color:#f92672">==</span>self<span style="color:#f92672">.</span>st_name)]
+    amedas_url <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>iat[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">2</span>]
+    Get a number <span style="color:#f92672">from</span> <span style="color:#75715e">#url by regular expression (need id for prec_no and block_no)</span>
+    pattern<span style="color:#f92672">=</span><span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;([+-]?[0-9]+\.?[0-9]*)&#39;</span>
+    id_list<span style="color:#f92672">=</span>re<span style="color:#f92672">.</span>findall(pattern, amedas_url)
+    self<span style="color:#f92672">.</span>pre_id <span style="color:#f92672">=</span> id_list[<span style="color:#ae81ff">0</span>]
+    self<span style="color:#f92672">.</span>s_id <span style="color:#f92672">=</span> id_list[<span style="color:#ae81ff">1</span>]
+
+  <span style="color:#75715e">#Because 1-day data can be collected collectively as data for January, specify the start month and end month</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_date1</span>(self, startmonth, endmonth):
+    self<span style="color:#f92672">.</span>start <span style="color:#f92672">=</span> startmonth
+    self<span style="color:#f92672">.</span>end <span style="color:#f92672">=</span> endmonth
+    strdt <span style="color:#f92672">=</span> dt<span style="color:#f92672">.</span>strptime(self<span style="color:#f92672">.</span>start,<span style="color:#e6db74">&#39;%Y%m&#39;</span>)
+    enddt <span style="color:#f92672">=</span> dt<span style="color:#f92672">.</span>strptime(self<span style="color:#f92672">.</span>end,<span style="color:#e6db74">&#39;%Y%m&#39;</span>)
+    months_num <span style="color:#f92672">=</span> (enddt<span style="color:#f92672">.</span>year<span style="color:#f92672">-</span>strdt<span style="color:#f92672">.</span>year)<span style="color:#f92672">*</span><span style="color:#ae81ff">12</span> <span style="color:#f92672">+</span> enddt<span style="color:#f92672">.</span>month<span style="color:#f92672">-</span>strdt<span style="color:#f92672">.</span>month <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#75715e"># List the months from start month to end month</span>
+    self<span style="color:#f92672">.</span>datelist <span style="color:#f92672">=</span> map(<span style="color:#66d9ef">lambda</span> x, y<span style="color:#f92672">=</span>strdt: y <span style="color:#f92672">+</span> relativedelta(months<span style="color:#f92672">=</span>x), range(months_num))
+  
+  <span style="color:#75715e">#For 1 hour or 10 minutes data, specify start date and end date</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_date2</span>(self,startdate,enddate):
+    self<span style="color:#f92672">.</span>start <span style="color:#f92672">=</span> startdate
+    self<span style="color:#f92672">.</span>end <span style="color:#f92672">=</span> enddate
+    strdt <span style="color:#f92672">=</span> dt<span style="color:#f92672">.</span>strptime(self<span style="color:#f92672">.</span>start,<span style="color:#e6db74">&#39;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)
+    enddt <span style="color:#f92672">=</span> dt<span style="color:#f92672">.</span>strptime(self<span style="color:#f92672">.</span>end,<span style="color:#e6db74">&#39;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)
+    days_num <span style="color:#f92672">=</span> (enddt<span style="color:#f92672">-</span>strdt)<span style="color:#f92672">.</span>days <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#75715e"># List dates from start date to end date</span>
+    self<span style="color:#f92672">.</span>datelist <span style="color:#f92672">=</span> map(<span style="color:#66d9ef">lambda</span> x, y<span style="color:#f92672">=</span>strdt: y <span style="color:#f92672">+</span> timedelta(days<span style="color:#f92672">=</span>x), range(days_num))
+
+  <span style="color:#75715e"># Create an empty data frame in advance. There are many elements that can be acquired at a location with a weather station.</span>
+  <span style="color:#75715e"># Specify the time scale you want to get (type)</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dl_data</span>(self, type):
+    Empty data frame <span style="color:#66d9ef">for</span> <span style="color:#75715e">#daily data</span>
+    data1 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Year&#39;</span>,<span style="color:#e6db74">&#39;Day&#39;</span>,<span style="color:#e6db74">&#39;Average local pressure&#39;</span>,<span style="color:#e6db74">&#39;Average sea level pressure&#39;</span>,<span style="color:#e6db74">&#39;Daily precipitation&#39;</span>,<span style="color:#e6db74">&#39;Maximum hourly precipitation&#39;</span>,<span style="color:#e6db74">&#39;Maximum 10 minutes precipitation&#39;</span> <span style="color:#e6db74">&#39;,&#39;</span>Average temperature<span style="color:#e6db74">&#39;,&#39;</span>Highest temperature<span style="color:#e6db74">&#39;,&#39;</span>Lowest temperature<span style="color:#e6db74">&#39;,&#39;</span>Average humidity<span style="color:#e6db74">&#39;,&#39;</span>Minimum humidity<span style="color:#e6db74">&#39;,&#39;</span>Average wind speed<span style="color:#e6db74">&#39;,&#39;</span>Maximum wind speed<span style="color:#e6db74">&#39;,&#39;</span>Maximum wind direction<span style="color:#e6db74">&#39;,&#39;</span>Maximum instantaneous wind speed<span style="color:#e6db74">&#39;,&#39;</span>Maximum Instantaneous wind direction<span style="color:#e6db74">&#39;,&#39;</span>sunshine hours<span style="color:#e6db74">&#39;,&#39;</span>snowfall<span style="color:#e6db74">&#39;,&#39;</span>deepest snow<span style="color:#e6db74">&#39;,&#39;</span>weather conditions (day)<span style="color:#e6db74">&#39;,&#39;</span>weather conditions (night)<span style="color:#e6db74">&#39;])</span>
+    data1_ <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;year/month&#39;</span>,<span style="color:#e6db74">&#39;day&#39;</span>,<span style="color:#e6db74">&#39;daily precipitation&#39;</span>,<span style="color:#e6db74">&#39;maximum 1 hour precipitation&#39;</span>,<span style="color:#e6db74">&#39;maximum 10 minutes precipitation&#39;</span>,<span style="color:#e6db74">&#39;average temperature&#39;</span>,<span style="color:#e6db74">&#39;maximum temperature&#39;</span>, <span style="color:#e6db74">&#39;Lowest temperature&#39;</span>,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Sunshine time&#39;</span>,<span style="color:#e6db74">&#39;Snowfall&#39;</span>,<span style="color:#e6db74">&#39;Deepest snow cover&#39;</span> ])
+    Empty data frame <span style="color:#66d9ef">for</span> <span style="color:#75715e">#hourly data</span>
+    data2 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;date&#39;</span>,<span style="color:#e6db74">&#39;hour&#39;</span>,<span style="color:#e6db74">&#39;local pressure&#39;</span>,<span style="color:#e6db74">&#39;sea level pressure&#39;</span>,<span style="color:#e6db74">&#39;precipitation&#39;</span>,<span style="color:#e6db74">&#39;temperature&#39;</span>,<span style="color:#e6db74">&#39;dew point temperature&#39;</span>,<span style="color:#e6db74">&#39;vapor pressure&#39;</span>,<span style="color:#e6db74">&#39;humidity&#39;</span>, <span style="color:#e6db74">&#39;Wind speed&#39;</span>,<span style="color:#e6db74">&#39;Wind direction&#39;</span>,<span style="color:#e6db74">&#39;Sunshine time&#39;</span>,<span style="color:#e6db74">&#39;Total solar radiation&#39;</span>,<span style="color:#e6db74">&#39;Snowfall&#39;</span>,<span style="color:#e6db74">&#39;Snow cover&#39;</span>,<span style="color:#e6db74">&#39;Weather&#39;</span>,<span style="color:#e6db74">&#39;Cloud cover&#39;</span>,<span style="color:#e6db74">&#39;Visibility&#39;</span>])
+    data2_ <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;date&#39;</span>,<span style="color:#e6db74">&#39;hour&#39;</span>,<span style="color:#e6db74">&#39;precipitation&#39;</span>,<span style="color:#e6db74">&#39;temperature&#39;</span>,<span style="color:#e6db74">&#39;wind speed&#39;</span>,<span style="color:#e6db74">&#39;wind direction&#39;</span>,<span style="color:#e6db74">&#39;sunshine hours&#39;</span>,<span style="color:#e6db74">&#39;snowfall&#39;</span>,<span style="color:#e6db74">&#39;snowfall&#39;</span>])
+    <span style="color:#75715e"># Empty data frame for 10min data</span>
+    data3 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Date&#39;</span>,<span style="color:#e6db74">&#39;Hour&#39;</span>,<span style="color:#e6db74">&#39;Local pressure&#39;</span>,<span style="color:#e6db74">&#39;Sea level pressure&#39;</span>,<span style="color:#e6db74">&#39;Precipitation&#39;</span>,<span style="color:#e6db74">&#39;Temperature&#39;</span>,<span style="color:#e6db74">&#39;Relative humidity&#39;</span>,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Average wind direction&#39;</span> <span style="color:#e6db74">&#39;,&#39;</span>Maximum instantaneous wind speed<span style="color:#e6db74">&#39;,&#39;</span>maximum instantaneous wind direction<span style="color:#e6db74">&#39;,&#39;</span>sunshine hours<span style="color:#e6db74">&#39;])</span>
+    data3_ <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Date&#39;</span>,<span style="color:#e6db74">&#39;Hour&#39;</span>,<span style="color:#e6db74">&#39;Precipitation&#39;</span>,<span style="color:#e6db74">&#39;Temperature&#39;</span>,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Average wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind direction&#39;</span>,<span style="color:#e6db74">&#39; Sunshine hours&#39;</span>])
+
+    <span style="color:#75715e"># Create a data frame by combining vertically while acquiring data while rotating the list of months or dates</span>
+    <span style="color:#66d9ef">for</span> dt <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>datelist:
+      d <span style="color:#f92672">=</span> dt<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#34;</span>)
+      yyyy <span style="color:#f92672">=</span> d[<span style="color:#ae81ff">0</span>:<span style="color:#ae81ff">4</span>]
+      mm <span style="color:#f92672">=</span> d[<span style="color:#ae81ff">4</span>:<span style="color:#ae81ff">6</span>]
+      dd <span style="color:#f92672">=</span> d[<span style="color:#ae81ff">6</span>:<span style="color:#ae81ff">8</span>]
+
+      <span style="color:#66d9ef">if</span> type<span style="color:#f92672">==</span><span style="color:#e6db74">&#39;daily&#39;</span>:
+        <span style="color:#75715e"># Block_no at the point where the weather station is located is a 5 digit number</span>
+        <span style="color:#66d9ef">if</span> len(self<span style="color:#f92672">.</span>s_id) <span style="color:#f92672">==</span> <span style="color:#ae81ff">5</span>:
+          pattern <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;s1&#39;</span>
+          url <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/view/{type}_{pattern}.php?prec_no={self.pre_id}&amp;block_no={self.s_id} &amp;year={yyyy}&amp;month={mm}&amp;day={dd}&amp;view=p1&#39;</span>
+          out <span style="color:#f92672">=</span> search_data(url)
+          df <span style="color:#f92672">=</span> (pd<span style="color:#f92672">.</span>DataFrame(out, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Day&#39;</span>,<span style="color:#e6db74">&#39;Average local pressure&#39;</span>,<span style="color:#e6db74">&#39;Average sea level pressure&#39;</span>,<span style="color:#e6db74">&#39;Daily precipitation&#39;</span>,<span style="color:#e6db74">&#39;Maximum one hour precipitation&#39;</span>,<span style="color:#e6db74">&#39;Maximum 10 minutes precipitation&#39;</span>, <span style="color:#e6db74">&#39;Average temperature&#39;</span>,<span style="color:#e6db74">&#39;Highest temperature&#39;</span>,<span style="color:#e6db74">&#39;Lowest temperature&#39;</span>,<span style="color:#e6db74">&#39;Average humidity&#39;</span>,<span style="color:#e6db74">&#39;Minimum humidity&#39;</span>,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind direction&#39;</span> <span style="color:#e6db74">&#39;,&#39;</span>Sunshine hours<span style="color:#e6db74">&#39;,&#39;</span>snowfall<span style="color:#e6db74">&#39;,&#39;</span>deepest snow<span style="color:#e6db74">&#39;,&#39;</span>weather conditions (day)<span style="color:#e6db74">&#39;,&#39;</span>weather conditions (night)<span style="color:#e6db74">&#39;])).assign(year/month=f&#39;</span>{yyyy}{mm}<span style="color:#e6db74">&#39;)</span>
+          df <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>loc[:,[<span style="color:#e6db74">&#39;Year/Month&#39;</span>,<span style="color:#e6db74">&#39;Day&#39;</span>,<span style="color:#e6db74">&#39;Average local pressure&#39;</span>,<span style="color:#e6db74">&#39;Average sea level pressure&#39;</span>,<span style="color:#e6db74">&#39;Daily precipitation&#39;</span>,<span style="color:#e6db74">&#39;Maximum 1 hour precipitation&#39;</span>,<span style="color:#e6db74">&#39;Maximum 10 minutes precipitation &#39;</span>,<span style="color:#e6db74">&#39;Average temperature&#39;</span>,<span style="color:#e6db74">&#39;Highest temperature&#39;</span>,<span style="color:#e6db74">&#39;Lowest temperature&#39;</span>,<span style="color:#e6db74">&#39;Average humidity&#39;</span>,<span style="color:#e6db74">&#39;Minimum humidity&#39;</span>,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum Instantaneous wind direction&#39;</span>,<span style="color:#e6db74">&#39;sunshine hours&#39;</span>,<span style="color:#e6db74">&#39;snowfall&#39;</span>,<span style="color:#e6db74">&#39;deepest snow&#39;</span>,<span style="color:#e6db74">&#39;weather conditions (day)&#39;</span>,<span style="color:#e6db74">&#39;weather conditions (night)&#39;</span>]]
+          data1 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([data1, df])
+          data1<span style="color:#f92672">.</span>to_csv(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{self.start}-{self.end}_{type}.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+        <span style="color:#66d9ef">else</span>:
+          pattern <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;a1&#39;</span>
+          url <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/view/{type}_{pattern}.php?prec_no={self.pre_id}&amp;block_no={self.s_id} &amp;year={yyyy}&amp;month={mm}&amp;day={dd}&amp;view=p1&#39;</span>
+          out <span style="color:#f92672">=</span> search_data(url)
+          df <span style="color:#f92672">=</span> (pd<span style="color:#f92672">.</span>DataFrame(out, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;day&#39;</span>,<span style="color:#e6db74">&#39;daily precipitation&#39;</span>,<span style="color:#e6db74">&#39;maximum 1 hour precipitation&#39;</span>,<span style="color:#e6db74">&#39;maximum 10 minutes precipitation&#39;</span>,<span style="color:#e6db74">&#39;average temperature&#39;</span>,<span style="color:#e6db74">&#39;highest temperature&#39;</span>,<span style="color:#e6db74">&#39;lowest&#39;</span> Temperature,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Sunshine time&#39;</span>,<span style="color:#e6db74">&#39;Snowfall&#39;</span>,<span style="color:#e6db74">&#39;Deepest snow cover&#39;</span>]) )<span style="color:#f92672">.</span>assign(year<span style="color:#f92672">/</span>month<span style="color:#f92672">=</span>f<span style="color:#e6db74">&#39;{yyyy}{mm}&#39;</span>)
+          df <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>loc[:,[<span style="color:#e6db74">&#39;year/month&#39;</span>,<span style="color:#e6db74">&#39;day&#39;</span>,<span style="color:#e6db74">&#39;daily precipitation&#39;</span>,<span style="color:#e6db74">&#39;maximum 1 hour precipitation&#39;</span>,<span style="color:#e6db74">&#39;maximum 10 minutes precipitation&#39;</span>,<span style="color:#e6db74">&#39;average temperature&#39;</span>,<span style="color:#e6db74">&#39;maximum temperature&#39;</span>, <span style="color:#e6db74">&#39;Lowest temperature&#39;</span>,<span style="color:#e6db74">&#39;Average wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind speed&#39;</span>,<span style="color:#e6db74">&#39;Maximum instantaneous wind direction&#39;</span>,<span style="color:#e6db74">&#39;Maximum wind direction&#39;</span>,<span style="color:#e6db74">&#39;Sunshine time&#39;</span>,<span style="color:#e6db74">&#39;Snowfall&#39;</span>,<span style="color:#e6db74">&#39;Deepest snow cover&#39;</span> ]]
+          data1_ <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([data1_, df])
+          data1_<span style="color:#f92672">.</span>to_csv(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{self.start}-{self.end}_{type}.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+
+      <span style="color:#66d9ef">elif</span> type<span style="color:#f92672">==</span><span style="color:#e6db74">&#39;hourly&#39;</span>:
+        <span style="color:#66d9ef">if</span> len(self<span style="color:#f92672">.</span>s_id) <span style="color:#f92672">==</span> <span style="color:#ae81ff">5</span>:
+          pattern <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;s1&#39;</span>
+          url <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/view/{type}_{pattern}.php?prec_no={self.pre_id}&amp;block_no={self.s_id} &amp;year={yyyy}&amp;month={mm}&amp;day={dd}&amp;view=p1&#39;</span>
+          out <span style="color:#f92672">=</span> search_data(url)
+          <span style="color:#75715e"># Add date column (24)</span>
+          date <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame((np<span style="color:#f92672">.</span>full([<span style="color:#ae81ff">24</span>,<span style="color:#ae81ff">1</span>], f<span style="color:#e6db74">&#39;{yyyy}{mm}{dd}&#39;</span>)),columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;date&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(out, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;hour&#39;</span>,<span style="color:#e6db74">&#39;local pressure&#39;</span>,<span style="color:#e6db74">&#39;sea level pressure&#39;</span>,<span style="color:#e6db74">&#39;precipitation&#39;</span>,<span style="color:#e6db74">&#39;temperature&#39;</span>,<span style="color:#e6db74">&#39;dew point temperature&#39;</span>,<span style="color:#e6db74">&#39;vapor pressure&#39;</span>,<span style="color:#e6db74">&#39;humidity&#39;</span>,<span style="color:#e6db74">&#39;wind speed &#39;</span>,<span style="color:#e6db74">&#39;Wind direction&#39;</span>,<span style="color:#e6db74">&#39;sunshine hours&#39;</span>,<span style="color:#e6db74">&#39;total solar radiation&#39;</span>,<span style="color:#e6db74">&#39;snowfall&#39;</span>,<span style="color:#e6db74">&#39;snow cover&#39;</span>,<span style="color:#e6db74">&#39;weather&#39;</span>,<span style="color:#e6db74">&#39;cloud cover&#39;</span>,<span style="color:#e6db74">&#39;visibility&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([date, df],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+          data2 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([data2, df])data2<span style="color:#f92672">.</span>to_csv(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{self.start}-{self.end}_{type}.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+        <span style="color:#66d9ef">else</span>:
+          pattern <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;a1&#39;</span>
+          url <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/view/{type}_{pattern}.php?prec_no={self.pre_id}&amp;block_no={self.s_id}&amp;year={yyyy}&amp;month={mm}&amp;day={dd}&amp;view=p1&#39;</span>
+          out <span style="color:#f92672">=</span> search_data(url)
+          date <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame((np<span style="color:#f92672">.</span>full([<span style="color:#ae81ff">24</span>,<span style="color:#ae81ff">1</span>], f<span style="color:#e6db74">&#39;{yyyy}{mm}{dd}&#39;</span>)),columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;日付&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(out, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;時&#39;</span>,<span style="color:#e6db74">&#39;降水量&#39;</span>,<span style="color:#e6db74">&#39;気温&#39;</span>,<span style="color:#e6db74">&#39;風速&#39;</span>,<span style="color:#e6db74">&#39;風向&#39;</span>,<span style="color:#e6db74">&#39;日照時間&#39;</span>,<span style="color:#e6db74">&#39;降雪&#39;</span>,<span style="color:#e6db74">&#39;積雪&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([date, df],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+          data2_ <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([data2_, df])
+          data2_<span style="color:#f92672">.</span>to_csv(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{self.start}-{self.end}_{type}.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+
+      <span style="color:#66d9ef">elif</span> type<span style="color:#f92672">==</span><span style="color:#e6db74">&#39;10min&#39;</span>:
+        <span style="color:#66d9ef">if</span> len(self<span style="color:#f92672">.</span>s_id) <span style="color:#f92672">==</span> <span style="color:#ae81ff">5</span>:
+          pattern <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;s1&#39;</span>
+          url <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/view/{type}_{pattern}.php?prec_no={self.pre_id}&amp;block_no={self.s_id}&amp;year={yyyy}&amp;month={mm}&amp;day={dd}&amp;view=p1&#39;</span>
+          out <span style="color:#f92672">=</span> search_data(url)
+          <span style="color:#75715e"># 日付の列を追加（6×24個分）</span>
+          date <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame((np<span style="color:#f92672">.</span>full([<span style="color:#ae81ff">144</span>,<span style="color:#ae81ff">1</span>], f<span style="color:#e6db74">&#39;{yyyy}{mm}{dd}&#39;</span>)),columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;日付&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(out, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;時分&#39;</span>,<span style="color:#e6db74">&#39;現地気圧&#39;</span>,<span style="color:#e6db74">&#39;海面気圧&#39;</span>,<span style="color:#e6db74">&#39;降水量&#39;</span>,<span style="color:#e6db74">&#39;気温&#39;</span>,<span style="color:#e6db74">&#39;相対湿度&#39;</span>,<span style="color:#e6db74">&#39;平均風速&#39;</span>,<span style="color:#e6db74">&#39;平均風向&#39;</span>,<span style="color:#e6db74">&#39;最大瞬間風速&#39;</span>,<span style="color:#e6db74">&#39;最大瞬間風向&#39;</span>,<span style="color:#e6db74">&#39;日照時間&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([date, df],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+          data3 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([data3, df])
+          data3<span style="color:#f92672">.</span>to_csv(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{self.start}-{self.end}_{type}.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+        <span style="color:#66d9ef">else</span>:
+          pattern <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;a1&#39;</span>
+          url <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;https://www.data.jma.go.jp/obd/stats/etrn/view/{type}_{pattern}.php?prec_no={self.pre_id}&amp;block_no={self.s_id}&amp;year={yyyy}&amp;month={mm}&amp;day={dd}&amp;view=p1&#39;</span>
+          out <span style="color:#f92672">=</span> search_data(url)
+          date <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame((np<span style="color:#f92672">.</span>full([<span style="color:#ae81ff">144</span>,<span style="color:#ae81ff">1</span>], f<span style="color:#e6db74">&#39;{yyyy}{mm}{dd}&#39;</span>)),columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;日付&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(out, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;時分&#39;</span>,<span style="color:#e6db74">&#39;降水量&#39;</span>,<span style="color:#e6db74">&#39;気温&#39;</span>,<span style="color:#e6db74">&#39;平均風速&#39;</span>,<span style="color:#e6db74">&#39;平均風向&#39;</span>,<span style="color:#e6db74">&#39;最大瞬間風速&#39;</span>,<span style="color:#e6db74">&#39;最大瞬間風向&#39;</span>,<span style="color:#e6db74">&#39;日照時間&#39;</span>])
+          df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([date, df],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+          data3_ <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([data3_, df])
+          data3_<span style="color:#f92672">.</span>to_csv(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{self.start}-{self.end}_{type}.csv&#39;</span>,index<span style="color:#f92672">=</span>None, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)
+
+      <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}_{yyyy}-{mm}-{dd}_{type}&#39;</span>)
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{self.a_name}_{self.st_name}における{self.start}〜{self.end}の{type}データをダウンロードしました。&#39;</span>)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+  a_name <span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;ダウンロードしたい地域を入力してください：&#39;</span>)
+  st_name <span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;ダウンロードしたい地点を入力してください：&#39;</span>)
+  amedas <span style="color:#f92672">=</span> Get_amedas_data(a_name,st_name)
+  type <span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;時間スケールを選択してください（daily or hourly or 10min）：&#39;</span>)
+  <span style="color:#66d9ef">if</span> type <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;daily&#39;</span>:
+    start<span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;取得したい開始月(yyyymm)を入力してください：&#39;</span>)
+    end <span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;取得したい終了月(yyyymm)を入力してください：&#39;</span>)
+    amedas<span style="color:#f92672">.</span>set_date1(start,end)
+  <span style="color:#66d9ef">else</span>:
+    start<span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;取得したい開始日(yyyymmddを入力してください：&#39;</span>)
+    end <span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#39;取得したい終了日(yyyymmdd)を入力してください：&#39;</span>)
+    amedas<span style="color:#f92672">.</span>set_date2(start,end)
+  
+  amedas<span style="color:#f92672">.</span>dl_data(type)
+  
+</code></pre></div><blockquote>
+<p>地域：東京都
+地点：東京
+時間スケール：10min
+開始日：20190401
+終了日：20190731</p>
+</blockquote>
+<p>という条件で試しにデータをダウンロードしてみる。</p>
+<div align="center"><img src=https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/66fe9835-def0-5f29-c62a-8d7e2ae60608.png width=60%></div>
+保存した"東京都_東京_20190401-20190731_10min.csv"ファイルの中身はこんな感じ
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/354874/10817920-dcbe-ba75-a2f8-34071b89d19d.png)
+#3.　スペクトル解析
+▶せっかく、10分という時間解像度の細かいデータを取得したので、軽く時系列データ解析をしてみる。
+▶今回は、取得した期間における気温変動にスペクトル解析を適用し、パワースペクトルを算出した。
+フーリエ変換の気持ちを理解したい人は[こちらの動画](https://www.youtube.com/watch?v=bjBZEKdlLD0&t=339s)がわかりやすいかも。
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fft_temp.py" data-lang="fft_temp.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">from</span> numpy.fft <span style="color:#f92672">import</span> fftn, ifftn, fftfreq
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FFT</span>:
+  <span style="color:#66d9ef">def</span> __init__(self):
+    df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;東京都_東京_20190401-20190731_10min.csv&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SJIS&#39;</span>)<span style="color:#f92672">.</span>replace([<span style="color:#e6db74">&#39;--&#39;</span>,<span style="color:#e6db74">&#39;×&#39;</span>],<span style="color:#f92672">-</span><span style="color:#ae81ff">99</span>)
+    df[<span style="color:#e6db74">&#39;気温&#39;</span>] <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;気温&#39;</span>]<span style="color:#f92672">.</span>astype(float)
+    y <span style="color:#f92672">=</span> df[<span style="color:#e6db74">&#39;気温&#39;</span>]<span style="color:#f92672">.</span>replace(<span style="color:#f92672">-</span><span style="color:#ae81ff">99</span>, (df[<span style="color:#e6db74">&#39;気温&#39;</span>] <span style="color:#f92672">&gt;</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">99</span>)<span style="color:#f92672">.</span>mean())<span style="color:#f92672">.</span>values
+    y <span style="color:#f92672">=</span> (y <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>mean(y)) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>hamming(len(y))
+    <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">    サンプリング周波数 fs → 1秒間にサンプリングされるデータ数 第二引数にはd=1.0/fs
+</span><span style="color:#e6db74">    今回のサンプリング周波数は10分間隔データなので1/600
+</span><span style="color:#e6db74">    &#39;&#39;&#39;</span>
+    self<span style="color:#f92672">.</span>z <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fft(y)
+    self<span style="color:#f92672">.</span>freq <span style="color:#f92672">=</span> fftfreq(len(y), d<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span><span style="color:#ae81ff">600</span>))
+
+
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot</span>(self, n_samples):
+    fig, axes <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">4</span>), ncols<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, sharey<span style="color:#f92672">=</span>True)
+    ax <span style="color:#f92672">=</span> axes[<span style="color:#ae81ff">0</span>]
+    ax<span style="color:#f92672">.</span>plot(self<span style="color:#f92672">.</span>freq[<span style="color:#ae81ff">1</span>:int(n_samples<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)], abs(self<span style="color:#f92672">.</span>z[<span style="color:#ae81ff">1</span>:int(n_samples<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)]))
+    ax<span style="color:#f92672">.</span>set_yscale(<span style="color:#e6db74">&#39;log&#39;</span>)
+    ax<span style="color:#f92672">.</span>set_xscale(<span style="color:#e6db74">&#39;log&#39;</span>)
+    ax<span style="color:#f92672">.</span>set_ylabel(<span style="color:#e6db74">&#39;Power&#39;</span>)
+    ax<span style="color:#f92672">.</span>set_xlabel(<span style="color:#e6db74">&#39;周波数（Hz）&#39;</span>)
+    ax <span style="color:#f92672">=</span> axes[<span style="color:#ae81ff">1</span>]
+    ax<span style="color:#f92672">.</span>plot((<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>freq[<span style="color:#ae81ff">1</span>:int(n_samples <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>)])<span style="color:#f92672">/</span>(<span style="color:#ae81ff">60</span><span style="color:#f92672">*</span><span style="color:#ae81ff">60</span>), abs(self<span style="color:#f92672">.</span>z[<span style="color:#ae81ff">1</span>:int(n_samples <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>)]))
+    ax<span style="color:#f92672">.</span>set_yscale(<span style="color:#e6db74">&#39;log&#39;</span>)
+    ax<span style="color:#f92672">.</span>set_xscale(<span style="color:#e6db74">&#39;log&#39;</span>)
+    ax<span style="color:#f92672">.</span>set_xlabel(<span style="color:#e6db74">&#39;周期（時間）&#39;</span>)
+    plt<span style="color:#f92672">.</span>show()
+  
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">periodic_characteristics</span>(self, n_samples):
+    fft_pow_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame([(<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>freq[<span style="color:#ae81ff">1</span>:int(n_samples <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>)])<span style="color:#f92672">/</span>(<span style="color:#ae81ff">60</span><span style="color:#f92672">*</span><span style="color:#ae81ff">60</span>), np<span style="color:#f92672">.</span>log10(abs(self<span style="color:#f92672">.</span>z[<span style="color:#ae81ff">1</span>:int(n_samples <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>)]))], index<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;周期（時間）&#39;</span>, <span style="color:#e6db74">&#39;log10_power&#39;</span>])<span style="color:#f92672">.</span>T
+    fft_pow_df <span style="color:#f92672">=</span> fft_pow_df<span style="color:#f92672">.</span>sort_values(<span style="color:#e6db74">&#39;log10_power&#39;</span>, ascending<span style="color:#f92672">=</span>False)<span style="color:#f92672">.</span>head(<span style="color:#ae81ff">10</span>)<span style="color:#f92672">.</span>reset_index()
+    <span style="color:#66d9ef">print</span>(fft_pow_df<span style="color:#f92672">.</span>loc[:, [<span style="color:#e6db74">&#39;周期（時間）&#39;</span>, <span style="color:#e6db74">&#39;log10_power&#39;</span>]])
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+  fft <span style="color:#f92672">=</span> FFT()
+  fft<span style="color:#f92672">.</span>periodic_characteristics(<span style="color:#ae81ff">512</span>)
+  fft<span style="color:#f92672">.</span>plot(<span style="color:#ae81ff">512</span>)
+
+<span style="color:#e6db74">``</span><span style="color:#960050;background-color:#1e0010">`</span>The <span style="color:#ae81ff">122</span><span style="color:#f92672">-</span>day cycle, which has the largest power spectrum, does <span style="color:#f92672">not</span> come out very well, but <span style="color:#66d9ef">as</span> expected, the <span style="color:#ae81ff">23</span><span style="color:#f92672">-</span>, <span style="color:#ae81ff">24</span><span style="color:#f92672">-</span>hour cycle was also excellent, so I wonder <span style="color:#66d9ef">if</span> it <span style="color:#f92672">is</span> probably correct<span style="color:#f92672">.</span> (Because of the physical characteristics of the diurnal cycle, the temperature rises <span style="color:#f92672">from</span> morning to noon and drops again at night)
+<span style="color:#f92672">&lt;</span>img src<span style="color:#f92672">=</span>https:<span style="color:#f92672">//</span>qiita<span style="color:#f92672">-</span>image<span style="color:#f92672">-</span>store<span style="color:#f92672">.</span>s3<span style="color:#f92672">.</span>ap<span style="color:#f92672">-</span>northeast<span style="color:#f92672">-</span><span style="color:#ae81ff">1.</span>amazonaws<span style="color:#f92672">.</span>com<span style="color:#f92672">/</span><span style="color:#ae81ff">0</span><span style="color:#f92672">/</span><span style="color:#ae81ff">354874</span><span style="color:#f92672">/</span><span style="color:#ae81ff">969</span>dcafe<span style="color:#f92672">-</span><span style="color:#ae81ff">02</span>c1<span style="color:#f92672">-</span>d3a8<span style="color:#f92672">-</span><span style="color:#ae81ff">5</span>a65<span style="color:#f92672">-</span><span style="color:#ae81ff">15047</span>aafe3be<span style="color:#f92672">.</span>png width<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span><span style="color:#f92672">%&gt;</span>
+<span style="color:#f92672">&lt;</span>img src<span style="color:#f92672">=</span>https:<span style="color:#f92672">//</span>qiita<span style="color:#f92672">-</span>image<span style="color:#f92672">-</span>store<span style="color:#f92672">.</span>s3<span style="color:#f92672">.</span>ap<span style="color:#f92672">-</span>northeast<span style="color:#f92672">-</span><span style="color:#ae81ff">1.</span>amazonaws<span style="color:#f92672">.</span>com<span style="color:#f92672">/</span><span style="color:#ae81ff">0</span><span style="color:#f92672">/</span><span style="color:#ae81ff">354874</span><span style="color:#f92672">/</span><span style="color:#ae81ff">5</span>c3b1b77<span style="color:#f92672">-</span>f23c<span style="color:#f92672">-</span><span style="color:#ae81ff">7</span>bdd<span style="color:#f92672">-</span>c9e4<span style="color:#f92672">-</span>c2d3a782103b<span style="color:#f92672">.</span>png width<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span><span style="color:#f92672">%&gt;</span>
+We would appreciate <span style="color:#66d9ef">if</span> you could point out any mistakes<span style="color:#f92672">.</span>
+
+that<span style="color:#e6db74">&#39;s all! ! !</span></code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

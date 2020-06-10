@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to recognize the face from the video (OpenCV: python version) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to recognize the face from the video (OpenCV: python version)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 16, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-processing"> image processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-recognition"> image recognition</a></code></small>
+
+</p>
+<pre><code># Trigger
+</code></pre>
+<p><a href="https://qiita.com/satsukiya/items/9647e20c4e27b3d0362a">How to save a part of a long video using OpenCV</a>
+<a href="https://qiita.com/satsukiya/items/c9dfdf237f5c60c90820">How to take captured image from video (OpenCV)</a>
+And from the candidate video, I used OpenCV to prepare the environment that seems to be necessary for image processing.
+From here, I will try to process using the function/library.
+The first is face recognition.</p>
+<p>#Preparation
+Since it is developed on Mac, install it from Homebrew.</p>
+<pre><code>brew install opencv
+</code></pre><p>Therefore, under <code>/usr/local/Cellar/opencv/4.1.1_2/share/opencv4/haarcascades/</code>, there is a part called a cascade (distributor) necessary for recognizing the face and the whole body. The types are described in <a href="https://qiita.com/hitomatagi/items/04b1b26c1bc2e8081427#haar-likefeatureclassifier">Face recognition using OpenCV (Haar-like feature classifier)</a>.</p>
+<p>here,</p>
+<ul>
+<li>haarcascade_frontalface_alt_tree.xml face front</li>
+<li>haarcascade_eye.xml both eyes</li>
+<li>haarcascade_righteye_2splits.xml right eye</li>
+<li>haarcascade_lefteye_2splits.xml left eye</li>
+</ul>
+<p>I will try using.</p>
+<p>#Processing flow
+here</p>
+<ol>
+<li>A face is shown in the frame
+From 2.1, cut out the image that will be the ROI (Region of Interest). Separated into right and left areas (Baron Ashura method).</li>
+<li>Determine if both right eye and left eye are included in the image in 2</li>
+<li>If the condition in 3 is met, enclose the face, right eye, and left eye in a rectangle</li>
+</ol>
+<p>Is being processed.</p>
+<h1 id="development-of">development of</h1>
+<p>Developed based on the above process flow.</p>
+<pre><code class="language-Python:" data-lang="Python:">import cv2
+import os
+import time
+
+if __name__ =='__main__':
+
+cap = cv2.VideoCapture('one_minutes.mp4')
+
+cap_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+cap_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+
+fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
+writer = cv2.VideoWriter('detect_face.mp4',fourcc, fps, (cap_width, cap_height))
+
+cascade_base_path = &quot;/usr/local/Cellar/opencv/4.1.1_2/share/opencv4/haarcascades/&quot;
+    #Prepare to get the cascade
+face_cascade = cv2.CascadeClassifier(os.path.join(cascade_base_path,'haarcascade_frontalface_alt_tree.xml'))
+right_eye_cascade = cv2.CascadeClassifier(os.path.join(cascade_base_path,'haarcascade_righteye_2splits.xml'))
+left_eye_cascade = cv2.CascadeClassifier(os.path.join(cascade_base_path,'haarcascade_lefteye_2splits.xml'))
+
+start = time.time()
+
+try:
+while True:
+
+if not cap.isOpened():
+break
+
+ret, frame = cap.read()
+
+img_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # 1. A face is shown in the frame
+face_points = face_cascade.detectMultiScale(img_gray)
+It's a sequel.
+for (fx,fy,fw,fh) in face_points:
+It's a sequel.
+                #2. Cut out the image that will be the ROI (Region of Interest)
+                # Separate into right and left areas (Baron Ashura method)
+width_center = fx + int(fw * 0.5)
+face_right_gray = img_gray[fy:fy+fh, fx:width_center]
+face_left_gray = img_gray[fy:fy+fh, width_center:fx+fw]
+#3. Determine if both right and left eyes are visible
+right_eye_points = right_eye_cascade.detectMultiScale(face_right_gray)
+left_eye_points = left_eye_cascade.detectMultiScale(face_left_gray)
+
+if 0 &lt;len(right_eye_points) and 0 &lt;len(left_eye_points):
+(rx,ry,rw,rh) = right_eye_points[0]
+(lx,ly,lw,lh) = left_eye_points[0]
+It's a sequel.
+                    #4. Surround the face, right and left eyes with a rectangle
+# Right eye is orange
+cv2.rectangle(frame,(fx+rx,fy+ry),(fx+rx+rw,fy+ry+rh),(0,255,255),2)
+#Red eye
+cv2.rectangle(frame,(width_center+lx,fy+ly),(width_center+lx+lw,fy+ly+lh),(0,0,255),2)
+#The whole face is green
+cv2.rectangle(frame,(fx,fy),(fx+fw,fy+fh),(0,255,0),2)
+
+writer.write(frame)
+except cv2.error as e:
+print(e)
+
+print(&quot;processing time {} seconds&quot;.format(time.time()-start))
+writer.release()
+cap.release()
+</code></pre><p>As a comparison target, the one using both eyes <code>haarcascade_eye.xml</code> is also given.</p>
+<pre><code class="language-Python:" data-lang="Python:">import cv2
+import os
+import time
+
+if __name__ =='__main__':
+
+cap = cv2.VideoCapture('one_minutes.mp4')
+
+cap_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+cap_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+
+fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
+writer = cv2.VideoWriter('detect_face_2.mp4',fourcc, fps, (cap_width, cap_height))
+
+cascade_base_path = &quot;/usr/local/Cellar/opencv/4.1.1_2/share/opencv4/haarcascades/&quot;
+
+face_cascade = cv2.CascadeClassifier(os.path.join(cascade_base_path,'haarcascade_frontalface_alt_tree.xml'))
+eyes_cascade = cv2.CascadeClassifier(os.path.join(cascade_base_path,'haarcascade_eye.xml'))
+
+start = time.time()
+
+try:
+while True:
+
+if not cap.isOpened():
+break
+
+ret, frame = cap.read()
+
+img_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+face_points = face_cascade.detectMultiScale(img_gray)
+It's a sequel.
+for (fx,fy,fw,fh) in face_points:
+It's a sequel.
+face_gray = img_gray[fy:fy+fh, fx:fx+fw]
+eyes_points = eyes_cascade.detectMultiScale(face_gray)
+It's a sequel.
+if 0 &lt;len(eyes_points):
+for (ex,ey,ew,eh) in eyes_points:
+# Eyes are orange
+cv2.rectangle(frame,(fx+ex,fy+ey),(fx+ex+ew,fy+ey+eh),(0,255,255),2)
+#The whole face is green
+cv2.rectangle(frame,(fx,fy),(fx+fw,fy+fh),(0,255,0),2)
+
+writer.write(frame)
+except cv2.error as e:
+print(e)
+
+print(&quot;processing time {} seconds&quot;.format(time.time()-start))
+writer.release()
+cap.release()
+</code></pre><p>#Result</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/3f33a234-3fd1-d287-9a29-9a17ccb346c8.gif" alt="face_main.gif"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/1d9b4af2-6eef-0fc9-c1e6-8aa90df85036.gif" alt="face_sub.gif"></p>
+<h3 id="i-understand">I understand</h3>
+<ul>
+<li>It was more accurate to judge by dividing the right eye and the left eye. Especially when I looked at the campe, I was more aware than the eyes!</li>
+<li>It is recognition of both eyes, but misrecognize other than eyes-Even if the face is slightly tilted, the accuracy drops sharply. I haven&rsquo;t broken N○H :tired_face: It seems that I don&rsquo;t recognize that there is no cascade that trains tilted or resized images. Now it might be best to use Deep Learning. Certainly, I learn that the accuracy is good because I am learning after copying, tilting, resizing, blurring etc. on one piece of data in the library: thinking: (If you do not remember new things again I mean&hellip; :weary: I don&rsquo;t have energy and vigor :thermometer_face:)</li>
+<li>It took 276.574 seconds to process. (About 4 minutes) If it is C++, it will end soon.</li>
+</ul>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>A few days ago, <a href="https://qiita.com/Ka-k/items/367ed8953c0350ce6e96">Try real-time face detection with OpenCV</a> was posted, and it was overkill: scream:
+It took longer to put together than to develop: weary:</p>
+<p>#Referenced links</p>
+<ul>
+<li><a href="https://qiita.com/hitomatagi/items/04b1b26c1bc2e8081427#haar-like%E7%89%B9%E5%BE%B4%E5%88%86%E9%A1%9E%E5%99%A8">Face recognition using OpenCV (Haar-like feature classifier)</a></li>
+<li><a href="https://qiita.com/FukuharaYohei/items/ec6dce7cc5ea21a51a82">[Commentary for beginners] openCV face detection mechanism and practice (detectMultiScale)</a>
+-Detailed explanation. It seems that the accuracy is not good if the object you want to track is rotating</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

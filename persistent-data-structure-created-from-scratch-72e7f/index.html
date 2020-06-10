@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Persistent data structure created from scratch | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Persistent data structure created from scratch</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/javascript"> JavaScript</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/algorithm"> algorithm</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Many data structures provide destructive operations. Arrays, for example, offer the ability to update one element with another. The processing time of the array update operation is excellent in that it does not depend on the length or value of the array.
+On the other hand, there are times when you want to perform non-destructive operations on data structures. For example, in each calculation of reduce/fold processing (convolution operation) that uses an array as a cumulative value, a new array should be generated nondestructively (it is possible to use the array after destruction as the calculation result, but Is hard to say). Or if you need to set a new object after the update like state update of React&rsquo;s state hook, you need to non-destructively create a new object and set it as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#66d9ef">const</span> [<span style="color:#a6e22e">items</span>, <span style="color:#a6e22e">setItems</span>] <span style="color:#f92672">=</span> <span style="color:#a6e22e">useState</span>([<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">2</span>]);
+<span style="color:#75715e">// Add one element to items, but the calculation time is proportional to the number of items
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">setItems</span>(<span style="color:#a6e22e">state</span> =&gt; ([ ...<span style="color:#a6e22e">state</span>, <span style="color:#ae81ff">2019</span>]));
+</code></pre></div><p>Implementing non-destructive operations in a straightforward manner will increase the processing time. Even if only one element is changed, it is necessary to generate a new array including other elements. Therefore, I want to write with the feeling of the following NG code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#66d9ef">const</span> [<span style="color:#a6e22e">items</span>, <span style="color:#a6e22e">setItems</span>] <span style="color:#f92672">=</span> <span style="color:#a6e22e">useState</span>([<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">2</span>]);
+<span style="color:#75715e">// Do not add destructive operation to NG!! state (I want to add it in constant time)
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">setItems</span>(<span style="color:#a6e22e">state</span> =&gt; <span style="color:#a6e22e">state</span>.<span style="color:#a6e22e">push</span>(<span style="color:#ae81ff">2019</span>));
+</code></pre></div><p>Is it possible to update data in a fast and non-destructive manner?
+When the difference per operation is small, it seems intuitively that it is possible to improve efficiency by reusing other data.
+<strong>Persistent data structures</strong> are data structures that provide non-destructive operations based on this idea.</p>
+<h1 id="problem-array-versioning">Problem: Array versioning</h1>
+<p>As a case where persistent data structures are useful, this article addresses the issue of array versioning.</p>
+<h2 id="problem-statement">Problem statement</h2>
+<p>Given the array $A$. The initial version name of $A$ is a.0.
+You&rsquo;ve done a couple of update operations, giving a new version name to an array that updates the value of one element of one version of $A$ to another.
+After performing all update operations, you want to process the query below.</p>
+<blockquote>
+<p>What is the $i$th element of the specified version of $A$?</p>
+</blockquote>
+<p>Multiple queries are given above, please answer each one.
+However, the array is 0-indexed (the first element is counted as 0th).</p>
+<h2 id="example">Example</h2>
+<p>Set $A = [2, 0, 1, 9]$.
+Consider the case where the following update operations are executed in order.</p>
+<table>
+<thead>
+<tr>
+<th>Update target version</th>
+<th>Update target index</th>
+<th>Updated value</th>
+<th>Updated version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a.0</td>
+<td>2</td>
+<td>2</td>
+<td>a.1</td>
+</tr>
+<tr>
+<td>a.1</td>
+<td>0</td>
+<td>1</td>
+<td>a.2</td>
+</tr>
+<tr>
+<td>a.2</td>
+<td>1</td>
+<td>1</td>
+<td>a.3</td>
+</tr>
+<tr>
+<td>a.1</td>
+<td>3</td>
+<td>0</td>
+<td>b.2</td>
+</tr>
+<tr>
+<td>a.3</td>
+<td>3</td>
+<td>3</td>
+<td>a.4</td>
+</tr>
+</tbody>
+</table>
+<p>The version tree of the array is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/382b02cd-b191-2c91-31e2-e5f60c0f7bea.png" alt="image.png"></p>
+<p>At this time, the query and the answer example of the query are as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Query target version</th>
+<th>Query target index</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a.1</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>a.4</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>a.4</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>b.2</td>
+<td>3</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="efficient-offline-algorithm">Efficient offline algorithm</h2>
+<p><strong>Offline algorithm</strong> is an algorithm that solves a problem with all input data (including queries) in advance accessible. You can think of it as batch processing.
+On the other hand, an algorithm that cannot access all input data in advance and solves the problem by processing from the beginning is called an <strong>online algorithm</strong>. First, let&rsquo;s consider how to solve the above problem efficiently with an offline algorithm.</p>
+<p>It will take a long time to track the array status in that version for each query.
+So, pre-read the queries and combine them for each version to reduce waste.
+All queries can be answered in linear time with respect to the number of operations and the number of queries by answering the (combined) queries for each version by scanning each version in depth-first search starting from version a.0. (The advantage of being an offline algorithm works).</p>
+<p>Let&rsquo;s implement the above offline algorithm in Python.
+First is input. Since it is an offline algorithm, all update operations/queries are given from the beginning.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Initial state of array</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">#Update operation</span>
+operations <span style="color:#f92672">=</span> ((<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>,<span style="color:#e6db74">&#39;a.1&#39;</span>), (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a.2&#39;</span>), (<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.3&#39;</span>),
+              (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;b.2&#39;</span>), (<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>,<span style="color:#e6db74">&#39;a.4&#39;</span>)]
+<span style="color:#75715e"># Query</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>)]
+</code></pre></div><p>Next, we summarize the target version of each query as dictionary type data <code>grouped_queries</code>.
+For example, <code>grouped_queries['a.4'] = [1, 3]</code>, where <code>grouped_queries[v]</code> is a list of indexes targeted by queries for version <code>v</code>.
+Use defaultdict so that if there is no query for that version it will be an empty list (eg <code>grouped_queries['a.3'] = []</code>).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> defaultdict
+
+<span style="color:#75715e"># Look ahead in queries and group queries by version</span>
+grouped_queries <span style="color:#f92672">=</span> defaultdict(list)
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    grouped_queries[version]<span style="color:#f92672">.</span>append(index)
+</code></pre></div><p>With this query, it becomes <code>grouped_queries = {'a.1': [2],'a.4': [1, 3],'b.2': [3]}</code>.</p>
+<p>Next, create a version tree <code>next_versions</code> to streamline the scanning of each version.
+For example, <code>next_versions[v]</code> is the version v, as in <code>next_versions['a.1'] = [('a.2', 0, 1), ('b.2', 3, 0)]</code> It is a list of tuples (v&rsquo;, index changed by v&rsquo;, value after change) for the next version v&rsquo;of.
+This also uses defaultdict so that it will be an empty list if the next version does not exist (eg <code>next_versions['a.4'] = []</code>).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Build version tree</span>
+next_versions <span style="color:#f92672">=</span> defaultdict(list)
+<span style="color:#66d9ef">for</span> version, index, new_value, next_version <span style="color:#f92672">in</span> operations:
+    next_versions[version]<span style="color:#f92672">.</span>append((next_version, index, new_value))
+</code></pre></div><p>With this modification operation, <code>next_versions</code> is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#39;a.0&#39;: [(&#39;a.1&#39;, 2, 2)],
+ &#39;a.1&#39;: [(&#39;a.2&#39;, 0, 1), (&#39;b.2&#39;, 3, 0)],
+ &#39;a.2&#39;: [(&#39;a.3&#39;, 1, 1)],
+ &#39;a.3&#39;: [(&#39;a.4&#39;, 3, 3)]}
+</code></pre></div><p>Now you are ready to calculate the answer for each query!
+By doing a depth-first search of the version tree, you can perform efficient updates focusing on the differences between the versions (use <code>next_versions</code> here).
+When you visit a version with depth-first search, refer to <code>grouped_queries</code> and create answer memos for all queries for that version (after answering depth-first search, just read the answer memos) That is the goal).
+Define the depth-first search as a recursive function <code>compute_answers(version, a, answer)</code>.
+The process flow of <code>compute_answers(version, a, answer)</code> is as follows.</p>
+<ol>
+<li>Answer each query for version <code>version</code> and write the answer in answer memo <code>answer</code></li>
+<li>Execute the update operation of the array corresponding to the next version <code>next_version</code> (<code>a</code> becomes the updated array)</li>
+<li>Recursively call <code>compute_answers(next_version, a, answer)</code> for the next version <code>next_version</code>.</li>
+<li>Rewind the array update operation corresponding to the next version <code>next_version</code> (<code>a</code> returns to the array before update)</li>
+<li>If there is another version, go back to 2.</li>
+</ol>
+<p>The initial version is&rsquo;a.0&rsquo;, so the first call should be <code>compute_answers('a.0', A, answers)</code> (<code>answers</code> is an empty dictionary).
+The image of this depth-first search is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/d60dbd3f-7d70-0607-854f-14cb492d1d94.png" alt="image.png"></p>
+<p>If this is made into Python code, it will be as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># After scanning the version tree by depth-first search and performing update processing for each version</span>
+<span style="color:#75715e"># Create answer memos for all queries for that version (don&#39;t print answers to queries at this time)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">compute_answers</span>(version, a, answers):
+    <span style="color:#75715e"># version: version to be processed</span>
+    <span style="color:#75715e">#a: Array A in the version to be processed</span>
+    <span style="color:#75715e"># answers: Query answer notes. Is a dictionary, and answers[version][index] represents the query answer at index index for version version</span>
+
+    <span style="color:#75715e"># Create answer notes for all queries for that version</span>
+    <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> grouped_queries[version]:
+        answers[version][index] <span style="color:#f92672">=</span> a[index]
+    <span style="color:#75715e"># Create answer memo for query in next version based on depth-first searchfor next_version, index, new_value in next_versions[version]:</span>
+        old_value <span style="color:#f92672">=</span> a[index]
+        a[index] <span style="color:#f92672">=</span> new_value
+        compute_answers(next_version, a, answers)
+        a[index] <span style="color:#f92672">=</span> old_value
+
+answers <span style="color:#f92672">=</span> defaultdict(dict)
+<span style="color:#75715e"># Initial version is a.0</span>
+<span style="color:#75715e"># After execution, answer memo for each query is created in answers</span>
+compute_answers(<span style="color:#e6db74">&#39;a.0&#39;</span>, A, answers)
+</code></pre></div><p>The answer memo obtained by executing the above is <code>answers = {'a.1': {2: 2},'a.4': {1: 1, 3: 3},'b.2': {3 : 0}}</code>.
+For example, the first value of the array in version&rsquo;a.4&rsquo; can be referred to as <code>answers['a.4'][1] = 1</code>.</p>
+<p>All you have to do is reply to each query using the answer memo.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Answer each query using answer memo</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {answers[version][index]}&#39;</span>)
+</code></pre></div><p>Here is the code so far.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> defaultdict
+
+<span style="color:#75715e"># Initial state of array</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">#Update operation</span>
+operations <span style="color:#f92672">=</span> [
+    (<span style="color:#e6db74">&#34;a.0&#34;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#e6db74">&#34;a.1&#34;</span>),
+    (<span style="color:#e6db74">&#34;a.1&#34;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#34;a.2&#34;</span>),
+    (<span style="color:#e6db74">&#34;a.2&#34;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#34;a.3&#34;</span>),
+    (<span style="color:#e6db74">&#34;a.1&#34;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#34;b.2&#34;</span>),
+    (<span style="color:#e6db74">&#34;a.3&#34;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#34;a.4&#34;</span>),
+]
+<span style="color:#75715e"># Query</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#34;a.1&#34;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#34;a.4&#34;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#34;a.4&#34;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#34;b.2&#34;</span>, <span style="color:#ae81ff">3</span>)]
+
+<span style="color:#75715e"># Look ahead in queries and group queries by version</span>
+grouped_queries <span style="color:#f92672">=</span> defaultdict(list)
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    grouped_queries[version]<span style="color:#f92672">.</span>append(index)
+
+<span style="color:#75715e">#Build version tree</span>
+next_versions <span style="color:#f92672">=</span> defaultdict(list)
+<span style="color:#66d9ef">for</span> version, index, new_value, next_version <span style="color:#f92672">in</span> operations:
+    next_versions[version]<span style="color:#f92672">.</span>append((next_version, index, new_value))
+
+
+<span style="color:#75715e"># After scanning the version tree by depth-first search and performing update processing for each version</span>
+<span style="color:#75715e"># Create answer memos for all queries for that version (don&#39;t print answers to queries at this time)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">compute_answers</span>(version, a, answers):
+    <span style="color:#75715e"># version: version to be processed</span>
+    <span style="color:#75715e">#a: Array A in the version to be processed</span>
+    <span style="color:#75715e"># answers: Query answer notes. Is a dictionary, and answers[version][index] represents the query answer at index index for version version</span>
+
+    <span style="color:#75715e"># Create answer notes for all queries for that version</span>
+    <span style="color:#66d9ef">for</span> index <span style="color:#f92672">in</span> grouped_queries[version]:
+        answers[version][index] <span style="color:#f92672">=</span> a[index]
+    <span style="color:#75715e"># Create answer memo for query in next version based on depth-first search</span>
+    <span style="color:#66d9ef">for</span> next_version, index, new_value <span style="color:#f92672">in</span> next_versions[version]:
+        old_value <span style="color:#f92672">=</span> a[index]
+        a[index] <span style="color:#f92672">=</span> new_value
+        compute_answers(next_version, a, answers)
+        a[index] <span style="color:#f92672">=</span> old_value
+
+
+answers <span style="color:#f92672">=</span> defaultdict(dict)
+<span style="color:#75715e"># Initial version is a.0</span>
+<span style="color:#75715e"># After execution, answer memo for each query is created in answers</span>
+compute_answers(<span style="color:#e6db74">&#39;a.0&#39;</span>, A, answers)
+
+<span style="color:#75715e"># Answer each query using answer memo</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {answers[version][index]}&#39;</span>)
+</code></pre></div><p>The execution result is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">a.1: A[2] = 2
+a.4: A[1] = 1
+a.4: A[3] = 3
+b.2: A[3] = 0
+</code></pre></div><p>We got the expected results!</p>
+<h2 id="stupid-online-algorithm">Stupid online algorithm</h2>
+<p>We have found that prefetching a query allows us to answer queries efficiently.
+Next, let&rsquo;s solve the problem with an online algorithm that does not prefetch the query. Let&rsquo;s think about how to answer each query without prefetching the query like the code below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Initial state of array</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">#Update operation</span>
+operations <span style="color:#f92672">=</span> ((<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>,<span style="color:#e6db74">&#39;a.1&#39;</span>), (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a.2&#39;</span>), (<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.3&#39;</span>),
+              (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;b.2&#39;</span>), (<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>,<span style="color:#e6db74">&#39;a.4&#39;</span>)]
+
+<span style="color:#75715e"># Do something for the update operation</span>
+
+<span style="color:#75715e"># Function that answers the query (the query is not read ahead)</span>
+Write an appropriate expression <span style="color:#f92672">in</span> <span style="color:#75715e"># hoge</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">answer</span>(version, index):
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {hoge}&#39;</span>)
+
+
+<span style="color:#75715e"># Query</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>)]
+
+<span style="color:#75715e"># Apply the answer function to each query and answer</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    answer(version, index)
+</code></pre></div><h3 id="implementation-with-full-backup">Implementation with full backup</h3>
+<p>Let&rsquo;s start with perhaps the simplest idea, an online algorithm with full backups. It is a method to create a new updated array and hold it each time the version is updated.
+Each update operation takes computation time proportional to the length of the array $A$. Also, since the array $A$ is created for each update operation, it requires a memory proportional to (the number of update operations) x (the number of elements of $A$).
+It takes a lot of computing time and memory to finish the update operation like this, but the query is easy to answer (since it only references the target index of the target version).</p>
+<p>Below is an example implementation in Python.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Initial state of array</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">#Update operation</span>
+operations <span style="color:#f92672">=</span> ((<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>,<span style="color:#e6db74">&#39;a.1&#39;</span>), (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a.2&#39;</span>), (<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.3&#39;</span>),
+              (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;b.2&#39;</span>), (<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>,<span style="color:#e6db74">&#39;a.4&#39;</span>)]
+
+<span style="color:#75715e"># Make a full backup</span>
+cache <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;a.0&#39;</span>: A}
+<span style="color:#66d9ef">for</span> version, index, new_value, next_version <span style="color:#f92672">in</span> operations:
+    cache[next_version] <span style="color:#f92672">=</span> [
+        new_value <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> index <span style="color:#66d9ef">else</span> a
+        <span style="color:#66d9ef">for</span> i, a <span style="color:#f92672">in</span> enumerate(cache[version])
+    ]
+
+
+<span style="color:#75715e"># Function that answers the query (the query is not read ahead)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">answer</span>(version, index):
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {cache[version][index]}&#39;</span>)
+
+
+<span style="color:#75715e"># Query</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>)]
+
+<span style="color:#75715e"># Answer each query with a full backup</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    answer(version, index)
+</code></pre></div><h3 id="implementation-by-state-restoration">Implementation by state restoration</h3>
+<p>Next, consider an online algorithm by state restoration. Contrary to full backup, instead of skipping update operation, it is a policy to do hard query answer.
+Based on each update operation, make a note of the previous version and the update contents for each version as follows (do not do anything for the array $A$ at this time).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/683b0adb-d7e9-287a-4a60-df716e48d704.png" alt="image.png"></p>
+<p>For the query, it recursively traces the previous version from the target version, finds the operation that is updating the target index, and returns the updated value of the update operation. If the target index has not been updated even after tracing to the initial version, the value of the target index of $A$ in the initial state should be returned.</p>
+<p>As an example, suppose you want to find the first value of $A$ in version a.4.
+First, check the index to be updated in a.4. The index to be updated is 3, so move to the previous version a.3.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/2865160b-6ac9-1254-9a06-e177767f45cc.png" alt="image.png"></p>
+<p>The index to be updated in a.3 is 1, so you can just reply with the updated value in a.3.
+Since the updated value is 1, answer 1 to the query.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/9c012498-5694-7ff5-6da0-47eeccffc969.png" alt="image.png"></p>
+<p>Consider the processing time for state restoration.
+Each update operation can be processed in constant time. Query answers, on the other hand, (in the worst case) take computation time proportional to the number of update operations.
+It has excellent memory usage and is proportional to (the number of elements in the array $A$) + (the number of update operations).</p>
+<p>Below is an example implementation in Python.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Initial state of array</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">#Update operation</span>
+operations <span style="color:#f92672">=</span> ((<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>,<span style="color:#e6db74">&#39;a.1&#39;</span>), (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a.2&#39;</span>), (<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.3&#39;</span>),(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;b.2&#39;</span>), (<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>,<span style="color:#e6db74">&#39;a.4&#39;</span>)]
+
+<span style="color:#75715e">#Build version tree</span>
+<span style="color:#75715e"># prev_version[v] is a tuple (v&#39;, index changed by v, value after change) for version v&#39;before version v</span>
+prev_version <span style="color:#f92672">=</span> dict()
+<span style="color:#66d9ef">for</span> prev, index, new_value, version <span style="color:#f92672">in</span> operations:
+    prev_version[version] <span style="color:#f92672">=</span> (prev, index, new_value)
+
+
+<span style="color:#75715e">#Function that answers the query by state restoration (query is not prefetched)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">answer</span>(version, index):
+    Go back <span style="color:#f92672">from</span> <span style="color:#75715e"># version and search for the operation that updated the index th element</span>
+    <span style="color:#75715e">#If there is such an operation, return the changed value for the most recent operation.</span>
+    <span style="color:#75715e"># If there is no such operation, the index th element has not been updated until that version, so</span>
+    <span style="color:#75715e"># Returns the index th element in the initial state</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">trace_element</span>(v):
+        <span style="color:#66d9ef">if</span> v <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;a.0&#39;</span>:
+            <span style="color:#66d9ef">return</span> A[index]
+        <span style="color:#66d9ef">else</span>:
+            prev_v, i, value <span style="color:#f92672">=</span> prev_version[v]
+            <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> index:
+                <span style="color:#66d9ef">return</span> value
+            <span style="color:#66d9ef">else</span>:
+                <span style="color:#66d9ef">return</span> trace_element(prev_v)
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {trace_element(version)}&#39;</span>)
+
+<span style="color:#75715e"># Query</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>)]
+
+<span style="color:#75715e"># Answer each query by restoring the state</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    answer(version, index)
+</code></pre></div><p>#What is a persistent data structure</p>
+<p>Normally, when you perform an update operation on a data structure, its state changes and the state before the change is lost. Due to this characteristic, it was necessary to get a full backup and restore state to version the array.
+On the other hand, a data structure that retains the state before modification is called a persistent data structure. Keeping the state before the change seems to be the same as a full backup, but by managing differential information well, you may be able to perform efficient data management while acting like a full backup.
+For example, a persistent array manages data as if it were between a full backup implementation and a state restore implementation (more on this later).</p>
+<p>This article introduces the persistent stack as an introduction to efficient persistent data structures.
+After that, we will introduce persistent arrays and efficiently solve the initial array versioning problem with an online algorithm.</p>
+<h2 id="persistent-stack">Persistent stack</h2>
+<p>The stack can simply be persisted. First, let&rsquo;s get started with persisting data structures in the stack.</p>
+<h3 id="persistent-stack-specifications">Persistent stack specifications</h3>
+<p>A stack is a Last In First Out (LIFO) data structure that enables the following operations.</p>
+<ul>
+<li>push(x): Store data x at the top of the stack</li>
+<li>top(): returns the data at the top of the stack</li>
+<li>pop(): delete the top data from the stack</li>
+</ul>
+<p>Let&rsquo;s make the stack persistent. In case of persistent stack, the above operation is as follows.</p>
+<ul>
+<li>push(x): returns the stack after storing the data x on top of the stack (this stack is unchanged)</li>
+<li>top(): returns the data at the top of the stack</li>
+<li>pop(): returns the stack after removing the top data from the stack (this stack is unchanged)</li>
+</ul>
+<p>Note that push and pop are non-destructive operations.</p>
+<h3 id="persistent-stack-implementation-policy">Persistent stack implementation policy</h3>
+<p>Manage all versions of the data using a linked list.
+Each node of the linked list holds two data (data, prev).</p>
+<ul>
+<li>data: the top data of the current version of the stack (None if empty)</li>
+<li>prev: a node representing the previous version of the stack (None if empty)</li>
+</ul>
+<p>The point of implementation is to consider the nodes in the linked list as stack objects.
+Note that we do not consider the entire linked list as a stack object.
+This allows you to make the stack persistent without taking a full backup.
+The image is as shown below (a_0, a_1, a_2, a_3, b_2, b_3 are stack objects of each version).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/307e2a16-8e02-90a8-e089-e482173b7c73.png" alt="image.png"></p>
+<p>By managing in this way, each operation can be realized as follows.</p>
+<p>push(x): add a node whose data is x and prev is the current version of the stack to the linked list and return the added node
+Example: When push(9) is executed on the stack of b_2, create c_3 below and return the created c_3.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/faa872e7-54cd-237a-62b3-7187c90b3967.png" alt="image.png"></p>
+<p>top(): returns the data for the current version of the node
+Example: If top() is executed on the stack of b_2, it just returns 3 stored in the data of b_2.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/a1bb8db0-2ce9-fbe8-ad59-7bded7b321d8.png" alt="image.png"></p>
+<p>pop(): returns the prev of the current version of the node
+Example: When pop() is executed on the stack of b_2, it just returns the stack a_1 pointed to by the prev of b_2.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/761f5029-0b0b-67c8-b365-20be0caf31a1.png" alt="image.png"></p>
+<p>The point is that the processing time of each operation does not depend on the stack size, that is, <strong>constant time</strong>.</p>
+<h3 id="persistent-stack-implementation">Persistent stack implementation</h3>
+<p>Let&rsquo;s implement the persistent stack in Python.
+Implement the persistent stack as the <code>PersistentStack</code> class.
+A linked list can be expressed by setting the type of the <code>prev</code> field of <code>PersistentStack</code> to <code>PersistentStack</code> (recursive data structure).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PersistentStack</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, value<span style="color:#f92672">=</span>None, prev<span style="color:#f92672">=</span>None):
+        self<span style="color:#f92672">.</span>value <span style="color:#f92672">=</span> value
+        self<span style="color:#f92672">.</span>prev <span style="color:#f92672">=</span> prev
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">top</span>(self):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>value
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">push</span>(self, x):
+        <span style="color:#66d9ef">return</span> PersistentStack(x, self)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">pop</span>(self):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>prev
+</code></pre></div><p>Play with your own persistent stack.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">a_0 <span style="color:#f92672">=</span> PersistentStack()
+a_1 <span style="color:#f92672">=</span> a_0<span style="color:#f92672">.</span>push(<span style="color:#ae81ff">3</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_1: {a_1.top()}&#39;</span>)
+a_2 <span style="color:#f92672">=</span> a_1<span style="color:#f92672">.</span>push(<span style="color:#ae81ff">1</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;==== create up to a_2 ====&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_1: {a_1.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_2: {a_2.top()}&#39;</span>)
+a_3 <span style="color:#f92672">=</span> a_2<span style="color:#f92672">.</span>push(<span style="color:#ae81ff">4</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;==== create up to a_3 ====&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_1: {a_1.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_2: {a_2.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_3: {a_3.top()}&#39;</span>)
+b_2 <span style="color:#f92672">=</span> a_1<span style="color:#f92672">.</span>push(<span style="color:#ae81ff">3</span>)
+b_3 <span style="color:#f92672">=</span> b_2<span style="color:#f92672">.</span>push(<span style="color:#ae81ff">4</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;==== create up to b_3 ====&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_1: {a_1.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_2: {a_2.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_3: {a_3.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;b_2: {b_2.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;b_3: {b_3.top()}&#39;</span>)
+c_2 <span style="color:#f92672">=</span> a_1<span style="color:#f92672">.</span>pop()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;==== create up to c_2 ====&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_1: {a_1.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_2: {a_2.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;a_3: {a_3.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;b_2: {b_2.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;b_3: {b_3.top()}&#39;</span>)
+<span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;c_2: {c_2.top()}&#39;</span>)
+</code></pre></div><p>The execution result is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">a_1: 3
+==== Create up to a_2 ====
+a_1: 3
+a_2: 1
+==== Create up to a_3 ====
+a_1: 3
+a_2: 1
+a_3: 4
+==== Create up to b_3 ====
+a_1: 3
+a_2: 1
+a_3: 4
+b_2: 3
+b_3: 4
+==== Create up to c_2 ====
+a_1: 3
+a_2: 1
+a_3: 4
+b_2: 3
+b_3: 4
+c_2: None
+</code></pre></div><p>You can see that the original stack state has not changed even if you call the <code>push</code> and <code>pop</code> methods.</p>
+<h2 id="persistent-array">Persistent array</h2>
+<p>This section describes the persistent contents, which is the main content of this article.</p>
+<h3 id="persistent-array-specifications">Persistent array specifications</h3>
+<p>For simplicity, we will deal with arrays that only provide lookup and update operations.</p>
+<ul>
+<li>get(key): returns the key&rsquo;th element of the array</li>
+<li>update(key, value): returns the array after updating the key&rsquo;th element of the array to value (this array is unchanged)</li>
+</ul>
+<p>Note that update is a non-destructive operation.</p>
+<h3 id="persistent-array-implementation-policy">Persistent array implementation policy</h3>
+<p>Efficiently manage the difference data of each version using a tree. This time I will use a binary tree.
+The root of the tree is the vertex that represents the entire array. The left child of the root is the vertex that represents the left half of the array. The right child of the root is the vertex that represents the right half of the array.
+Similarly, vertices are recursively defined. A leaf corresponds to one element of the array.
+For example, the binary tree corresponding to the array $A = [2, 0, 1, 9]$ is<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/668372b3-f287-a0b3-4ab5-178168626cb8.png" alt="image.png"></p>
+<p>This kind of mapping of arrays to trees may seem futile, but it&rsquo;s the key to accelerating (and reasonably fast) lookup and update operations at the same time.
+The point is that one update operation has a small effect on the tree. Consider the case where the first element is updated to 1 in the previous example.
+The only vertices affected by the update are the vertices painted in yellow below.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/d8551dbb-1b82-90df-7c81-22e23fd763f2.png" alt="image.png"></p>
+<p>This means that only as many vertices as the height of the tree will be affected by the update.
+Since the white vertices are the same as before the update, you can skip the data management as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/381c717c-f4ba-2a56-ada2-0f4bfb00fe58.png" alt="image.png"></p>
+<p>Using this, implement reference operation and update operation as follows.</p>
+<ul>
+<li>get(key): Start from the root of the current version of the tree. descends toward the leaf corresponding to the keyth element</li>
+<li>update(key, value): Create a new tree root. One child can reuse the vertices of the previous version of the tree. The other child is new. Repeat this recursively</li>
+</ul>
+<p>The point is that the processing time of each operation is the time proportional to the height of the tree (logarithmic time for the length of the array).</p>
+<h3 id="persistent-array-implementation">Persistent array implementation</h3>
+<p>Define each vertex as a Node class.
+Each node has the following 5 data.</p>
+<ul>
+<li>start: Start point of the right half-open section managed by the vertex</li>
+<li>stop: the end of the section managed by the vertex</li>
+<li>left_child: The left child of that vertex. None for leaves</li>
+<li>right_child: The right child of that vertex. None for leaves</li>
+<li>value: The value of the array element corresponding to that leaf. None if not a leaf</li>
+</ul>
+<p>The reason for having start and stop is to allow get(key) to be processed simply.
+If the key belongs to the first half of the interval [start, stop), it goes down to the left child, and if it belongs to the second half, it goes down to the right child.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Node</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, start, stop, left_child, right_child, value):
+        self<span style="color:#f92672">.</span>start <span style="color:#f92672">=</span> start
+        self<span style="color:#f92672">.</span>stop <span style="color:#f92672">=</span> stop
+        self<span style="color:#f92672">.</span>left_child <span style="color:#f92672">=</span> left_child
+        self<span style="color:#f92672">.</span>right_child <span style="color:#f92672">=</span> right_child
+        self<span style="color:#f92672">.</span>value <span style="color:#f92672">=</span> value
+</code></pre></div><p>Next, define a function that builds a binary tree corresponding to an array where each element is 0. For simplicity, we will assume that the length of the array is a power of 2 (the constructed binary tree will be a complete binary tree).
+Functions that build a binary tree can be defined recursively. Let create_tree(start, stop) be a function that creates the vertices and their descendants corresponding to the right half-open interval [start, stop). You just have to process create_tree(start, stop) as follows.</p>
+<ul>
+<li>If the interval length is 1 (that is, if it is a vertex corresponding to a leaf), returns a Node with no children (assign 0 to value).</li>
+<li>If the interval length is 2 or more (that is, if it is a non-leaf vertex), recursively create the left child and the right child, and return a Node with those left and right children. More specifically, it handles the following:
+<ol>
+<li>Call create_tree(start, (start + stop) / 2) and let the created Node be L. Here, [start, start + stop) / 2) corresponds to the left half section.</li>
+<li>Call create_tree((start + stop) / 2, stop) and call the created Node R. Here, [(strat + stop) / 2, stop) corresponds to the right half section.</li>
+<li>Create a new Node with left child as L and right child as R.</li>
+</ol>
+</li>
+</ul>
+<p>The above process can be expressed as Python code as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_tree</span>(start, stop):
+    is_leaf <span style="color:#f92672">=</span> start <span style="color:#f92672">==</span> stop<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">return</span> Node(
+        start<span style="color:#f92672">=</span>start,
+        stop<span style="color:#f92672">=</span>stop,
+        left_child<span style="color:#f92672">=</span>(None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> create_tree(
+            start, (start <span style="color:#f92672">+</span> stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>)),
+        right_child<span style="color:#f92672">=</span>(None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> create_tree(
+            (start <span style="color:#f92672">+</span> stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>, stop)),
+        value<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0</span> <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> None))
+</code></pre></div><p>Now you&rsquo;re ready to create a persistent array. Define the persistent array as the PersistentArray class.
+Since only the root data can be retained, each descendant of the binary tree can be reached, so PersistentArray has only the root data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PersistentArray</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, root: Node):
+        self<span style="color:#f92672">.</span>root <span style="color:#f92672">=</span> root
+</code></pre></div><p>Then implement get(key). As mentioned above, it will be implemented according to the following policy.</p>
+<blockquote>
+<ul>
+<li>get(key): Start from the root of the current version of the tree. descends toward the leaf corresponding to the keyth element</li>
+</ul>
+</blockquote>
+<p>This time we will introduce and implement the recursive function find. find takes the current Node as an argument, and if the argument Node is a leaf, returns the value that the leaf has, otherwise returns the result of finding the child corresponding to the interval to which key belongs among the left and right children. .. Then get(key) only needs to return the result of passing the root to find.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, key):
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">find</span>(node):
+            <span style="color:#66d9ef">return</span> (
+                node<span style="color:#f92672">.</span>value <span style="color:#66d9ef">if</span> node<span style="color:#f92672">.</span>value <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None <span style="color:#66d9ef">else</span>
+                find(node<span style="color:#f92672">.</span>left_child) <span style="color:#66d9ef">if</span> key <span style="color:#f92672">&lt;</span>(node<span style="color:#f92672">.</span>start <span style="color:#f92672">+</span> node<span style="color:#f92672">.</span>stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span> <span style="color:#66d9ef">else</span>
+                find(node<span style="color:#f92672">.</span>right_child)
+            )
+        <span style="color:#66d9ef">return</span> find(self<span style="color:#f92672">.</span>root)
+</code></pre></div><p>Then implement update(key, value). The implementation policy of update was as follows.</p>
+<blockquote>
+<ul>
+<li>update(key, value): create a new tree root. One child can reuse the vertices of the previous version of the tree. The other child is new. Repeat this recursively</li>
+</ul>
+</blockquote>
+<p>update is also implemented by introducing a recursive function. This time we will introduce a recursive function named update_tree.
+update_tree takes the existing Node (of the version before ** update) as an argument, and returns the leaf with value if the argument Node is a leaf, otherwise returns the result of processing the following.</p>
+<ol>
+<li>Create a new Node.</li>
+<li>Of the left and right children of the argument Node, the child corresponding to the section where the key does not belong (not affected by the update) is the child of the new Node (use the Node before the update).</li>
+<li>Pass the other child to update_tree and make the result a child of the new Node.</li>
+</ol>
+<p>Then update(key, value) need only return the result of passing the root to update_tree.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(self, key, value):
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_tree</span>(node):
+            is_leaf <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>start <span style="color:#f92672">==</span> node<span style="color:#f92672">.</span>stop<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+            is_in_left <span style="color:#f92672">=</span> key <span style="color:#f92672">&lt;</span>(node<span style="color:#f92672">.</span>start <span style="color:#f92672">+</span> node<span style="color:#f92672">.</span>stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>
+            <span style="color:#66d9ef">return</span> Node(
+                start<span style="color:#f92672">=</span>node<span style="color:#f92672">.</span>start,
+                stop<span style="color:#f92672">=</span>node<span style="color:#f92672">.</span>stop,
+                left_child<span style="color:#f92672">=</span>(
+                    None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span>
+                    update_tree(node<span style="color:#f92672">.</span>left_child) <span style="color:#66d9ef">if</span> is_in_left <span style="color:#66d9ef">else</span>
+                    node<span style="color:#f92672">.</span>left_child
+                ),
+                right_child<span style="color:#f92672">=</span>(
+                    None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span>
+                    node<span style="color:#f92672">.</span>right_child <span style="color:#66d9ef">if</span> is_in_left <span style="color:#66d9ef">else</span>
+                    update_tree(node<span style="color:#f92672">.</span>right_child)
+                ),
+                value<span style="color:#f92672">=</span>(value <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> None)
+            )
+        <span style="color:#66d9ef">return</span> PersistentArray(update_tree(self<span style="color:#f92672">.</span>root))
+</code></pre></div><p>The persistent array is now complete!
+Finally, since the initialization is a bit cumbersome, we will create a function that creates a persistent array where each element has an initial value of 0.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">new_persistent_array</span>(n):
+    <span style="color:#66d9ef">return</span> PersistentArray(create_tree(<span style="color:#ae81ff">0</span>, n))
+</code></pre></div><p>Here is the code for persistent arrays.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Node</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, start, stop, left_child, right_child, value):
+        self<span style="color:#f92672">.</span>start <span style="color:#f92672">=</span> start
+        self<span style="color:#f92672">.</span>stop <span style="color:#f92672">=</span> stop
+        self<span style="color:#f92672">.</span>left_child <span style="color:#f92672">=</span> left_child
+        self<span style="color:#f92672">.</span>right_child <span style="color:#f92672">=</span> right_child
+        self<span style="color:#f92672">.</span>value <span style="color:#f92672">=</span> value
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_tree</span>(start, stop):
+    is_leaf <span style="color:#f92672">=</span> start <span style="color:#f92672">==</span> stop<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">return</span> Node(start<span style="color:#f92672">=</span>start,
+        stop<span style="color:#f92672">=</span>stop,
+        left_child<span style="color:#f92672">=</span>(None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> create_tree(
+            start, (start <span style="color:#f92672">+</span> stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>)),
+        right_child<span style="color:#f92672">=</span>(None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> create_tree(
+            (start <span style="color:#f92672">+</span> stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>, stop)),
+        value<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0</span> <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> None))
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PersistentArray</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, root):
+        self<span style="color:#f92672">.</span>root <span style="color:#f92672">=</span> root
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, key):
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">find</span>(node):
+            <span style="color:#66d9ef">return</span> (
+                node<span style="color:#f92672">.</span>value <span style="color:#66d9ef">if</span> node<span style="color:#f92672">.</span>value <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None <span style="color:#66d9ef">else</span>
+                find(node<span style="color:#f92672">.</span>left_child) <span style="color:#66d9ef">if</span> key <span style="color:#f92672">&lt;</span> (node<span style="color:#f92672">.</span>start <span style="color:#f92672">+</span> node<span style="color:#f92672">.</span>stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span> <span style="color:#66d9ef">else</span>
+                find(node<span style="color:#f92672">.</span>right_child)
+            )
+        <span style="color:#66d9ef">return</span> find(self<span style="color:#f92672">.</span>root)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(self, key, value):
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_tree</span>(node):
+            is_leaf <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>start <span style="color:#f92672">==</span> node<span style="color:#f92672">.</span>stop <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+            is_in_left <span style="color:#f92672">=</span> key <span style="color:#f92672">&lt;</span> (node<span style="color:#f92672">.</span>start <span style="color:#f92672">+</span> node<span style="color:#f92672">.</span>stop) <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>
+            <span style="color:#66d9ef">return</span> Node(
+                start<span style="color:#f92672">=</span>node<span style="color:#f92672">.</span>start,
+                stop<span style="color:#f92672">=</span>node<span style="color:#f92672">.</span>stop,
+                left_child<span style="color:#f92672">=</span>(
+                    None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span>
+                    update_tree(node<span style="color:#f92672">.</span>left_child) <span style="color:#66d9ef">if</span> is_in_left <span style="color:#66d9ef">else</span>
+                    node<span style="color:#f92672">.</span>left_child
+                ),
+                right_child<span style="color:#f92672">=</span>(
+                    None <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span>
+                    node<span style="color:#f92672">.</span>right_child <span style="color:#66d9ef">if</span> is_in_left <span style="color:#66d9ef">else</span>
+                    update_tree(node<span style="color:#f92672">.</span>right_child)
+                ),
+                value<span style="color:#f92672">=</span>(value <span style="color:#66d9ef">if</span> is_leaf <span style="color:#66d9ef">else</span> None)
+            )
+        <span style="color:#66d9ef">return</span> PersistentArray(update_tree(self<span style="color:#f92672">.</span>root))
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">new_persistent_array</span>(n):
+    <span style="color:#66d9ef">return</span> PersistentArray(create_tree(<span style="color:#ae81ff">0</span>, n))
+</code></pre></div><p>使用例</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">N <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>
+A <span style="color:#f92672">=</span> new_persistent_array(N)
+<span style="color:#66d9ef">print</span>([A<span style="color:#f92672">.</span>get(i) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(N)])
+B <span style="color:#f92672">=</span> A<span style="color:#f92672">.</span>update(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">3</span>)
+C <span style="color:#f92672">=</span> B<span style="color:#f92672">.</span>update(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;==== Aを更新 ====&#39;</span>)
+<span style="color:#66d9ef">print</span>([A<span style="color:#f92672">.</span>get(i) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(N)])
+<span style="color:#66d9ef">print</span>([B<span style="color:#f92672">.</span>get(i) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(N)])
+<span style="color:#66d9ef">print</span>([C<span style="color:#f92672">.</span>get(i) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(N)])
+</code></pre></div><p>出力</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">[0, 0, 0, 0, 0, 0, 0, 0]
+==== Aを更新 ====
+[0, 0, 0, 0, 0, 0, 0, 0]
+[3, 0, 0, 0, 0, 0, 0, 0]
+[3, 0, 1, 0, 0, 0, 0, 0]
+</code></pre></div><p>updateを呼び出した後も更新前の配列には影響を与えていないことが分かります。</p>
+<h1 id="永続配列を用いた効率的なオンラインアルゴリズム">永続配列を用いた効率的なオンラインアルゴリズム</h1>
+<p>永続配列を用いて配列のバージョン管理問題を解くオンラインアルゴリズムを考えてみましょう。とは言っても、とくに工夫は不要です。
+各更新操作に対して、更新後の永続配列オブジェクトを保持しておき、それを用いてクエリ回答するだけです。</p>
+<p>Pythonでの実装例は以下です。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># 配列の初期状態</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e"># 更新操作</span>
+operations <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#e6db74">&#39;a.1&#39;</span>), (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.2&#39;</span>), (<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.3&#39;</span>),
+              (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>, <span style="color:#e6db74">&#39;b.2&#39;</span>), (<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#39;a.4&#39;</span>)]
+
+<span style="color:#75715e"># 初期状態の永続配列を作成</span>
+A_init <span style="color:#f92672">=</span> new_persistent_array(N)
+<span style="color:#66d9ef">for</span> i, a <span style="color:#f92672">in</span> enumerate(A):
+    A_init <span style="color:#f92672">=</span> A_init<span style="color:#f92672">.</span>update(i, a)
+cache <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;a.0&#39;</span>: A_init}
+
+<span style="color:#75715e"># 永続配列により各更新操作後の配列をバージョン管理</span>
+<span style="color:#66d9ef">for</span> version, index, new_value, next_version <span style="color:#f92672">in</span> operations:
+    cache[next_version] <span style="color:#f92672">=</span> cache[version]<span style="color:#f92672">.</span>update(index, new_value)
+
+<span style="color:#75715e"># クエリに回答する関数（クエリの先読みはしていない）</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">answer</span>(version, index):
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {cache[version].get(index)}&#39;</span>)
+
+<span style="color:#75715e"># クエリ</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>)]
+
+<span style="color:#75715e"># 各クエリに対してフルバックアップを用いて回答する</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    answer(version, index)
+</code></pre></div><p>永続配列を用いている点を除けば、フルバックアップによるオンラインアルゴリズムとほとんど同じ実装です。
+永続配列の更新操作と参照操作は対数時間で実行できるため、各更新操作、および、クエリ回答も対数時間で実行できます。
+さすがに計算量の効率ではオフラインアルゴリズムには敵わないですが、シンプルな実装でオンラインアルゴリズムをオーダーレベルで改善できることから永続データ構造の強力さが伺えると思います。</p>
+<h1 id="実験">実験</h1>
+<p>本記事では配列のバージョン管理問題を解く方法として、以下の4つを紹介しました。</p>
+<ul>
+<li>オフラインアルゴリズム</li>
+<li>フルバックアップ</li>
+<li>状態復元</li>
+<li>永続配列</li>
+</ul>
+<p>それぞれの方法について、少し規模が大きい問題に対する実行時間を測定し比較してみましょう。</p>
+<h2 id="実験ケース">実験ケース</h2>
+<p>まず、テストデータを以下のルールにしたがってランダムに生成します。</p>
+<ul>
+<li>配列の各要素の初期値は0以上1000以下の整数から一様ランダムに選ばれる</li>
+<li>更新操作について
+<ul>
+<li>更新操作の数全体の10%, 20%, 30%, &hellip;, 90%の更新操作が完了したタイミングでバージョンの枝分かれは発生する（最終的な枝の本数は10本になる）</li>
+<li>更新対象バージョンはその時点で存在する枝から一様ランダムに選んだ枝の先端のバージョンとする</li>
+<li>更新対象インデックスは一様ランダムに選ばれる</li>
+<li>更新後の値は0以上1000以下の整数から一様ランダムに選ばれる</li>
+</ul>
+</li>
+<li>クエリについて
+<ul>
+<li>各クエリの対象バージョンは全バージョンから一様ランダムに選ばれる</li>
+<li>対象インデックスは一様ランダムに選ばれる</li>
+</ul>
+</li>
+</ul>
+<p>更新操作のルールについて補足します。
+枝分かれが多すぎると（例えば、その時点で存在する全バージョンから一様ランダムに選んだものを更新対象バージョンとすると）、バージョンツリーの深さが短すぎて状態復元による方法が非常に有利になってしまいます。
+今回はそれなりに悪いケースにおける計算量を比較したいので、上記のルールのように枝分かれの数を抑えています。
+また、配列のバージョン管理を現実的なアプリケーションに応用することを考えた場合、（当然アプリケーションの性質にもよりますが）枝分かれが乱立するケースは考えにくいと思います。</p>
+<p>更新操作数が100のときのバージョンツリーのイメージ図は以下です。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/260145/26df9f86-967d-4f73-12c5-e7a4e254dac9.png" alt="image.png"></p>
+<p>実験ケースとして以下の4つを扱います。</p>
+<ul>
+<li>小規模
+<ul>
+<li>配列の長さ: 1万</li>
+<li>更新操作数: 1万</li>
+<li>クエリ数: 1万</li>
+</ul>
+</li>
+<li>配列が長い
+<ul>
+<li>配列の長さ: <strong>5万</strong></li>
+<li>更新操作数: 1万</li>
+<li>クエリ数: 1万</li>
+</ul>
+</li>
+<li>更新操作数が多い
+<ul>
+<li>配列の長さ: 1万</li>
+<li>更新操作数: <strong>5万</strong></li>
+<li>クエリ数: 1万</li>
+</ul>
+</li>
+<li>クエリ数が多い
+<ul>
+<li>配列の長さ: 1万</li>
+<li>更新操作数: 1万</li>
+<li>クエリ数: <strong>5万</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="実験結果">実験結果</h2>
+<p>各方法・各ケースに対する実行時間（単位: 秒）の比較表は以下の通りです（ついでに最悪計算量オーダも掲載しています; $N$ は配列の長さ、 $M$ は更新操作数、 $Q$ はクエリ数です）。</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>最悪計算量オーダ</th>
+<th>小規模</th>
+<th>配列が長い</th>
+<th>更新操作数が多い</th>
+<th>クエリ数が多い</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>オフラインアルゴリズム</td>
+<td>$O(N + M + Q)$</td>
+<td>0.52</td>
+<td>0.53</td>
+<td>0.67</td>
+<td>0.59</td>
+</tr>
+<tr>
+<td>フルバックアップ</td>
+<td>$O(NM + Q)$</td>
+<td>10.24</td>
+<td>47.25</td>
+<td>61.63</td>
+<td><strong>10.03</strong></td>
+</tr>
+<tr>
+<td>状態復元</td>
+<td>$O(N + MQ)$</td>
+<td>8.25</td>
+<td><strong>7.95</strong></td>
+<td>39.50</td>
+<td>35.56</td>
+</tr>
+<tr>
+<td>永続配列</td>
+<td>$O(M \log{N} + Q\log{N})$</td>
+<td>1.46</td>
+<td>3.05</td>
+<td>4.47</td>
+<td>1.79</td>
+</tr>
+</tbody>
+</table>
+<p>やはりオフラインアルゴリズムはダントツで高速ですね。クエリを先読みできるケースのアドバンテージが伺えます。バッチ処理が可能であるならばその恩恵を最大限に利用すべきでしょう。
+オンラインアルゴリズムについて、永続配列は各ケースにおいて優れた計算速度となっています。本問題に対して特殊な仮定がなければ永続配列を用いれば間違いないでしょう。フルバックアップはクエリ数の増加に強く、状態復元は配列の長さの増加に強いことが分かります。これらの数に大きな偏りがあるならばフルバックアップまたは状態復元による方法の採用を検討すべきでしょう。</p>
+<h1 id="永続データ構造ライブラリの紹介">永続データ構造ライブラリの紹介</h1>
+<p>ここまで永続データ構造を手作りしてきましたが、多くの言語ではライブラリとして既に提供されています。
+手作りも楽しいですが、実用においてはライブラリの活用も検討すべきでしょう。Here we introduce the persistent data structure library of Python and JavaScript.</p>
+<h2 id="pyrsistent-python">Pyrsistent (Python)</h2>
+<p>GitHub repository: <a href="https://github.com/tobgu/pyrsistent">https://github.com/tobgu/pyrsistent</a></p>
+<p>The correspondence between the persistent data structure provided by Pyrsistent and the standard library data structure is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Provided persistent data structure</th>
+<th>Corresponding data structure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://pyrsistent.readthedocs.io/en/latest/api.html#pyrsistent.PVector">PVector</a></td>
+<td><a href="https://docs.python.org/ja/3/library/stdtypes.html?highlight=dict#list">list</a></td>
+</tr>
+<tr>
+<td><a href="https://pyrsistent.readthedocs.io/en/latest/api.html#pyrsistent.PSet">PSet</a></td>
+<td><a href="https://docs.python.org/ja/3/library/stdtypes.html?highlight=dict#set">set/frozenset</a></td>
+</tr>
+<tr>
+<td><a href="https://pyrsistent.readthedocs.io/en/latest/api.html#pyrsistent.PMap">PMap</a></td>
+<td><a href="https://docs.python.org/ja/3/library/stdtypes.html?highlight=dict#dict">dict</a></td>
+</tr>
+<tr>
+<td><a href="https://pyrsistent.readthedocs.io/en/latest/api.html#pyrsistent.PDeque">PDeque</a></td>
+<td><a href="https://docs.python.org/ja/3/library/collections.html?highlight=deque#collections.deque">deque</a></td>
+</tr>
+</tbody>
+</table>
+<p>It seems that P is an acronym for Persistent.
+Pyrsistent can be installed with pip.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install pyrsistent
+</code></pre></div><p>The code to solve the opening problem using Pyrsistent is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> pyrsistent <span style="color:#f92672">import</span> v
+
+<span style="color:#75715e"># Initial state of array</span>
+A <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">#Update operation</span>
+operations <span style="color:#f92672">=</span> ((<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>,<span style="color:#e6db74">&#39;a.1&#39;</span>), (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a.2&#39;</span>), (<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#39;a.3&#39;</span>),
+              (<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;b.2&#39;</span>), (<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>,<span style="color:#e6db74">&#39;a.4&#39;</span>)]
+
+cache <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;a.0&#39;</span>: v(A)}
+
+<span style="color:#75715e">#Permanent array version control of array after each update operation</span>
+<span style="color:#66d9ef">for</span> version, index, new_value, next_version <span style="color:#f92672">in</span> operations:
+    cache[next_version] <span style="color:#f92672">=</span> cache[version]<span style="color:#f92672">.</span>set(index, new_value)
+
+<span style="color:#75715e"># Function that answers the query (the query is not read ahead)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">answer</span>(version, index):
+    <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{version}: A[{index}] = {cache[version][index]}&#39;</span>)
+
+<span style="color:#75715e"># Query</span>
+queries <span style="color:#f92672">=</span> [(<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>), (<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>), (<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>)]
+
+<span style="color:#75715e"># Answer each query with a full backup</span>
+<span style="color:#66d9ef">for</span> version, index <span style="color:#f92672">in</span> queries:
+    answer(version, index)
+</code></pre></div><h2 id="immutable-js-javascript">immutable-js (JavaScript)</h2>
+<p>GitHub repository: <a href="https://github.com/immutable-js/immutable-js">https://github.com/immutable-js/immutable-js</a></p>
+<p>The correspondence between the persistent data structure provided by immutable-js and the standard library data structure is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Provided persistent data structure</th>
+<th>Corresponding data structure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://immutable-js.github.io/immutable-js/docs/#/List">List</a></td>
+<td><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</a></td>
+</tr>
+<tr>
+<td><a href="https://immutable-js.github.io/immutable-js/docs/#/Set">Set</a></td>
+<td><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Set">Set</a></td>
+</tr>
+<tr>
+<td><a href="https://immutable-js.github.io/immutable-js/docs/#/Map">Map</a></td>
+<td><a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Map">Map</a></td>
+</tr>
+</tbody>
+</table>
+<p>immutable-js can be installed with npm.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm i immutable
+</code></pre></div><p>The code to solve the problem at the beginning using immutable-js is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-javascript" data-lang="javascript"><span style="color:#66d9ef">const</span> {<span style="color:#a6e22e">List</span>} <span style="color:#f92672">=</span> <span style="color:#a6e22e">require</span>(<span style="color:#e6db74">&#39;immutable&#39;</span>);
+
+<span style="color:#75715e">// initial state of array
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">A</span> <span style="color:#f92672">=</span> [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">9</span>]
+<span style="color:#75715e">// update operation
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">operations</span> <span style="color:#f92672">=</span> [
+  [<span style="color:#e6db74">&#39;a.0&#39;</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>,<span style="color:#e6db74">&#39;a.1&#39;</span>], [<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a.2&#39;</span>], [<span style="color:#e6db74">&#39;a.2&#39;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;a. 3&#39;</span>],
+  [<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;b.2&#39;</span>], [<span style="color:#e6db74">&#39;a.3&#39;</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>,<span style="color:#e6db74">&#39;a.4&#39;</span>]
+]
+<span style="color:#a6e22e">cache</span> <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;a.0&#39;</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">List</span>(<span style="color:#a6e22e">A</span>)}
+
+<span style="color:#75715e">// version control the array after each update operation with persistent array
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">operations</span>.<span style="color:#a6e22e">forEach</span>(([<span style="color:#a6e22e">version</span>, <span style="color:#a6e22e">index</span>, <span style="color:#a6e22e">new_value</span>, <span style="color:#a6e22e">next_version</span>]) =&gt; {
+  <span style="color:#a6e22e">cache</span>[<span style="color:#a6e22e">next_version</span>] <span style="color:#f92672">=</span> <span style="color:#a6e22e">cache</span>[<span style="color:#a6e22e">version</span>].<span style="color:#a6e22e">set</span>(<span style="color:#a6e22e">index</span>, <span style="color:#a6e22e">new_value</span>)
+})
+
+<span style="color:#75715e">// Function that answers the query (the query is not prefetched)
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">answer</span>(<span style="color:#a6e22e">version</span>, <span style="color:#a6e22e">index</span>) {
+  <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">`</span><span style="color:#e6db74">${</span><span style="color:#a6e22e">version</span><span style="color:#e6db74">}</span><span style="color:#e6db74">: A[</span><span style="color:#e6db74">${</span><span style="color:#a6e22e">index</span><span style="color:#e6db74">}</span><span style="color:#e6db74">] = </span><span style="color:#e6db74">${</span><span style="color:#a6e22e">cache</span>[<span style="color:#a6e22e">version</span>].<span style="color:#a6e22e">get</span>(<span style="color:#a6e22e">index</span>)<span style="color:#e6db74">}</span><span style="color:#e6db74">`</span>)
+}
+
+<span style="color:#75715e">// query
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">queries</span> <span style="color:#f92672">=</span> [[<span style="color:#e6db74">&#39;a.1&#39;</span>, <span style="color:#ae81ff">2</span>], [<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">1</span>], [<span style="color:#e6db74">&#39;a.4&#39;</span>, <span style="color:#ae81ff">3</span>], [<span style="color:#e6db74">&#39;b.2&#39;</span>, <span style="color:#ae81ff">3</span>]]
+
+<span style="color:#75715e">// Answer each query with a full backup
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">queries</span>.<span style="color:#a6e22e">forEach</span>(([<span style="color:#a6e22e">version</span>, <span style="color:#a6e22e">index</span>]) =&gt; <span style="color:#a6e22e">answer</span>(<span style="color:#a6e22e">version</span>, <span style="color:#a6e22e">index</span>))
+</code></pre></div><h1 id="in-conclusion">in conclusion</h1>
+<ul>
+<li>Persistent data structures can efficiently handle non-destructive update and reference operations</li>
+<li>Persistent data structure uses linked list and tree to improve operation processing time</li>
+<li>Persistent data structures provided by third-party libraries in many languages</li>
+</ul>
+<p>Try using persistent data structures!</p>
+<h1 id="reference-article">Reference article</h1>
+<ul>
+<li><a href="http://noshi91.hatenablog.com/entry/2019/02/04/175100">Will you decorate your garden with persistent data structures? </a>
+<ul>
+<li>I referred to the outline of persistent data structure and implementation of persistent stack</li>
+</ul>
+</li>
+<li><a href="https://trap.jp/post/663/">Persistent data structure [Shinho Blog Relay 2019 Day 6]</a>
+<ul>
+<li>Referenced the implementation of persistent arrays</li>
+</ul>
+</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

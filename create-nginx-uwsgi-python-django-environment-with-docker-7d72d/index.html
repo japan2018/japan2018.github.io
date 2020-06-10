@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Create Nginx &#43; uWSGI &#43; Python (Django) environment with docker | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Create Nginx + uWSGI + Python (Django) environment with docker</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 15, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nginx">nginx</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/uwsgi">uwsgi</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker">Docker</a></code></small>
+
+</p>
+<pre><code>This article is from the 16th day of [Web Crew Advent Calendar 2019](https://qiita.com/advent-calendar/2019/webcrew).
+</code></pre>
+<p>Yesterday was @Hideto-Kiyoshima-wc&rsquo;s <a href="https://qiita.com/Hideto-Kiyoshima-wc/items/02ccf5c59059b6f35a33">Introduction to Scala Option/Either/Try Super</a>.</p>
+<p>#Introduction
+My name is @yagiyuuuu, my second year since joining Web Crew Co., Ltd. with a fresh graduate.
+Currently, I am developing an application environment of Nginx + uWSGI + Python (Django) using Docker.
+I&rsquo;ve written this article in the hope that it will help anyone developing apps with Django.</p>
+<h1 id="install-docker-for-windows">Install Docker for Windows</h1>
+<p>Open the control panel,
+Check if &ldquo;Programs and Features&rdquo; → &ldquo;Turn Windows features on or off&rdquo; → &ldquo;Hyper-V&rdquo; is checked.
+If it is not checked, check it and restart the PC to activate it.
+Next, install &ldquo;Docker Desktop for Windows&rdquo;.
+You can install from <a href="https://docs.docker.com/docker-for-windows/install/">here</a>.</p>
+<h1 id="build-an-environment-to-run-django">Build an environment to run Django</h1>
+<h2 id="directory-structure">Directory structure</h2>
+<p>Below, the Django application is run with the configuration.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/311462/3368cf90-81e2-c066-b3b3-b3faf1e88403.png" alt="image.png"></p>
+<h2 id="create-infrastrcuture">Create Infrastrcuture</h2>
+<p>Install python + uWSGI and Nginx in Alpine.</p>
+<h3 id="create-docker-composeyml">Create docker-compose.yml</h3>
+<p>Create a container for Nginx and python + uWSGI.
+This time, the log is output under django-sample, but please set it so that the log is output anywhere you like.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/docker-compose.yml" data-lang="django-sample/docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#39;2&#39;</span>
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#66d9ef">nginx</span>:
+    <span style="color:#66d9ef">build</span>: <span style="color:#e6db74">&#34;./Infrastructure/nginx/&#34;</span>
+    <span style="color:#66d9ef">volumes</span>:
+      -./logs/nginx:/var/log/nginx
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#e6db74">&#34;80:80&#34;</span>
+    <span style="color:#66d9ef">networks</span>:
+      <span style="color:#66d9ef">django-sample-network</span>:
+        <span style="color:#66d9ef">ipv4_address</span>: <span style="color:#ae81ff">172.23.0.4</span>
+  <span style="color:#66d9ef">python</span>:
+    <span style="color:#66d9ef">build</span>: <span style="color:#e6db74">&#34;./Infrastructure/python/&#34;</span>
+    <span style="color:#66d9ef">volumes</span>:
+      -./Application/django-sample:/home/work/django-sample
+      -./logs/django:/home/work/django
+      -./logs/uwsgi:/home/work/uwsgi
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#e6db74">&#34;8000:8000&#34;</span>
+    <span style="color:#66d9ef">networks</span>:
+      <span style="color:#66d9ef">django-sample-network</span>:
+        <span style="color:#66d9ef">ipv4_address</span>: <span style="color:#ae81ff">172.23.0.5</span>
+<span style="color:#66d9ef">networks</span>:
+  <span style="color:#66d9ef">django-sample-network</span>:
+    <span style="color:#66d9ef">driver</span>: bridge
+    <span style="color:#66d9ef">ipam</span>:
+     <span style="color:#66d9ef">driver</span>: default
+     <span style="color:#66d9ef">config</span>:
+       <span style="color:#66d9ef">-subnet</span>: <span style="color:#ae81ff">172.23.0.0</span>/<span style="color:#ae81ff">24</span>
+</code></pre></div><h3 id="dockerfile-creation">Dockerfile creation</h3>
+<h4 id="nginx">Nginx</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-:django-sample/Infrastructure/nginx/Dockerfile" data-lang=":django-sample/Infrastructure/nginx/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> nginx:1.13.1-alpine</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> work/nginx.conf /etc/nginx<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apk --no-cache add tzdata <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    apk del tzdata<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;nginx&#34;</span>, <span style="color:#e6db74">&#34;-g&#34;</span>, <span style="color:#e6db74">&#34;daemon off;&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><h4 id="uwsgi">uWSGI</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-:django-sample/Infrastructure/python/Dockerfile" data-lang=":django-sample/Infrastructure/python/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> python:3.7</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> LANG C.UTF-8<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> TZ Asia/Tokyo<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> mkdir /home/work<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> mkdir /home/work/django<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> mkdir /home/work/uwsgi<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> work/ /home/work<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">WORKDIR</span><span style="color:#e6db74"> /home/work</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip install --upgrade pip<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip install -r requirements.txt<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> [<span style="color:#e6db74">&#34;uwsgi&#34;</span>, <span style="color:#e6db74">&#34;--ini&#34;</span>, <span style="color:#e6db74">&#34;/home/work/uwsgi.ini&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><h3 id="nginx-settings">Nginx settings</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Infrastructure/nginx/work/nginx.conf" data-lang="django-sample/Infrastructure/nginx/work/nginx.conf"><span style="color:#66d9ef">worker_processes</span> <span style="color:#e6db74">auto</span>;
+<span style="color:#66d9ef">error_log</span> <span style="color:#e6db74">/var/log/nginx/error_app.log</span>;
+<span style="color:#66d9ef">events</span> {
+    <span style="color:#f92672">worker_connections</span> <span style="color:#ae81ff">1024</span>;
+}
+<span style="color:#66d9ef">http</span> {
+    <span style="color:#f92672">log_format</span> <span style="color:#e6db74">main&#39;</span>$remote_addr-$remote_user <span style="color:#e6db74">[</span>$time_local] <span style="color:#e6db74">&#34;</span>$request&#34; <span style="color:#e6db74">&#39;</span>
+                      <span style="color:#e6db74">&#39;</span>$status $body_bytes_sent <span style="color:#e6db74">&#34;</span>$http_referer&#34; <span style="color:#e6db74">&#39;</span>
+                      <span style="color:#e6db74">&#39;&#34;</span>$http_user_agent&#34; <span style="color:#e6db74">&#34;</span>$http_x_forwarded_for&#34;&#39;;
+    <span style="color:#f92672">access_log</span> <span style="color:#e6db74">/var/log/nginx/access_app.log</span> <span style="color:#e6db74">main</span>;
+    <span style="color:#f92672">sendfile</span> <span style="color:#66d9ef">on</span>;
+    <span style="color:#f92672">tcp_nopush</span> <span style="color:#66d9ef">on</span>;
+    <span style="color:#f92672">keepalive_timeout</span> <span style="color:#ae81ff">120</span>;
+    <span style="color:#f92672">proxy_read_timeout</span> <span style="color:#ae81ff">120</span>;
+    <span style="color:#f92672">proxy_send_timeout</span> <span style="color:#ae81ff">120</span>;
+    <span style="color:#f92672">types_hash_max_size</span> <span style="color:#ae81ff">2048</span>;
+    <span style="color:#f92672">include</span> <span style="color:#e6db74">/etc/nginx/mime.types</span>;
+    <span style="color:#f92672">default_type</span> <span style="color:#e6db74">application/octet-stream</span>;
+    <span style="color:#f92672">server</span> {
+        <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span> <span style="color:#e6db74">default_server</span>;
+        <span style="color:#f92672">server_name</span> <span style="color:#e6db74">_</span>;
+
+        <span style="color:#f92672">fastcgi_read_timeout</span> <span style="color:#e6db74">60s</span>;
+
+        <span style="color:#f92672">client_max_body_size</span> <span style="color:#ae81ff">1m</span>;
+
+        <span style="color:#f92672">location</span> ~ <span style="color:#e6db74">^/app/</span> {
+            <span style="color:#f92672">add_header</span> <span style="color:#e6db74">Cache-Control</span> <span style="color:#e6db74">no-cache</span>;
+            <span style="color:#f92672">include</span> <span style="color:#e6db74">uwsgi_params</span>;
+            <span style="color:#f92672">uwsgi_pass</span> 172.23.0.5:<span style="color:#ae81ff">8000</span>;
+            <span style="color:#f92672">uwsgi_read_timeout</span> <span style="color:#e6db74">60s</span>;
+        }
+    }
+}
+
+</code></pre></div><h3 id="uwsgi--django-settings">uWSGI + Django settings</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Infrastructure/python/work/uwsgi.ini" data-lang="django-sample/Infrastructure/python/work/uwsgi.ini"><span style="color:#66d9ef">[uwsgi]</span>
+<span style="color:#a6e22e">chdir</span><span style="color:#f92672">=</span><span style="color:#e6db74">/home/work/django-sample</span>
+<span style="color:#a6e22e">module</span><span style="color:#f92672">=</span><span style="color:#e6db74">django-sample.wsgi</span>
+<span style="color:#a6e22e">master</span><span style="color:#f92672">=</span><span style="color:#e6db74">True</span>
+<span style="color:#a6e22e">vacuum</span><span style="color:#f92672">=</span><span style="color:#e6db74">True</span>
+<span style="color:#a6e22e">max-requests</span><span style="color:#f92672">=</span><span style="color:#e6db74">5000</span>
+<span style="color:#a6e22e">socket</span><span style="color:#f92672">=</span><span style="color:#e6db74">:8000</span>
+<span style="color:#a6e22e">py-autoreload</span><span style="color:#f92672">=</span><span style="color:#e6db74">1</span>
+<span style="color:#a6e22e">logto</span><span style="color:#f92672">=</span><span style="color:#e6db74">/home/work/uwsgi/django-app.log</span>
+<span style="color:#a6e22e">buffer-size</span><span style="color:#f92672">=</span><span style="color:#e6db74">10240</span>
+<span style="color:#a6e22e">log-format</span><span style="color:#f92672">=</span><span style="color:#e6db74">%(addr)-%(user) [%(ltime)] &#34;%(method) %(uri) %(proto)&#34; %(status) %(size)`` &#34;%(referer)&#34; &#34; %(uagent)&#34;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Infrastructure/python/work/requirements.txt" data-lang="django-sample/Infrastructure/python/work/requirements.txt">django==2.2
+uwsgi==2.0.17.1
+</code></pre></div><p>Describe the module you want to install in <code>requirements.txt</code>.</p>
+<h3 id="env-file-creation">.env file creation</h3>
+<pre><code class="language-django-sample/.env" data-lang="django-sample/.env">COMPOSE_FILE=docker-compose.yml
+</code></pre><h2 id="create-application">Create Application</h2>
+<p>Since we&rsquo;re focusing on creating an app here,
+For details on the Django app, please see the official website.
+Also, I will not write any code in <code>__init__.py</code> and <code>__pycache__</code>, but please create it.
+If it is not created, the application will not work.</p>
+<h3 id="project-creation">Project creation</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Application/django-sample/manage.py" data-lang="django-sample/Application/django-sample/manage.py"><span style="color:#75715e">#!/usr/bin/env python</span>
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    os<span style="color:#f92672">.</span>environ<span style="color:#f92672">.</span>setdefault(<span style="color:#e6db74">&#34;DJANGO_SETTINGS_MODULE&#34;</span>, <span style="color:#e6db74">&#34;django-sample.settings&#34;</span>)
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#f92672">from</span> django.core.management <span style="color:#f92672">import</span> execute_from_command_line
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">ImportError</span> <span style="color:#66d9ef">as</span> exc:
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">ImportError</span>(
+            <span style="color:#e6db74">&#34;Couldn&#39;t import Django. Are you sure it&#39;s installed and&#34;</span>
+            <span style="color:#e6db74">&#34;available on your PYTHONPATH environment variable? Did you &#34;</span>
+            <span style="color:#e6db74">&#34;forget to activate a virtual environment?&#34;</span>
+        ) <span style="color:#f92672">from</span> exc
+    execute_from_command_line(sys<span style="color:#f92672">.</span>argv)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Application/django-sample/django-sample/settings.py" data-lang="django-sample/Application/django-sample/django-sample/settings.py"><span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Django settings for django-sample project.
+</span><span style="color:#e6db74">Generated by&#39;django-admin startproject&#39; using Django 2.0.3.
+</span><span style="color:#e6db74">For more information on this file, seehttps://docs.djangoproject.com/en/2.0/topics/settings/
+</span><span style="color:#e6db74">For the full list of settings and their values, see
+</span><span style="color:#e6db74">https://docs.djangoproject.com/en/2.0/ref/settings/
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> traceback
+
+<span style="color:#75715e">#Specify the handler to be specified in log output</span>
+LOG_HANDLER <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;app&#34;</span>]
+
+<span style="color:#75715e"># Build paths inside the project like this: os.path.join(BASE_DIR, ...)</span>
+BASE_DIR <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__)))
+
+
+<span style="color:#75715e"># Quick-start development settings-unsuitable for production</span>
+<span style="color:#75715e"># See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/</span>
+
+<span style="color:#75715e"># SECURITY WARNING: keep the secret key used in production secret!</span>
+SECRET_KEY <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ekf!&amp;30u3&amp;idt-qr3250(t+j#%@(vyxr02c-7fj!a81$!)#q=(&#39;</span>
+
+<span style="color:#75715e"># SECURITY WARNING: don&#39;t run with debug turned on in production!</span>
+DEBUG <span style="color:#f92672">=</span> True
+
+<span style="color:#75715e"># Set the IP and domain of the server that is allowed to connect</span>
+<span style="color:#75715e"># If nothing is set, only the connection from the local host (localhost) is possible</span>
+ALLOWED_HOSTS <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;localhost&#34;</span>]
+
+<span style="color:#75715e"># Application definition</span>
+<span style="color:#75715e"># Added &#34;app&#34;. If you do not add this, custom tags defined in template tags will not be recognized</span>
+INSTALLED_APPS <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#39;django.contrib.admin&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.auth&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.contenttypes&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.sessions&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.messages&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.staticfiles&#39;</span>,
+    <span style="color:#e6db74">&#39;app&#39;</span>,
+]
+
+ROOT_URLCONF <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;django-sample.urls&#39;</span>
+
+TEMPLATES <span style="color:#f92672">=</span> [
+    {
+        <span style="color:#e6db74">&#39;BACKEND&#39;</span>:<span style="color:#e6db74">&#39;django.template.backends.django.DjangoTemplates&#39;</span>,
+        <span style="color:#e6db74">&#39;DIRS&#39;</span>: [
+            os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(BASE_DIR,<span style="color:#e6db74">&#39;templates&#39;</span>),
+        ],
+        <span style="color:#e6db74">&#39;APP_DIRS&#39;</span>: True,
+        <span style="color:#e6db74">&#39;OPTIONS&#39;</span>: {
+            <span style="color:#e6db74">&#39;context_processors&#39;</span>: [
+                <span style="color:#e6db74">&#39;django.template.context_processors.debug&#39;</span>,
+                <span style="color:#e6db74">&#39;django.template.context_processors.request&#39;</span>,
+                <span style="color:#e6db74">&#39;django.contrib.auth.context_processors.auth&#39;</span>,
+                <span style="color:#e6db74">&#39;django.contrib.messages.context_processors.messages&#39;</span>,
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;django-sample.wsgi.application&#39;</span>
+
+
+<span style="color:#75715e"># Database</span>
+<span style="color:#75715e"># https://docs.djangoproject.com/en/2.0/ref/settings/#databases</span>
+
+DATABASES <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;default&#39;</span>: {
+        <span style="color:#e6db74">&#39;ENGINE&#39;</span>:<span style="color:#e6db74">&#39;django.db.backends.sqlite3&#39;</span>,
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(BASE_DIR,<span style="color:#e6db74">&#39;db.sqlite3&#39;</span>),
+    }
+}
+
+
+<span style="color:#75715e"># Password validation</span>
+<span style="color:#75715e"># https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators</span>
+
+AUTH_PASSWORD_VALIDATORS <span style="color:#f92672">=</span> [
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>:<span style="color:#e6db74">&#39;django.contrib.auth.password_validation.UserAttributeSimilarityValidator&#39;</span>,
+    },
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>:<span style="color:#e6db74">&#39;django.contrib.auth.password_validation.MinimumLengthValidator&#39;</span>,
+    },
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>:<span style="color:#e6db74">&#39;django.contrib.auth.password_validation.CommonPasswordValidator&#39;</span>,
+    },
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>:<span style="color:#e6db74">&#39;django.contrib.auth.password_validation.NumericPasswordValidator&#39;</span>,
+    },
+]
+
+
+<span style="color:#75715e"># Internationalization</span>
+<span style="color:#75715e"># https://docs.djangoproject.com/en/2.0/topics/i18n/</span>
+
+<span style="color:#75715e">#LANGUAGE_CODE =&#39;en-us&#39;</span>
+LANGUAGE_CODE <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ja&#39;</span>
+
+<span style="color:#75715e">#TIME_ZONE =&#39;UTC&#39;</span>
+TIME_ZONE <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Asia/Tokyo&#39;</span>
+
+USE_I18N <span style="color:#f92672">=</span> True
+
+USE_L10N <span style="color:#f92672">=</span> True
+
+USE_TZ <span style="color:#f92672">=</span> True
+
+<span style="color:#75715e"># Static files (CSS, JavaScript, Images)</span>
+<span style="color:#75715e"># https://docs.djangoproject.com/en/2.0/howto/static-files/</span>
+STATIC_URL <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+
+LOGGING <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;version&#39;</span>: <span style="color:#ae81ff">1</span>,
+    <span style="color:#e6db74">&#39;formatters&#39;</span>: {
+        <span style="color:#e6db74">&#39;app&#39;</span>: {
+            <span style="color:#e6db74">&#39;format&#39;</span>:<span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%(asctime)s</span><span style="color:#e6db74"> [</span><span style="color:#e6db74">%(levelname)s</span><span style="color:#e6db74">] </span><span style="color:#e6db74">%(pathname)s</span><span style="color:#e6db74">:</span><span style="color:#e6db74">%(lineno)d</span><span style="color:#e6db74"> </span><span style="color:#e6db74">%(message)s</span><span style="color:#e6db74">&#39;</span>
+        }
+    },
+    <span style="color:#e6db74">&#39;handlers&#39;</span>: {
+        <span style="color:#e6db74">&#39;app&#39;</span>: {
+            <span style="color:#e6db74">&#39;level&#39;</span>:<span style="color:#e6db74">&#39;DEBUG&#39;</span>,
+            <span style="color:#e6db74">&#39;class&#39;</span>:<span style="color:#e6db74">&#39;logging.handlers.TimedRotatingFileHandler&#39;</span>,
+            <span style="color:#e6db74">&#39;filename&#39;</span>:<span style="color:#e6db74">&#39;/home/work/django/app.log&#39;</span>,
+            <span style="color:#e6db74">&#39;formatter&#39;</span>:<span style="color:#e6db74">&#39;app&#39;</span>,
+            <span style="color:#e6db74">&#39;when&#39;</span>:<span style="color:#e6db74">&#39;D&#39;</span>, <span style="color:#75715e"># Unit D is day</span>
+            <span style="color:#e6db74">&#39;interval&#39;</span>: <span style="color:#ae81ff">1</span>, <span style="color:#75715e"># specify every few days</span>
+            <span style="color:#e6db74">&#39;backupCount&#39;</span>: <span style="color:#ae81ff">30</span>, <span style="color:#75715e"># number of backup generations</span>
+        }
+    },
+    <span style="color:#e6db74">&#39;loggers&#39;</span>: {
+        <span style="color:#e6db74">&#39;django&#39;</span>: {
+            <span style="color:#e6db74">&#39;handlers&#39;</span>: [<span style="color:#e6db74">&#39;app&#39;</span>],
+            <span style="color:#e6db74">&#39;level&#39;</span>:<span style="color:#e6db74">&#39;DEBUG&#39;</span>,
+            <span style="color:#e6db74">&#39;propagate&#39;</span>: True,
+        },
+        <span style="color:#e6db74">&#39;django.server&#39;</span>: {
+            <span style="color:#e6db74">&#39;handlers&#39;</span>: [<span style="color:#e6db74">&#39;app&#39;</span>],
+            <span style="color:#e6db74">&#39;level&#39;</span>:<span style="color:#e6db74">&#39;DEBUG&#39;</span>,
+            <span style="color:#e6db74">&#39;propagate&#39;</span>: True,
+        },
+        <span style="color:#e6db74">&#39;app&#39;</span>: {
+            <span style="color:#e6db74">&#39;handlers&#39;</span>: LOG_HANDLER,
+            <span style="color:#e6db74">&#39;level&#39;</span>:<span style="color:#e6db74">&#39;DEBUG&#39;</span>,
+            <span style="color:#e6db74">&#39;propagate&#39;</span>: True,
+        },
+    },
+}
+
+<span style="color:#75715e"># Session engine settings</span>
+<span style="color:#75715e"># Use session with cookie</span>
+SESSION_ENGINE <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;django.contrib.sessions.backends.signed_cookies&#39;</span>
+
+<span style="color:#75715e"># Expiration date of login status (seconds)</span>
+<span style="color:#75715e"># You can keep logged in until the expiration date (seconds) specified here is exceeded.</span>
+<span style="color:#75715e"># Session expiration is SESSION_COOKIE_AGE</span>
+<span style="color:#75715e">#8h * 60m * 60s</span>
+LOGIN_LIMIT <span style="color:#f92672">=</span> <span style="color:#ae81ff">28800</span>
+
+<span style="color:#75715e"># Session lifetime (seconds)</span>
+<span style="color:#75715e"># If you want to change the session validity period for each user, use request.session.set_expiry(value)</span>
+SESSION_COOKIE_AGE <span style="color:#f92672">=</span> <span style="color:#ae81ff">1800</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Application/django-sample/django-sample/urls.py" data-lang="django-sample/Application/django-sample/django-sample/urls.py"><span style="color:#e6db74">&#34;&#34;&#34;django-sample URL Configuration
+</span><span style="color:#e6db74">The `urlpatterns` list routes URLs to views. For more information please see:
+</span><span style="color:#e6db74">    https://docs.djangoproject.com/en/2.0/topics/http/urls/
+</span><span style="color:#e6db74">Examples:
+</span><span style="color:#e6db74">Function views
+</span><span style="color:#e6db74">    1. Add an import: from my_app import views
+</span><span style="color:#e6db74">    2. Add a URL to urlpatterns: path(&#39;&#39;, views.home, name=&#39;home&#39;)
+</span><span style="color:#e6db74">Class-based views
+</span><span style="color:#e6db74">    1. Add an import: from other_app.views import Home
+</span><span style="color:#e6db74">    2. Add a URL to urlpatterns: path(&#39;&#39;, Home.as_view(), name=&#39;home&#39;)
+</span><span style="color:#e6db74">Including another URLconf
+</span><span style="color:#e6db74">    1. Import the include() function: from django.urls import include, path
+</span><span style="color:#e6db74">    2. Add a URL to urlpatterns: path(&#39;blog/&#39;, include(&#39;blog.urls&#39;))
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+<span style="color:#f92672">from</span> django.urls <span style="color:#f92672">import</span> path, include
+
+urlpatterns <span style="color:#f92672">=</span> [
+    path(<span style="color:#e6db74">&#39;app/&#39;</span>, include(<span style="color:#e6db74">&#34;app.urls&#34;</span>)),
+]
+
+<span style="color:#e6db74">``````</span>django<span style="color:#f92672">-</span>sample<span style="color:#f92672">/</span>Application<span style="color:#f92672">/</span>django<span style="color:#f92672">-</span>sample<span style="color:#f92672">/</span>django<span style="color:#f92672">-</span>sample<span style="color:#f92672">/</span>wsgi<span style="color:#f92672">.</span>py
+
+<span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">WSGI config for django-sample project.
+</span><span style="color:#e6db74">It exposes the WSGI callable as a module-level variable named ``application``.
+</span><span style="color:#e6db74">For more information on this file, see
+</span><span style="color:#e6db74">https://docs.djangoproject.com/en/2.0/howto/deployment/wsgi/
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+<span style="color:#f92672">import</span> os
+
+<span style="color:#f92672">from</span> django.core.wsgi <span style="color:#f92672">import</span> get_wsgi_application
+
+os<span style="color:#f92672">.</span>environ<span style="color:#f92672">.</span>setdefault(<span style="color:#e6db74">&#34;DJANGO_SETTINGS_MODULE&#34;</span>, <span style="color:#e6db74">&#34;django-sample.settings&#34;</span>)
+
+application <span style="color:#f92672">=</span> get_wsgi_application()
+
+</code></pre></div><h3 id="アプリ作成">アプリ作成</h3>
+<p><code>djnago-sample</code>プロジェクト内にアプリを作成します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Application/django-sample/app/urls.py" data-lang="django-sample/Application/django-sample/app/urls.py">
+<span style="color:#f92672">from</span> django.urls <span style="color:#f92672">import</span> path
+
+<span style="color:#f92672">from</span> app.views.login <span style="color:#f92672">import</span> view <span style="color:#66d9ef">as</span> login_view
+
+urlpatterns <span style="color:#f92672">=</span> [
+    path(<span style="color:#e6db74">&#34;&#34;</span>, login_view<span style="color:#f92672">.</span>top, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;login_top&#34;</span>)
+]
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Application/django-sample/app/views/login/view.py" data-lang="django-sample/Application/django-sample/app/views/login/view.py"><span style="color:#f92672">from</span> django.http <span style="color:#f92672">import</span> HttpResponse
+<span style="color:#f92672">from</span> django.http.request <span style="color:#f92672">import</span> HttpRequest
+<span style="color:#f92672">from</span> django.template <span style="color:#f92672">import</span> loader
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">top</span>(request: HttpRequest):
+    template <span style="color:#f92672">=</span> loader<span style="color:#f92672">.</span>get_template(<span style="color:#e6db74">&#34;login/index.html&#34;</span>)
+    <span style="color:#66d9ef">return</span> HttpResponse(template<span style="color:#f92672">.</span>render({}, request))
+
+</code></pre></div><h3 id="画面表示させるテンプレート作成">画面表示させるテンプレート作成</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-django-sample/Application/django-sample/templates/login/index.html" data-lang="django-sample/Application/django-sample/templates/login/index.html">Hello Django!!
+</code></pre></div><h2 id="コンテナを立ち上げる">コンテナを立ち上げる</h2>
+<p><code>docker-compose.yml</code>がある階層で以下コマンドを叩く</p>
+<h3 id="コンテナのビルド起動">コンテナのビルド、起動</h3>
+<pre><code>$ docker-compose up --build　-d
+</code></pre><p><code>-d</code>をつけることでバックグラウンドで起動できる</p>
+<h3 id="コンテナを確認する">コンテナを確認する</h3>
+<pre><code>$ docker-compose ps
+</code></pre><h3 id="コンテナを削除する">コンテナを削除する</h3>
+<pre><code>$ docker-compose down
+</code></pre><h2 id="作成したアプリにアクセスする">作成したアプリにアクセスする</h2>
+<p>コンテナを起動したら、<code>http://localhost/app/</code>にアクセスすると
+<code>Hello Django!!</code>が表示される</p>
+<h2 id="終わりに">終わりに</h2>
+<p>Djangoアプリを作成していく上で、自分好みの環境にしていってください！！</p>
+<p>明日の記事は@yuko-tsutsuiさんです。
+よろしくお願いします。</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

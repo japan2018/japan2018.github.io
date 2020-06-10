@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Solving the frequent Fernet Key cryptography error for containerized Apache-Airflow | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Solving the frequent Fernet Key cryptography error for containerized Apache-Airflow</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 12, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cryptography">cryptography</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/airflow">airflow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/etl">ETL</a></code></small>
+
+</p>
+<pre><code>![AirflowLogo.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/538885/a8895a6d-3950-c59f-420f-68f2b4e51a69.png)
+</code></pre>
+<h3 id="the-issue">The Issue</h3>
+<p>For security purposes, sensitive connection and administrative information is encrypted with a <em>Fernet key</em> before being stored in Airflow&rsquo;s backend database. This includes any passwords for your connection objects as well as service account keys for e.g. Google Cloud.</p>
+<p>However, if you have built Airflow webserver as a containerized service, then every time you modify and rebuild your container you run the risk of invalidating your Fernet key and losing access to your connections.</p>
+<p>Airflow finds the Fernet key you would like to use from the config file, which by default gets generated and added to <code>airflow/airflow.cfg</code> when you first run the <code>airflow initdb</code> command. There is some insecurity built into this approach, since the key gets hard-coded into the file.</p>
+<p>For this diagnosis and If you&rsquo;re using the <a href="https://github.com/puckel/docker-airflow">puckel/docker-airflow</a> repository&rsquo;s Dockerfile or docker-compose.yaml as a base for building your Airflow service, then the point at which your Fernet key gets generated is here, in the <code>scripts/entrypoint.sh</code> file:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">: <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>AIRFLOW__CORE__FERNET_KEY:=<span style="color:#e6db74">${</span>FERNET_KEY:=<span style="color:#66d9ef">$(</span>python -c <span style="color:#e6db74">&#34;from cryptography.fernet \
+</span><span style="color:#e6db74">import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)&#34;</span><span style="color:#66d9ef">)</span><span style="color:#e6db74">}}</span><span style="color:#e6db74">&#34;</span>
+</code></pre></div><p>That&rsquo;s a pretty sexy, maybe brilliant, one-liner as far as bash-scripted one-liner&rsquo;s go. If you&rsquo;re not familiar with bash script, the breakdown is as follows:</p>
+<ul>
+<li>the <code>:</code> at the start of the line allows you to define a variable in a script with a default value. Here, <code>entrypoint.sh</code> creates the AIRFLOW__CORE__FERNET_KEY variable for the script, if the variable does not already exist in the environment. So, you could override it by specifying this variable in your Dockerfile or docker-compose.yaml file with something like
+<code>ENV AIRFLOW__CORE__FERNET_KEY='some string you generated or made up'</code>.</li>
+<li><code>=${FERNET_KEY:= </code> This portion assigns the value of FERNET_KEY to AIRFLOW__CORE__FERNET_KEY if it already exists in the environment (maybe you decided to pass it from somewhere else); if it does not exist, then the <code>:=</code> part here tells bash to make a default value with the one-line call to Python&rsquo;s <code>cryptography</code> library.</li>
+<li>the <code>python -c ...</code> you can probably understand if you know at least some Python&ndash;the string gets passed as a -c (command) to python, and the print(FERNET_KEY) call prints out the random Fernet Key to STDOUT.</li>
+<li>Placing the whole Python section into <code>$( )</code> tells bash to evaluate the entire expression in a sub-process and to return the STDOUT output. So, the output of this portion is the Fernet key itself.</li>
+</ul>
+<p>At first I wondered why Puckel defined two different variables for the key in <code>entrypoint.sh</code>, but I realized that it is necessary to have two places where the user can manually define it, depending on their use case.</p>
+<ol>
+<li><code>AIRFLOW__CORE__FERNET_KEY</code> is the environment variable the <code>airflow initdb</code> command will look for when creating the back-end database, and so if the user wants to change it and uses docker-compose, she should set it in the docker-compose file.</li>
+<li>If she just wants to build the webserver by itself, she can set <code>FERNET_KEY</code> in the Dockerfile, because that is accessible to <code>entrypoint.sh</code>, which gets executed at the end of the Dockerfile.</li>
+</ol>
+<p>In either case, the final value of <code>$FERNET_KEY</code> gets assigned to the <code>airflow.cfg</code> file in line 122:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Secret key to save connection passwords in the db</span>
+fernet_key <span style="color:#f92672">=</span> <span style="color:#960050;background-color:#1e0010">$</span>FERNET_KEY
+</code></pre></div><h3 id="the-solution">The Solution</h3>
+<p>So, now that we understand exactly what is going on, we can troubleshoot the <code>cryptography.fernet</code> error that might appear in your DAG task execution logs when a task fails, as it tries to access the back-end database for connection and other runtime data. This will likely happen every time you rebuild your airflow_webserver container, unless you rebuild the database and it&rsquo;s data dump each time (if you&rsquo;re like me, you prefer to keep it as a persistent volume so you have some permanency to your Airflow execution and scheduling data).</p>
+<p>The easiest thing to do is just re-enter your connections and other entries that use the Fernet key for cryptographic encoding in the Airflow UI, though if you have many connections, that will become very tedious.</p>
+<p>The second easiest thing is to create a task that recreates connections and other database entries you need, scheduled to run <code>@once</code> so that you can just trigger it after rebuilding your webserver container.</p>
+<p>The Python task would look something like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> airflow.models <span style="color:#f92672">import</span> Connection, Variable, Session
+
+<span style="color:#f92672">import</span> airflow import DAG
+<span style="color:#f92672">from</span> airflow.operators.python_operator <span style="color:#f92672">import</span> PythonOperator
+<span style="color:#f92672">from</span> airflow <span style="color:#f92672">import</span> models, settings
+
+dag <span style="color:#f92672">=</span> DAG( <span style="color:#f92672">....</span> )
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_connection</span>(<span style="color:#f92672">**</span>config):
+    <span style="color:#66d9ef">for</span> k,v <span style="color:#f92672">in</span> config<span style="color:#f92672">.</span>items():
+        conn <span style="color:#f92672">=</span> Connection()
+        setattr(conn, k, v)session <span style="color:#f92672">=</span> settings<span style="color:#f92672">.</span>Session()
+    session<span style="color:#f92672">.</span>add(conn)
+    session<span style="color:#f92672">.</span>commit()
+    session<span style="color:#f92672">.</span>close()
+
+task <span style="color:#f92672">=</span> PythonOperator(
+    dag <span style="color:#f92672">=</span> dag,
+    task_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;set-connections&#39;</span>,
+    python_callable <span style="color:#f92672">=</span> set_connection,
+    <span style="color:#f92672">...........</span>
+)
+</code></pre></div><p>Of course, try to avoid hard-coding the config for your connections directly into your file. You can store it in a more secure place, such as a dedicated database with encryption, in a gcloud bucket, etc., and pull that connection configuration data into your script. Also, for added security, Airflow <code>connection</code> objects have a <code>rotate_fernet_key</code> attribute you can explore to change the encryption in the backend database regularly!</p>
+<h4 id="sources">Sources</h4>
+<p><a href="https://airflow.apache.org/docs/stable/_modules/airflow/models/connection.html#Connection.rotate_fernet_key">https://airflow.apache.org/docs/stable/_modules/airflow/models/connection.html#Connection.rotate_fernet_key</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

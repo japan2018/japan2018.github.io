@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Asynchronous processing implementation in Django (Celery, Redis) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Asynchronous processing implementation in Django (Celery, Redis)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 5, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/redis">Redis</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/celery">Celery</a></code></small>
+
+</p>
+<pre><code>#About this article
+</code></pre>
+<p>I think that asynchronous processing is essential when creating a web application with Django, and I would like to introduce its introduction with examples. The software to use is <a href="http://docs.celeryproject.org/en/master/index.html">Celery</a>(celery),
+・<a href="https://qiita.com/sivukai/items/fd9a3093cf688426dc5f">About asynchronous processing by django+Celery</a>
+・<a href="https://dot-blog.jp/news/django-async-celery-redis-mac/">How to implement asynchronous processing with Django</a>
+I implemented it by referring to the article around here.</p>
+<p>##environment
+・Python 3.6.8
+・Django 2.2.7
+・CentOS7</p>
+<h2 id="what-is-asynchronous-processing">What is asynchronous processing?</h2>
+<p>Actually, I didn&rsquo;t even know the word asynchronous processing until I actually encountered the problem. I mean, I don&rsquo;t think that such processing itself is the default anymore.
+For example, suppose there is an application that puts a value into a form and returns the result via API or the like.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/79dbecfa-cb8c-e07d-096b-7a1a2de36408.png" alt="kizi1.png">
+If there is only one process, there will be an immediate response, so there is nothing to worry about.
+However, what happens if a large amount of processing is run at once and the response takes 30 minutes?
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/be84d3f4-10fe-2ab9-04aa-c47aadc84bdd.png" alt="kizi2.png">
+The user has to keep the browser open until results are returned. Processing will stop if you switch to another page or close the browser.
+Introduced here is <strong>asynchronous processing</strong>. By throwing a task that takes a long time to respond to asynchronous processing, it will continue processing behind the scenes regardless of whether you close the browser or not and return the result.</p>
+<h2 id="introducing-celery-and-redis">Introducing Celery and Redis</h2>
+<p>More detailed explanation is written carefully on the site introduced above, so here.
+Now, let&rsquo;s actually install Celery on the server and work with Django.
+First, you need Centos7</p>
+<pre><code class="language-centos:CentOS" data-lang="centos:CentOS">pip3 install celery
+pip3 install django-celery-results
+yum -y install epel-release
+yum search redis
+yum install -y redis
+</code></pre><p>The last one is called <a href="https://aws.amazon.com/jp/redis/">Redis</a>(remotedictionaryserver). It looks like it can be used for various purposes, but this time I will ask him to work as a broker.
+As a flow, a task occurs from the front ⇒ Redis passes the task to Celery ⇒ Celery executes the task. By the way, it seems that <a href="https://www.rabbitmq.com/">RabbitMQ</a> can be used as a Broker except Redis.
+You don&rsquo;t need to mess with the config file to use Celery and Redis. Redis</p>
+<pre><code class="language-centos:CentOS" data-lang="centos:CentOS">redis-server
+</code></pre><p>You can start it by typing. I think it&rsquo;s okay to mess with it depending on the application, but I didn&rsquo;t need to make settings for my own use.</p>
+<h2 id="cooperation-of-django-and-celery">Cooperation of Django and Celery</h2>
+<p>The Django project file created for testing is as follows</p>
+<pre><code class="language-centos:Django" data-lang="centos:Django">Project
+├── manage.py
+├── db.sqlite3
+├── Tool
+│  ├── __init__.py
+│  ├── admin.py
+│  ├── apps.py
+│  ├── forms.py
+│  ├── models.py
+│  ├── templates
+│  │  └── main
+│  │  └── celery.html
+│  ├── urls.py
+│  └── views.py
+└── Site
+   ├── __init__.py
+├── celery.py
+├── settings.py
+   ├── tasks.py
+├── urls.py
+└── wsgi.py
+</code></pre><p>First, describe the Celery settings in settings.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Site/settings.py" data-lang="python:Project/Site/settings.py">INSTALLED_APPS <span style="color:#f92672">=</span> [
+    <span style="color:#f92672">...</span>
+    <span style="color:#f92672">...</span>
+    <span style="color:#e6db74">&#39;django_celery_results&#39;</span>,
+]
+<span style="color:#f92672">...</span>
+<span style="color:#75715e"># Celery settings</span>
+CELERY_BROKER_URL <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>environ<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;REDIS_URL&#39;</span>,<span style="color:#e6db74">&#39;redis://localhost:6379/1&#39;</span>)
+CELERY_RESULT_BACKEND <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;django-db&#34;</span>
+</code></pre></div><p>We made Redis available as a broker and configured to save the job execution results in the DB.
+Next, create celery.py in the same hierarchy as settings.py and write the following.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Site/celery.py" data-lang="python:Project/Site/celery.py">
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">from</span> celery <span style="color:#f92672">import</span> Celery
+
+<span style="color:#75715e"># Specify the Django settings file (settings.py) to be used in celery</span>
+os<span style="color:#f92672">.</span>environ<span style="color:#f92672">.</span>setdefault(<span style="color:#e6db74">&#39;DJANGO_SETTINGS_MODULE&#39;</span>,<span style="color:#e6db74">&#39;Site.settings&#39;</span>)
+
+app <span style="color:#f92672">=</span> Celery(<span style="color:#e6db74">&#39;Site&#39;</span>)<span style="color:#960050;background-color:#1e0010">★</span>
+
+<span style="color:#75715e"># Declaration to use config file of Django as config of celery, you can create config file for celery.</span>
+app<span style="color:#f92672">.</span>config_from_object(<span style="color:#e6db74">&#39;django.conf:settings&#39;</span>, namespace<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;CELERY&#39;</span>)
+
+<span style="color:#75715e"># Load task modules from all registered Django app configs.</span>
+app<span style="color:#f92672">.</span>autodiscover_tasks()
+</code></pre></div><p>★The part I added is the one I edited for this time. Other than that, quoted from <a href="https://docs.celeryproject.org/en/master/django/first-steps-with-django.html">official</a>
+Furthermore, add the following to <code>__init__.py</code> in the same hierarchy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Site/__init__.py" data-lang="python:Project/Site/__init__.py">
+<span style="color:#f92672">from</span> __future__ <span style="color:#f92672">import</span> absolute_import, unicode_literals
+
+<span style="color:#75715e"># This will make sure the app is always imported when</span>
+<span style="color:#75715e"># Django starts so that shared_task will use this app.</span>
+<span style="color:#f92672">from</span> .celery <span style="color:#f92672">import</span> app <span style="color:#66d9ef">as</span> celery_app
+
+__all__ <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;celery_app&#39;</span>,)
+</code></pre></div><p>Now you are ready.
+I use Celery pounding in the actual project, but the settings are the same as above.
+I am very grateful to be able to use the official version as it is.</p>
+<p>##task-Create screen
+Next, create the task you want to execute in celery. Create tasks.py in the same hierarchy as setting.py and write the process you want to perform asynchronously there.
+This time I can&rsquo;t think of any good examples, so I&rsquo;ll write the task according to the formula.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Site/tasks.py" data-lang="python:Project/Site/tasks.py">
+<span style="color:#f92672">from</span> __future__ <span style="color:#f92672">import</span> absolute_import, unicode_literals
+<span style="color:#f92672">from</span> celery <span style="color:#f92672">import</span> shared_task
+<span style="color:#f92672">import</span> time
+
+<span style="color:#a6e22e">@shared_task</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">add</span>(x, y):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;processing&#34;</span>)
+    z <span style="color:#f92672">=</span> x <span style="color:#f92672">+</span> y
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">10</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;processing completed&#34;</span>)
+    <span style="color:#66d9ef">return</span> z
+</code></pre></div><p>The important thing is the decorator <code>@shared_task</code>, which is recognized as a celery task by prepending this function.
+After that, edit the screen to execute this and the connection (urls.py) to set up the test environment.</p>
+<p>First, create the screen.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:Project/Tool/templates/main/celery.html" data-lang="html:Project/Tool/templates/main/celery.html">&lt;<span style="color:#f92672">html</span> <span style="color:#a6e22e">lang</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ja&#34;</span>&gt;
+    &lt;<span style="color:#f92672">head</span>&gt;
+&lt;<span style="color:#f92672">title</span>&gt;{% block title %}celery test {% endblock %}&lt;/<span style="color:#f92672">title</span>&gt;
+&lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">http-equiv</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;refresh&#34;</span> <span style="color:#a6e22e">content</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;10; URL=&#34;</span>&gt; 
+&lt;/<span style="color:#f92672">head</span>&gt;         
+&lt;<span style="color:#f92672">body</span>&gt;            
+&lt;<span style="color:#f92672">h1</span>&gt;I want to use asynchronous processing even for beginners&lt;/<span style="color:#f92672">h1</span>&gt;                
+&lt;<span style="color:#f92672">p</span>&gt;Enter value&lt;/<span style="color:#f92672">p</span>&gt;
+&lt;<span style="color:#f92672">form</span> <span style="color:#a6e22e">method</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span> <span style="color:#a6e22e">action</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;celery&#34;</span>&gt;
+{% csrf_token %}
+&lt;<span style="color:#f92672">tbody</span>&gt;
+&lt;<span style="color:#f92672">td</span>&gt;&lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input_a&#34;</span>&gt;&lt;/<span style="color:#f92672">td</span>&gt;
+&lt;<span style="color:#f92672">td</span>&gt;+&lt;/<span style="color:#f92672">td</span>&gt;
+&lt;<span style="color:#f92672">td</span>&gt;&lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input_b&#34;</span>&gt;&lt;/<span style="color:#f92672">td</span>&gt;
+&lt;/<span style="color:#f92672">tbody</span>&gt;
+&lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;add_button&#34;</span> <span style="color:#a6e22e">value</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;calculate!&#34;</span>&gt;
+&lt;/<span style="color:#f92672">form</span>&gt;     
+&lt;<span style="color:#f92672">h1</span>&gt; Result! &lt;/<span style="color:#f92672">h1</span>&gt;
+&lt;<span style="color:#f92672">tbody</span>&gt;        
+&lt;<span style="color:#f92672">td</span>&gt;Output value:&lt;/<span style="color:#f92672">td</span>&gt;
+&lt;<span style="color:#f92672">td</span>&gt;{{ result }}&lt;/<span style="color:#f92672">td</span>&gt;
+&lt;/<span style="color:#f92672">tbody</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/9472a15d-3e12-297c-e00c-3cac2fb862e6.png" alt="kizi3.png">
+It&rsquo;s like this. You can design it with bootstrap, but I do not care about the design this time so that you can use it even if you copy and paste it.</p>
+<p>Then update views.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Tool/views.py" data-lang="python:Project/Tool/views.py"><span style="color:#f92672">from</span> django.shortcuts <span style="color:#f92672">import</span> render
+<span style="color:#f92672">from</span> django.http <span style="color:#f92672">import</span> HttpResponse
+<span style="color:#f92672">from</span> django_celery_results.models <span style="color:#f92672">import</span> TaskResult
+<span style="color:#f92672">from</span> YMD_Site.tasks <span style="color:#f92672">import</span> add
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">celery</span>(requests):template <span style="color:#f92672">=</span> loader<span style="color:#f92672">.</span>get_template(<span style="color:#e6db74">&#39;main/celery.html&#39;</span>)
+    <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;add_button&#39;</span> <span style="color:#f92672">in</span> requests<span style="color:#f92672">.</span>POST:
+        x <span style="color:#f92672">=</span> int(requests<span style="color:#f92672">.</span>POST[<span style="color:#e6db74">&#39;input_a&#39;</span>])
+        y <span style="color:#f92672">=</span> int(requests<span style="color:#f92672">.</span>POST[<span style="color:#e6db74">&#34;input_b&#34;</span>])
+        task_id <span style="color:#f92672">=</span> add<span style="color:#f92672">.</span>delay(x,y)<span style="color:#960050;background-color:#1e0010">★</span>
+    
+    result <span style="color:#f92672">=</span> list(TaskResult<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>all()<span style="color:#f92672">.</span>values_list(<span style="color:#e6db74">&#34;result&#34;</span>,flat<span style="color:#f92672">=</span>True))
+    <span style="color:#66d9ef">if</span> len(result) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        resilt[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    context <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;result&#39;</span>: result[<span style="color:#ae81ff">0</span>]}
+    <span style="color:#66d9ef">return</span> HttpResponse(template<span style="color:#f92672">.</span>render(context, requests))
+</code></pre></div><p>I will explain a little.
+It is marked with ★, but if you want to execute asynchronous task (function), add <code>.delay</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Tool/views.py" data-lang="python:Project/Tool/views.py">    result <span style="color:#f92672">=</span> list(TaskResult<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>all()<span style="color:#f92672">.</span>values_list(<span style="color:#e6db74">&#34;result&#34;</span>,flat<span style="color:#f92672">=</span>True))
+    <span style="color:#66d9ef">if</span> len(result) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        resilt[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    context <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;result&#39;</span>: result[<span style="color:#ae81ff">0</span>]}
+</code></pre></div><p>Although it is this part, the result processed by Celery is saved in a dedicated table (django_celery_results_taskresult). This time I try to get the result from it.</p>
+<p>Finally edit the connection part,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:Project/Tool/urls.py" data-lang="python:Project/Tool/urls.py">urlpatterns <span style="color:#f92672">=</span> [
+    path(<span style="color:#e6db74">&#39;celery&#39;</span>, views<span style="color:#f92672">.</span>celery),
+]
+</code></pre></div><p>That&rsquo;s all for editing the code. After that, various executions on the server!</p>
+<h2 id="execute">execute</h2>
+<p>To execute it, migrate DB. Celery table is automatically created by migrating.</p>
+<pre><code class="language-Linux:CentOS" data-lang="Linux:CentOS">[root@test1 Project]Python3 manage.py makemigrations
+[root@test1 Project]Python3 manage.py migarate
+</code></pre><p>OK if you have a Celery table</p>
+<p>Then start Redis,</p>
+<pre><code class="language-Linux:CentOS" data-lang="Linux:CentOS">[root@test1 Project]# redis-server
+8066:C 02 Dec 15:17:51.448 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+8066:M 02 Dec 15:17:51.449 * Increased maximum number of open files to 10032 (it was originally set to 4096).
+                _._
+           _.-``__''-._
+      _.-```.`_.''-._ Redis 3.2.12 (00000000/0) 64 bit
+  .- `` .-```. ```\/ _.,_ ``-._
+ (', .-` | `,) Running in standalone mode
+ |`-._`-...-` __...-.``-._|'` _.-'| Port: 6379
+ | `-._ `._ / _.-' | PID: 8066
+  `-._ `-._ `-./ _.-' _.-'
+ |`-._`-._ `-.__.-' _.-'_.-'|
+ | `-._`-._ _.-'_.-' | http://redis.io
+  `-._ `-._`-.__.-'_.-' _.-'
+ |`-._`-._ `-.__.-' _.-'_.-'|
+ | `-._`-._ _.-'_.-' |
+  `-._ `-._`-.__.-'_.-' _.-'
+      `-._ `-.__.-' _.-'
+          `-._ _.-'
+              `-.__.-'
+
+8066:M 02 Dec 15:17:51.451 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+8066:M 02 Dec 15:17:51.451 # Server started, Redis version 3.2.12
+</code></pre><p>OK if something like this comes out</p>
+<p>Then start Celery. Execute the Celery command in the folder that contains <code>manage.py</code>.</p>
+<pre><code class="language-Linux:CentOS" data-lang="Linux:CentOS">[root@test1 Project]# celery -A Site worker -l info
+=====FINISH=====
+/usr/local/lib/python3.6/site-packages/celery/platforms.py:801: RuntimeWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  uid=uid, euid=euid, gid=gid, egid=egid,
+ 
+ -------------- celery@test1 v4.3.0 (rhubarb)
+- --- **** -----
+- -- * *** * --Linux-3.10.0-957.el7.x86_64-x86_64-with-centos-7.6.1810-Core 2019-12-03 07:07:54
+- -*-**** ---
+- ** ---------- [config]
+- ** ---------- .&gt; app: Site:0x7f7a57d825f8
+- ** ---------- .&gt; transport: redis://localhost:6379/1
+- ** ---------- .&gt; results:
+- *** --- * --- .&gt; concurrency: 1 (prefork)
+-  ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+- -- ***** -----
+ -------------- [queues]
+                .&gt; celery exchange=celery(direct) key=celery
+                
+
+[tasks]
+  .YMD_Site.tasks.add
+
+[2019-12-03 07:07:54,586: INFO/MainProcess] Connected to redis://localhost:6379/1
+[2019-12-03 07:07:54,597: INFO/MainProcess] mingle: searching for neighbors
+[2019-12-03 07:07:55,625: INFO/MainProcess] mingle: all alone
+[2019-12-03 07:07:55,644: WARNING/MainProcess] /usr/local/lib/python3.6/site-packages/celery/fixups/django.py:202: UserWarning: Using settings.DEBUG leads to a memory leak, never use this setting in production environments!
+  warnings.warn('Using settings.DEBUG leads to a memory leak, never '
+[2019-12-03 07:07:55,645: INFO/MainProcess] celery@test1 ready.
+</code></pre><p>The command is <code>celery -A Site worker -l info</code>, but the last <code>-l info</code> can specify the log level to output. (ERROR etc.)
+Please change the <code>Site</code> part of the command to your project name.</p>
+<p>At last (run many things&hellip;) Run server and enter the page.</p>
+<pre><code class="language-Linux:CentOS" data-lang="Linux:CentOS">[root@test1 Project]# python3 manage.py runserver 0.0.0.0:8000
+</code></pre><p>After confirming that it has started up successfully, go to <code>http://server IP address:8000/celery</code>!</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/c5bd9822-e16f-8162-6faa-40e8d9d7519f.png" alt="kizi3.png">
+It will be displayed like this.</p>
+<p>Enter a value and press Calculate.<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/4576f002-2af2-6e4e-d58e-8893fbeeafa1.png" alt="kizi4.png"></p>
+<p>This is important, but pressing the button reloads the page.
+Since the process this time sleeps for 10 seconds after the calculation, the result is not returned immediately, but the page does not go into a waiting state and it is safe to close the browser.
+After pressing the button, you can see that the server continues to process without permission.
+Wait a little
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/c73aed09-fc74-2af6-9e8f-6c0deb36df5d.png" alt="kizi5.png">
+The results are back!</p>
+<p>By the way, on the Celery screen on the server side</p>
+<pre><code class="language-Linux:CentOS" data-lang="Linux:CentOS">[2019-12-03 07:24:02,046: INFO/MainProcess] Received task: Site.tasks.add[52948e50-4803-4c11-87ab-8eab088e1d7d]
+[2019-12-03 07:24:02,053: WARNING/ForkPoolWorker-1] Processing
+[2019-12-03 07:24:12,064: WARNING/ForkPoolWorker-1] Processing completed
+[2019-12-03 07:24:12,135: INFO/ForkPoolWorker-1] Task Site.tasks.add[52948e50-4803-4c11-87ab-8eab088e1d7d] succeeded in 10.082466656996985s: 2
+</code></pre><p>You can see that the process is working properly.
+Also, when you enter the Django administration screen, a page is automatically created and you can check the processing contents.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/362091/91679606-2772-721f-9868-4a1a80ebb6ce.png" alt="kizi6.png"></p>
+<h2 id="summary">Summary</h2>
+<p>This time, the purpose was to try asynchronous processing, so I made the screen relatively appropriately.
+The html has processing to be automatically refreshed every 10 seconds. Because the form is re-sent when you manually update it to reflect the result on the screen. It seems that you can take measures around this, but I omitted it because it is not relevant this time.</p>
+<p>Actually, I wanted to put in serial processing, parallel processing, multi-start of workers, etc., but since it has already become quite long, I will write it in another article.
+In addition, there are many issues in using it, so I think it would be nice to be able to write about that as well.
+Thank you to everyone who has read this far.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

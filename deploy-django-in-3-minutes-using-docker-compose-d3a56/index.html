@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Deploy Django in 3 minutes using docker-compose | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Deploy Django in 3 minutes using docker-compose</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 26, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nginx">nginx</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker-compose">docker-compose</a></code></small>
+
+</p>
+<pre><code>I have created docker-compose in a form that can be used even for projects that have already been created, so I will summarize the specifications in an article.
+</code></pre>
+<p>** Please see How to Use on GitHub → <a href="https://github.com/tken2039/django-nginx-gunicorn-docker">GitHub</a>**</p>
+<p>(I&rsquo;m sorry if you change the DB from the default sqlite&hellip;</p>
+<p>The deployment environment is Django＋Nginx＋Gunicorn.</p>
+<h2 id="overview">Overview</h2>
+<p>Please refer to the README on GitHub for how to use the link provided above.</p>
+<p>In order to realize easy deployment, I created docker-compose for Django deployment that operates with the following directory structure.</p>
+<pre><code>django-nginx-gunicorn-docker/
+      ├ nginx/
+      │ └ project.conf
+      ├ django/
+      │ ├ Dockerfile
+      │ ├ requirements.txt
+      │ └ [DJANGO PROJECT]
+      │ ├ manage.py
+      │ ├…
+      │ └ [PROJECTNAME]
+      └ docker-compose.yml
+</code></pre><p>Mount the whole project in the container and run it.
+Now let&rsquo;s look at the configuration file.</p>
+<h2 id="docker-compose">docker-compose</h2>
+<p>The container to use is the one for Django application (Gunicorn also works in this), and the container of Nginx that acts as a reverse proxy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-docker-compose.yml" data-lang="docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#39;3&#39;</span>
+<span style="color:#66d9ef">services</span>:
+    <span style="color:#66d9ef">django</span>:
+        <span style="color:#66d9ef">build</span>: ./django
+        <span style="color:#66d9ef">expose</span>:
+            -<span style="color:#e6db74">&#34;8000&#34;</span>
+        <span style="color:#66d9ef">networks</span>:
+            -nginx_network
+        <span style="color:#66d9ef">volumes</span>:
+            -./django:/code
+        <span style="color:#66d9ef">hostname</span>: django-server
+        <span style="color:#66d9ef">restart</span>: always
+    <span style="color:#66d9ef">nginx</span>:
+        <span style="color:#66d9ef">image</span>: nginx
+        <span style="color:#66d9ef">ports</span>:
+            -<span style="color:#e6db74">&#34;80:80&#34;</span>
+        <span style="color:#66d9ef">networks</span>:
+            -nginx_network
+        <span style="color:#66d9ef">depends_on</span>:
+            -django
+        <span style="color:#66d9ef">volumes</span>:
+            -./nginx/project.conf:/etc/nginx/conf.d/default.conf
+        <span style="color:#66d9ef">restart</span>: always
+<span style="color:#66d9ef">networks</span>:
+    <span style="color:#66d9ef">nginx_network</span>:
+        <span style="color:#66d9ef">driver</span>: bridge
+</code></pre></div><p>I&rsquo;m mounting the project environment at django volumes. If you edit after starting the container, it will be reflected by restarting the container.</p>
+<p>Also, since the nginx container does port forwarding at 80:80, when the port 80 of the local host is accessed, it will be passed to the nginx container.</p>
+<p>I haven&rsquo;t done anything particularly tricky, so the description of compose is over.</p>
+<h2 id="dockerfile">Dockerfile</h2>
+<p>A description of the Dockerfile in the django directory.</p>
+<pre><code>FROM python:3
+ENV PYTHONUNBUFFERED 1
+RUN mkdir /code
+WORKDIR /code
+COPY requirements.txt /code/
+RUN pip install -r requirements.txt
+COPY ./code/
+WORKDIR /code/MYPROJECT
+CMD [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:8000&quot;, &quot;MYPROJECT.wsgi:application&quot;]
+</code></pre><p>I use the image of python3 series. Django and Gunicorn are downloaded in the 6th line RUN. (I also downloaded the library for Postgres, but I&rsquo;m not using it. Sorry.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-requirements.txt" data-lang="requirements.txt">Django==2.2.7
+gunicorn==19.9.0
+psycopg2
+</code></pre></div><p>By the way, the version of Django was initially angry when I gave it to Github with 2.0 specified. (I got a lot of security warnings. I got a angry pull from a bot on GitHub.)</p>
+<h2 id="projectconf">project.conf</h2>
+<p>Nginx configuration file.</p>
+<pre><code class="language-project.conf" data-lang="project.conf">upstream django {
+  server django:8000;
+}
+
+server {
+    listen 80;
+    server_name :localhost;
+
+    location/{
+        proxy_pass http://django;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+</code></pre><p>Specify the destination of the request with upstream. The destination is localhost of the container. Also, the one named here is used in the proxy path setting.</p>
+<p>On the server side, the listening port and proxy are set.</p>
+<h2 id="at-the-end">at the end</h2>
+<p>I am sick of the port settings. .. ..
+Everyone should be careful;</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

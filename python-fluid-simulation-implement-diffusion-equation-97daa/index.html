@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Fluid simulation: Implement diffusion equation | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Fluid simulation: Implement diffusion equation</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 21, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numerical-calculation"> numerical calculation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fluid-dynamics"> fluid dynamics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cfd"> cfd</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fluid-simulation"> fluid simulation</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>While also studying Computational Fluid Dynamics (CFD), which is a discipline related to the simulation of fluids such as air and water, I would like to summarize (in multiple articles) the knowledge necessary to construct a numerical fluid analysis code for water.</p>
+<p>I feel that computational fluid dynamics is a difficult academic subject, so I would like to write it so that even beginners can understand it as much as possible. It seems that many mistakes are included, so we would appreciate if you contact us when you discover it. I would also appreciate if you could comment on what is difficult to understand. We will update it from time to time.</p>
+<h3 id="target-audience">Target audience</h3>
+<ul>
+<li>People who can use Python</li>
+<li>People who are interested in numerical calculation</li>
+<li>People who are interested in fluid mechanics</li>
+<li>Those who understand basic university physics and mathematics (about differential equation?)</li>
+</ul>
+<p>or</p>
+<ul>
+<li>People who are interested in matrix calculation</li>
+</ul>
+<h3 id="series">series</h3>
+<ul>
+<li>Chapter 1: <a href="https://qiita.com/KQTS/items/354c85adb7d46e28e8da">[Python] Fluid Simulation: Implementing Advection Equation</a></li>
+<li>Chapter 2: This article
+<ul>
+<li>Supplementary position of Chapter 2: <a href="https://qiita.com/KQTS/items/e5500ba6e2681456e268">[Python] Article that enables sparse matrix calculation at high speed</a></li>
+</ul>
+</li>
+<li>Chapter 3: <a href="https://qiita.com/KQTS/items/0c4f6c47a4d56881a178">[Python] Fluid Simulation: From Linear to Nonlinear</a></li>
+<li>Chapter 4: <a href="https://qiita.com/KQTS/items/9d2a92ef4046d80ef4a5">[Python] Fluid Simulation: Incompressible Navier-Stokes Equation</a></li>
+</ul>
+<h3 id="rough-contents-of-this-article">Rough contents of this article</h3>
+<p>As a pre-stage to deal with the basic equations for fluids required for water simulation, we will also briefly summarize and implement the diffusion equations.
+** I tried to understand it without reading the previous article (probably) **</p>
+<ul>
+<li>Table of contents in the article</li>
+<li><a href="#Diffusionequation(equationforfielduniformity)">Diffusion equation</a>
+<ul>
+<li><a href="#Stabilityjudgmentbasedondiffusionnumber">Stability judgment based on diffusion number</a></li>
+<li><a href="#Calculationcondition">Calculation condition</a></li>
+</ul>
+</li>
+<li><a href="#Implementation">Implementation</a>
+<ol>
+<li><a href="#1-CenterDifference">Center Difference</a></li>
+<li><a href="#2-CrankNicholsonImplicitMethod">Crank Nicholson Implicit Method</a>
+3. <a href="#2-1-DirectMethod">Direct Method</a>
+4. <a href="#2-2-iterationmethod">iteration method</a>
+5. <a href="#2-2-1-Stationaryiterativemethod">Stationary iterative method</a>
+6. <a href="#2-2-2-Nonstationaryiterativemethodkrylovsubspacemethod">Nonstationary iterative method</a>
+7. <a href="#2-3-ImplementationofSteadyIterativeMethod">Implementation of Steady Iterative Method</a>
+8. <a href="#2-3-1-jacobimethod">Jacobi method</a>
+9. <a href="#2-3-1-1-Simpleexample">Simple example</a>
+10. <a href="Notesfor#2-3-1-2-jacobimethod">Notes</a>
+11. <a href="#2-3-1-3-jacobimethodimplementation">Implementation</a>
+12. <a href="#2-3-2-gauss-seidelmethodGauss-Seidelmethod">Gauss-Seidel method</a>
+10. <a href="Noteson#2-3-2-1-gauss-seidelmethod">Notes</a>
+11. <a href="#2-3-2-2-gauss-seidelmethodimplementation">Implementation</a>
+12. <a href="#2-3-3-sormethod">SOR method</a>
+13. <a href="#2-3-3-1-sormethodimplementation">Implementation</a></li>
+</ol>
+</li>
+<li><a href="#Summary">Summary</a></li>
+<li><a href="#References">References</a></li>
+</ul>
+<h1 id="diffusion-equation-equalization-of-field-uniformity">Diffusion equation (equalization of field uniformity)</h1>
+<p>What is the one-dimensional diffusion equation?
+$$
+\frac{\partial T}{\partial t} = \kappa \frac{\partial^2 T}{\partial x^2}
+$$</p>
+<p>It is expressed by the formula. In terms of physical meaning, it means that physical quantities are disordered and uniform. It means heat conduction and diffusion of substances as well as heat. For example, when milk is added to coffee, it spreads slowly without stirring, or when the end of a metal rod is put in a boiling pot as shown in the figure below, the entire rod gradually becomes hot water. The phenomenon that the temperature is the same is equivalent to diffusion.</p>
+<p>*Example of thermal diffusion
+* The one-dimensional diffusion equation above is an equation that predicts the temperature distribution of a metal rod under the conditions shown in the figure below.
+* $\kappa$ in the formula changes the speed at which temperature propagates. The larger it is, the less time it takes for the entire bar to reach 100°C.
+<div align="center">
+<img width="600" alt="diffusion_phenomenon.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/9f8a80dd-8842-53ce-81d6-a1cda341f3e8.png"></p>
+</div>
+<p>Methods for discretizing this one-dimensional diffusion equation include the central difference method, which is an explicit method, and the Crank-Nicolson implicit method, which is an implicit method. In summary, the explicit method predicts a future value one hour later based on the known value of the current time, and the implicit method uses the future value one hour later to predict that value. We will implement these two. If you write down each with a difference formula, it will be as follows.</p>
+<ol>
+<li>
+<p>Central difference
+It can be derived by performing the primary accuracy upwind difference described in the previous article twice. It is a kind of explicit method that predicts the value at the next time n+1 only with the data at the current time n.
+$$
+\frac{T_j^{n+1}-T_j^n}{\Delta t} = \kappa \frac{T_{j+1}^n-2 T_j^n + T_{j-1}^n }{ \Delta x^2}
+$$</p>
+</li>
+<li>
+<p>Crank Nicholson implicit method</p>
+<p>A method of taking the partial derivative with respect to the spatial derivative as the average of the known value (time n) and the unknown value after one step (time n+1). As the name implies, it is an implicit method that also uses the next time n+1 value to predict the next time n+1 value. Details will be described later.
+$$
+\frac{T_j^{n+1}-T_j^n}{\Delta t} = \frac{\kappa}{2} \left(\frac{T_{j+1}^n-2 T_j^n + T_{j-1}^n }{\Delta x^2} + \frac{T_{j+1}^{n+1}-2 T_j^{n+1} + T_{j-1}^{ n+1} }{\Delta x^2}\right)
+$$</p>
+</li>
+</ol>
+<h3 id="determination-of-stability-by-diffusion-number">Determination of stability by diffusion number</h3>
+<p>Among the discretization methods shown above, regarding <strong>the explicit method using the central difference</strong>,
+$$
+d = \kappa \frac{\Delta t}{\Delta x^2}
+$$
+It is necessary to judge the stability of numerical calculation by using the so-called <strong>diffusion number d</strong>. On the other hand, the implicit method is unconditionally stable.</p>
+<p>In particular,</p>
+<p>$$
+d \leq \frac{1}{2} \quad or \quad \Delta t \leq \frac{(\Delta x)^2}{2 \kappa}
+$$
+Must be within the range. The important thing in this **diffusion number condition is that if you reduce the step size $\Delta x$, you must reduce the time step size $\Delta t$ by its square. For example, if you multiply $\Delta x$ by 1/2, you must make $\Delta t$ 1/4. Because of this, solving the diffusion equation by the explicit method tends to increase the computational load, so in general, the implicit method is often used.</p>
+<p>Also, this condition is obtained from the stability analysis of Von Neumann, but I will not explain it here and only describe the intuitive image.</p>
+<p>Rewriting the central difference formula,</p>
+<p>$$
+T_j^{n+1} = d T_{j+1}^n + (1-2d) T_j^n + d T_{j-1}^n
+$$
+Will be. Diffusion means randomized uniformization, so if the coefficient $(1-2d)$ of $T_j^n$ becomes negative, the physical quantity of the jth lattice or more is passed to the neighbor. So it has to be $d\leq0.5$.</p>
+<p>I think it&rsquo;s hard to understand, so I will explain it with the money example below (** It is just an example to have an image **). Suppose there is a group of N people, and at some time n, the j-1st person has 30 yen, the jth person has 100 yen, and the j+1th person has 50 yen. Diffusion is an operation that makes these N people have the same amount of money (**uniformization**), so keep exchanging a certain percentage of money with the neighbors until they reach the same amount. I will. If you look closely at the formula for central difference, this fixed ratio is the diffusion number d. Therefore, if you set d=0.1 and calculate, the jth person will have 88 yen at n+1 time, one hour later. Given this, it is easy to see that the diffusion number d must not be greater than 1/2.</p>
+<img width="500" alt="money_diffusion_r2.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/df1d45d1-fbec-8c5f-6f10-c5ec4d6ceaec.png">
+** * This is an example to grasp the atmosphere of diffusion **
+<h2 id="calculation-condition">Calculation condition</h2>
+<ul>
+<li>Problem
+<ul>
+<li>Considering a substance with a temperature gradient of 100K to 200K (such as metal), calculate the temperature change when a heat source of 150K is applied to both ends. As you can easily predict, after a sufficient amount of time, the whole substance will remain constant at 150K. Predict the temperature distribution during the change using the one-dimensional heat diffusion equation. (Supplement: K is a unit of temperature called Kelvin and corresponds to 273.15K=0°C.)</li>
+</ul>
+</li>
+</ul>
+<img width="600" alt="problem.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/f9841a3f-e3aa-51a4-48e7-77fd90f9cf94.png">
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/f7481d1b-4e95-8a19-bcaf-97005481e588.png" alt="answer.png"></p>
+<p>The lattice width $\Delta x$, thermal conductivity coefficient $\kappa$, and time step width $\Delta t$ are all calculated as constants. This time, we set $\Delta x=1$,$\Delta t=0.2$,$\kappa=0.5$, and the diffusion number $d=0.1$ under stable conditions.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+Num_stencil_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">101</span>
+x_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float64(np<span style="color:#f92672">.</span>arange(Num_stencil_x))
+temperature_array <span style="color:#f92672">=</span> x_array <span style="color:#f92672">+</span> <span style="color:#ae81ff">100</span>
+temperature_lower_boundary <span style="color:#f92672">=</span> <span style="color:#ae81ff">150</span>temperature_upper_boundary <span style="color:#f92672">=</span> <span style="color:#ae81ff">150</span>
+Time_step <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+Delta_x <span style="color:#f92672">=</span> max(x_array) <span style="color:#f92672">/</span> (Num_stencil_x<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+Delta_t <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.2</span>
+kappa <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span>
+d <span style="color:#f92672">=</span> kappa <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+exact_temperature_array <span style="color:#f92672">=</span> (temperature_upper_boundary<span style="color:#f92672">-</span>temperature_lower_boundary) <span style="color:#f92672">/</span> (x_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>x_array[<span style="color:#ae81ff">0</span>]) <span style="color:#f92672">*</span> x_array <span style="color:#f92672">+</span> temperature_lower_boundary
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Initial condition&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, exact_temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>, c<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;black&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;Temperature [K]&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><h1 id="implementation">Implementation</h1>
+<h2 id="1-center-difference">1. Center difference</h2>
+<p>$$
+\frac{T_j^{n+1}-T_j^n}{\Delta t} = \kappa \frac{T_{j+1}^n-2 T_j^n + T_{j-1}^n }{ \Delta x^2}
+$$</p>
+<p>The figure below shows the result when the diffusion number d is 0.1. I tried to output the graph by dividing it into several time steps (time). After 100 hours, both ends have reached almost 150K, and the temperature distribution is dragged by it and looks like a sine curve. After 5000 hours, we can see that the temperature of the whole rod is asymptotic to 150K and the implementation of the central difference is successful.
+The implementation is easy to follow expressions, so I will write numpy functions as little as possible.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/f8b282ce-5929-2bb3-b869-cd52b6084a09.png" alt="explicit.png"></p>
+<p>By the way, if you calculate $\kappa = 5$ and the diffusion number $d = 1$, you can see that the calculation diverges as shown in the figure below and the solution cannot be found.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/e137d68e-7bec-d905-f2c5-3b59798031dc.png" alt="explicit_diffuse.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">
+temperature_explicit <span style="color:#f92672">=</span> temperature_array<span style="color:#f92672">.</span>copy()
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    temperature_old <span style="color:#f92672">=</span> temperature_explicit<span style="color:#f92672">.</span>copy()
+    temperature_explicit[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> kappa <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> \
+        (temperature_explicit[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>temperature_old[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+</span> temperature_lower_boundary)
+    temperature_explicit[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> kappa <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> \
+        (temperature_upper_boundary<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>temperature_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> temperature_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>])
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, Num_stencil_x<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        temperature_explicit[j] <span style="color:#f92672">+=</span> kappa <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> \
+            (temperature_old[j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>temperature_old[j] <span style="color:#f92672">+</span> temperature_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+plt<span style="color:#f92672">.</span>plot(x_array, exact_temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>, c<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;black&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_explicit, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Explicit(100 steps)&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;temperature&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><h2 id="2-crank-nicholson-implicit-method">2. Crank Nicholson implicit method</h2>
+<p>$$
+\frac{T_j^{n+1}-T_j^n}{\Delta t} = \frac{\kappa}{2} \left(\frac{T_{j+1}^n-2 T_j^n + T_{j-1}^n }{\Delta x^2} + \frac{T_{j+1}^{n+1}-2 T_j^{n+1} + T_{j-1}^{ n+1} }{\Delta x^2}\right)
+$$</p>
+<p>By transforming this and bringing the value at time n+1 to the left side
+$$</p>
+<ul>
+<li>T_{j+1}^{n+1} +2 \left(\frac{1}{d} + 1 \right) T_j^{n+1}-T_{j-1}^{n+1 } = T_{j+1}^{n} +2 \left(\frac{1}{d}-1 \right) T_j^{n} + T_{j-1}^{n} \<br>
+d = \kappa \frac{\Delta t}{\Delta x^2}
+$$</li>
+</ul>
+<p>Assuming that the grid points exist in the range from 1 to M, the boundary value is represented by $T_0, T_{M+1}$</p>
+<pre><code class="language-math" data-lang="math">
+\left(
+\begin{array}{cccc}
+      2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots &amp; \ldots &amp; 0 \\
+      -1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots &amp; 0 \\
+      0 &amp;-1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots \\
+      \vdots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots\\
+      0 &amp; 0 &amp; \ddots &amp; -1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 \\
+      0 &amp; 0 &amp; \ldots &amp; 0 &amp; -1 &amp; 2 \left(\frac{1}{d} + 1 \right)
+    \end{array}
+  \right)
+  \left(
+    \begin{array}{c}
+      T_1^{n+1} \\
+      T_2^{n+1} \\
+      T_3^{n+1} \\
+      \vdots \\
+      T_{M-1}^{n+1} \\
+      T_M^{n+1}
+\end{array}
+\right)
+</code></pre><pre><code class="language-math" data-lang="math">
+= \left( \begin{array}{c}
+    T_2^{n} + 2 \left(\frac{1}{d}-1 \right) T_1^{n} + \left(T_0^n + T_0^{n+1}\right) \\
+      T_3^{n} + 2 \left(\frac{1}{d}-1 \right) T_2^{n} + T_1^n \\
+      T_4^{n} + 2 \left(\frac{1}{d}-1 \right) T_3^{n} + T_2^n \\
+      \vdots \\
+      T_M^{n} + 2 \left(\frac{1}{d}-1 \right) T_{M-1}^{n} + T_{M-2}^n \\
+      \left(T_{M+1}^n + T_{M+1}^{n+1}\right) + 2 \left(\frac{1}{d}-1 \right) T_{M}^ {n} + T_{M-1}^n
+    \end{array} \right)
+</code></pre><p>Consider solving this simultaneous one-dimensional equation. When the number of grid points M is small, the unknown number is small, so use a direct method that directly finds the solution, such as the method called <a href="https://mathtrain.jp/gausssyokyo">Gaussian direct method</a> However, the larger M becomes, the more difficult it is to find a solution computationally. Therefore, in order to solve large-scale simultaneous one-dimensional equations, a method called &ldquo;iteration method&rdquo; that converges an approximate solution to an exact solution is generally used.</p>
+<h2 id="2-1-direct-method">2-1. Direct method</h2>
+<p>The types are as follows. I&rsquo;ll explain when you need it.</p>
+<ul>
+<li>Gaussian elimination method
+<ul>
+<li>The idea is the same as the sweeping method learned in the linear algebra class at university.</li>
+</ul>
+</li>
+<li>LU decomposition</li>
+<li>Cholesky disassembly
+<ul>
+<li>Cholesky decomposition</li>
+<li>Modified Cholosky decomposition</li>
+<li>Incomplete Cholosky decomposition (IC method)</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-2-iterative-method">2-2. Iterative method</h2>
+<p>$$
+Ax=b
+$$
+Consider solving one-dimensional simultaneous equations.
+this
+$$
+r=b-Ax&rsquo;
+$$
+The estimated value $x'$ is iteratively changed until r becomes sufficiently small, and the method of finding an approximate solution of exact solution $x^*=A^{-1}b$ is repeated. The law. Iterative methods can be divided into stationary methods and transient methods (Krylov subspace method).</p>
+<h3 id="2-2-1-stationary-iteration-method">2-2-1. Stationary iteration method</h3>
+<p>Stationary method (stationary iterative method) is a method that does not change except solution vector x during iterative calculation. Since it is generally slow, either the unsteady method described later or the preprocessing of the unsteady method (processing to find an approximate solution) should be used for the numerical calculation. think.</p>
+<p>The following three are typical methods. Below, the estimated value of the solution at m iterations is represented as $x^{(m)}$, and the estimated value $x^{(m)}$ at the m-th iteration is known and the m+1-th iteration is known. The following is an example of calculation to find the estimated value $x^{(m+1)}$ of.</p>
+<ol>
+<li>
+<p>Jacobi method</p>
+<p>A method of calculating the estimated solution $x_i^{(m+1)}$ in the i-th row of the m+1-th iteration using only the known estimated solution $x_i^{(m)}$.
+$$
+x_i^{(m+1)} = \frac{1}{a_{ii}}\left( b_i-\sum_{j=1,j\not=i}^{n} a_{ij} x_j^{ (m)} \right)
+$$</p>
+</li>
+<li>
+<p>Gauss-Seidel methodWhen the estimated solution $x_i^{(m+1)}$ in the i-th row of the m+1-th iteration is obtained, the known estimated solution $x_i^{(m)}$ and m+1 already calculated A method of calculation using the estimated solution $x_{0}^{(m+1)},\cdots, x_{i-1}^{(m+1)}$ of the iteration. Basically, the convergence calculation ends faster than the Jacobi method.
+$$
+x_i^{(m+1)} = \frac{1}{a_{ii}}\left( b_i-\sum_{j=1}^{i-1} a_{ij} x_j^{(m+1 )}-\sum_{j=i+1}^{n} a_{ij} x_j^{(m)} \right)
+$$</p>
+</li>
+<li>
+<p>SOR (Successive Over-Relaxation) method / Sequential acceleration relaxation method</p>
+<p>Gauss-Seidel method with relaxation coefficient $\omega$. When the relaxation coefficient $\omega=1$, the Gauss-Seidel method is used. Also, if it is 1 or less, convergence is slower than Gauss-Seidel, but it can solve problems that cannot be solved by the Gauss-Seidel method. Basically, set it to a value of 1 or more, but if it is set too large, it will diverge, so it is important to select an appropriate value. It seems that 1.9 is often selected.
+$$
+x_i^{(m+1)} = x_i^{(m)} + \omega \frac{1}{a_{ii}}\left( b_i-\sum_{j=1}^{i-1} a_ {ij} x_j^{(m+1)}-\sum_{j=i}^{n} a_{ij} x_j^{(m)} \right)
+$$</p>
+</li>
+<li>
+<p>Multi-grid method
+There are geometric and multi-grid (Algebric Multi-Grid: AMG) methods. The latter AMG method is often used as a preconditioner for transient methods. I think that there are many people who know it for the first time, so I will write the details in a separate article.</p>
+</li>
+</ol>
+<p>The details of the former three items will be described later.</p>
+<h3 id="2-2-2-nonstationary-iterative-method-krylov-subspace-method">2-2-2. Nonstationary iterative method (Krylov subspace method)</h3>
+<p>Is it like a good child of direct method and iterative method? It is classified as an iterative method.</p>
+<p>The most famous non-stationary method is the Conjugate Gradient method (CG method). Detailed explanation is given in this <a href="https://qiita.com/Dason08/items/27559e192a6a977dd5e5">article</a>.It&rsquo;sveryeasytounderstandbecausetherearefigures.Also,thedifferencefromthesteepestdescentmethodthatisoftenusedinmachinelearningisexplainedinthis<a href="http://zellij.hatenablog.com/entry/20120712/p1">article</a>. The image of the CG method is also written and easy to understand.</p>
+<ol>
+<li>symmetric matrix
+<ol>
+<li>Conjugate Gradient method (CG method)</li>
+<li>Preconditioned Conjugate Gradient method (PCG method)
+<ol>
+<li>Incomplete Cholesky Conjugate Gradient method (ICCG method)</li>
+<li>Incomplete LU Conjugate Gradient method (ILUCG)</li>
+<li>Other</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>Asymmetric matrix
+<ol>
+<li>Bi-Conjugate Gradient (BiCG method)</li>
+<li>Conjugate Residual Squared (CGS method)</li>
+<li>Biconjugate gradient stabilization method (BiCG Stabilization: BiCGSTAB method)</li>
+<li>Generalized Conjugate Residual (GCR method)</li>
+<li>Generalized Minimal Residual (GMRES method)</li>
+</ol>
+</li>
+</ol>
+<p>These techniques are basically provided as libraries. I also think that there are many calculation codes such as Github. If you want to study in more detail, please refer to that as well. In another article, I will explain as many methods as possible regarding the non-stationary method, and I will also implement them.</p>
+<p>For the time being, in this article, I would like to use the stationary iterative methods Jacobi, Gauss-Seidel, and SOR among the algorithms described so far.</p>
+<h2 id="2-3-implementation-of-stationary-iteration-method">2-3. Implementation of stationary iteration method</h2>
+<p>The implementation will be implemented by referring to <a href="http://nkl.cc.u-tokyo.ac.jp/13n/SolverIterative.pdf">Material</a> given by Professor Nakajima of the University of Tokyo. If you find the explanation difficult to understand, we would appreciate it if you could refer to it.</p>
+<p>In the example below,</p>
+<pre><code class="language-math" data-lang="math">A = \left(
+    \begin{array}{ccc}
+      a_{1,1} &amp; a_{1,2} &amp; \ldots &amp;a_{1,n} \\
+      a_{2,1} &amp; a_{2,2} &amp; \ldots &amp;a_{2,n} \\
+      \vdots &amp; \vdots &amp; \ddots &amp;\vdots \\
+       a_{n,1} &amp; \ldots &amp; \ldots &amp;a_{n,n}
+    \end{array}
+  \right) \\
+D = \left(
+    \begin{array}{ccc}
+      a_{1,1} &amp; 0 &amp; \ldots &amp;0 \\
+      0 &amp; a_{2,2} &amp; \ldots &amp;0 \\
+      \vdots &amp; \vdots &amp; \ddots &amp;\vdots \\
+       0 &amp; \ldots &amp; \ldots &amp;a_{n,n}
+    \end{array}
+  \right) \\
+L = \left(
+    \begin{array}{ccc}
+      0 &amp; 0 &amp; \ldots &amp;0 \\
+      a_{2,1} &amp; 0 &amp; \ldots &amp;0 \\
+      \vdots &amp; \vdots &amp; \ddots &amp;\vdots \\
+       a_{n,1} &amp; \ldots &amp; \ldots &amp;0
+    \end{array}
+  \right) \\
+U = \left(
+    \begin{array}{ccc}
+      0 &amp; a_{1,2} &amp; \ldots &amp;a_{1,n} \\
+      0 &amp; 0 &amp; \ldots &amp;a_{2,n} \\
+      \vdots &amp; \vdots &amp; \ddots &amp;\vdots \\
+       0 &amp; \ldots &amp; \ldots &amp;0
+    \end{array}
+  \right)
+</code></pre><p>Define the matrix like. D is only the diagonal component of A, L is the lower side of the diagonal component (Lower side), and U is the upper side of the diagonal component (Upper side).</p>
+<h3 id="2-3-1-jacobi-method">2-3-1. Jacobi method</h3>
+<p>Using the matrix D having the diagonal elements of the matrix A, the upper matrix U and the lower matrix L, when $A = D + L + U$,</p>
+<pre><code class="language-math" data-lang="math">Ax = b\\
+ (D+L+U) x = b\\
+ Dx = b-(L+U)x \\
+ x = D^{-1}(b-(L+U)x)
+</code></pre><p>The method that can transform $Ax=b$ like this and iteratively finds an approximate solution using the bottom equation is called the Jacobi method.</p>
+<p>$$
+x_i^{(m+1)} = \frac{1}{a_{ii}}\left( b_i-\sum_{j=1,j\not=i}^{n} a_{ij} x_j^{ (m)} \right)
+$$</p>
+<h4 id="2-3-1-1-simple-example">2-3-1-1. Simple example</h4>
+<p>Let A be a matrix of $3\times3$</p>
+<pre><code class="language-math" data-lang="math">
+\left(
+    \begin{array}{ccc}
+      a_{1,1} &amp; a_{1,2} &amp; a_{1,3} \\
+      a_{2,1} &amp; a_{2,2} &amp; a_{2,3} \\
+      a_{3,1} &amp; a_{3,2} &amp; a_{3,3}
+    \end{array}
+  \right)
+  \left(
+    \begin{array}{c}
+      x_{1} \\
+      x_{2} \\
+      x_{3}
+    \end{array}
+  \right)
+  =
+  \left(
+    \begin{array}{c}
+      b_{1} \\
+      b_{2} \\
+      b_{3}
+    \end{array}
+  \right)
+</code></pre><p>Let&rsquo;s consider solving the one-dimensional system of equations.</p>
+<p>If the number of iterations is expressed as (m), the value of $x^{(m+1)}$ at (m+1) after one iteration is</p>
+<pre><code class="language-math" data-lang="math">x_1^{(m+1)} = \left(b_1-a_{1,2} x_2^{(m)}-a_{1,3} x_3^{(m)} \right) / a_{1, 1} \\
+x_2^{(m+1)} = \left(b_2-a_{2,1} x_1^{(m)}-a_{2,3} x_3^{(m)} \right) / a_{2, 2} \\
+x_3^{(m+1)} = \left(b_3-a_{3,1} x_1^{(m)}-a_{3,2} x_2^{(m)} \right) / a_{3, 3}
+</code></pre><p>Can be expressed as As you can see from the form of this equation, we can see that $x^{(m+1)} = D^{-1}(b-(L+R) x^{(m)})$ holds. I will.</p>
+<p>The exact solution $x^*$ can be obtained by repeating the above calculation until the following convergence conditions are satisfied.</p>
+<p>$$
+\sum_{j=1}^{n} \left| \frac{x_j^{(m+1)}-x_j^{(m)}}{x_j^{(m+1)}} \right|= \epsilon
+$$</p>
+<p>However, $\epsilon$ is a sufficiently small positive number.</p>
+<p>Here, I will try the Jacobi method with a simple problem.</p>
+<p>As a simple example</p>
+<pre><code class="language-math" data-lang="math">\left(
+    \begin{array}{ccc}
+      3 &amp; 2 &amp; -0.5 \\
+      1 &amp; 4 &amp; 1 \\
+      -1 &amp; 0 &amp; 4
+    \end{array}
+  \right)
+  \left(
+    \begin{array}{c}
+      x_1 \\
+      x_2 \\
+      x_3
+    \end{array}
+  \right)
+  =
+  \left(
+    \begin{array}{c}
+      3 \\
+      2 \\
+      1
+    \end{array}
+  \right)
+</code></pre><p>Think to solve. The answer is</p>
+<pre><code class="language-math" data-lang="math">\left(
+    \begin{array}{c}
+      1 \\
+      0.125 \\
+      0.5
+    \end{array}
+  \right)
+</code></pre><p>Unlike before, we will implement numpy functions a lot. Because it becomes overwhelmingly easy to see. The implementation is as follows.
+When actually calculated,</p>
+<pre><code>Solution [1.00000063 0.12499957 0.50000029]Answer [1. 0.125 0.5]
+</code></pre><p>You can confirm that the message is displayed and the answer is required.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">jacobi</span>(a_matrix, b_array, target_residual):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Jacobi method
+</span><span style="color:#e6db74">    Ax = b
+</span><span style="color:#e6db74">    If A = (D+L+U)
+</span><span style="color:#e6db74">    Dx = b-(L+U)x
+</span><span style="color:#e6db74">    x = D^{-1} (b-(L+U)x)
+</span><span style="color:#e6db74">    However, D is a diagonal matrix and L+U is its residual matrix.
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------
+</span><span style="color:#e6db74">    a_matrix: numpy.float64
+</span><span style="color:#e6db74">        m×n matrix
+</span><span style="color:#e6db74">    b_array: numpy.float64
+</span><span style="color:#e6db74">        m-row matrix
+</span><span style="color:#e6db74">    target_residual: numpy.float64
+</span><span style="color:#e6db74">        A positive number. Target residual.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    -------
+</span><span style="color:#e6db74">    x: numpy.float64
+</span><span style="color:#e6db74">        m-row matrix
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    x <span style="color:#f92672">=</span> b_array<span style="color:#f92672">.</span>copy()
+    x_old <span style="color:#f92672">=</span> b_array<span style="color:#f92672">.</span>copy()
+    
+    diag_matrix<span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>diag(a_matrix) <span style="color:#75715e"># diagonal matrix</span>
+    l_u_matrix <span style="color:#f92672">=</span> a_matrix<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>diagflat(diag_matrix) <span style="color:#75715e"># residual matrix</span>
+    count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">while</span> True:
+        count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        x <span style="color:#f92672">=</span> (b_array<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>dot(l_u_matrix, x_old))<span style="color:#f92672">/</span>diag_matrix
+        residual <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(x<span style="color:#f92672">-</span>x_old) <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(x)
+        x_old <span style="color:#f92672">=</span> x
+        <span style="color:#66d9ef">if</span> residual <span style="color:#f92672">&lt;=</span> target_residual:
+            <span style="color:#66d9ef">break</span>
+        <span style="color:#66d9ef">elif</span> count <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">10000</span>:
+            <span style="color:#f92672">import</span> sys
+            <span style="color:#66d9ef">print</span>(residual)
+            sys<span style="color:#f92672">.</span>exit()
+    <span style="color:#66d9ef">return</span> x
+
+A <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([[ <span style="color:#ae81ff">3.0</span>, <span style="color:#ae81ff">2.0</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>],
+              [<span style="color:#ae81ff">1.0</span>, <span style="color:#ae81ff">4.0</span>, <span style="color:#ae81ff">1.0</span>],
+              [<span style="color:#f92672">-</span><span style="color:#ae81ff">1.0</span>, <span style="color:#ae81ff">0.0</span>, <span style="color:#ae81ff">4.0</span>]])
+b <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">3.0</span>, <span style="color:#ae81ff">2.0</span>, <span style="color:#ae81ff">1.0</span>])
+
+x <span style="color:#f92672">=</span> jacobi(A, b, <span style="color:#ae81ff">10</span><span style="color:#f92672">**-</span><span style="color:#ae81ff">6</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Solution&#34;</span>, x)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Answer&#34;</span>, np<span style="color:#f92672">.</span>dot(np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>inv(A),b))
+</code></pre></div><h4 id="2-3-1-2-notes-on-jacobi-method">2-3-1-2. Notes on Jacobi method</h4>
+<p>The Jacobi method (and Gauss-Seidel method) will not converge unless the matrix A satisfies the diagonal dominance (of narrow sense). To briefly state what the diagonal dominance (of a narrow row) is, the diagonal component is greater than the sum of the absolute values of the other components of the same row. In the exercise above, try playing with the components other than the diagonal term enlarged.</p>
+<p>$$
+\left| a_{ii} \right|&gt; \sum_{j=1, j\not=i}^{n} \left| a_{ij} \right|
+$$</p>
+<h4 id="2-3-1-3-jacobi-method-implementation">2-3-1-3. Jacobi method implementation</h4>
+<p>The equation to be solved is listed again.</p>
+<pre><code class="language-math" data-lang="math">
+\left(
+\begin{array}{cccc}
+      2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots &amp; \ldots &amp; 0 \\
+      -1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots &amp; 0 \\
+      0 &amp;-1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots \\
+      \vdots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots\\
+      0 &amp; 0 &amp; \ddots &amp; -1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 \\
+      0 &amp; 0 &amp; \ldots &amp; 0 &amp; -1 &amp; 2 \left(\frac{1}{d} + 1 \right)
+    \end{array}
+  \right)
+  \left(
+    \begin{array}{c}
+      T_1^{n+1} \\
+      T_2^{n+1} \\
+      T_3^{n+1} \\
+      \vdots \\
+      T_{M-1}^{n+1} \\
+      T_M^{n+1}
+\end{array}
+\right)
+</code></pre><pre><code class="language-math" data-lang="math">
+= \left( \begin{array}{c}
+    T_2^{n} + 2 \left(\frac{1}{d}-1 \right) T_1^{n} + \left(T_0^n + T_0^{n+1}\right) \\
+      T_3^{n} + 2 \left(\frac{1}{d}-1 \right) T_2^{n} + T_1^n \\
+      T_4^{n} + 2 \left(\frac{1}{d}-1 \right) T_3^{n} + T_2^n \\
+      \vdots \\
+      T_M^{n} + 2 \left(\frac{1}{d}-1 \right) T_{M-1}^{n} + T_{M-2}^n \\
+      \left(T_{M+1}^n + T_{M+1}^{n+1}\right) + 2 \left(\frac{1}{d}-1 \right) T_{M}^ {n} + T_{M-1}^n
+    \end{array} \right)
+</code></pre><p>The result itself is almost the same as the central difference. The diffusion number d is 0.1.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/1321e4f1-c2f3-0e4f-f8f5-8ceea8d517b9.png" alt="jacobi.png"></p>
+<p>The figure below shows the result of calculation with the diffusion number d set to 1 as in the case of the central difference. You can see that the solution can be firmly obtained even if the diffusion number d is 0.5 or more. This is the advantage of using the implicit method. In addition, considering the physical consideration, since the diffusion number d has increased, the time step and space step size are constant, so the speed of heat transfer is faster, and the rate converges to 150K faster than when the diffusion number d = 0.1. You can see that</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/2ea3093a-7af9-2f38-4c05-f7bc87b8a435.png" alt="jacobi.png"></p>
+<p>An implementation example is shown below. The jacobi function in the syntax was built in the previous section.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+temperature_jacobi <span style="color:#f92672">=</span> temperature_array<span style="color:#f92672">.</span>copy()
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    a_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>identity(len(temperature_jacobi)) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>eye(len(temperature_jacobi), k<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>eye(len(temperature_jacobi), k<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)
+    temp_temperature_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>append(
+                        temperature_lower_boundary,
+                        temperature_jacobi), temperature_upper_boundary)
+    b_array <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> temperature_jacobi <span style="color:#f92672">+</span> temp_temperature_array[<span style="color:#ae81ff">2</span>:] <span style="color:#f92672">+</span> temp_temperature_array[:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+    b_array[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> temperature_lower_boundary
+    b_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> temperature_upper_boundary
+    temperature_jacobi <span style="color:#f92672">=</span> jacobi(a_matrix, b_array, <span style="color:#ae81ff">1e-8</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, exact_temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>, c<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;black&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_jacobi, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Implicit Jacobi(100 steps)&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;temperature&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><h3 id="2-3-2-gauss-seidel-method-gauss-seidel-method">2-3-2. Gauss-Seidel method (Gauss-Seidel method)</h3>
+<p>Using the matrix D having diagonal elements of the matrix A, the upper triangular matrix U and the lower triangular matrix L, when $A = D + L + U$,</p>
+<pre><code class="language-math" data-lang="math">Ax = b\\
+ (D+L+U) x = b\\
+ (D+L)x^{(m+1)} = b-Ux^{(m)} \\
+ x^{(m+1)} = D^{-1}(b- L x^{(m+1)}-U x^{(m)})\\
+x^{(m+1)} = (D+L)^{-1}(b-U x^{(m)})
+    
+</code></pre><p>The method of iteratively finding an approximate solution with the bottom equation is called Gauss-Seidel method.</p>
+<p>$$
+x_i^{(m+1)} = \frac{1}{a_{ii}}\left( b_i-\sum_{j=1}^{i-1} a_{ij} x_j^{(m+1 )}-\sum_{j=i+1}^{n} a_{ij} x_j^{(m)} \right)
+$$</p>
+<h4 id="2-3-2-1-gauss-seidel-method-notes">2-3-2-1. Gauss-Seidel method notes</h4>
+<p>As mentioned in the Jacobi method, the Gauss-Seidel method does not converge unless the coefficient matrix A satisfies the diagonal dominance (in the narrow sense).</p>
+<h4 id="2-3-2-2-gauss-seidel-method-implementation">2-3-2-2. Gauss-Seidel method implementation</h4>
+<p>There is no particular change in the graph.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/19837386-677c-dc15-e4d8-81c3c82c309f.png" alt="gauss-seidel.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">gauss_seidel</span>(a_matrix, b_array, target_residual):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Gauss-Seidel method
+</span><span style="color:#e6db74">    Ax = b
+</span><span style="color:#e6db74">    If A = (D+L+U)x^{(m+1)} = D^{-1}(b- L x^{(m+1)}-U x^{(m)})
+</span><span style="color:#e6db74">    x^{(m+1)} = (D+L)^{-1}(b-U x^{(m)})
+</span><span style="color:#e6db74">    However, D is a diagonal matrix, L is a lower triangular matrix, and U is an upper triangular matrix.
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------
+</span><span style="color:#e6db74">    a_matrix: numpy.float64
+</span><span style="color:#e6db74">        n×m matrix
+</span><span style="color:#e6db74">    b_array: numpy.float64
+</span><span style="color:#e6db74">        n-row matrix
+</span><span style="color:#e6db74">    target_residual: numpy.float64
+</span><span style="color:#e6db74">        A positive number. Target residual.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    -------
+</span><span style="color:#e6db74">    x: numpy.float64
+</span><span style="color:#e6db74">        n-row matrix
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    x_old <span style="color:#f92672">=</span> b_array<span style="color:#f92672">.</span>copy()
+    lower_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tril(a_matrix) <span style="color:#75715e"># lower triangular matrix</span>
+    upper_matrix <span style="color:#f92672">=</span> a_matrix<span style="color:#f92672">-</span>lower_matrix <span style="color:#75715e"># upper triangular matrix</span>
+    inv_lower_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>inv(lower_matrix)
+    count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">while</span> True:
+        count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(inv_lower_matrix, (b_array<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>dot(upper_matrix, x_old)))
+        residual <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(x<span style="color:#f92672">-</span>x_old) <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(x)
+        x_old <span style="color:#f92672">=</span> x
+        <span style="color:#66d9ef">if</span> residual <span style="color:#f92672">&lt;=</span> target_residual:
+            <span style="color:#66d9ef">break</span>
+        <span style="color:#66d9ef">elif</span> count <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">10000</span>:
+            <span style="color:#f92672">import</span> sys
+            <span style="color:#66d9ef">print</span>(residual)
+            sys<span style="color:#f92672">.</span>exit()
+    <span style="color:#66d9ef">return</span> x
+
+temperature_gs <span style="color:#f92672">=</span> temperature_array<span style="color:#f92672">.</span>copy()
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    a_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>identity(len(temperature_gs)) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>eye(len(temperature_gs), k<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>eye(len(temperature_gs), k<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)
+    temp_temperature_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>append(
+                        temperature_lower_boundary,
+                        temperature_gs), temperature_upper_boundary)
+    b_array <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> temperature_gs <span style="color:#f92672">+</span> temp_temperature_array[<span style="color:#ae81ff">2</span>:] <span style="color:#f92672">+</span> temp_temperature_array[:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+    b_array[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> temperature_lower_boundary
+    b_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> temperature_upper_boundary
+    temperature_gs <span style="color:#f92672">=</span> gauss_seidel(a_matrix, b_array, <span style="color:#ae81ff">1e-8</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, exact_temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>, c<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;black&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_gs, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Implicit Gauss-Seidel(100 steps)&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;temperature&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><h3 id="2-3-3-sor-method">2-3-3. SOR method</h3>
+<p>Gauss-Seidel method with relaxation coefficient $\omega$ added. When $\omega=1$, it is the same as the Gauss-Seidel method.
+Using the matrix D having the diagonal elements of the matrix A, the upper matrix U and the lower matrix L, when $A = D + L + U$,</p>
+<pre><code class="language-math" data-lang="math">Ax = b\\
+ (D+L+U) x = b\\
+ \tilde{x}^{(m+1)} = D^{-1}(b- L x^{(m+1)}-U x^{(m)}) \quad :Gauss-Seidel\ \
+ x^{(m+1)} = x^{(m)} + \omega \left(\tilde{x}^{(m+1)}-x^{(m)} \right)
+</code></pre><p>The method of resolving $Ax=b$ as described above and iteratively finding an approximate solution using the bottom equation is called the SOR method (sequential acceleration relaxation method).</p>
+<p>$$
+x_i^{(m+1)} = x_i^{(m)} + \omega \frac{1}{a_{ii}}\left( b_i-\sum_{j=1}^{i-1} a_ {ij} x_j^{(m+1)}-\sum_{j=i}^{n} a_{ij} x_j^{(m)} \right)
+$$</p>
+<h4 id="2-3-3-1-sor-method-implementation">2-3-3-1. SOR method implementation</h4>
+<p>This time, the relaxation coefficient $\omega$ is a constant. There is also a relaxation factor $\omega$ <a href="https://en.wikipedia.org/wiki/SORmethod">when the optimal value can be determined</a>. There is no change in the graph.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/65cb5902-8e1a-be6c-bdeb-54295ed6aa97.png" alt="sor.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sor</span>(a_matrix, b_array, target_residual):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    SOR method
+</span><span style="color:#e6db74">    Ax = b
+</span><span style="color:#e6db74">    If A = (D+L+U)
+</span><span style="color:#e6db74">    x~^{(m+1)} = D^{-1}(b- L x^{(m+1)}-U x^{(m)}): Gauss-Seidel
+</span><span style="color:#e6db74">    x^{(m+1)} = x^{(m)} + omega (x~^{(m+1)}-x^{(m)})
+</span><span style="color:#e6db74">    However, D is a diagonal matrix, L is a lower triangular matrix, and U is an upper triangular matrix.
+</span><span style="color:#e6db74">    
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------
+</span><span style="color:#e6db74">    a_matrix: numpy.float64
+</span><span style="color:#e6db74">        n×m matrix
+</span><span style="color:#e6db74">    b_array: numpy.float64
+</span><span style="color:#e6db74">        n-row matrix
+</span><span style="color:#e6db74">    target_residual: numpy.float64
+</span><span style="color:#e6db74">        A positive number. Target residual.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    -------
+</span><span style="color:#e6db74">    x: numpy.float64
+</span><span style="color:#e6db74">        n-row matrix
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    x_old <span style="color:#f92672">=</span> b_array<span style="color:#f92672">.</span>copy()
+    lower_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tril(a_matrix) <span style="color:#75715e"># lower triangular matrix</span>
+    upper_matrix <span style="color:#f92672">=</span> a_matrix<span style="color:#f92672">-</span>lower_matrix <span style="color:#75715e"># upper triangular matrix</span>
+    inv_lower_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>inv(lower_matrix)
+    omega <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.9</span> <span style="color:#75715e"># Convergence may be slow in this example.</span>
+    count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">while</span> True:
+        count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        x_tilde <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(inv_lower_matrix, (b_array<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>dot(upper_matrix, x_old)))
+        x <span style="color:#f92672">=</span> x_old <span style="color:#f92672">+</span> omega <span style="color:#f92672">*</span> (x_tilde<span style="color:#f92672">-</span>x_old)
+        residual <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(x<span style="color:#f92672">-</span>x_old) <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(x)
+        x_old <span style="color:#f92672">=</span> x
+        <span style="color:#66d9ef">if</span> residual <span style="color:#f92672">&lt;=</span> target_residual:
+            <span style="color:#66d9ef">break</span>
+        <span style="color:#66d9ef">elif</span> count <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">10000</span>:
+            <span style="color:#f92672">import</span> sys
+            <span style="color:#66d9ef">print</span>(residual)
+            sys<span style="color:#f92672">.</span>exit()
+    <span style="color:#66d9ef">return</span> x
+
+temperature_sor <span style="color:#f92672">=</span> temperature_array<span style="color:#f92672">.</span>copy()
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    a_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>identity(len(temperature_sor)) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>eye(len(temperature_sor), k<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>eye(len(temperature_sor), k<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)
+    temp_temperature_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>append(
+                        temperature_lower_boundary,
+                        temperature_sor), temperature_upper_boundary)
+    b_array <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> temperature_sor <span style="color:#f92672">+</span> temp_temperature_array[<span style="color:#ae81ff">2</span>:] <span style="color:#f92672">+</span> temp_temperature_array[:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+    b_array[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> temperature_lower_boundary
+    b_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> temperature_upper_boundary
+    temperature_sor <span style="color:#f92672">=</span> sor(a_matrix, b_array, <span style="color:#ae81ff">1e-8</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, exact_temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>, c<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;black&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_sor, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Implicit SOR(100 steps)&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;temperature&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><p>#Summary</p>
+<ul>
+<li>The one-dimensional diffusion equation was solved by the explicit central difference method and Crank-Nicholson implicit method.</li>
+<li>In the explicit method of the one-dimensional diffusion equation, it was confirmed that the lattice width and the time step width are limited by the diffusion number.</li>
+<li>The iterative method was used to implement the Crank-Nicholson implicit method.
+<ul>
+<li>Iterative methods include stationary iterative method and nonstationary iterative method (Krylov subspace method).</li>
+<li>In this implementation, Jacobi method, Gauss-Seidel method, and SOR method were used.* It has been confirmed that the iterative method does not suffer from the limit of diffusion number as in the explicit method.</li>
+<li>Stationary iterative multigrid method and nonstationary iterative method will be explained in the following articles.</li>
+</ul>
+</li>
+</ul>
+<p>Next time, I would like to summarize the non-stationary iterative method (Krylov subspace method). ~~
+I decided to summarize the transient iteration method someday. The usage of the non-stationary iterative method in Python is summarized in <a href="https://qiita.com/KQTS/items/e5500ba6e2681456e268">[Python] Article that makes sparse matrix calculation faster</a>.
+Next time, we made a (linear) advection-diffusion equation that combined the advection equation of <a href="https://qiita.com/KQTS/items/354c85adb7d46e28e8da">previous article</a> and the diffusion equation treated in this article, and nonlinearized it. I would like to deal with the Burgers equation.</p>
+<h2 id="references">References</h2>
+<p>1.https://qiita.com/sci_Haru/items/960687f13962d63b64a0
+2.https://qiita.com/IshitaTakeshi/items/cf106c139660ef138185
+3. <a href="http://nkl.cc.u-tokyo.ac.jp/14n/PDE.pdf">http://nkl.cc.u-tokyo.ac.jp/14n/PDE.pdf</a>
+4. <a href="https://home.hiroshima-u.ac.jp/nakakuki/other/simusemi-20070907.pdf">https://home.hiroshima-u.ac.jp/nakakuki/other/simusemi-20070907.pdf</a>
+5. <a href="https://www.sit.ac.jp/user/konishi/JPN/L_Support/SupportPDF/InplicitMethod.pdf">https://www.sit.ac.jp/user/konishi/JPN/L_Support/SupportPDF/InplicitMethod.pdf</a> ← Very easy to understand
+6. <a href="http://ri2t.kyushu-u.ac.jp/~watanabe/RESERCH/MANUSCRIPT/KOHO/GEPP/GEPP.pdf">http://ri2t.kyushu-u.ac.jp/~watanabe/RESERCH/MANUSCRIPT/KOHO/GEPP/GEPP.pdf</a> ← Exhaustive and detailed</p>
+<h3 id="iterative-references">Iterative References</h3>
+<p>Regarding the iterative method, the materials and videos cited by <a href="http://nkl.cc.u-tokyo.ac.jp">Professor Nakajima</a>oftheUniversityofTokyo,andthis[site]thatcollectsnumericalanalysisaresummarized.Ifyoulookat(<a href="http://www.slis.tsukuba.ac.jp/~fujisawa.makoto.fu/cgi-bin/wiki/index.php?Numerical%20Calculation),">http://www.slis.tsukuba.ac.jp/~fujisawa.makoto.fu/cgi-bin/wiki/index.php?Numerical%20Calculation),</a> you can get a good idea. Professor Nakajima is a god.</p>
+<h3 id="jacobi-law-references">Jacobi Law References</h3>
+<ul>
+<li><a href="https://mmm-ssss.com/2019/05/30/jacobi_method_gauss_seidel_method/">https://mmm-ssss.com/2019/05/30/jacobi_method_gauss_seidel_method/</a></li>
+<li><a href="https://org-technology.com/posts/solving-linear-equations-yacobi.html">https://org-technology.com/posts/solving-linear-equations-yacobi.html</a></li>
+<li><a href="http://www.math.ritsumei.ac.jp/yasutomi/jugyo/Numerical_Analysis/note5.pdf">http://www.math.ritsumei.ac.jp/yasutomi/jugyo/Numerical_Analysis/note5.pdf</a></li>
+</ul>
+<h3 id="steady-relaxation-method-implementation-reference">Steady relaxation method implementation reference</h3>
+<ul>
+<li><a href="http://nkl.cc.u-tokyo.ac.jp/13n/SolverIterative.pdf">http://nkl.cc.u-tokyo.ac.jp/13n/SolverIterative.pdf</a></li>
+<li><a href="https://ja.wikipedia.org/wiki/SOR">https://ja.wikipedia.org/wiki/SOR</a> method</li>
+<li>The following three websites are very easy to understand the implementation of the stationary relaxation method.</li>
+<li><a href="https://org-technology.com/posts/solving-linear-equations-yacobi.html">https://org-technology.com/posts/solving-linear-equations-yacobi.html</a></li>
+<li><a href="https://org-technology.com/posts/solving-linear-equations-gauss-seidel.html">https://org-technology.com/posts/solving-linear-equations-gauss-seidel.html</a></li>
+<li><a href="https://org-technology.com/posts/solving-linear-equations-sor.html">https://org-technology.com/posts/solving-linear-equations-sor.html</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

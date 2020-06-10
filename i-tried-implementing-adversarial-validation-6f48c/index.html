@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried implementing adversarial validation | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried implementing adversarial validation</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 17, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-science"> data science</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/feature-selection"> feature selection</a></code></small>
+
+</p>
+<pre><code>### What is this article
+</code></pre>
+<p>After explaining what adversarial validation is, here is the code I tried to implement.
+I will write it here as a memorandum and organize knowledge.</p>
+<p>The code that I referred to when posting this article is <a href="https://www.kaggle.com/kingychiu/adversarial-validation-on-ieee-fe-with-some-eda">here</a></p>
+<h3 id="what-is-adversarial-validation">What is adversarial validation?</h3>
+<p>If the distribution of train data is different from that of test data, the distribution of validation data may also be close to the distribution of train data, and test data may not be predicted well. One of the methods used at that time is adversarial validation.</p>
+<p>Adversarial validation is to build a model that classifies train data and test data, and use it to create validation data with a distribution as close as possible to test data.</p>
+<h2 id="implementation">Implementation</h2>
+<h3 id="creating-a-target-variable">Creating a target variable</h3>
+<p>Create new columns for train data and test data, and enter 0 for train data and 1 for test data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+train[<span style="color:#e6db74">&#39;target&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+test[<span style="color:#e6db74">&#39;target&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+
+train_test <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([train, test], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>reset_index(drop<span style="color:#f92672">=</span>True)
+train_test<span style="color:#f92672">.</span>head()
+
+</code></pre></div><h3 id="learning-and-classification">Learning and classification</h3>
+<p>This time, I used lightgbm to build the model. Cross-validation is performed to measure the probability of being test data for all train data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> lightgbm <span style="color:#f92672">as</span> lgb
+<span style="color:#f92672">from</span> sklearn.model_selection <span style="color:#f92672">import</span> StratifiedKFold
+
+params <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;objective&#39;</span>:<span style="color:#e6db74">&#39;binary&#39;</span>,
+          <span style="color:#e6db74">&#39;max_depth&#39;</span>: <span style="color:#ae81ff">5</span>,
+          <span style="color:#e6db74">&#39;boosting&#39;</span>:<span style="color:#e6db74">&#39;gbdt&#39;</span>,
+          <span style="color:#e6db74">&#39;metric&#39;</span>:<span style="color:#e6db74">&#39;auc&#39;</span>}
+
+features <span style="color:#f92672">=</span> [col <span style="color:#66d9ef">for</span> col <span style="color:#f92672">in</span> train_test<span style="color:#f92672">.</span>columns <span style="color:#66d9ef">if</span> col <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> (<span style="color:#e6db74">&#39;target&#39;</span>,)]
+oof_pred <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((len(train_test), ))
+cv <span style="color:#f92672">=</span> StratifiedKFold(n_splits<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, shuffle<span style="color:#f92672">=</span>True, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">42</span>)
+
+<span style="color:#66d9ef">for</span> fold, (train_idx, val_idx) <span style="color:#f92672">in</span> enumerate(cv<span style="color:#f92672">.</span>split(train_test, train_test[<span style="color:#e6db74">&#39;target&#39;</span>])):
+    x_train, x_predict <span style="color:#f92672">=</span> train_test[features]<span style="color:#f92672">.</span>iloc[train_idx], train_test[features]<span style="color:#f92672">.</span>iloc[val_idx]
+    y_train <span style="color:#f92672">=</span> train_test[<span style="color:#e6db74">&#39;target&#39;</span>][train_idx]
+
+    train_set <span style="color:#f92672">=</span> lgb<span style="color:#f92672">.</span>Dataset(x_train, label<span style="color:#f92672">=</span>y_train)
+
+    model <span style="color:#f92672">=</span> lgb<span style="color:#f92672">.</span>train(params, train_set)
+    oof_pred[val_idx] <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict(x_predict)<span style="color:#f92672">.</span>reshape(oof_pred[val_idx]<span style="color:#f92672">.</span>shape)
+</code></pre></div><h3 id="creation-of-validation-data">Creation of validation data</h3>
+<p>Sort the probability values in descending order, obtain an arbitrary number of data in descending order of probability (test possibility), and create validation data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">train_test[<span style="color:#e6db74">&#39;probability&#39;</span>] <span style="color:#f92672">=</span> oof_pred
+train <span style="color:#f92672">=</span> train_test[train_test<span style="color:#f92672">.</span>target<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>drop(<span style="color:#e6db74">&#39;target&#39;</span>, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>sort_values(<span style="color:#e6db74">&#39;probability&#39;</span>, ascending<span style="color:#f92672">=</span>False)
+
+valid_idx <span style="color:#f92672">=</span> int(len(train)) <span style="color:#f92672">/</span> <span style="color:#ae81ff">5</span> <span style="color:#75715e"># This time, the top 20% is fixed.</span>
+
+validation_data <span style="color:#f92672">=</span> train<span style="color:#f92672">.</span>iloc[:valid_idx]
+train_data <span style="color:#f92672">=</span> train<span style="color:#f92672">.</span>iloc[valid_idx:]
+</code></pre></div><h3 id="i-tried-to-put-it-together-in-a-class">I tried to put it together in a class</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Adversarial_validator</span>:
+
+    <span style="color:#66d9ef">def</span> __init__(self, train, test, features, categoricals):
+        self<span style="color:#f92672">.</span>train <span style="color:#f92672">=</span> train
+        self<span style="color:#f92672">.</span>test <span style="color:#f92672">=</span> test
+        self<span style="color:#f92672">.</span>features <span style="color:#f92672">=</span> features
+        self<span style="color:#f92672">.</span>categoricals <span style="color:#f92672">=</span> categoricals
+        self<span style="color:#f92672">.</span>union_df <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>train_test_union(self<span style="color:#f92672">.</span>train, self<span style="color:#f92672">.</span>test)
+        self<span style="color:#f92672">.</span>cv <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_cv()
+        self<span style="color:#f92672">.</span>models <span style="color:#f92672">=</span> []
+        self<span style="color:#f92672">.</span>oof_pred <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fit()
+        self<span style="color:#f92672">.</span>report_plot()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fit</span>(self):
+        oof_pred <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((len(self<span style="color:#f92672">.</span>union_df), ))
+
+        <span style="color:#66d9ef">for</span> fold, (train_idx, val_idx) <span style="color:#f92672">in</span> enumerate(self<span style="color:#f92672">.</span>cv):
+            x_train, x_predict <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>union_df[self<span style="color:#f92672">.</span>features]<span style="color:#f92672">.</span>iloc[
+                train_idx], self<span style="color:#f92672">.</span>union_df[self<span style="color:#f92672">.</span>features]<span style="color:#f92672">.</span>iloc[val_idx]
+            y_train <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>union_df[<span style="color:#e6db74">&#39;target&#39;</span>][train_idx]
+            train_set <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>convert_dataset(x_train, y_train)
+            model <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>train_model(train_set)
+            self<span style="color:#f92672">.</span>models<span style="color:#f92672">.</span>append(model)
+
+            oof_pred[val_idx] <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict(
+                x_predict)<span style="color:#f92672">.</span>reshape(oof_pred[val_idx]<span style="color:#f92672">.</span>shape)
+        self<span style="color:#f92672">.</span>union_df[<span style="color:#e6db74">&#39;prediction&#39;</span>] <span style="color:#f92672">=</span> oof_pred
+        <span style="color:#66d9ef">return</span> oof_pred
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train_test_union</span>(self, train, test):
+        train[<span style="color:#e6db74">&#39;target&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        test[<span style="color:#e6db74">&#39;target&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">return</span> pd<span style="color:#f92672">.</span>concat([train, test], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>reset_index(drop<span style="color:#f92672">=</span>True)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_cv</span>(self):
+        cv <span style="color:#f92672">=</span> StratifiedKFold(n_splits<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>,
+                             shuffle<span style="color:#f92672">=</span>True, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">42</span>)
+
+        <span style="color:#66d9ef">return</span> cv<span style="color:#f92672">.</span>split(self<span style="color:#f92672">.</span>union_df, self<span style="color:#f92672">.</span>union_df[<span style="color:#e6db74">&#39;target&#39;</span>])
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convert_dataset</span>(self, X, y):
+        <span style="color:#66d9ef">return</span> lgb<span style="color:#f92672">.</span>Dataset(X, label<span style="color:#f92672">=</span>y, categorical_feature<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>categoricals)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train_model</span>(self, train_set):
+        <span style="color:#66d9ef">return</span> lgb<span style="color:#f92672">.</span>train(self<span style="color:#f92672">.</span>get_params(), train_set)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_params</span>(self):
+        param <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;num_leaves&#39;</span>: <span style="color:#ae81ff">50</span>,
+                 <span style="color:#e6db74">&#39;num_round&#39;</span>: <span style="color:#ae81ff">100</span>,
+                 <span style="color:#e6db74">&#39;min_data_in_leaf&#39;</span>: <span style="color:#ae81ff">30</span>,
+                 <span style="color:#e6db74">&#39;objective&#39;</span>:<span style="color:#e6db74">&#39;binary&#39;</span>,
+                 <span style="color:#e6db74">&#39;max_depth&#39;</span>: <span style="color:#ae81ff">5</span>,
+                 <span style="color:#e6db74">&#39;learning_rate&#39;</span>: <span style="color:#ae81ff">0.2</span>,
+                 <span style="color:#e6db74">&#39;min_child_samples&#39;</span>: <span style="color:#ae81ff">20</span>,
+                 <span style="color:#e6db74">&#39;boosting&#39;</span>:<span style="color:#e6db74">&#39;gbdt&#39;</span>,
+                 <span style="color:#e6db74">&#39;feature_fraction&#39;</span>: <span style="color:#ae81ff">0.9</span>,
+                 <span style="color:#e6db74">&#39;bagging_freq&#39;</span>: <span style="color:#ae81ff">1</span>,
+                 <span style="color:#e6db74">&#39;bagging_fraction&#39;</span>: <span style="color:#ae81ff">0.9</span>,
+                 <span style="color:#e6db74">&#39;bagging_seed&#39;</span>: <span style="color:#ae81ff">44</span>,
+                 <span style="color:#e6db74">&#39;verbose_eval&#39;</span>: <span style="color:#ae81ff">50</span>,
+                 <span style="color:#e6db74">&#39;metric&#39;</span>:<span style="color:#e6db74">&#39;auc&#39;</span>,
+                 <span style="color:#e6db74">&#39;verbosity&#39;</span>: <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>}
+        <span style="color:#66d9ef">return</span> param
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">report_plot</span>(self):
+        fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">16</span>, <span style="color:#ae81ff">12</span>))
+        plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>)
+        self<span style="color:#f92672">.</span>plot_feature_importance()
+        plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>)
+        self<span style="color:#f92672">.</span>plot_roc_curve()
+        plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>)
+        plt<span style="color:#f92672">.</span>hist(self<span style="color:#f92672">.</span>union_df[<span style="color:#e6db74">&#39;target&#39;</span>]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>oof_pred)
+        plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Distribution of errors&#39;</span>)
+        plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">4</span>)
+        plt<span style="color:#f92672">.</span>hist(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>choice(self<span style="color:#f92672">.</span>oof_pred, <span style="color:#ae81ff">1000</span>, False))
+        plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Distribution of oof predictions&#39;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_feature_importance</span>(self):
+        n <span style="color:#f92672">=</span> len(self<span style="color:#f92672">.</span>models)
+        feature_imp_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame()
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(n):
+            tmp <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(zip(self<span style="color:#f92672">.</span>models[i]<span style="color:#f92672">.</span>feature_importance(), self<span style="color:#f92672">.</span>features), columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;Value&#39;</span>, <span style="color:#e6db74">&#39;Feature&#39;</span>])
+            tmp[<span style="color:#e6db74">&#39;n_models&#39;</span>] <span style="color:#f92672">=</span> i
+            feature_imp_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([feature_imp_df, tmp])
+            <span style="color:#66d9ef">del</span> tmp
+        self<span style="color:#f92672">.</span>feature_importance <span style="color:#f92672">=</span> feature_imp_df
+        <span style="color:#66d9ef">return</span> feature_imp_df
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_feature_importance</span>(self, n<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>):
+        imp_df <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_feature_importance()<span style="color:#f92672">.</span>groupby(
+            [<span style="color:#e6db74">&#39;Feature&#39;</span>])[[<span style="color:#e6db74">&#39;Value&#39;</span>]]<span style="color:#f92672">.</span>mean()<span style="color:#f92672">.</span>reset_index(False)
+        imp_top_df <span style="color:#f92672">=</span> imp_df<span style="color:#f92672">.</span>sort_values(<span style="color:#e6db74">&#39;Value&#39;</span>, ascending<span style="color:#f92672">=</span>False)<span style="color:#f92672">.</span>head(n)
+        sns<span style="color:#f92672">.</span>barplot(data<span style="color:#f92672">=</span>imp_top_df, x<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Value&#39;</span>, y<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Feature&#39;</span>, orient<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;h&#39;</span>)
+        plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Feature importances&#39;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_roc_curve</span>(self):
+        fpr, tpr, thresholds <span style="color:#f92672">=</span> metrics<span style="color:#f92672">.</span>roc_curve(
+            self<span style="color:#f92672">.</span>union_df[<span style="color:#e6db74">&#39;target&#39;</span>], self<span style="color:#f92672">.</span>oof_pred)
+        auc <span style="color:#f92672">=</span> metrics<span style="color:#f92672">.</span>auc(fpr, tpr)
+
+        plt<span style="color:#f92672">.</span>plot(fpr, tpr, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ROC curve (area = </span><span style="color:#e6db74">%.2f</span><span style="color:#e6db74">)&#39;</span> <span style="color:#f92672">%</span> auc)
+        plt<span style="color:#f92672">.</span>legend()
+        plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;ROC curve&#39;</span>)
+        plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;False Positive Rate&#39;</span>)
+        plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;True Positive Rate&#39;</span>)
+
+adv <span style="color:#f92672">=</span> Adversarial_validator(train, test, features, categoricals)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/586627/1c73bf6e-253d-d0bc-4092-d0aa32ff0116.png" alt="adv_output.png"></p>
+<p>データはkaggleコンペの<a href="https://www.kaggle.com/c/data-science-bowl-2019">2019 Data Science Bowl</a>のデータを使用している。</p>
+<h3 id="validationデータ作成以外の活用法">validationデータ作成以外の活用法</h3>
+<ul>
+<li>importanceの高い特徴量を削除してtrainデータの分布をtestデータに近づける</li>
+<li>学習時のデータの重みづけの参考(weight_column)</li>
+</ul>
+<h3 id="まとめ">まとめ</h3>
+<p>簡単にだがadversarial validationについて紹介してみた。この記事を読んだ方の一助になれば幸いである。</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

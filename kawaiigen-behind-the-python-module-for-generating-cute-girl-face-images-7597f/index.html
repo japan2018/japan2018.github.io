@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>KawaiiGen: Behind the Python module for generating cute girl face images | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>KawaiiGen: Behind the Python module for generating cute girl face images</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+</p>
+<pre><code>## What is kawaii-gen
+</code></pre>
+<p>We recently released <a href="https://github.com/xiong-jie-y/kawaii_girl_generator">python module kawaii-gen</a> that generates cute idol face images. In this article, I will explain the model of stylegan used in this module and the data pipeline implemented to create a data set for stylegan.</p>
+<p>stylegan is a GAN that has a resolution of 1024x1024 pixels and can generate photographic images, and the space of hidden variables has high linear separability and complementarity. This time I tried using StyleGAN with 256x256 and 512x512 with super resolution.</p>
+<p>Regarding the data pipeline, stylegan needs a large number of images because the FFHQ data set has 70,000 images, so using the idea of active learning to reduce the number of manual annotations Annotated so that only women&rsquo;s faces can be extracted automatically.</p>
+<h2 id="stylegan-description">StyleGAN description</h2>
+<h3 id="stylegan-overview">StyleGAN overview</h3>
+<p>StyleGAN is a GAN with the following features.</p>
+<ul>
+<li>Complementary performance of hidden space is improved compared to conventional methods</li>
+<li>The axis and the axis of the hidden space can be disentangled from the conventional method. = Better linear separation space can be created.</li>
+</ul>
+<p>Complementary performance is such a property that similar objects are arranged close to each other in the hidden variable space.For face images, they are arranged in order of the degree of smiles, or glasses. Face images that are worn are like being close in space.</p>
+<p>A better disentangle is the ability to create a space where the axes are nearly independent,
+Although there is a relationship between such a space and a space close to linear separation, it is intuitively that it is easier to make classification logic etc. by using independent feature quantities, so a space with independent axes (= independent feature quantities) Seems better for linear separation.</p>
+<p>In StyleGAN, Z is not a space that can be easily linearly separated, but the network that converts Z into W in the architecture (Fig.2) converts Z into a space that is easily linearly separated.</p>
+<p>Fig.1
+<img width="246" alt="Screenshots 2019-12-07 19.29.49.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/204956/f7c13f8a-1943-c791-5a2e-6138a009b3e1.png"></p>
+<p>Fig.2
+<img width="334" alt="Screenshots 2019-12-07 19.24.23.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/204956/5993fed2-3d13-c8cc-a62b-99623ffbc335.png"></p>
+<h3 id="implementation">Implementation</h3>
+<p>I used the code of stylegan&rsquo;s <a href="https://github.com/NVlabs/stylegan">official repository</a> almost as it is. There are scripts that convert various datasets to TFRecords format and learning scripts that can easily change options. I&rsquo;m writing all options in a Dictionaryu in Python,
+It was easier to change than I thought, rather than adding arguments with argparse etc.
+For details, refer to the official README, but you can create a dataset in tfrecord format that the training script <code>train.py</code> accepts with the <code>dataset_tool.py create_from_images</code> command, and just run it by modifying the <code>train.py</code> argument. ..</p>
+<h2 id="data-pipeline">Data pipeline</h2>
+<h3 id="overall-picture">Overall picture</h3>
+<p>![Data Pipeline (StyleGAN) (1).png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/204956/dd1f3975-8dc7-3416-9c1f-b66f0ff0c306.(png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/204956/dd1f3975-8dc7-3416-9c1f-b66f0ff0c306.(png)</a></p>
+<p>The data flow and processing components are as shown above,
+At the beginning of processing, a general-purpose, site-specific crawler collects facial images.
+After that, the face is detected from the image, the male face is removed, various occlusions are removed, and then
+Alignment is performed by aligning the positions of eyes and flowers to remove the alignment.
+The image after alignment is saved in the training dataset.</p>
+<h3 id="face-detection-algorithm">Face detection algorithm</h3>
+<p>This time I used dlib&rsquo;s cnn algorithm. This face detection algorithm uses cnn to identify faces in the sliding window. The algorithm that uses the hog feature and svm for discrimination is also provided in dlib, and hog that can only take the front image may be the most suitable when first trying face image generation.</p>
+<p>There is another way to use models such as SSD and retinanet, and it may be possible to speed up by executing EndToEnd and batch execution on the GPU. The implementation of dlib cnn is also optimized, which is quite fast.</p>
+<h3 id="alignment">alignment</h3>
+<p>Normalize the training data to reduce the learning load of StyleGAN.
+Variations are reduced by aligning the nose position and direction. ‥</p>
+<p>I used the alignment of StyleGAN almost as it is.
+The rectangle is recreated and the direction is corrected based on the positions of the landmarks of the eyes and nose of the face image.
+White space created when rotated or moved is padded in white, but the padding area that is too large is removed.
+This is because some hair and parts of the face may be removed too much.</p>
+<p><a href="https://github.com/1adrianb/face-alignment">Landmark detection module that can support occlusion</a> was used for landmark detection.</p>
+<h3 id="male-face-removal">Male face removal</h3>
+<p>Originally, I thought about making an idol face classifier, and annotated about 2000 face images. I extracted facial features with dlib, clustered them in the facial feature space, and labeled similar ones at a stretch, and then labeled those with a low confidence score.</p>
+<h3 id="occlusion-except-for-front-images">Occlusion, except for front images</h3>
+<p>I had some photos with a microphone, hands, letters, food, etc. on my face, so I made a function to detect them. I also created a function to filter out anything other than the face that is facing the front. It takes quite a while to process hundreds of thousands of images, so I am not looking to increase the number of GPUs, so this function is turned off. However, there are some images in which a mysterious object is faintly visible on the face, and I think that occlusion support is indispensable in order to omit it.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

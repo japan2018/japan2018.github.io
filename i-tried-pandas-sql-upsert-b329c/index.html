@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried Pandas&#39; Sql Upsert | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried Pandas&rsquo; Sql Upsert</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 30, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas">pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/upsert">UPSERT</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>This is Miyano (<a href="https://twitter.com/estie_mynfire">@estie_mynfire</a>) of estie CTO.</p>
+<p>Since estie builds real estate data from various resources, pandas is used for data shaping. for that reason
+<strong>Data created with pandas -&gt; DataBase</strong>
+It is important to carry out this flow smoothly.</p>
+<p>Since there was only replace and append as it was, I had to do my best on the pandas side and then update it. (This is very troublesome)</p>
+<p>Meanwhile, there was a long-awaited <a href="https://github.com/pandas-dev/pandas/pull/29636">Pullyk of Sql Upsert function addition</a> in pandas the other day, so I tried to move it. This should boost work efficiency&hellip;! !</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/437488/c1713b7a-18c3-6cc0-9a54-4e1f79860c1e.png" alt="image.png"></p>
+<h2 id="what-is-upsert">What is Upsert?</h2>
+<p>It means to do Insert and Update.
+There are two major Upsert functions in Sql.</p>
+<ol>
+<li>Based on the Primary Key, do nothing that exists, and do not exist Insert(<strong>upsert_keep</strong>)</li>
+<li>Based on the Primary Key, update existing ones and insert non existing ones Insert(<strong>upsert_overwrite</strong>)</li>
+</ol>
+<h2 id="why-are-you-happy-with-pandas">Why are you happy with pandas?</h2>
+<ul>
+<li>Difficult to handle missing values in Sql
+<ul>
+<li>Only null character string is judged as missing value
+<ul>
+<li>Python nan and None -&gt; will enter the table as a string</li>
+<li>Recognized as blank string -&gt; 0</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>csv is difficult to spit
+<ul>
+<li>Even though I am writing in Python, it is inefficient to dump it into csv and then insert it into another wrapper.</li>
+</ul>
+</li>
+</ul>
+<p>Therefore, Python engineers have a desire to <strong>update tables directly from pandas with peace of mind</strong>.</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li>Convenient because Sql operations can be done almost exclusively with pandas. And simple and easy to use
+*upsert_keep does not seem to behave as expected, so investigate the cause.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">Attributes:
+</span><span style="color:#e6db74">    df (pd.DataFrame): any DataFrame
+</span><span style="color:#e6db74">    tablename (str): Table name
+</span><span style="color:#e6db74">&#39;&#39;&#39;</span>
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> create_engine
+
+con <span style="color:#f92672">=</span> create_engine(<span style="color:#e6db74">&#39;mysql+mysqlconnector://[user]:[pass]@[host]:[port]/[schema]&#39;</span>)
+
+<span style="color:#75715e"># upsert_keep -&gt; do nothing (?) There is a possibility of a bug, so I will look at it in the future.</span>
+df<span style="color:#f92672">.</span>to_sql(tablename, con, if_exist<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upsert_keep&#39;</span>, index<span style="color:#f92672">=</span>False)
+
+<span style="color:#75715e"># upsert_overwrite -&gt; Update existing ones and insert non existing ones. As intended</span>
+df<span style="color:#f92672">.</span>to_sql(tablename, con, if_exist<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upsert_overwrite&#39;</span>, index<span style="color:#f92672">=</span>False)
+</code></pre></div><h2 id="env">Env</h2>
+<p>From here, I will write a concrete story.
+The environment is as follows.</p>
+<ul>
+<li>macOS Mojave
+<ul>
+<li>10.14.5</li>
+</ul>
+</li>
+<li>Python -V
+<ul>
+<li>3.6.8</li>
+</ul>
+</li>
+<li>package version
+<ul>
+<li>SQLAlchemy 1.3.11</li>
+</ul>
+</li>
+</ul>
+<h2 id="setting">Setting</h2>
+<p>Environment</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">git clone https://github.com/V0RT3X4/pandas.git
+cd pandas
+git checkout -b sql-upsert
+git pull origin sql-upsert
+
+git rev-parse HEAD <span style="color:#75715e"># current commit hash value</span>
+<span style="color:#75715e">#d0eb251075883902280cba6cd0dd9a1a1c4a69a4</span>
+</code></pre></div><h3 id="installation-from-sources">Installation from sources</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">pip install cython
+<span style="color:#75715e"># Successfully installed cython-0.29.14</span>
+python setup.py build_ext --inplace --force <span style="color:#75715e"># It takes quite a while. Wait patiently.</span>
+</code></pre></div><h3 id="mysql-server">Mysql server</h3>
+<p>Set up a mysql server and create a users table for local testing.</p>
+<p>users table (** id column as primary key **)</p>
+<table>
+<thead>
+<tr>
+<th align="right">id</th>
+<th align="right">name</th>
+<th align="right">age</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">0</td>
+<td align="right">taro</td>
+<td align="right">20</td>
+</tr>
+<tr>
+<td align="right">1</td>
+<td align="right">jiro</td>
+<td align="right">17</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td align="right">saburo</td>
+<td align="right">18</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">
+mysql.server start --skip-grant-tables <span style="color:#75715e"># mysql server start that allows login without password</span>
+mysql <span style="color:#75715e"># login</span>
+
+mysql&gt; CREATE DATABASE testdb;
+mysql&gt; USE testdb;
+mysql&gt; CREATE TABLE users <span style="color:#f92672">(</span>
+         id INT NOT NULL,
+         name VARCHAR<span style="color:#f92672">(</span>256<span style="color:#f92672">)</span>,
+         age INT
+       <span style="color:#f92672">)</span>;
+mysql&gt; ALTER TABLE users ADD PRIMARY KEY <span style="color:#f92672">(</span>id<span style="color:#f92672">)</span>;
+mysql&gt; INSERT INTO users <span style="color:#f92672">(</span>id, name, age<span style="color:#f92672">)</span> VALUES
+       <span style="color:#f92672">(</span>0,<span style="color:#e6db74">&#39;taro&#39;</span>, 20<span style="color:#f92672">)</span>,
+       <span style="color:#f92672">(</span>1,<span style="color:#e6db74">&#39;jiro&#39;</span>, 19<span style="color:#f92672">)</span>,
+       <span style="color:#f92672">(</span>2,<span style="color:#e6db74">&#39;saburo&#39;</span>, 18<span style="color:#f92672">)</span>;
+</code></pre></div><h2 id="main-subject">Main subject</h2>
+<p>From here I will try Sql Upsert using pandas and sqlalchemy</p>
+<h3 id="db-connect">Db connect</h3>
+<p>First of all, from the connection with DB. If you don&rsquo;t have sqlalchemy, please do <code>pip install sqlalchemy</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> create_engine
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+con <span style="color:#f92672">=</span> create_engine(<span style="color:#e6db74">&#39;mysql+mysqlconnector://@localhost/testdb&#39;</span>)
+<span style="color:#75715e"># format:&#39;mysql+mysqlconnector://[user]:[pass]@[host]:[port]/[schema]&#39;</span>
+users <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_sql(<span style="color:#e6db74">&#39;SELECT * FROM users;&#39;</span>, con)
+users
+<span style="color:#75715e"># id name age</span>
+<span style="color:#75715e">#0 0 taro 20</span>
+<span style="color:#75715e">#1 1 jiro 19</span>
+<span style="color:#75715e">#2 2 saburo 18</span>
+</code></pre></div><h3 id="upsert">Upsert</h3>
+<p>First rewrite the DataFrame</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">users<span style="color:#f92672">.</span>loc[users<span style="color:#f92672">.</span>id<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>,<span style="color:#e6db74">&#39;name&#39;</span>] <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;syo&#39;</span>
+users <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([users, pd<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;id&#39;</span>: [<span style="color:#ae81ff">3</span>],<span style="color:#e6db74">&#39;name&#39;</span>: [<span style="color:#e6db74">&#39;shiro&#39;</span>],<span style="color:#e6db74">&#39;age&#39;</span>: [<span style="color:#ae81ff">28</span>]})]))
+<span style="color:#75715e"># id name age</span>
+<span style="color:#75715e">#0 0 syo 20</span>
+<span style="color:#75715e">#1 1 jiro 19</span>
+<span style="color:#75715e">#2 2 saburo 18</span>
+<span style="color:#75715e">#0 3 shiro 28</span>
+</code></pre></div><p>The basic syntax of the to_sql method is</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">df<span style="color:#f92672">.</span>to_sql(tablename, con, if_exist, index<span style="color:#f92672">=</span>False)
+<span style="color:#75715e"># df: pd.DataFrame</span>
+<span style="color:#75715e"># tablename: table name</span>
+
+<span style="color:#75715e"># if_exist: {&#39;fail&#39;,&#39;replace&#39;,&#39;append&#39;,&#39;upsert_overwrite&#39;,&#39;upsert_keep&#39;}</span>
+
+<span style="color:#75715e"># * fail: Raise a ValueError.</span>
+<span style="color:#75715e"># * replace: Drop the table before inserting new values.</span>
+<span style="color:#75715e"># * append: Insert new values to the existing table.</span>
+<span style="color:#75715e"># * upsert_overwrite: Overwrite matches in database with incoming data.</span>
+<span style="color:#75715e"># * upsert_keep: Keep matches in database instead of incoming data.</span>
+</code></pre></div><p>(For other arguments, check <a href="https://github.com/V0RT3X4/pandas/blob/d0eb251075883902280cba6cd0dd9a1a1c4a69a4/pandas/core/generic.py#L2575">pandas/core/generic.py</a>!)</p>
+<h4 id="upsert_keep">upsert_keep</h4>
+<ul>
+<li>Do nothing (?) -&gt; See below
+<ul>
+<li>I thought that he would insert <code>3 shiro 28</code>, but it has not been done</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">users<span style="color:#f92672">.</span>to_sql(<span style="color:#e6db74">&#39;users&#39;</span>, con, if_exists<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upsert_keep&#39;</span>, index<span style="color:#f92672">=</span>False)
+pd<span style="color:#f92672">.</span>read_sql(<span style="color:#e6db74">&#39;SELECT * FROM users;&#39;</span>, con) <span style="color:#75715e"># Confirm</span>
+<span style="color:#75715e"># id name age</span>
+<span style="color:#75715e">#0 0 taro 20</span>
+<span style="color:#75715e">#1 1 jiro 19</span>
+<span style="color:#75715e">#2 2 saburo 18</span>
+</code></pre></div><h4 id="upsert_overwrite">upsert_overwrite</h4>
+<ul>
+<li>Insert the primary key (here id) if not wearing, update the wearing record
+<ul>
+<li>As intended</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">users<span style="color:#f92672">.</span>to_sql(<span style="color:#e6db74">&#39;users&#39;</span>, con, if_exists<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upsert_overwrite&#39;</span>, index<span style="color:#f92672">=</span>False)
+pd<span style="color:#f92672">.</span>read_sql(<span style="color:#e6db74">&#39;SELECT * FROM users;&#39;</span>, con) <span style="color:#75715e"># Confirm</span>
+<span style="color:#75715e"># id name age</span>
+<span style="color:#75715e">#0 0 syo 20</span>
+<span style="color:#75715e">#1 1 jiro 19</span>
+<span style="color:#75715e">#2 2 saburo 18</span>
+<span style="color:#75715e">#3 3 shiro 28</span>
+</code></pre></div><h2 id="in-conclusion">in conclusion</h2>
+<h3 id="upsert_keep-does-not-work-as-intended">upsert_keep does not work as intended</h3>
+<p>It seems necessary to take a close look at the _upsert_keep_processing method of <a href="https://github.com/V0RT3X4/pandas/blob/d0eb251075883902280cba6cd0dd9a1a1c4a69a4/pandas/io/sql.py#L695">pandas/io/sql.py</a>. As soon as we understand the cause, we will update the pull and article.</p>
+<h3 id="about-estieestie-is-always-looking-for-engineers-who-are-enthusiastic-about-new-technology-full-stack-engineers">About estieestie is always looking for engineers who are enthusiastic about new technology, full stack engineers!</h3>
+<p><a href="https://www.wantedly.com/companies/company_6314859/projects">https://www.wantedly.com/companies/company_6314859/projects</a></p>
+<p>estie -&gt; <a href="https://www.estie.jp">https://www.estie.jp</a>
+estiepro -&gt; <a href="https://pro.estie.jp">https://pro.estie.jp</a>
+Company site -&gt; <a href="https://www.estie.co.jp">https://www.estie.co.jp</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

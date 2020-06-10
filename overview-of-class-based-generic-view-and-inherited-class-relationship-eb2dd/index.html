@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Overview of class-based generic view and inherited class relationship | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Overview of class-based generic view and inherited class relationship</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 13, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/adventcalendar2019">AdventCalendar2019</a></code></small>
+
+</p>
+<pre><code>This article is from the 13th day of Django Advent Calendar 2019.
+</code></pre>
+<p>In this article, I would like to summarize Django&rsquo;s &ldquo;Class-based Generic View&rdquo; and its inheritance class relationships.</p>
+<h1 id="premise">Premise</h1>
+<p>I refer to and cite the <a href="https://docs.djangoproject.com/ja/3.0/">official documentation</a> of Django 3.0, which is the latest version at the time of writing this article.</p>
+<h1 id="what-is-a-class-based-generic-view">What is a Class-Based Generic View?</h1>
+<p>First, a &ldquo;view&rdquo; in Django is an encapsulation [^1] of logic that processes user requests and returns responses. You can define the data to be displayed in the &ldquo;template&rdquo; that is the presentation layer and perform the processing according to the request. It&rsquo;s controversial, but the &ldquo;controller&rdquo; in the MVC framework may be closer to the general image <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>.</p>
+<p>Django provides a &ldquo;Class-based Generic View&rdquo; that generalizes the logic for developing that view. As the name suggests, the class-based generic view is a class-based view, so code that uses inheritance can be reused <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>. By utilizing the general-purpose view, you can avoid redundancy and boiler templates in web development, and make the most of Django&rsquo;s design philosophy of &ldquo;Less Code&rdquo; and &ldquo;Don&rsquo;t Repeat Yourself.&rdquo;</p>
+<p>#List of general views
+A summary and overview of the generic views. The importance is set based on the frequency of personal use in everyday development. I think that the importance depends on the characteristics of the service.</p>
+<h2 id="base-view">Base view</h2>
+<p>Base view group that defines the minimum functions as general-purpose views. The class here is also inherited from other generic views.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Importance</th>
+<th>Overview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.djangoproject.com/ja/3.0/ref/class-based-views/base/#view">View</a></td>
+<td>★★★</td>
+<td>Base view of general view</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/base/#templateview">TemplateView</a></td>
+<td>★★★</td>
+<td>Base view of the view that renders the template</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/base/#redirectview">RedirectView</a></td>
+<td>★★☆</td>
+<td>View for redirecting</td>
+</tr>
+</tbody>
+</table>
+<h2 id="view-for-display">View for display</h2>
+<p>View group for displaying list/detail screen. I think this is the most frequent class in general website development.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Importance</th>
+<th>Overview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-display/#detailview">DetailView</a></td>
+<td>★★★</td>
+<td>View for displaying the detail screen</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-display/#listview">ListView</a></td>
+<td>★★★</td>
+<td>View for displaying the list screen</td>
+</tr>
+</tbody>
+</table>
+<h2 id="view-for-editing">view for editing</h2>
+<p>A group of views for displaying the edit screen. This class can be used in general CRUD operation screen.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Importance</th>
+<th>Overview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-editing/#django.views.generic.edit.FormView">FormView</a></td>
+<td>★★☆</td>
+<td>Form screen View</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-editing/#django.views.generic.edit.CreateView">CreateView</a></td>
+<td>★★☆</td>
+<td>Create screen View</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-editing/#django.views.generic.edit.UpdateView">UpdateView</a></td>
+<td>★★☆</td>
+<td>Update screen View</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-editing/#django.views.generic.edit.DeleteView">DeleteView</a></td>
+<td>★★☆</td>
+<td>Delete screen View</td>
+</tr>
+</tbody>
+</table>
+<h2 id="date-view">Date view</h2>
+<p>It is a group of views for displaying a list such as year and month like a blog.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Importance</th>
+<th>Overview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-date-based/#archiveindexview">ArchiveIndexView</a></td>
+<td>★☆☆</td>
+<td>List items with the latest date View for</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-date-based/#yeararchiveview">YearArchiveView</a></td>
+<td>★☆☆</td>
+<td>Display list screen by year View for</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/ja/3.0/ref/class-based-views/generic-date-based/#montharchiveview">MonthArchiveView</a></td>
+<td>★☆☆</td>
+<td>To display a monthly list screen View of</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-date-based/#weekarchiveview">WeekArchiveView</a></td>
+<td>★☆☆</td>
+<td>Display weekly listing screen View for</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/ja/3.0/ref/class-based-views/generic-date-based/#dayarchiveview">DayArchiveView</a></td>
+<td>★☆☆</td>
+<td>Display daily list screen View for</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/ja/3.0/ref/class-based-views/generic-date-based/#todayarchiveview">TodayArchiveView</a></td>
+<td>★☆☆</td>
+<td>Show today&rsquo;s list screen View for</td>
+</tr>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/3.0/ref/class-based-views/generic-date-based/#datedetailview">DateDetailView</a></td>
+<td>★☆☆</td>
+<td>Display the detailed screen for each date View for</td>
+</tr>
+</tbody>
+</table>
+<p>#General view structure
+A generic view can itself inherit from another generic view, or can consist of multiple inheritance of generic Mixins.
+A generic view defines the view&rsquo;s behavior by setting its attributes and behavior. Note that most attributes have accessors defined for them, so you can change the value of an attribute dynamically by overriding the accessor.</p>
+<h2 id="base-view-1">Base view</h2>
+<h3 id="class-diagram-djangoviewsgenericbase">Class diagram (<code>Django.views.generic.base</code>)</h3>
+<p><code>View</code> is the base class for all generic views, and <code>View</code> has attributes referenced by other classes such as <code>request</code> <code>kwargs</code>.
+<code>TemplateView</code> is configured by multiple inheritance of <code>TemplateResponseMixin</code> for rendering the template file and <code>ContextMixin</code> which passes the context variable to the template. These two mixins are inherited by all generic views except <code>RedirectView</code>.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/306546/a05d2a63-657a-461d-0f79-d1aec3ecc175.png" alt="base.png"></p>
+<h2 id="view-for-display-1">View for display</h2>
+<h3 id="class-diagram-djangoviewsgenericlist-djangoviewsgenericdetail">Class diagram (<code>Django.views.generic.list</code> <code>Django.views.generic.detail</code>)</h3>
+<p>The main difference between <code>ListView</code> and <code>DetailView</code> is Mixin surrounded by a red frame. You can see that the basic structure is almost the same, only by the difference whether the context variable passed to the template is a list or a single object.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/306546/afd495f5-47fa-ca52-b6c1-075b9f21a90e.png" alt="list.png">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/306546/7e8eada7-a35e-acf4-afd3-cd23ffcd4fee.png" alt="detail.png"></p>
+<h2 id="view-for-editing-1">view for editing</h2>
+<h3 id="class-diagram-djangoviewsgenericedit">Class diagram (<code>Django.views.generic.edit</code>)</h3>
+<p>Since there are many inherited classes, only the general view and mixin in the same module are surrounded by red frames. All the general-purpose views except <code>DeleteView</code> inherit <code>FormMixin</code> that generates a form and <code>ProcessFormView</code> that performs rendering at GET and validation at POST. For the rest of the views and mixins, the class according to the CRUD operation associated with each editing view is inherited.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/306546/a564ca83-49f3-800a-1701-1c1371805024.png" alt="edit.png"></p>
+<h1 id="finally">Finally</h1>
+<p>I think it&rsquo;s easy for those who are new to Django to grasp the concept of generalization of general-purpose views and grasp the class, Mixin and its attributes (fields), and behavior (methods).
+Since there are many good articles on how-to&rsquo;s of class-based general-purpose views, I tried to understand the big picture graphically in this article.[^1]: <a href="https://docs.djangoproject.com/ja/3.0/#the-view-layer">https://docs.djangoproject.com/ja/3.0/#the-view-layer</a></p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p><a href="https://docs.djangoproject.com/ja/3.0/faq/general/#django-appears-to-be-a-mvc-framework-but-you-call-the-controller-the-view-and-the-view-the-template-how-come-you-don-t-use-the-standard-names">https://docs.djangoproject.com/ja/3.0/faq/general/#django-appears-to-be-a-mvc-framework-but-you-call-the-controller-the-view-and-the-view-the-template-how-come-you-don-t-use-the-standard-names</a> <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p><a href="https://docs.djangoproject.com/ja/3.0/topics/class-based-views/#class-based-views">https://docs.djangoproject.com/ja/3.0/topics/class-based-views/#class-based-views</a> <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

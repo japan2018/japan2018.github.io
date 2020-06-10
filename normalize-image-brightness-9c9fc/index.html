@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Normalize image brightness | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Normalize image brightness</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 6, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-processing"> image processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+</p>
+<pre><code>#Execution environment
+</code></pre>
+<p><strong>Ubuntu 18.04</strong>
+<strong>Python 3.6.9</strong>
+<strong>OpenCV 3.3.0</strong>
+#Overview
+When processing a large number of images, there are a mixture of bright and dark photos,
+It also affects the processing result, so I want to make the brightness uniform!</p>
+<p>From that thought,
+Since I had the opportunity to adjust the brightness of the image in the preprocessing of learning, I will summarize the method.
+The purpose is to normalize the input color image to a uniform brightness.
+There are the following three methods I tried.</p>
+<p>** ① Histogram flattening
+② Adaptive histogram flattening
+③Specify the average and standard deviation of luminance values**</p>
+<p>Click here for verification photos. The mist of Taj Mahal
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/970c1707-6c18-23e1-e5c3-c88dec497ced.jpeg" alt="taj-mahal-1209004_1280.jpg">
+The brightness histogram of this image is distributed as follows.
+It can be seen that the pixel values are concentrated from 100 to 230.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/664ac4b4-8419-8444-67c7-1195a4da1e2b.png" alt="original.png"></p>
+<h2 id="library-to-use">Library to use</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> cv2
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> matplotlib <span style="color:#f92672">import</span> pyplot <span style="color:#66d9ef">as</span> plt
+</code></pre></div><p>##Preprocessing
+In order to handle the brightness value, a grayscale image is first acquired.
+A grayscale image can be acquired in one shot by specifying an argument with imread of OpenCV.
+Since this time the purpose is to change only the brightness of the color image, color information is also acquired.
+So, we read the image and convert from RGB (BGR if OpenCV) to HSV.</p>
+<p>HSV images
+・Hue (hue)
+・Saturation
+・Value (luminance)
+The value of luminance is used in this.</p>
+<p>Code to get Value is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">img<span style="color:#f92672">=</span>cv2<span style="color:#f92672">.</span>imread(str(file)) <span style="color:#75715e"># read image</span>
+hsv <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_BGR2HSV) <span style="color:#75715e"># hsv Convert to vote color system</span>
+h,s,v <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>split(hsv) <span style="color:#75715e"># split into each component</span>
+</code></pre></div><p>Among h,s,v, v is Value, which is treated as a grayscale image.</p>
+<p>The image histogram can be easily displayed with the matplotlib function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>hist(v<span style="color:#f92672">.</span>ravel(),<span style="color:#ae81ff">256</span>,[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>]);plt<span style="color:#f92672">.</span>show()
+</code></pre></div><h2 id="post-processing">Post processing</h2>
+<p>If you describe the post-processing first,
+The variable result that stores the results of ① to ③ is a grayscale image that represents the brightness value.
+Finally, the process reverse to the pre-process is performed to restore the color image.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">hsv <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>merge((h,s,result))
+rgb <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(hsv, cv2<span style="color:#f92672">.</span>COLOR_HSV2BGR)
+cv2<span style="color:#f92672">.</span>imwrite(<span style="color:#e6db74">&#34;result.jpg&#34;</span>, rgb) <span style="color:#75715e"># to output</span>
+</code></pre></div><p>##** ① Histogram flattening **
+The first method is to flatten the image histogram (luminance distribution).
+The image of the histogram flattening is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/1a779b35-4bc4-8292-e72d-fda33a3ef6ee.png" alt="Histogrammeinebnung.png">
+The word &ldquo;flattening&rdquo; gives the impression that the image is smooth,
+Actually, in order to adjust the pixel values so that they appear evenly from black pixels to white pixels,
+The contrast is enhanced, resulting in a clear image.</p>
+<p>This method can be confirmed by the OpenCV function.
+The code is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">result <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>equalizeHist(v)
+</code></pre></div><p>Click here for the resulting image and histogram.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/9e29e57f-56a1-1dbe-ef6e-56f09a825402.jpeg" alt="result.jpg"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/4b4e5b89-fd5a-e945-f0bf-204f4870f8dd.png" alt="equal.png"></p>
+<p>Looking at the histogram, the pixels around 250 are discrete.
+This appears in the light gradation part on the upper right of the result image, and the tone jump occurs due to the effect of enhancing the contrast.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/1f0ce6aa-79d4-d503-f8b2-d96b08b960b2.jpeg" alt="jagi.jpg">
+It seems that this occurs because the histogram distribution of the brightness value of the original image is not uniform.
+Adaptive histogram flattening is the next method of flattening the histogram more carefully.</p>
+<p>##<strong>② Adaptive histogram flattening</strong>
+The second method is to flatten the histogram in (1) for each small area.
+See <a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_histograms/py_histogram_equalization/py_histogram_equalization.html">Reference</a> for detailed mechanism and parameters.
+This makes it possible to perform flattening with a higher degree of precision than in (1), but be careful because if you use the wrong parameter, it will be overemphasized.</p>
+<p>The implementation of adaptive histogram flattening is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clahe <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>createCLAHE(clipLimit<span style="color:#f92672">=</span><span style="color:#ae81ff">2.0</span>, tileGridSize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>))
+result <span style="color:#f92672">=</span> clahe<span style="color:#f92672">.</span>apply(v)
+</code></pre></div><p>clipLimit is a parameter to limit the contrast.
+tileGridSize is the size of a small area, this time it is done in a 3x3 area.</p>
+<p>Here is the result.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/45eadb7e-0473-d43d-c0bb-9610afffd77b.jpeg" alt="adaptive.jpg">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/56beb7e9-ed75-b7fc-5342-2fd6c19f26a9.png" alt="adaptive.png">
+From the histogram, it can be seen that the pixel values are continuously distributed from (1).
+The tone jump that occurred in (1) was alleviated, resulting in a balanced histogram.</p>
+<p>##** ③Specify average and standard deviation of brightness**
+The third is based on the <a href="https://cvtech.cc/std/">here</a> site.
+A method of acquiring the average value and standard deviation of image brightness and changing them to arbitrary values.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">v <span style="color:#f92672">=</span> (v<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>mean(v)) <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>std(v) <span style="color:#f92672">*</span> s <span style="color:#f92672">+</span> m
+result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(v, dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>uint8) <span style="color:#75715e"># put the dtype of the array back into unit8</span>
+</code></pre></div><ul>
+<li>np.mean(v): average value of luminance</li>
+<li>np.std(v): standard deviation of brightness</li>
+</ul>
+<p>First, by subtracting the average value of luminance from the original image and dividing by the standard deviation, an image with average luminance of 0 and standard deviation of 1 is generated.
+The standard deviation is set by multiplying it by an arbitrary value s, and the luminance average is set by adding an arbitrary value m.
+This time, s=32 and m=128 are set.</p>
+<p>See the result here.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/eb0d7f51-fd07-add3-6afe-e227a3be0d83.jpeg" alt="mean32.jpg">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/b9b4b039-3d64-e4fa-af86-636be9c78fd0.png" alt="mean32.png"></p>
+<p>From the histogram, it can be confirmed that pixels are aggregated around the average luminance of 128.
+This time, when converting to a color image, it will be converted to an integer type, so
+If the brightness is out of the range of 0 to 255 in the calculation result, the result will be strange, so adjustment is necessary.</p>
+<p>##in conclusion
+Finally, I will post each result together.
+This is not a performance comparison experiment because the conditions after histogram flattening are different, but for reference only.
+From the left
+Original image-(1) Result-(2) Result-(3) Result
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/411d957d-b5f9-ad05-9b7d-76c7c87e6f8d.jpeg" alt="marge1.jpg">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/426498/d708008f-cb7c-bfc2-6a6a-3bde2163f21f.jpeg" alt="marge2.jpg">
+With each method, images taken under various environments can be adjusted to a certain standard.</p>
+<p>This time, only the brightness was normalized, but by normalizing the contrast and saturation as well,
+A more uniform image could be created.</p>
+<h2 id="references">References</h2>
+<p>・Http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_histograms/py_histogram_equalization/py_histogram_equalization.html
+・Https://cvtech.cc/std/</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

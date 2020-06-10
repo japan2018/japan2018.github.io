@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Understand k-means&#43;&#43; | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Understand k-means++</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 17, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-analysis"> data analysis</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/k-means"> K-means</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/clustering"> clustering</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I previously posted <a href="https://qiita.com/g-k/items/0d5d22a12a4507ecbf11">article about k-means</a>.
+Since k-means has a problem of initial value dependence, an algorithm called k-means++ has been developed to overcome it.
+This time I have summarized the contents of what I learned about k-means++.</p>
+<p>##reference
+I have referred to the following for understanding k-means++.</p>
+<ul>
+<li><a href="https://www.amazon.co.jp/dp/4339027510/ref=cm_sw_r_tw_dp_U_x_MkUJDb8R66941">Introduction to machine learning for language processing (natural language processing series)</a>DaiyaTakamura(Author),ManabuOkumura(Supervision) Publisher; Corona</li>
+<li><a href="https://www.amazon.co.jp/dp/4797393963/ref=cm_sw_r_tw_dp_U_x_UHqVDbP9A69TP">Essence of machine learning</a>KoichiKato(Author) Publisher; SB Creative Co., Ltd.</li>
+<li><a href="https://en.wikipedia.org/wiki/K-means%2B%2B%E6%B3%95">k-means++ method-Wikipedia</a></li>
+</ul>
+<p>About #k-means++</p>
+<h2 id="k-means-review">k-means review</h2>
+<h3 id="k-means-overview">k-means overview</h3>
+<p>k-means is an algorithm that first divides the data into appropriate clusters, and then uses the average of the clusters to make adjustments so that the data can be divided appropriately. It is called the k-means method (k-point averaging method) because it is an algorithm that creates k clusters of any specified value.</p>
+<h3 id="k-means-algorithm">k-means algorithm</h3>
+<p>Specifically, k-means goes through the following steps.</p>
+<ol>
+<li>Randomly allocate clusters for each point $x_{i}$</li>
+<li>Compute the center of gravity for the points assigned to each cluster</li>
+<li>For each point, calculate the distance from the center of gravity calculated above and reassign to the cluster with the closest distance.</li>
+<li>Repeat steps 2 and 3 until the assigned cluster does not change</li>
+</ol>
+<h3 id="k-means-problem">k-means problem</h3>
+<p>**k-means first randomly allocates clusters, so the initial values may result in clustering far from optimal. Also, it takes a lot of time for the result to converge depending on the initial value. **</p>
+<p>##k-means++
+Overview of ###k-means++
+k-means++ is an algorithm aiming at overcoming the above initial value dependence problem.
+<strong>k-means++ is designed based on the idea that the centers of the initial clusters should be separated from each other</strong>, and the initial clusters are assigned probabilistically according to the distance between data points. I will.</p>
+<h3 id="k-means-algorithm-1">k-means++ algorithm</h3>
+<ol>
+<li>Randomly select one point from $x_{i}$ points and use it as the center of the cluster</li>
+<li>For each point $x_{i}$, calculate the distance $D(x)$ from the existing cluster center to the closest cluster center</li>
+<li>Randomly choose a new cluster center using the weighted probability distribution $\frac{D(x)^2}{\sum_{} D(x)^2}$ for each point $x_{i}$</li>
+<li>Repeat steps 2 and 3 until k cluster centers can be selected</li>
+</ol>
+<p>As mentioned above, we are trying to solve the initial value dependence problem by probabilistically determining the initial cluster center point based on the distance between data points. **</p>
+<p>Implement #k-means++</p>
+<h2 id="implementing-k-means-without-using-a-library">Implementing k-means++ without using a library</h2>
+<p>Below is the implementation of the k-means method without using the library.
+<a href="https://www.amazon.co.jp/dp/4797393963/ref=cm_sw_r_tw_dp_U_x_UHqVDbP9A69TP">Essence of machine learning</a> Based on the code of k-means, add your own modifications when changing to k-means++ I am.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">KMeans_pp</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, n_clusters, max_iter <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000</span>, random_seed <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>):
+        self<span style="color:#f92672">.</span>n_clusters <span style="color:#f92672">=</span> n_clusters
+        self<span style="color:#f92672">.</span>max_iter <span style="color:#f92672">=</span> max_iter
+        self<span style="color:#f92672">.</span>random_state <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>RandomState(random_seed)
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fit</span>(self, X):
+        <span style="color:#75715e"># Randomly determine the first cluster point</span>
+        tmp <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>choice(np<span style="color:#f92672">.</span>array(range(X<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>])))
+        first_cluster <span style="color:#f92672">=</span> X[tmp]
+        first_cluster <span style="color:#f92672">=</span> first_cluster[np<span style="color:#f92672">.</span>newaxis,:]
+        
+        <span style="color:#75715e">#Calculate the square of the distance between the first cluster point and the other data points and divide each by its sum</span>
+        p <span style="color:#f92672">=</span> ((X<span style="color:#f92672">-</span>first_cluster)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> ((X<span style="color:#f92672">-</span>first_cluster)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum()
+        
+        r <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>choice(np<span style="color:#f92672">.</span>array(range(X<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>])), size <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, replace <span style="color:#f92672">=</span> False, p <span style="color:#f92672">=</span> p)
+        
+        first_cluster <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>r_[first_cluster ,X[r]]
+        
+        <span style="color:#75715e">#When the number of clusters to be divided is 3 or more</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>n_clusters <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">3</span>:
+            <span style="color:#75715e"># Repeat until a specified number of cluster points can be specified</span>
+            <span style="color:#66d9ef">while</span> first_cluster<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">&lt;</span>self<span style="color:#f92672">.</span>n_clusters:
+                <span style="color:#75715e">#Calculate the square of the distance between each cluster point and each data point</span>
+                dist_f <span style="color:#f92672">=</span> ((X[:, :, np<span style="color:#f92672">.</span>newaxis]<span style="color:#f92672">-</span>first_cluster<span style="color:#f92672">.</span>T[np<span style="color:#f92672">.</span>newaxis, :, :])<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+                <span style="color:#75715e">#Determine which cluster point has the closest distance</span>
+                f_argmin <span style="color:#f92672">=</span> dist_f<span style="color:#f92672">.</span>argmin(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+                <span style="color:#75715e">#Derive the square of the distance between the closest cluster point and each data point</span>
+                <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(dist_f<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]):
+                    dist_f<span style="color:#f92672">.</span>T[i][f_argmin <span style="color:#f92672">!=</span> i] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+                    
+                <span style="color:#75715e"># Probabilistically derive new cluster points</span>
+                pp <span style="color:#f92672">=</span> dist_f<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> dist_f<span style="color:#f92672">.</span>sum()
+                rr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>choice(np<span style="color:#f92672">.</span>array(range(X<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>])), size <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, replace <span style="color:#f92672">=</span> False, p <span style="color:#f92672">=</span> pp)
+                <span style="color:#75715e"># Add new cluster point as initial value</span>
+                first_cluster <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>r_[first_cluster ,X[rr]]
+        
+        <span style="color:#75715e"># Do the initial labeling</span>
+        dist <span style="color:#f92672">=</span> (((X[:, :, np<span style="color:#f92672">.</span>newaxis]<span style="color:#f92672">-</span>first_cluster<span style="color:#f92672">.</span>T[np<span style="color:#f92672">.</span>newaxis, :, :]) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>))
+        self<span style="color:#f92672">.</span>labels_ <span style="color:#f92672">=</span> dist<span style="color:#f92672">.</span>argmin(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+        labels_prev <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(X<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>])
+        count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        self<span style="color:#f92672">.</span>cluster_centers_ <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((self<span style="color:#f92672">.</span>n_clusters, X<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]))
+        
+        <span style="color:#75715e">#End if the cluster to which each data point belongs has stopped changing, or has passed a certain number of iterations</span>
+        <span style="color:#66d9ef">while</span> (<span style="color:#f92672">not</span> (self<span style="color:#f92672">.</span>labels_ <span style="color:#f92672">==</span> labels_prev)<span style="color:#f92672">.</span>all() <span style="color:#f92672">and</span> count <span style="color:#f92672">&lt;</span>self<span style="color:#f92672">.</span>max_iter):
+            <span style="color:#75715e">#Calculate the centroid of each cluster at that time</span>
+            <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(self<span style="color:#f92672">.</span>n_clusters):
+                XX <span style="color:#f92672">=</span> X[self<span style="color:#f92672">.</span>labels_ <span style="color:#f92672">==</span> i, :]
+                self<span style="color:#f92672">.</span>cluster_centers_[i, :] <span style="color:#f92672">=</span> XX<span style="color:#f92672">.</span>mean(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>)
+            <span style="color:#75715e"># Compute the distance between each data point and the centroid of each cluster by brute force</span>
+            dist <span style="color:#f92672">=</span> ((X[:, :, np<span style="color:#f92672">.</span>newaxis]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>cluster_centers_<span style="color:#f92672">.</span>T[np<span style="color:#f92672">.</span>newaxis, :, :]) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+            <span style="color:#75715e">#Remember the previous cluster label. If the previous label and label do not change, the program ends.</span>
+            labels_prev <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>labels_
+            <span style="color:#75715e">#As a result of recalculation, assign the label of the closest cluster</span>
+            self<span style="color:#f92672">.</span>labels_ <span style="color:#f92672">=</span> dist<span style="color:#f92672">.</span>argmin(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+            count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            self<span style="color:#f92672">.</span>count <span style="color:#f92672">=</span> count
+            
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict</span>(self, X):
+        dist <span style="color:#f92672">=</span> ((X[:, :, np<span style="color:#f92672">.</span>newaxis]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>cluster_centers_<span style="color:#f92672">.</span>T[np<span style="color:#f92672">.</span>newaxis, :, :]) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+        labels <span style="color:#f92672">=</span> dist<span style="color:#f92672">.</span>argmin(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">return</span> labels
+</code></pre></div><h2 id="verification">Verification</h2>
+<p>Below is the one that verified whether clustering is really possible with this algorithm.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#75715e">#Create a suitable dataset</span>
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(<span style="color:#ae81ff">0</span>)
+points1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randn(<span style="color:#ae81ff">80</span>, <span style="color:#ae81ff">2</span>)
+points2 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randn(<span style="color:#ae81ff">80</span>, <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">4</span>,<span style="color:#ae81ff">0</span>])
+points3 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randn(<span style="color:#ae81ff">80</span>, <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">8</span>])
+
+points <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>r_[points1, points2, points3]
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>shuffle(points)
+
+<span style="color:#75715e">#Create a model that divides into 3 clusters</span>
+model <span style="color:#f92672">=</span> KMeans_pp(<span style="color:#ae81ff">3</span>)
+model<span style="color:#f92672">.</span>fit(points)<span style="color:#66d9ef">print</span>(model<span style="color:#f92672">.</span>labels_)
+</code></pre></div><p>Then the output looks like this:
+You can see that there are three wonderful labels.</p>
+<pre><code>[2 1 0 2 1 1 0 1 2 0 1 1 0 1 0 0 1 1 0 2 0 1 2 0 1 2 0 2 1 2 1 1 1 0 1 0 1
+ 2 2 1 1 1 1 2 0 1 1 1 0 2 1 0 2 1 0 1 0 2 2 2 2 2 1 0 1 0 0 1 1 1 1 1 0 1
+ 0 0 0 2 1 0 2 0 1 1 0 1 2 0 2 2 2 0 0 0 2 0 0 0 2 0 2 1 1 1 1 1 0 1 2 1 2
+ 0 1 2 2 1 2 0 2 2 2 0 0 2 0 2 1 2 2 0 1 2 1 2 2 2 1 0 2 1 1 2 0 0 0 2 1 1
+ 1 0 0 0 1 1 2 0 1 0 0 0 2 0 0 0 0 0 2 2 1 2 0 2 2 0 1 2 2 2 2 1 0 2 1 2 2
+ 0 2 0 0 0 2 0 1 2 0 0 0 1 1 1 1 2 2 0 2 2 2 0 0 1 1 2 2 0 1 1 2 1 2 2 0 2
+ 1 2 0 2 1 2 0 0 2 2 0 2 0 2 1 2 2 0]
+</code></pre><p>Let&rsquo;s illustrate this with matplotlib.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">markers <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;+&#34;</span>, <span style="color:#e6db74">&#34;*&#34;</span>, <span style="color:#e6db74">&#34;o&#34;</span>,<span style="color:#e6db74">&#39;+&#39;</span>]
+color <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;r&#39;</span>,<span style="color:#e6db74">&#39;b&#39;</span>,<span style="color:#e6db74">&#39;g&#39;</span>,<span style="color:#e6db74">&#39;k&#39;</span>]
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">4</span>):
+    p <span style="color:#f92672">=</span> points[model<span style="color:#f92672">.</span>labels_ <span style="color:#f92672">==</span> i, :]
+    plt<span style="color:#f92672">.</span>scatter(p[:, <span style="color:#ae81ff">0</span>], p[:, <span style="color:#ae81ff">1</span>], marker <span style="color:#f92672">=</span> markers[i], color <span style="color:#f92672">=</span> color[i])
+    
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p>The output is here. You can see that clustering is done without problems.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/67f0b3b9-4089-879e-4245-37b99ae997fe.png" alt="DOWNLOAD.png"></p>
+<p>Also, output the number of trials until clustering converges.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(model<span style="color:#f92672">.</span>count)
+</code></pre></div><pre><code>Four
+</code></pre><p>This time, the number of trials until the clustering of k-means++ converged was 4 times. Even with ordinary k-means, when the number of trials was counted similarly, it was 3 times.
+Originally, k-means++ is said to take less time to converge, so I would like to verify this a little more by myself.</p>
+<p>#Next
+I would like to challenge the clustering by the mixed normal distribution and the clustering by the EM algorithm.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

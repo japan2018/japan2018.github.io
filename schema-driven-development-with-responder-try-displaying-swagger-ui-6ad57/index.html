@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Schema-driven development with Responder: Try displaying Swagger UI | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Schema-driven development with Responder: Try displaying Swagger UI</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 11, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/swagger"> swagger</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/openapi"> OpenAPI</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/responder"> responder</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/schema-driven-development"> schema driven development</a></code></small>
+
+</p>
+<pre><code>#What is Schema Driven Development
+</code></pre>
+<p>Simply put, it is a development method that first decides the schema of API (definition of request and response types and field names), systematically generates documents and mocks accordingly, and then implements the internal implementation. (<a href="https://qiita.com/Seiga/items/a59c800e57e022125e3b">Reference: Schema Driven Development Optimization &amp; Implementation Example for Optimizing Team Web API Development</a>)</p>
+<p>I would like to try schema driven development with responder which is a python web framework.</p>
+<p>The goal is to be able to see Swagger like the one below.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/dc374f08-0554-fabf-bf25-3ebc99cf9b83.gif" alt="ezgif-1-4c611adeacb7.gif"></p>
+<h1 id="responder">responder</h1>
+<p>A modern Python web framework.
+In terms of volume, it is a micro framework like flask or bottle.
+Just write like the following and execute it like <code>$ python xxx.py</code> to start the API server that returns JSON.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> responder
+
+api <span style="color:#f92672">=</span> responder<span style="color:#f92672">.</span>API()
+
+<span style="color:#a6e22e">@api.route</span>(<span style="color:#e6db74">&#34;/&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">view</span>(req, resp):
+    resp<span style="color:#f92672">.</span>media <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;success&#39;</span>: True}
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    api<span style="color:#f92672">.</span>run()
+</code></pre></div><p>It is also notable that it has modern features such as asynchronous web server (ASGI), websocket, GraphQL, and automatic generation of OpenAPI schema.
+It&rsquo;s a monster with more than 3300 Stars on github (as of November 2019) in about a year since it was released, and the frequency of commits is high, so I think that the future is sufficient.</p>
+<p>reference:</p>
+<ul>
+<li><a href="https://responder.readthedocs.io/en/latest/tour.html">responder documentations</a></li>
+<li><a href="https://qiita.com/y_k/items/6e4da3bef5c8d8bd2730">For the introduction of Python responder&hellip;research</a></li>
+<li><a href="https://qiita.com/nskydiving/items/b98d5cea5a52459cb183">First Responder (Next Generation Web Framework of Python)</a></li>
+<li><a href="https://qiita.com/tubone/items/e06d587cb6240e7bae53">Points to note when using Responder (I also wrote Pytest)</a></li>
+</ul>
+<h1 id="scope-of-this-article">Scope of this article</h1>
+<p>The following development methods with responder are summarized.</p>
+<ol>
+<li>Schema definition &amp; mock creation: (serialization by mashmallow)</li>
+<li>Mock &amp; document provided: (Conversion to OpenAPI 3.0 (swagger) by apispec)</li>
+</ol>
+<p>Corresponds to the contents of the OpenAPI Schema Support and Interactive Documentation chapter of responder <a href="https://responder.readthedocs.io/en/latest/tour.html#openapi-schema-support">Feature tour</a> Since only the introduction is described, I hope to be able to give a practical explanation.</p>
+<h2 id="constitution">Constitution</h2>
+<p>For the sake of explanation, we will make a simple API as follows.</p>
+<table>
+<thead>
+<tr>
+<th>method</th>
+<th>function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>get</td>
+<td>returns all existing ids</td>
+</tr>
+<tr>
+<td>post</td>
+<td>Returns whether the input id exists</td>
+</tr>
+</tbody>
+</table>
+<p>Also, in post, if a validation error occurs, we will return the error content.</p>
+<h2 id="version">version</h2>
+<p>responder: v2.0.3
+python: v3.6.5</p>
+<h1 id="schema-definition--mock-creation-by-mashmallow">Schema definition &amp; mock creation by mashmallow</h1>
+<p><a href="https://marshmallow.readthedocs.io/en/stable/">mashmallow</a> is a library that supports the serialization of objects.
+If you define a schema class and load/dump requests and responses via the schema class, validation will be applied. The flow is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> marshmallow <span style="color:#f92672">import</span> Schema, fields
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllIdRespSchema</span>(Schema):
+    <span style="color:#75715e"># Schema definition (list of ints)</span>
+    exist_ids <span style="color:#f92672">=</span> fields<span style="color:#f92672">.</span>List(fields<span style="color:#f92672">.</span>Int())
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AllExistIDModel</span>():
+    <span style="color:#75715e"># response mock</span>
+    <span style="color:#75715e"># Replace this content later for production</span>
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>exist_ids <span style="color:#f92672">=</span> [<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">5</span>]
+
+<span style="color:#a6e22e">@api.route</span>(<span style="color:#e6db74">&#34;/schema_driven&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">schema_driven_view</span>(req, resp):
+    <span style="color:#66d9ef">if</span> req<span style="color:#f92672">.</span>method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;get&#34;</span>:
+        <span style="color:#75715e"># validate response data</span>
+        resp<span style="color:#f92672">.</span>media <span style="color:#f92672">=</span> AllIdRespSchema()<span style="color:#f92672">.</span>dump(AllExistIDModel())
+</code></pre></div><p>Following this flow, the Schema class and mock class required in this example are defined as follows. AllIdRespSchema, AllExistIDModel are defined in the above example.</p>
+<table>
+<thead>
+<tr>
+<th>Schema name</th>
+<th>mock</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AllIdRespSchema</td>
+<td>AllExistIDModel</td>
+<td>get response</td>
+</tr>
+<tr>
+<td>IdReqSchema</td>
+<td>None</td>
+<td>post request</td>
+</tr>
+<tr>
+<td>IsExistRespSchema</td>
+<td>IsExistIDModel</td>
+<td>post response</td>
+</tr>
+<tr>
+<td>ErrorRespSchema</td>
+<td>ErrorModel</td>
+<td>Response when validation error</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IdReqSchema</span>(Schema):
+    <span style="color:#75715e"># if required=True, the field must exist</span>
+    id <span style="color:#f92672">=</span> fields<span style="color:#f92672">.</span>Int(required<span style="color:#f92672">=</span>True)
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IsExistRespSchema</span>(Schema):
+    is_exist <span style="color:#f92672">=</span> fields<span style="color:#f92672">.</span>Bool()
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ErrorRespSchema</span>(Schema):
+    error <span style="color:#f92672">=</span> fields<span style="color:#f92672">.</span>Str()
+    errorDate <span style="color:#f92672">=</span> fields<span style="color:#f92672">.</span>Date()
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">IsExistIDModel</span>():
+    <span style="color:#66d9ef">def</span> __init__(self, data):
+        id <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;id&#39;</span>)
+        self<span style="color:#f92672">.</span>is_exist <span style="color:#f92672">=</span> id <span style="color:#f92672">in</span> [<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">5</span>]
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ErrorModel</span>():
+    <span style="color:#66d9ef">def</span> __init__(self, error):
+        self<span style="color:#f92672">.</span>error <span style="color:#f92672">=</span> str(error)
+        self<span style="color:#f92672">.</span>errorDate <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now()
+</code></pre></div><p>If Schema is defined in this way, view only needs to write the processing flow.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> marshmallow <span style="color:#f92672">import</span> ValidationError
+
+<span style="color:#a6e22e">@api.route</span>(<span style="color:#e6db74">&#34;/schema_driven&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">schema_driven_view</span>(req, resp):
+    <span style="color:#66d9ef">if</span> req<span style="color:#f92672">.</span>method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;get&#34;</span>:
+        <span style="color:#75715e"># validate response data</span>
+        resp<span style="color:#f92672">.</span>media <span style="color:#f92672">=</span> AllIdRespSchema()<span style="color:#f92672">.</span>dump(AllExistIDModel())
+
+    <span style="color:#66d9ef">elif</span> req<span style="color:#f92672">.</span>method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;post&#34;</span>:
+        request <span style="color:#f92672">=</span> await req<span style="color:#f92672">.</span>media()
+        <span style="color:#66d9ef">try</span>:
+            <span style="color:#75715e"># validate request data using Schema</span>
+            data <span style="color:#f92672">=</span> IdReqSchema()<span style="color:#f92672">.</span>load(request)
+
+        <span style="color:#66d9ef">except</span> ValidationError <span style="color:#66d9ef">as</span> error:
+            <span style="color:#75715e"># raise ValidationError</span>
+            resp<span style="color:#f92672">.</span>status_code <span style="color:#f92672">=</span> api<span style="color:#f92672">.</span>status_codes<span style="color:#f92672">.</span>HTTP_400
+            <span style="color:#75715e"># validate response data</span>
+            resp<span style="color:#f92672">.</span>media <span style="color:#f92672">=</span> ErrorRespSchema()<span style="color:#f92672">.</span>dump(ErrorModel(error))
+            <span style="color:#66d9ef">return</span>
+
+        <span style="color:#75715e"># validate response data</span>
+        resp<span style="color:#f92672">.</span>media <span style="color:#f92672">=</span> IsExistRespSchema()<span style="color:#f92672">.</span>dump(IsExistIDModel(data))
+</code></pre></div><p>As you can see, the contents of the view are written only with the abstract processing flow and Schema class, class name for mock. So, I think that the contents of the view will not be changed with a few changes (change of type and field name of json).</p>
+<p>Next, I&rsquo;d like to generate a document from this schema and get feedback.</p>
+<p>#Mock &amp; document provided by apispec
+From here, use the function of responder. However, it is actually a wrapper for a library called apispec. What you are doing is just passing the docstring and Schema definition almost as is to apispec. So, if you want to make detailed customizations, you need to refer to the apispec and OpenAPI 3.0 definitions.</p>
+<p><a href="https://apispec.readthedocs.io/en/latest/index.html">apispec</a> parses the schema definition of marshmallow and docstrings, transforms it into the Open API format, and generates Swagger UI.</p>
+<p>Reference:</p>
+<ul>
+<li><a href="https://qiita.com/se_fy/items/ad05a3c6825bb9612170">[For beginners] Try in 5 minutes! OpenAPI(Swagger3.0) document creation ~ API automatic generation</a></li>
+</ul>
+<p>First, you need to add argument as follows when declaring api.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">api <span style="color:#f92672">=</span> responder<span style="color:#f92672">.</span>API(
+    openapi<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;3.0.0&#39;</span>, <span style="color:#75715e"># OpenAPI versiondocs_route=&#39;/docs&#39;, # endpoint for interactive documentation by swagger UI.if None, this is not available.</span>
+)
+</code></pre></div><h2 id="schema">Schema</h2>
+<p>Next, use the api.schema decorator to set the Schema definition. However, writing the Schema definition for the main view seems to be too complicated, so I would like to import the schema definition from another file. Therefore, I will make a forcible declaration as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">api<span style="color:#f92672">.</span>schema(<span style="color:#e6db74">&#34;IdReqSchema&#34;</span>)(IdReqSchema)
+api<span style="color:#f92672">.</span>schema(<span style="color:#e6db74">&#34;ErrorRespSchema&#34;</span>)(ErrorRespSchema)
+api<span style="color:#f92672">.</span>schema(<span style="color:#e6db74">&#34;IsExistRespSchema&#34;</span>)(IsExistRespSchema)
+api<span style="color:#f92672">.</span>schema(<span style="color:#e6db74">&#34;AllIdRespSchema&#34;</span>)(AllIdRespSchema)
+</code></pre></div><p>If you start the server and access the following, you can check the Schema definition in Swagger UI as shown below.
+127.0.0.1:5042/docs</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/1ec802ab-0d3f-2a58-9ab7-e66611a7650d.gif" alt="ezgif-1-31f99e6a7002.gif"></p>
+<h2 id="api">API</h2>
+<h3 id="get">GET</h3>
+<p>Add the docstring in yaml format to the above view definition as follows.
+You can describe the api in description. You can also specify the response schema for each status code. If you define the schema as below, the Schema definition of the response and the sample response can be referenced from Swagger UI. When referring to the sample response, the API is actually hit, so it can be checked whether an Internal Server Error has occurred.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#a6e22e">@api.route</span>(<span style="color:#e6db74">&#34;/schema_driven&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">schema_driven_view</span>(req, resp):
+    <span style="color:#e6db74">&#34;&#34;&#34;exist id checker endpoint.
+</span><span style="color:#e6db74">    ---
+</span><span style="color:#e6db74">    name: is_exist
+</span><span style="color:#e6db74">    get:
+</span><span style="color:#e6db74">        description: Get the all exist id
+</span><span style="color:#e6db74">        responses:
+</span><span style="color:#e6db74">            200:
+</span><span style="color:#e6db74">                description: All exist_id to be returned
+</span><span style="color:#e6db74">                content:
+</span><span style="color:#e6db74">                    application/json:
+</span><span style="color:#e6db74">                        schema:
+</span><span style="color:#e6db74">                            $ref: &#34;#/components/schemas/AllIdRespSchema&#34;
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#f92672">...</span>
+</code></pre></div><p>*Note: The way to write Schema is different from the official document of responder. I also tried the official way of writing, but there was no Schema definition displayed. Even if you look at the test code, you have confirmed only the conversion to html, and you may not have seen the contents.</p>
+<p>Similarly, if you check Swagger,</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/dc374f08-0554-fabf-bf25-3ebc99cf9b83.gif" alt="ezgif-1-4c611adeacb7.gif"></p>
+<h3 id="post">POST</h3>
+<p>Also add docstring for post. This is not in the official documentation.
+For details, it is necessary to refer to <a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#requestBodyObject">Open API definition document</a>.</p>
+<p>You can write response like get. Write two status codes, 200 (normal) and 400 (validation error). Also, specify the request schema in requestBody. You can actually hit the API by changing the body of the request.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#a6e22e">@api.route</span>(<span style="color:#e6db74">&#34;/schema_driven&#34;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">schema_driven_view</span>(req, resp):
+    <span style="color:#e6db74">&#34;&#34;&#34;exist id checker endpoint.
+</span><span style="color:#e6db74">    ...
+</span><span style="color:#e6db74">    ---
+</span><span style="color:#e6db74">    post:
+</span><span style="color:#e6db74">        description: Check the id exists or not
+</span><span style="color:#e6db74">        requestBody:
+</span><span style="color:#e6db74">            content:
+</span><span style="color:#e6db74">                appliation/json:
+</span><span style="color:#e6db74">                    schema:
+</span><span style="color:#e6db74">                        $ref: &#34;#/components/schemas/IdReqSchema&#34;
+</span><span style="color:#e6db74">        responses:
+</span><span style="color:#e6db74">            200:
+</span><span style="color:#e6db74">                description: true/false whether id exists to be returned
+</span><span style="color:#e6db74">                content:
+</span><span style="color:#e6db74">                    application/json:
+</span><span style="color:#e6db74">                        schema:
+</span><span style="color:#e6db74">                            $ref: &#34;#/components/schemas/IsExistRespSchema&#34;
+</span><span style="color:#e6db74">            400:
+</span><span style="color:#e6db74">                description: validation error
+</span><span style="color:#e6db74">                content:
+</span><span style="color:#e6db74">                    application/json:
+</span><span style="color:#e6db74">                        schema:
+</span><span style="color:#e6db74">                            $ref: &#34;#/components/schemas/ErrorRespSchema&#34;
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/f22563e5-a47c-4bcc-366e-f061f417bd09.gif" alt="ezgif-1-396279e5f7b8.gif"></p>
+<p>#Summary
+Introduced the procedure of schema driven development with responder. I am very grateful that Swagger can be seen by itself. Other than this, responder has many very interesting functions, so I would like to try various things!</p>
+<h1 id="refs">refs</h1>
+<ul>
+<li><a href="https://qiita.com/Seiga/items/a59c800e57e022125e3b">Explanation &amp; implementation example of Schema Driven Development that optimizes team&rsquo;s Web API development</a></li>
+<li><a href="https://responder.readthedocs.io/en/latest/tour.html">responder documentations</a></li>
+<li><a href="https://qiita.com/y_k/items/6e4da3bef5c8d8bd2730">For the introduction of Python responder&hellip;research</a></li>
+<li><a href="https://qiita.com/nskydiving/items/b98d5cea5a52459cb183">First Responder (Next Generation Web Framework of Python)</a></li>
+<li><a href="https://qiita.com/tubone/items/e06d587cb6240e7bae53">Points to note when using Responder (I also wrote Pytest)</a></li>
+<li><a href="https://qiita.com/se_fy/items/ad05a3c6825bb9612170">[For beginners] Try in 5 minutes! OpenAPI(Swagger3.0) document creation ~ API automatic generation</a></li>
+<li><a href="https://swagger.io/docs/specification/describing-request-body/">https://swagger.io/docs/specification/describing-request-body/</a></li>
+<li><a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#requestBodyObject">https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#requestBodyObject</a></li>
+<li><a href="https://medium.com/@sean_bradley/add-swagger-ui-to-your-python-flask-api-683bfbb32b36">Add Swagger UI to your Python Flask API</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

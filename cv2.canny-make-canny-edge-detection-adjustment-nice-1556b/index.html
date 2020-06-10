@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>cv2.Canny(): Make Canny edge detection adjustment nice | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>cv2.Canny(): Make Canny edge detection adjustment nice</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 9, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/canny"> Canny</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/edge-detection"> edge detection</a></code></small>
+
+</p>
+<pre><code>Edge refers to the boundary between objects and the background, and edge detection generally refers to image processing that detects edges by detecting changes in pixel values and large brightness gradients in the image.
+</code></pre>
+<img width="877" alt="Screenshots 2020-02-09 3.24.50.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/84890/5d31caf4-cff4-339b-0dfb-cb65399f23f1.png">
+(Image is from [Free Image Site](https://www.pakutaso.com/20191228360post-24995.html))
+<h3 id="what-is-cv2canny">What is cv2.Canny()</h3>
+<p>Edge detection function implemented/provided by opencv. Although edge images can be created easily, (mainly) two parameters need to be adjusted for proper use.</p>
+<p>Official page: <a href="https://docs.opencv.org/2.4/modules/imgproc/doc/feature_detection.html?highlight=canny">Documents</a>, <a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_canny/py_canny.html">Tutorial</a></p>
+<h3 id="target-person">Target person</h3>
+<p>I try to use <code>cv2.Canny()</code> while adjusting the threshold, but it doesn&rsquo;t work as expected. I don&rsquo;t know if it&rsquo;s image-wise or poorly adjusted. Let&rsquo;s understand the meaning of the parameters.</p>
+<h3 id="two-adjustment-parameters">Two adjustment parameters</h3>
+<p><code>cv2.Canny(gray_img, threshold1, threshold2)</code></p>
+<p>Briefly, both <code>threshold1</code> and <code>threshold2</code> represent the thresholds for judging whether or not they are edges. **The larger the edge, the harder it is to detect edges, and the smaller it is, the easier it is to detect edges. **
+(If the threshold value is large, it is judged as an edge only when there is a large change in luminance.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> cv2
+gray_img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#39;sample.jpg&#39;</span>, cv2<span style="color:#f92672">.</span>IMREAD_GRAYSCALE)
+
+threshold1 <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+threshold2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">360</span>
+edge_img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>Canny(gray_img, threshold1, threshold2)
+cv2<span style="color:#f92672">.</span>imwrite(<span style="color:#e6db74">&#39;sample_edge.jpg&#39;</span>, edge_img)
+</code></pre></div><p>*There are other arguments. (<a href="https://docs.opencv.org/2.4/modules/imgproc/doc/feature_detection.html?highlight=canny">Official page</a>)</p>
+<h4 id="threshold2-maxval">threshold2: maxVal</h4>
+<p>Threshold2 is the more intuitive value, and it is the threshold * itself for judging whether it is an edge or not.</p>
+<p>When threshold2 is actually made smaller, it becomes as follows.
+(The same value as threshold2 is entered in threshold1 for easy understanding.)</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/84890/d52fb2ba-2056-7401-73d4-c4f884b49f9d.gif" alt="threshold2.gif"></p>
+<h4 id="threshold1-minval">threshold1: minVal</h4>
+<p>As a premise of argument explanation, the Canny method considers that an edge is a long line, and there is an idea that <strong>the part adjacent to the edge tends to be the edge</strong>. (Refer to the figure below)</p>
+<img width="400" alt="Screenshot 2020-02-09 3.42.44.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/84890/bb638703-f2dc-3449-ce6a-3f4507e461b5.png">
+<p>From this point of view, the second threshold (threshold1) has been introduced, and in short, the role is &ldquo;*<em>A threshold that is loose in determining whether it is an edge in a portion adjacent to another edge (portion that tends to be an edge)</em> *”.</p>
+<p>In other words, even if you try to loosen (decrease) threshold1, edges will not be detected in places where nothing was originally detected around.</p>
+<p>By making it loose, the adjacent part of the edge originally detected by threshold2 tends to become an edge, that is, intuitively, it will be <strong>extending the line of the edge originally detected by threshold2</strong>. ..</p>
+<p>When threshold1 is actually made smaller, it becomes as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/84890/470510de-a369-e116-a90c-97a446c6176a.gif" alt="threshold1.gif"></p>
+<h4 id="summary">Summary</h4>
+<p><code>cv2.Canny(gray_img, threshold1, threshold2)</code></p>
+<ul>
+<li>threshold1: Threshold for loosely judging whether an edge is a part adjacent to another edge (portion that tends to be an edge)</li>
+<li>threshold2: The threshold itself for judging whether it is an edge</li>
+</ul>
+<h3 id="make-the-parameter-adjustment-of-edge-detection-feel-good">Make the parameter adjustment of edge detection feel good</h3>
+<p>From the above, the order described above is recommended.</p>
+<ol>
+<li>Make threhsold1 the same value as threshold2.</li>
+<li>Adjust threshold2 so that an edge appears where you want it to be detected.</li>
+<li>Grow the edge using threshold1.</li>
+</ol>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

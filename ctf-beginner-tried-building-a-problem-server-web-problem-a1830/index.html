@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>CTF beginner tried building a problem server (web) [problem] | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>CTF beginner tried building a problem server (web) [problem]</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 6, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mysql"> MySQL</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/security"> Security</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker"> Docker</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ctf"> CTF</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>Do you know CTF (Capture The Flag)?
+Through the CTF, you can experience and learn about security issues.
+If so, I will try to explain the problem by making a vulnerable server myself.
+I have created a server for CTF rudimentary problems.</p>
+<h2 id="important-point">important point</h2>
+<p>By nature, the server is vulnerable, so
+Please do not implement the contents of this article as it is in a production environment.</p>
+<h2 id="assumption">Assumption</h2>
+<h3 id="what-is-ctf-capture-the-flag">What is CTF (Capture The Flag)</h3>
+<p>A game where you find hidden flags in the problem and score points.
+You will be asked various questions about computer security.
+In this issue, we will focus on the web area of vulnerability in web applications.</p>
+<h3 id="technology-selection">Technology selection</h3>
+<ul>
+<li>Docker</li>
+<li>MySQL</li>
+<li>Python</li>
+</ul>
+<h3 id="rules-on-this-problem-server">Rules on this problem server</h3>
+<ul>
+<li>The flag format is <code>myctf{flag}</code>.</li>
+<li>There are 3 flags hidden inside the server.</li>
+</ul>
+<p>In other words, there are three types of <code>myctf{flag}</code> format on this web system, so please find it.</p>
+<h2 id="build-the-server">Build the server</h2>
+<h3 id="docker-network">Docker Network</h3>
+<p>Create a network between containers with docker network.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker network create ctf-network
+</code></pre></div><h3 id="docker-compose">Docker Compose</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:docker-compose.yml" data-lang="yaml:docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#39;3.3&#39;</span>
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#66d9ef">app-python</span>:
+    <span style="color:#66d9ef">container_name</span>: app-python
+    <span style="color:#66d9ef">build</span>:
+      <span style="color:#66d9ef">context</span>: ./python
+      <span style="color:#66d9ef">dockerfile</span>: Dockerfile
+    <span style="color:#66d9ef">tty</span>: <span style="color:#66d9ef">true</span>
+    <span style="color:#66d9ef">volumes</span>:
+      -${PWD}/python/src:/app
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#e6db74">&#34;80:8000&#34;</span>
+    <span style="color:#66d9ef">networks</span>:
+      -ctf-network
+  <span style="color:#66d9ef">db1</span>:
+    <span style="color:#66d9ef">container_name</span>: mysql
+    <span style="color:#66d9ef">build</span>:
+      <span style="color:#66d9ef">context</span>: ./mysql
+      <span style="color:#66d9ef">dockerfile</span>: Dockerfile
+    <span style="color:#66d9ef">environment</span>:
+      -MYSQL_USER=user
+      -MYSQL_PASSWORD=password
+      -MYSQL_ROOT_PASSWORD=password
+    <span style="color:#66d9ef">volumes</span>:
+      -./mysql/mysql_conf:/etc/mysql/conf.d
+      -./mysql/initdb.d:/docker-entrypoint-initdb.d
+    <span style="color:#66d9ef">networks</span>:
+      -ctf-network
+<span style="color:#66d9ef">networks</span>:
+  <span style="color:#66d9ef">ctf-network</span>:
+</code></pre></div><p>Please change user and password appropriately.</p>
+<h3 id="mysql">MySQL</h3>
+<p>It seems that SQLite is reasonably used in CTF, but since it is built using Docker, I chose MySQL.</p>
+<h4 id="dockerfile">DockerFile</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile:mysql/Dockerfile" data-lang="dockerfile:mysql/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> mysql:8.0</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> ./ctf/flag.md /var/ctf/flag.md<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> mkdir /var/log/mysql<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> chown mysql:adm /var/log/mysql<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><h4 id="file-in-which-flags-are-described">File in which flags are described</h4>
+<p>Embed the flag in <code>/var/ctf/flag.md</code>.
+If you solve them in order, this will be the last flag.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-markdown:mysql/ctf/flag.md" data-lang="markdown:mysql/ctf/flag.md"><span style="color:#75715e">## flag.md
+</span><span style="color:#75715e"></span>myctf{mission_complete}
+</code></pre></div><h4 id="setting-file">setting file</h4>
+<p>Add MySQL configuration file.</p>
+<pre><code class="language-config:mysql/mysql_conf/custom.cnf" data-lang="config:mysql/mysql_conf/custom.cnf">[mysqld]
+default_authentication_plugin=mysql_native_password
+character-set-server=utf8
+collation-server=utf8_general_ci
+general_log=ON
+general_log_file=/var/log/mysql/query.log
+secure-file-priv = &quot;&quot;
+
+[client]
+default-character-set=utf8
+</code></pre><p>Add <code>secure-file-priv</code> setting to access the file.</p>
+<h4 id="database-initialization-sql-file">Database initialization SQL file</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql:mysql/initdb.d/init.sql" data-lang="sql:mysql/initdb.d/init.sql"><span style="color:#66d9ef">SET</span> <span style="color:#66d9ef">CHARSET</span> UTF8;
+
+<span style="color:#66d9ef">DROP</span> <span style="color:#66d9ef">DATABASE</span> <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">EXISTS</span> ctf_db;
+<span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">DATABASE</span> ctf_db;
+<span style="color:#66d9ef">USE</span> ctf_db;
+<span style="color:#66d9ef">DROP</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">EXISTS</span> users;
+ 
+<span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#a6e22e">users</span> (
+    id <span style="color:#66d9ef">INT</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">AUTO_INCREMENT</span> <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>,
+    first_name <span style="color:#66d9ef">VARCHAR</span>(<span style="color:#ae81ff">30</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    last_name <span style="color:#66d9ef">VARCHAR</span>(<span style="color:#ae81ff">30</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    job <span style="color:#66d9ef">VARCHAR</span>(<span style="color:#ae81ff">30</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    delete_flag BOOLEAN <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">FALSE</span>
+)<span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">CHARACTER</span> <span style="color:#66d9ef">SET</span><span style="color:#f92672">=</span>utf8;
+ 
+<span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> <span style="color:#a6e22e">users</span> (first_name, last_name, job)
+    <span style="color:#66d9ef">VALUES</span>
+    (<span style="color:#e6db74">&#34;Taro&#34;</span>, <span style="color:#e6db74">&#34;Yamada&#34;</span>, <span style="color:#e6db74">&#34;Server side engineer&#34;</span>),
+    (<span style="color:#e6db74">&#34;Jiro&#34;</span>, <span style="color:#e6db74">&#34;Suzuki&#34;</span>, <span style="color:#e6db74">&#34;Front End Engineer&#34;</span>),
+    (<span style="color:#e6db74">&#34;Saburo&#34;</span>, <span style="color:#e6db74">&#34;Tanaka&#34;</span>, <span style="color:#e6db74">&#34;Infrastructure Engineer&#34;</span>),
+    (<span style="color:#e6db74">&#34;Hanako&#34;</span>, <span style="color:#e6db74">&#34;Sato&#34;</span>, <span style="color:#e6db74">&#34;Designer&#34;</span>);
+<span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> <span style="color:#a6e22e">users</span> (first_name, last_name, job, delete_flag)
+    <span style="color:#66d9ef">VALUES</span> (<span style="color:#e6db74">&#34;Ichiro&#34;</span>, <span style="color:#e6db74">&#34;Watanabe&#34;</span>, <span style="color:#e6db74">&#34;myctf{scf_sql_injection_flag}&#34;</span>, <span style="color:#66d9ef">TRUE</span>); <span style="color:#75715e">/* First flag (same table) */</span>
+
+<span style="color:#66d9ef">DROP</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#66d9ef">IF</span> <span style="color:#66d9ef">EXISTS</span> flag;
+
+<span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span> <span style="color:#a6e22e">flag</span> (
+    id <span style="color:#66d9ef">INT</span> <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span> <span style="color:#66d9ef">AUTO_INCREMENT</span> <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>,
+    flag <span style="color:#66d9ef">VARCHAR</span>(<span style="color:#ae81ff">60</span>) <span style="color:#66d9ef">NOT</span> <span style="color:#66d9ef">NULL</span>,
+    create_date <span style="color:#66d9ef">TIMESTAMP</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">CURRENT_TIMESTAMP</span>,
+    update_date <span style="color:#66d9ef">TIMESTAMP</span> <span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">CURRENT_TIMESTAMP</span>
+)<span style="color:#66d9ef">DEFAULT</span> <span style="color:#66d9ef">CHARACTER</span> <span style="color:#66d9ef">SET</span><span style="color:#f92672">=</span>utf8;
+
+<span style="color:#66d9ef">INSERT</span> <span style="color:#66d9ef">INTO</span> <span style="color:#a6e22e">flag</span> (flag)
+    <span style="color:#66d9ef">VALUES</span> (<span style="color:#e6db74">&#34;myctf{next_flag_[/var/ctf/flag.md]}&#34;</span>); <span style="color:#75715e">/* second flag (separate table) */</span>
+</code></pre></div><p>Two flags are embedded in the Database.
+The first flag is a table for logical deletion using delete_flag in the users table, which is embedded in the data that is supposed to be deleted.
+The second flag is embedded in the flag table that is not referenced on this system.</p>
+<h3 id="python">Python</h3>
+<p>PHP is mainly used for CTF web problems, but since the backend environment at work is Python, I implemented it in Python because it is a pain.
+This was a tough job. (I made it from the PHP system earlier)
+I think that Python is used in actual CTF because there are many automation scripts for flag acquisition.</p>
+<p>When creating a web application in Python, it will be difficult if you do not use a framework such as Django or Flask, but in order to create a vulnerability, do not rely on the framework and make your own as much as possible.</p>
+<h4 id="dockerfile-1">DockerFile</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-dockerfile:python/Dockerfile" data-lang="dockerfile:python/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> python:3.8</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">WORKDIR</span><span style="color:#e6db74"> /app</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">CMD</span> bash -c <span style="color:#e6db74">&#34;pip install -r ./requirements.txt &amp;&amp; python app.py&#34;</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">EXPOSE</span><span style="color:#e6db74"> 8000</span><span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><h4 id="requirements-files">Requirements Files</h4>
+<p>Some use external libraries.
+Describes the library to be installed in Requirements Files.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-plaintext:python/src/requirements.txt" data-lang="plaintext:python/src/requirements.txt">Jinja2~=2.10
+PyMySQL~=0.9
+</code></pre></div><p>It was hard to hard-code the HTML syntax in python, so I will use Jinja2 as the template engine.</p>
+<h4 id="executable-file">Executable file</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:python/src/app.py" data-lang="python:python/src/app.py"><span style="color:#f92672">import</span> socketserver
+<span style="color:#f92672">from</span> http.server <span style="color:#f92672">import</span> BaseHTTPRequestHandler, HTTPServer
+<span style="color:#f92672">from</span> urllib.parse <span style="color:#f92672">import</span> urlparse, parse_qs
+
+<span style="color:#f92672">import</span> pymysql.cursors
+<span style="color:#f92672">from</span> jinja2 <span style="color:#f92672">import</span> Template, Environment, FileSystemLoader
+
+PORT <span style="color:#f92672">=</span> <span style="color:#ae81ff">8000</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyHandler</span>(BaseHTTPRequestHandler):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">do_GET</span>(self):
+        conn <span style="color:#f92672">=</span> pymysql<span style="color:#f92672">.</span>connect(host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mysql&#39;</span>,
+                    user<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;root&#39;</span>,
+                    password<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;password&#39;</span>,
+                    db<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ctf_db&#39;</span>,
+                    charset<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf8&#39;</span>,
+                    autocommit<span style="color:#f92672">=</span>True,
+                    cursorclass<span style="color:#f92672">=</span>pymysql<span style="color:#f92672">.</span>cursors<span style="color:#f92672">.</span>DictCursor)
+        <span style="color:#66d9ef">try</span>:
+            url <span style="color:#f92672">=</span> urlparse(self<span style="color:#f92672">.</span>path)
+
+            <span style="color:#66d9ef">if</span> url<span style="color:#f92672">.</span>path <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;/&#39;</span>:
+                params <span style="color:#f92672">=</span> parse_qs(url<span style="color:#f92672">.</span>query)
+                query <span style="color:#f92672">=</span> params<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;q&#39;</span>, [<span style="color:#e6db74">&#39;&#39;</span>])[<span style="color:#ae81ff">0</span>]
+                
+                <span style="color:#66d9ef">with</span> conn<span style="color:#f92672">.</span>cursor() <span style="color:#66d9ef">as</span> cursor:
+                    sql <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#34;SELECT * FROM users WHERE delete_flag=FALSE AND job LIKE&#39;%{query}%&#39;;&#34;</span>
+                    cursor<span style="color:#f92672">.</span>execute(sql)users <span style="color:#f92672">=</span> cursor<span style="color:#f92672">.</span>fetchall()
+
+                env <span style="color:#f92672">=</span> Environment(loader<span style="color:#f92672">=</span>FileSystemLoader(<span style="color:#e6db74">&#39;.&#39;</span>))
+                template <span style="color:#f92672">=</span> env<span style="color:#f92672">.</span>get_template(<span style="color:#e6db74">&#39;index.html&#39;</span>)
+                
+                data <span style="color:#f92672">=</span> {
+                    <span style="color:#e6db74">&#39;query&#39;</span>: query,
+                    <span style="color:#e6db74">&#39;users&#39;</span>: users
+                }
+                disp_text <span style="color:#f92672">=</span> template<span style="color:#f92672">.</span>render(data)
+
+                self<span style="color:#f92672">.</span>send_response(<span style="color:#ae81ff">200</span>)
+                self<span style="color:#f92672">.</span>send_header(<span style="color:#e6db74">&#39;Content-type&#39;</span>, <span style="color:#e6db74">&#39;text/html&#39;</span>)
+                self<span style="color:#f92672">.</span>end_headers()
+                
+                self<span style="color:#f92672">.</span>wfile<span style="color:#f92672">.</span>write(disp_text<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;utf-8&#39;</span>))
+            <span style="color:#66d9ef">else</span>:
+                self<span style="color:#f92672">.</span>send_response(<span style="color:#ae81ff">404</span>)
+                self<span style="color:#f92672">.</span>send_header(<span style="color:#e6db74">&#39;Content-type&#39;</span>, <span style="color:#e6db74">&#39;text/html&#39;</span>)
+                self<span style="color:#f92672">.</span>end_headers()
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+            <span style="color:#66d9ef">print</span>(e)
+
+            self<span style="color:#f92672">.</span>send_response(<span style="color:#ae81ff">500</span>)
+            self<span style="color:#f92672">.</span>send_header(<span style="color:#e6db74">&#39;Content-type&#39;</span>, <span style="color:#e6db74">&#39;text/html&#39;</span>)
+            self<span style="color:#f92672">.</span>end_headers()
+
+            self<span style="color:#f92672">.</span>wfile<span style="color:#f92672">.</span>write(str(e)<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;utf-8&#39;</span>))
+        <span style="color:#66d9ef">finally</span>:
+            conn<span style="color:#f92672">.</span>close()
+
+<span style="color:#66d9ef">with</span> socketserver<span style="color:#f92672">.</span>TCPServer((<span style="color:#e6db74">&#34;&#34;</span>, PORT), MyHandler) <span style="color:#66d9ef">as</span> httpd:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;serving at port&#34;</span>, PORT)
+    httpd<span style="color:#f92672">.</span>serve_forever()
+</code></pre></div><p>user、passwordはDocker Composeで変更した値に直してしてください。
+SQL文の生成では、論理削除ということで、<code>delete_flag=FALSE</code>の判定が入っています。</p>
+<h4 id="jinja2のtemplateファイル">jinja2のtemplateファイル</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:python/src/index.html" data-lang="html:python/src/index.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span> <span style="color:#a6e22e">lang</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ja&#34;</span>&gt;
+&lt;<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">charset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;UTF-8&#34;</span>&gt;
+  &lt;<span style="color:#f92672">title</span>&gt;CTF 体験&lt;/<span style="color:#f92672">title</span>&gt;
+  &lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;stylesheet&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css&#34;</span>&gt;
+&lt;/<span style="color:#f92672">head</span>&gt;
+&lt;<span style="color:#f92672">body</span>&gt;
+  &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;container&#34;</span>&gt;
+    &lt;<span style="color:#f92672">form</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-inline my-3&#34;</span>&gt;
+      &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-group mb-2&#34;</span>&gt;
+        &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;q&#34;</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;form-control&#34;</span> <span style="color:#a6e22e">placeholder</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;職種検索&#34;</span> <span style="color:#a6e22e">value</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{{ query }}&#34;</span>&gt;
+      &lt;/<span style="color:#f92672">div</span>&gt;
+      &lt;<span style="color:#f92672">button</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;btn btn-primary mb-2 mx-sm-4&#34;</span>&gt;検索&lt;/<span style="color:#f92672">button</span>&gt;
+    &lt;/<span style="color:#f92672">form</span>&gt;
+    {% if query != &#39;&#39; %}
+      &lt;<span style="color:#f92672">p</span>&gt;&lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text-danger&#34;</span>&gt;{{ query }}&lt;/<span style="color:#f92672">span</span>&gt;の検索結果&lt;/<span style="color:#f92672">p</span>&gt;
+    {% endif %}
+
+    &lt;<span style="color:#f92672">table</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;table table-bordered&#34;</span>&gt;
+      &lt;<span style="color:#f92672">thead</span>&gt;
+        &lt;<span style="color:#f92672">tr</span>&gt;
+          &lt;<span style="color:#f92672">th</span> <span style="color:#a6e22e">scope</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col&#34;</span>&gt;ID&lt;/<span style="color:#f92672">th</span>&gt;
+          &lt;<span style="color:#f92672">th</span> <span style="color:#a6e22e">scope</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col&#34;</span>&gt;姓&lt;/<span style="color:#f92672">th</span>&gt;
+          &lt;<span style="color:#f92672">th</span> <span style="color:#a6e22e">scope</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col&#34;</span>&gt;名&lt;/<span style="color:#f92672">th</span>&gt;
+          &lt;<span style="color:#f92672">th</span> <span style="color:#a6e22e">scope</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;col&#34;</span>&gt;職種&lt;/<span style="color:#f92672">th</span>&gt;
+        &lt;/<span style="color:#f92672">tr</span>&gt;
+      &lt;/<span style="color:#f92672">thead</span>&gt;
+      &lt;<span style="color:#f92672">tbody</span>&gt;
+        {% for user in users %}
+          &lt;<span style="color:#f92672">tr</span>&gt;
+            &lt;<span style="color:#f92672">td</span>&gt;{{ user.id }}&lt;/<span style="color:#f92672">td</span>&gt;
+            &lt;<span style="color:#f92672">td</span>&gt;{{ user.last_name }}&lt;/<span style="color:#f92672">td</span>&gt;
+            &lt;<span style="color:#f92672">td</span>&gt;{{ user.first_name }}&lt;/<span style="color:#f92672">td</span>&gt;
+            &lt;<span style="color:#f92672">td</span>&gt;{{ user.job }}&lt;/<span style="color:#f92672">td</span>&gt;
+          &lt;/<span style="color:#f92672">tr</span>&gt;  
+        {% endfor %}
+      &lt;/<span style="color:#f92672">tbody</span>&gt;
+    &lt;/<span style="color:#f92672">table</span>&gt;
+  &lt;/<span style="color:#f92672">div</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><h2 id="起動して確認">起動して確認</h2>
+<p>これがディレクトリの構造になります。</p>
+<pre><code>├─ docker-compose.yml
+├─ mysql
+│   ├─ Dockerfile
+│   ├─ ctf
+│   │   └─ flag.md
+│   ├─ initdb.d
+│   │   └─ init.sql
+│   └─ mysql_conf
+│       └─ custom.cnf
+└─ python
+    ├─ Dockerfile
+    └─ src
+        ├─ app.py
+        ├─ index.html
+        └─ requirements.txt
+</code></pre><p>実行する</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ docker-compose up -d
+</code></pre></div><p>コンテナが起動したら、Webブラウザから<code>http://localhost</code>にアクセスする。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/232364/9d58852f-fc7d-2548-5329-cfcf11fe2138.png" alt="2019-12-04 12.06.27 localhost e3de80904c2e.png"></p>
+<p>画像のようなページが表示されるはずです。</p>
+<p>職種検索のテキストボックスに「エンジニア」と入力して、「検索」ボタンをクリックすると</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/232364/2005f84b-8691-8284-423b-4722e6d098bc.png" alt="2019-12-04 12.06.52 localhost c4217ceed7b3.png"></p>
+<p>検索されているはずです。</p>
+<h2 id="その他">その他</h2>
+<p>今回は、SQLインジェクションの問題だけですが、
+Web定番のクロスサイトスクリプティングや、その他多数の脆弱性もあります。
+むしろ脆弱性だらけで、問題解く側からすると、何から手をつけていいのかわからなくなるかもしれません。
+気が向いたら、クロスサイトスクリプティングの問題も作ろうかと思います。</p>
+<h2 id="最後に">最後に</h2>
+<p>セキュリティの勉強会が「不正指令電磁的記録に関する罪」になるかもということで、
+中止になるなどことがありましたが（ <a href="http://ozuma.sakura.ne.jp/sumida/2019/03/15/77/">http://ozuma.sakura.ne.jp/sumida/2019/03/15/77/</a> ）、
+この記事自体が、脆弱性の解説として、
+「不正指令電磁的記録に関する罪」にならないことを祈ります。</p>
+<p>今回の完成形のリポジトリは<a href="https://github.com/fiotto/ctf-server-web-for-python">こちら</a>
+同時平行で作成していた、PHPバージョンのリポジトリは<a href="https://github.com/fiotto/ctf-server-web-for-php">こちら</a>
+go言語+PostgreSQLで作ったリポジトリは<a href="https://github.com/fiotto/ctf-server-web-for-golang">こちら</a>
+go言語は静的型付け言語ということで、誤った型でUNIONするとエラーになるので、テーブル定義の推測は難しくなります。</p>
+<p>この問題の回答方法は、<a href="https://qiita.com/fiotto/items/df6e62b9a25fd62c62fd">CTF初心者が問題サーバ(web)を構築してみた【回答編】</a> にて</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

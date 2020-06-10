@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Make network diagram from Spotify related artists and help decide which song to listen to next | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Make network diagram from Spotify related artists and help decide which song to listen to next</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/networkx">networkx</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/recommendation">Recommendation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/spotify">Spotify</a></code></small>
+
+</p>
+<pre><code>This article is the 22nd day article of [NTT Communications Advent Calendar 2019](https://qiita.com/advent-calendar/2019/nttcom).
+</code></pre>
+<p>Yesterday was @kanatakita&rsquo;s article, &ldquo;A story I want to beat the conference necessary to release the application&rdquo; (<a href="https://qiita.com/kanatakita/items/a68c6e7758524422ecb0)">https://qiita.com/kanatakita/items/a68c6e7758524422ecb0)</a>.</p>
+<p>#Introduction
+Hi, my name is yuki uchida, and I belong to the SkyWay team of NTT Communications.
+This article is the second series of &ldquo;I want to visualize&rdquo; after <a href="https://qiita.com/yuki_uchida/items/09fda4c5c608a9f53d2f">Hands-on to visualize my tweet while understanding BERT</a>.</p>
+<p>When I was hitting Spotify&rsquo;s API privately, I thought that I could make interesting visualizations related to the recommendation system, which is my personal interest range, so I am writing this article.</p>
+<h2 id="what-do-you-do">What do you do?</h2>
+<p>Although Spotify offers the best recommendation system in the industry, there are often questions about the recommendation results.
+In this article, we will make a network diagram from related Spotify artists and help decide which song to listen to ** in order to make a satisfying recommendation. (It might be a kind of recommendation)
+The python code is also included, so if you feel like doing it yourself, please give it a try! !</p>
+<h2 id="spotify-recommendation-system">Spotify recommendation system</h2>
+<p>Spotify has already implemented a very accurate recommendation system. Recommendations are made after using a great deal of information such as the <strong>tempo and genre</strong> of the song.
+You can find out how much information you are using by examining the information that you can get with the Spotify API.</p>
+<p><a href="https://qiita.com/hidekoji/items/6b9680798d4d9b03ea9a">As a result of analyzing attribute data of 76,000 songs of Spotify, J-Rock was Punk rather than Rock</a>
+<a href="http://shimizun14.hatenablog.com/entry/2018/02/17/152338">Let&rsquo;s talk about the recommendation logic of Spotify</a></p>
+<p>Spotify recommends recommended songs from playlists as follows, or makes playlists of artists you like.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/3e911183-f162-a9a4-8679-12ce4733fa7c.png" alt="image.png"></p>
+<p>Spotify has a really great recommendation system and I love music because of Spotify.
+Many of the recommended songs match my sensibility very much, and I like Spotify so much that I can spend a day with the songs that Spotify recommends. You will be charged for the rest of your life.</p>
+<h2 id="recommended-system-accuracy-index">Recommended system accuracy index</h2>
+<p>Certainly Spotify&rsquo;s recommendations are excellent. However, &ldquo;Why did you recommend this song? It is not a system that can answer the question. Therefore, it is not limited to Spotify, and many of the recommending systems that exist today tend to be &ldquo;<strong>I don&rsquo;t know why this song is, but it was my favorite song</strong>&rdquo;.</p>
+<h3 id="discussion-in-the-recommendation-system">Discussion in the recommendation system</h3>
+<p>In many recommend systems, <code>accuracy</code> is often used as the accuracy index.
+However, using only <code>accuracy</code> as a precision index requires discussion.
+Charu C Aggarwa is a &ldquo;recommendation system&rdquo;, and it is not only &ldquo;accuracy&rdquo; but also <code>diversity</code>, <code>serendipity</code>, <code>Novelty</code> and other indicators. It should be evaluated.&rdquo;</p>
+<p>In the recommendation system, if only <code>accracy</code> is used as the precision index, the problem that <strong>recommended is limited to famous ones and lacks in fun</strong>. Therefore, it is important to use other indicators.</p>
+<h3 id="recent-flow-of-recommendation-system">Recent flow of recommendation system</h3>
+<p>Recently, a paper has also been published that improves the accuracy of recommendations by using uplift as a precision index rather than accuracy.
+There are many recommended accuracy indicators, and there are many very interesting discussions.
+The following article explains the article called &ldquo;Uplift-based Evaluation and Optimization of Recommenders&rdquo; in an easy-to-understand manner, so please refer to it. (Sometimes I write articles in this media)
+<a href="https://ai-scholar.tech/machine-learning/ai-accuracy-343/">Is the recommendation really effective? Recommendation evolves by learning with uplift instead of accuracy. </a></p>
+<p>Since the recommendation system currently provided by Spotify does not know what kind of accuracy index is used, this time, we will ask you to recommend diversity for diversity from the artist&rsquo;s degree of relevance. I would like to be able to decide for myself whether to dig deeper into.</p>
+<h2 id="express-the-degree-of-artist-relevance-as-a-network-diagram-and-plot-the-song-you-are-listening-to">Express the degree of artist relevance as a network diagram and plot the song you are listening to</h2>
+<p><strong>Based on the degree of association of artists, whether you would like to recommend for diversity or dig deeper for an artist of your favorite type</strong> In order to be able to decide for yourself, listen to the network diagram and yourself. Prepare a plot of the artists that are present.</p>
+<h3 id="use-spotify-api-to-dig-related-artists-to-build-network-diagram">Use Spotify API to dig related artists to build network diagram</h3>
+<p>First, import the necessary libraries.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> spotipy
+<span style="color:#f92672">from</span> spotipy.oauth2 <span style="color:#f92672">import</span> SpotifyClientCredentials
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> networkx <span style="color:#f92672">as</span> nx
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+</code></pre></div><p>Next, create an instance to connect to Spotify API and store it in a variable called <code>spotify</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py">client_id <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;XXXXXXXXXXXXXXX&#39;</span>
+client_secret <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;XXXXXXXXXXXXXXX&#39;</span>
+client_credentials_manager <span style="color:#f92672">=</span> spotipy<span style="color:#f92672">.</span>oauth2<span style="color:#f92672">.</span>SpotifyClientCredentials(client_id, client_secret)
+spotify <span style="color:#f92672">=</span> spotipy<span style="color:#f92672">.</span>Spotify(client_credentials_manager<span style="color:#f92672">=</span>client_credentials_manager)
+</code></pre></div><p>Download the popular Japanese music list as csv from the Spotify top chart below!
+<a href="https://spotifycharts.com/regional/jp/weekly/latest">https://spotifycharts.com/regional/jp/weekly/latest</a>
+Then read that csv.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py">top_records <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;regional-jp-weekly-latest.csv&#34;</span>, header<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+top_artists <span style="color:#f92672">=</span> top_records[<span style="color:#e6db74">&#34;Artist&#34;</span>]<span style="color:#f92672">.</span>unique()
+</code></pre></div><p>From here, please read it as it is processing for DataFrame shaping of pandas</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py">artist_info_list <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> artist <span style="color:#f92672">in</span> top_artists:
+    artist_info_list<span style="color:#f92672">.</span>append(spotify<span style="color:#f92672">.</span>search(q<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;artist:&#39;</span> <span style="color:#f92672">+</span> artist, type<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;artist&#39;</span>))
+artist_info_list <span style="color:#f92672">=</span> [artist_info[<span style="color:#e6db74">&#39;artists&#39;</span>][<span style="color:#e6db74">&#39;items&#39;</span>] <span style="color:#66d9ef">for</span> artist_info <span style="color:#f92672">in</span> artist_info_list]
+artist_info_list <span style="color:#f92672">=</span> [artist_info[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> artist_info <span style="color:#f92672">in</span> artist_info_list <span style="color:#66d9ef">if</span> len(artist_info) <span style="color:#f92672">&gt;</span><span style="color:#ae81ff">0</span>]
+<span style="color:#75715e">## Skip items without information</span>
+artist_info_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(artist_info_list)
+artist_info_df <span style="color:#f92672">=</span> artist_info_df[[<span style="color:#e6db74">&#39;genres&#39;</span>,<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;name&#39;</span>,<span style="color:#e6db74">&#39;popularity&#39;</span>,<span style="color:#e6db74">&#39;type&#39;</span>]]
+followers <span style="color:#f92672">=</span> [artist_info_record[<span style="color:#e6db74">&#39;followers&#39;</span>][<span style="color:#e6db74">&#39;total&#39;</span>] <span style="color:#66d9ef">for</span> artist_info_record <span style="color:#f92672">in</span> artist_info_list]
+artist_info_df[<span style="color:#e6db74">&#39;followers&#39;</span>] <span style="color:#f92672">=</span> followers
+artist_info_df
+</code></pre></div><p>After reading the csv and formatting it, dig the related artists using Spotify API. Implement it as a recursive function to determine how many times to dig. I will dig 5 times this time. Please be aware that this will still exceed the data volume.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py">related_artist_info <span style="color:#f92672">=</span> []
+digged_artist_ids <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dig</span>(parent_id,parent_name,limit,i):
+    digged_artist_ids<span style="color:#f92672">.</span>append(parent_id)
+<span style="color:#75715e"># print(parent_name)</span>
+    <span style="color:#66d9ef">if</span> len(related_artist_info) <span style="color:#f92672">%</span><span style="color:#ae81ff">1000</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">print</span>(len(related_artist_info))
+    related_artists <span style="color:#f92672">=</span> spotify<span style="color:#f92672">.</span>artist_related_artists(parent_id)
+    <span style="color:#66d9ef">for</span> artist_info <span style="color:#f92672">in</span> related_artists[<span style="color:#e6db74">&#39;artists&#39;</span>]:
+        artist_info[<span style="color:#e6db74">&#39;parent_id&#39;</span>] <span style="color:#f92672">=</span> parent_id
+        artist_info[<span style="color:#e6db74">&#39;parent_name&#39;</span>] <span style="color:#f92672">=</span> parent_name
+        related_artist_info<span style="color:#f92672">.</span>append(artist_info)
+        <span style="color:#66d9ef">if</span> i <span style="color:#f92672">&lt;</span>limit:
+            <span style="color:#66d9ef">if</span> artist_info[<span style="color:#e6db74">&#39;id&#39;</span>] <span style="color:#f92672">in</span> digged_artist_ids:
+                <span style="color:#66d9ef">pass</span>
+            <span style="color:#66d9ef">else</span>:
+                dig(artist_info[<span style="color:#e6db74">&#39;id&#39;</span>],artist_info[<span style="color:#e6db74">&#39;name&#39;</span>],limit,i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)<span style="color:#66d9ef">for</span> parent_id,parent_name <span style="color:#f92672">in</span> zip(artist_info_df[<span style="color:#e6db74">&#39;id&#39;</span>],artist_info_df[<span style="color:#e6db74">&#39;name&#39;</span>]):
+    dig(parent_id,parent_name,limit<span style="color:#f92672">=</span><span style="color:#ae81ff">6</span>,i<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+
+
+related_artist_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(related_artist_info)
+related_artist_df <span style="color:#f92672">=</span> related_artist_df[[<span style="color:#e6db74">&#39;genres&#39;</span>,<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;name&#39;</span>,<span style="color:#e6db74">&#39;popularity&#39;</span>,<span style="color:#e6db74">&#39;type&#39;</span>,<span style="color:#e6db74">&#39;parent_id&#39;</span>,<span style="color:#e6db74">&#39;parent_name&#39;</span>]]
+followers <span style="color:#f92672">=</span> [artist_info_record[<span style="color:#e6db74">&#39;followers&#39;</span>][<span style="color:#e6db74">&#39;total&#39;</span>] <span style="color:#66d9ef">for</span> artist_info_record <span style="color:#f92672">in</span> related_artist_info]
+related_artist_df[<span style="color:#e6db74">&#39;followers&#39;</span>] <span style="color:#f92672">=</span> followers
+related_artist_df
+<span style="color:#75715e">## Parent artist&#39;s parent_id is null</span>
+artist_info_df[<span style="color:#e6db74">&#39;parent_id&#39;</span>] <span style="color:#f92672">=</span> None
+artist_info_df[<span style="color:#e6db74">&#39;parent_name&#39;</span>] <span style="color:#f92672">=</span> None
+merge_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>concat([artist_info_df,related_artist_df],sort<span style="color:#f92672">=</span>False)
+
+</code></pre></div><p>Here, in order to make a network diagram, create a pair of artists that have appeared as related artists.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py">graph_tuple <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> network <span style="color:#f92672">in</span> merge_df[[<span style="color:#e6db74">&#39;name&#39;</span>,<span style="color:#e6db74">&#39;parent_name&#39;</span>]]<span style="color:#f92672">.</span>values:
+    graph_tuple<span style="color:#f92672">.</span>append(tuple(network))
+    
+</code></pre></div><p>Next, let&rsquo;s prepare a group of artists that we are listening to.
+Give the <code>username</code> and <code>playlist_id</code> to the instance to connect with Spotify.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py"><span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> pprint
+<span style="color:#f92672">import</span> spotipy
+<span style="color:#f92672">import</span> spotify_token <span style="color:#f92672">as</span> st
+
+client_id <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;XXXXXXXXXXXx&#39;</span>
+client_secret <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;XXXXXXXXXXX&#39;</span>
+client_credentials_manager <span style="color:#f92672">=</span> spotipy<span style="color:#f92672">.</span>oauth2<span style="color:#f92672">.</span>SpotifyClientCredentials(client_id, client_secret)
+spotify <span style="color:#f92672">=</span> spotipy<span style="color:#f92672">.</span>Spotify(client_credentials_manager<span style="color:#f92672">=</span>client_credentials_manager)
+
+
+username <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;XXXXXXXXX&#34;</span>
+playlist_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;XXXXXXXXXXXX&#34;</span>
+
+my_tracks <span style="color:#f92672">=</span> spotify<span style="color:#f92672">.</span>user_playlist(username, playlist_id<span style="color:#f92672">=</span>playlist_name, fields<span style="color:#f92672">=</span>None)
+my_track_list <span style="color:#f92672">=</span> [track[<span style="color:#e6db74">&#39;track&#39;</span>] <span style="color:#66d9ef">for</span> track <span style="color:#f92672">in</span> my_tracks[<span style="color:#e6db74">&#39;tracks&#39;</span>][<span style="color:#e6db74">&#39;items&#39;</span>]]
+my_track_df1 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(my_track_list)
+my_track_df1[<span style="color:#e6db74">&#39;artists&#39;</span>] <span style="color:#f92672">=</span> [artists[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#39;name&#39;</span>] <span style="color:#66d9ef">for</span> artists <span style="color:#f92672">in</span> my_track_df1[<span style="color:#e6db74">&#39;artists&#39;</span>]]
+</code></pre></div><p>From here, we will use a library called <code>networkx</code> to create a network diagram.
+Probably, the pair of related artists currently stored in <code>graph_tuple</code> has a large amount of data and it seems that it can not be displayed properly, so we will <strong>branch</strong> the artists with few related artists. .. Also, try not to cut off the artists you are listening to. It takes quite a while to run, so wait a few minutes</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py">G <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G<span style="color:#f92672">.</span>add_nodes_from(merge_df[<span style="color:#e6db74">&#39;name&#39;</span>]<span style="color:#f92672">.</span>unique())
+G<span style="color:#f92672">.</span>add_edges_from(tuple(graph_tuple))
+
+
+like_artists_name <span style="color:#f92672">=</span> set(track_df[<span style="color:#e6db74">&#39;artists&#39;</span>]<span style="color:#f92672">.</span>unique())
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">1</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    remove_nodes <span style="color:#f92672">=</span> G<span style="color:#f92672">.</span>degree()
+    <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+        <span style="color:#66d9ef">print</span>(remove_nodes)
+    remove_node_names <span style="color:#f92672">=</span> [node[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> node <span style="color:#f92672">in</span> remove_nodes <span style="color:#66d9ef">if</span> node[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">15</span><span style="color:#f92672">*</span>i]
+    <span style="color:#75715e">## Don&#39;t delete the artists in your playlist</span>
+    remove_node_names <span style="color:#f92672">=</span> set(remove_node_names)<span style="color:#f92672">-</span>like_artists_name
+    G<span style="color:#f92672">.</span>remove_nodes_from(remove_node_names)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test.py" data-lang="python:test.py"><span style="color:#75715e"># Building a graph</span>
+<span style="color:#75715e"># G = nx.karate_club_graph()</span>
+G <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>Graph()
+G<span style="color:#f92672">.</span>add_nodes_from(merge_df[<span style="color:#e6db74">&#39;name&#39;</span>]<span style="color:#f92672">.</span>unique())
+G<span style="color:#f92672">.</span>add_edges_from(tuple(graph_tuple))
+
+
+like_artists_name <span style="color:#f92672">=</span> set(track_df[<span style="color:#e6db74">&#39;artists&#39;</span>]<span style="color:#f92672">.</span>unique())
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">1</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+    remove_nodes <span style="color:#f92672">=</span> G<span style="color:#f92672">.</span>degree()
+    <span style="color:#66d9ef">if</span> i <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+        <span style="color:#66d9ef">print</span>(remove_nodes)
+    remove_node_names <span style="color:#f92672">=</span> [node[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> node <span style="color:#f92672">in</span> remove_nodes <span style="color:#66d9ef">if</span> node[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">10</span><span style="color:#f92672">*</span>i]
+    <span style="color:#75715e">## Don&#39;t delete the artists in your playlist</span>
+    remove_node_names <span style="color:#f92672">=</span> set(remove_node_names)<span style="color:#f92672">-</span>like_artists_name
+    G<span style="color:#f92672">.</span>remove_nodes_from(remove_node_names)
+    
+Those who are <span style="color:#75715e">## 1 or less are likely to be too far from the center, so deleted</span>
+remove_nodes <span style="color:#f92672">=</span> G<span style="color:#f92672">.</span>degree()
+remove_node_names <span style="color:#f92672">=</span> [node[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> node <span style="color:#f92672">in</span> remove_nodes <span style="color:#66d9ef">if</span> node[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">3</span>]
+G<span style="color:#f92672">.</span>remove_nodes_from(remove_node_names)
+    
+<span style="color:#75715e">#Get layout</span>
+pos <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>spring_layout(G)
+pr <span style="color:#f92672">=</span> nx<span style="color:#f92672">.</span>pagerank(G)
+<span style="color:#75715e"># Visualization</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">100</span>))
+
+
+
+<span style="color:#75715e"># nx.draw_networkx_edges(G, pos)</span>
+nx<span style="color:#f92672">.</span>draw_networkx_nodes(G, pos, node_size<span style="color:#f92672">=</span>[<span style="color:#ae81ff">75000</span><span style="color:#f92672">*</span>v <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> pr<span style="color:#f92672">.</span>values()], node_color<span style="color:#f92672">=</span>list(pr<span style="color:#f92672">.</span>values()), cmap<span style="color:#f92672">=</span>plt<span style="color:#f92672">.</span>cm<span style="color:#f92672">.</span>Reds)
+<span style="color:#75715e"># nx.convert_node_labels_to_integers(G, first_label=0, ordering=&#39;default&#39;, label_attribute=None)</span>
+
+add_artists_nodes <span style="color:#f92672">=</span> G<span style="color:#f92672">.</span>degree()
+add_artists_names <span style="color:#f92672">=</span> [node[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> node <span style="color:#f92672">in</span> add_artists_nodes]
+
+like_artists_nodes <span style="color:#f92672">=</span> set(add_artists_names) <span style="color:#f92672">&amp;</span> like_artists_name
+
+nx<span style="color:#f92672">.</span>draw_networkx_nodes(G,pos,
+                       nodelist<span style="color:#f92672">=</span>like_artists_nodes,
+                       node_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>,
+                       node_size<span style="color:#f92672">=</span><span style="color:#ae81ff">1500</span>,
+                       label<span style="color:#f92672">=</span>like_artists_nodes,
+                       (alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)
+
+
+labels <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> node <span style="color:#f92672">in</span> G<span style="color:#f92672">.</span>degree():
+    labels[node[<span style="color:#ae81ff">0</span>]] <span style="color:#f92672">=</span> node[<span style="color:#ae81ff">0</span>]
+nx<span style="color:#f92672">.</span>draw_networkx_labels(G, pos,font_size<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>)
+<span style="color:#75715e"># nx.draw_networkx_labels(G, pos, labels, font_size=8)</span>
+plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#39;figure.png&#39;</span>,format <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;png&#39;</span>, dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>)
+plt<span style="color:#f92672">.</span>show()
+
+</code></pre></div><h2 id="determine-the-next-song-to-listen-to-using-the-plot-results">Determine the next song to listen to using the plot results</h2>
+<p>This time, the network diagram of the artist dig from the top chart and his own playlist are plotted as below. If you look at this figure, you can see <strong>what artists are in the same place and who you are listening to</strong>! ! ! !</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/1fa85eb3-a411-97c5-1988-f94dd22af696.png" alt="Download (1).png">
+Since I usually listen to songs recommended by Spotify and add them to the playlist, this figure shows that I often listen to the artists located in the upper right corner. **
+From among them, let&rsquo;s pick up a group of artists that are easy to understand.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/a3aff305-fdbf-fa95-8c3b-59bb5647cc42.png" alt="DOWNLOAD__1_.png"></p>
+<p>This time, I would like to introduce two areas (artists) that I felt were “easy to understand and interesting”.
+First, the artists on the left are displayed like this.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/d2c192f9-b695-bcc6-ffcc-5d6a7bad346c.png" alt="image.png"></p>
+<p>It&rsquo;s very convincing that Yuzu, Kobukuro and Ketsumeishi are in the same place. I know from the plot results that I like the artists around here, so I think it&rsquo;s the most straightforward recommendation to recommend filling in the artists around here.</p>
+<p>The artists on the right side are like this.<img width="995" alt="Screenshots 2019-12-22 14.19.44.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/802d30a3-b2e6-8c3c-fe86-d2e87611b68e.png"></p>
+<p>It seems that female artists are gathering around here.
+Also, among them, it seems that anime songs are gathering. (Craris/EGOIST/fripside etc.)
+I listen to a few artists around here, so it might be a good idea to recommend artists around them.</p>
+<h2 id="summary">Summary</h2>
+<p>In this way, by displaying the artist group as a network diagram, you can understand what type of artist you like.
+You can also refer to the **network diagram to help decide what artist to listen to next. **</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/d8fcc8b1-7140-8d1c-bd9d-d1a261553620.png" alt="DOWNLOAD__1_.png"></p>
+<p>In the network diagram, the areas on the left and areas below are the undeveloped areas** that we have not listened to at all. **It&rsquo;s fun to dig into the type of artist you like, but it&rsquo;s also fun to listen to artists that you haven&rsquo;t listened to at all, in search of diversity. **
+For the time being, I would like to listen to <code>tofubeats</code> as an artist who is located in the direction of unexplored territory, **close to my favorite artist.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/124611/3dda0e12-38d2-6f72-5da0-393ffceb3aa8.png" alt="DOWNLOAD__1_.png"></p>
+<h3 id="what-you-want-to-implement-personally">What you want to implement personally</h3>
+<p>In the recommendation, instead of &ldquo;<strong>What kind of artist do you want to hear</strong>?&rdquo;, &ldquo;<strong>The artist you seem to like&rdquo; is recommended</strong>, so it is a passive system. There are many.</p>
+<p>However, in such a recommendation using a network diagram, you can decide for yourself whether to pursue diversity in an undeveloped area or to dig into an artist of your favorite type. **
+I thought that it would be good to have such a <strong>recommendation system near the assist</strong>.</p>
+<p>Next, I will try to build the system so that I can actually provide the recommended system using this network diagram. (Chrome extension or web app)
+Please use it when it is completed! !</p>
+<p>That&rsquo;s it for my article.
+Tomorrow is an article by @<strong>kaname</strong>. looking forward to!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

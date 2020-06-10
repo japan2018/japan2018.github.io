@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Single pixel camera experience with Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Single pixel camera experience with Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 2, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/single-pixel-camera"> single pixel camera</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>**DeNA 20 New Graduate Advent Calendar 2019 article. **</p>
+<p>I will be a Web engineer at DeNA from April next year, but I usually study optics at graduate school.
+When I introduce the research roughly, I change the shape of the laser and shoot it, or measure the object using light (By the way, if I display my Qiita account image on SLM and hit the laser, The laser splits into 100).</p>
+<p>In this article, I&rsquo;m doing a lot of research on light, so this time I would like to introduce a <strong>&ldquo;single pixel camera&rdquo;</strong> that can be easily implemented using Python (any matrix computation can be implemented. So you can easily implement it with MATLAB or Octave.)</p>
+<h1 id="single-pixel-camera-single-pixel-camera">Single pixel camera (single pixel camera)</h1>
+<h4 id="ordinary-camera">Ordinary camera</h4>
+<p>Before we talk about the principle of a single pixel camera, let&rsquo;s start with the normal camera mechanism.
+To put it simply, a normal camera uses a CCD (CCD), which has a lot of <strong>detectors (which can detect the intensity of light)</strong>.</p>
+<p>For example, a camera that can take 100×100 pixel images has 100×100 detectors.
+Then, the light reflected from the target is detected by each detector, and the detected light intensity is used as a pixel value to form an image.
+<br></p>
+<h4 id="principle-of-single-pixel-camera">Principle of single pixel camera</h4>
+<p>So what about a single pixel camera? This detector can take an image with only one.
+To say a little more
+** &ldquo;Camera (method) that can reconstruct images by matrix calculation after measuring multiple times using one detector&rdquo; **
+(It&rsquo;s called a single pixel because it can be shot with one detector).</p>
+<p>I think that most people do not get the actual image even if they hear this much.
+It&rsquo;s okay. The mechanism of the single pixel camera is really very simple. ~~ It seems that the reason why I chose it as an article was easy to explain. ． ． ~~</p>
+<p>The picture below shows the actual shooting with a single pixel camera.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/28555ddd-4d75-a1c9-1546-5be4e2fdf3cb.png" alt="image.png">
+Here, Scene is the shooting target. The lens is used to collect the light on the detector.
+As shown in the figure above, the light coming from the object passes through the mask and is then collected and detected by a single detector.</p>
+<p>The mask pattern that suddenly appeared here. This is important. Thanks to this guy, single pixel camera can shoot with only one detector.</p>
+<p>** &ldquo;Detect the light intensity after the light coming from the object passes through the mask pattern&rdquo; (the order of the mask and the object to be photographed can be either first). **</p>
+<p>By changing the mask pattern prepared in advance one after another and repeating the above work, the single-pixel camera is used for shooting.</p>
+<p>Here, the state of the i-th light intensity detection is
+Assuming that the mask pattern (encoding matrix) is Wi, the imaging target is X, and the detected value is Yi, Wi can be transformed into (1,N) and X can be transformed into (N,1) as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/48006f95-4a20-dbf4-fc55-ceb9850fbc80.jpeg" alt="Inner Product Description.jpg"></p>
+<p>It looks like. Here, N is the number of pixels of the mask, and this N is the number of pixels to be photographed as it is.</p>
+<p>As shown in the figure above, the i-th measurement result Yi is the inner product of Wi and X.
+$$ Wi・x = Yi $$
+Can be expressed as
+The result of performing this measurement M times can be expressed as the product of matrices $(M,N) × (N,1)=(M,1)$ (usually N = When M, the object can be completely reconstructed).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/c0fad454-0f03-0c4f-f95b-b9f0849ab175.jpeg" alt="Matrix.jpg"></p>
+<p>The lines of W and Y are the mask used in each measurement and the measurement results, respectively.
+Now X,W,Y</p>
+<ul>
+<li>X: Target of observation&hellip; What I want to take right now. I don&rsquo;t know what it is</li>
+<li>W: Encoding matrix&hellip;I know it because I prepared it myself</li>
+<li>Y: Detected value&hellip;known because it is a detected value</li>
+</ul>
+<p>That is the state.
+And Y is
+$$ WX=Y $$
+It can be expressed as a matrix multiplication of W and X.
+How can I find out about X from here? ?
+Yes, it&rsquo;s easy. Just multiply both sides by the inverse W matrix $W^{-1}$. Then
+$$ X = W^{-1}Y $$
+I got X next to me.</p>
+<p>This is the shooting principle of a single pixel camera.</p>
+<h4 id="merit-and-demerit">merit and demerit</h4>
+<p>One of the merits of doing this and using a single pixel camera is that you can shoot even with extremely weak light.</p>
+<p>The reason why it is possible to shoot with very weak light is because a single pixel camera <strong>collects and detects light by one detector</strong>.</p>
+<p>For example, if $10$ of light comes from the object to be photographed, a 10×10 pixel camera has a separate detector for each pixel, so the amount of light that can be detected by each detector is $10/(10×10)$.
+However, since the single pixel camera collects the light on one detector and detects it, the light intensity is still 10 (although it actually passes through the mask, it drops to 4 or 5).</p>
+<p>Therefore, it is possible to shoot with a light amount that cannot be taken with a normal camera.</p>
+<p>The disadvantage is that multiple measurements are required to take one image. Therefore, it is not suitable for capturing &ldquo;a moment&rdquo; or for shooting movies.</p>
+<p>#Simulation in Python
+Let&rsquo;s finally implement the flow of a single pixel camera with Pyhon.
+Well, even though it&rsquo;s called implementation, as I explained in the principle, I&rsquo;m just doing matrix calculations, so I just let Python do the calculations.</p>
+<p>First, import the library to use. Use <code>numpy</code> to work with matrices and <code>openCV</code> to work with images.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> cv2
+</code></pre></div><p>Then, load the image to be captured. Also, obtain the vertical and horizontal size of the image, and calculate the number of pixels N of the mask from it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">X <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#34;img/target.jpg&#34;</span>,<span style="color:#ae81ff">0</span>)
+h,w <span style="color:#f92672">=</span> X<span style="color:#f92672">.</span>shape
+N <span style="color:#f92672">=</span> h<span style="color:#f92672">*</span>w
+</code></pre></div><p>Also, prepare the process to display the image as a show function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">show</span>(img):
+    img <span style="color:#f92672">=</span> (img<span style="color:#f92672">/</span>np<span style="color:#f92672">.</span>max(img))<span style="color:#f92672">*</span><span style="color:#ae81ff">255</span>
+    img <span style="color:#f92672">=</span> img<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;uint8&#34;</span>)
+    cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#34;img&#34;</span>, img)
+    cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">0</span>)
+</code></pre></div><p>Let&rsquo;s display the loaded image</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">show(X)
+</code></pre></div><div style="align:center;">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/1599173a-0493-e02f-968f-80bbb6b88b51.jpeg" width=64px height=64px>
+</div>
+<p>This time, we use a cross image of 16×16 pixels.</p>
+<p>Next, prepare a mask. This time, assume that a random black-and-white mask with N pixels is measured M times (M=N).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">M <span style="color:#f92672">=</span> N
+W <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(M, N)
+W <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(W<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">0.5</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>)
+show(W)
+<span style="color:#66d9ef">print</span>(W<span style="color:#f92672">.</span>shape)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/d2cb3824-4227-a124-2adf-5aa9822b9dc8.jpeg" alt="W.jpg"></p>
+<p>Is the image displayed, and is the print result displaying <code>256,256</code>?
+This means that a 256-pixel mask is used to measure 256 times.</p>
+<p>Let&rsquo;s check the mask used in the first measurement</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">show(W[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>reshape(h,w))
+</code></pre></div><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/8e16495b-307b-1b45-38fb-e0293bfede65.jpeg" width=64px height=64px>
+<br/>
+Next, let's get the measurement result Y.
+Take out the mask from W in sequence, take the dot product with the object to be photographed, and add it to Y
+It is one time if it is calculated by `Y = np.dot(W,X.reshape(N,1))`, but this time we will take the value once as in the actual measurement.
+At this time, don't forget to change the shape of X from (h,w) to (N,1).
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Y <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> mask <span style="color:#f92672">in</span> W[:M]:
+    <span style="color:#75715e"># i measurement</span>
+    yi <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(mask<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,N), X<span style="color:#f92672">.</span>reshape(N,<span style="color:#ae81ff">1</span>))
+    Y<span style="color:#f92672">.</span>append(yi)
+<span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">Same meaning
+</span><span style="color:#e6db74">Y = np.dot(W,X.reshape(N,1))
+</span><span style="color:#e6db74">&#34;&#34;&#34;</span>
+
+Y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(Y)<span style="color:#f92672">.</span>reshape(M,<span style="color:#ae81ff">1</span>)
+<span style="color:#66d9ef">print</span>(Y<span style="color:#f92672">.</span>shape)
+</code></pre></div><p>Did you see (256, 1)? This means that there are 256 measurement results. with this
+$$WX = Y$$
+It is in a state where the measurement is completed and the measurement is completed.
+Next, let&rsquo;s reconstruct X using W and Y.
+$$ X = W^{-1}Y$$
+To obtain X, we need $W^{-1}$, which is the inverse matrix of W as shown in the above equation.
+So use <code>numpy</code>'s <code>pinv</code> to compute the inverse matrix</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">InvW <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>pinv(W[:M])
+<span style="color:#66d9ef">print</span>(InvW<span style="color:#f92672">.</span>shape)
+</code></pre></div><p>Now use this <code>InvW</code> and <code>Y</code> to get and display X. Note that X is reconstructed in the (N,1) state, so you need to reshape it with (h,w) when displaying it as an image.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">rec <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(InvW, Y)
+<span style="color:#66d9ef">print</span>(rec<span style="color:#f92672">.</span>shape)
+show(rec<span style="color:#f92672">.</span>reshape(h,w))
+</code></pre></div><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/276585/cc6b84f7-2f88-177e-540f-493300fd999f.jpeg" width=64px height=64px>
+<p>It is successful if the original image can be acquired safely.
+The above is the sequence of single pixel camera. You&rsquo;ve learned that it can be implemented with extremely simple code.Similar to the above, in the actual experiment, the target X can be reconstructed by inserting the mask used for W and the detector detection value for Y.</p>
+<p>By the way, if you reduce the number of measurements M here, you will not be able to acquire images well.
+This is because it is usually necessary that the number of measurements M=N.
+However, using the technology called <strong>compressed sensing</strong>, the number of measurements M can be greatly reduced. Usually, this technique is combined to reduce the number of measurements.</p>
+<p>Compressed sensing will be too long to explain, so I won&rsquo;t touch it this time, but if you are interested, please implement it.
+The explanation here is easy to understand.
+<a href="http://www-adsys.sys.i.kyoto-u.ac.jp/mohzeki/Presentation/lecturenote20160822.pdf">http://www-adsys.sys.i.kyoto-u.ac.jp/mohzeki/Presentation/lecturenote20160822.pdf</a></p>
+<br/>
+That concludes my article.
+<p>Thank you for your continued support of DeNA 20 Advent Calendar 2019.
+Then :D</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

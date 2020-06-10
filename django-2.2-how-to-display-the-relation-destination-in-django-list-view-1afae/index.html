@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Django 2.2] How to display the relation destination in Django? [List View] | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Django 2.2] How to display the relation destination in Django? [List View]</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 17, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Hello. I&rsquo;m ragnar with 1.5 months of Django experience (in practice).
+When I started Django, I did a tutorial, but when I actually made it, there were so many new concepts that I wasn&rsquo;t sure what to do.</p>
+<p>The first thing that got stuck was relations.
+Before handling Django, I wrote SQL and operated on DB, so I am not familiar with the concept of Queryset, can I get data with this? How is it? It was in a state.</p>
+<p>This time, this is an article for people who tried &ldquo;Django up to the tutorial but didn&rsquo;t understand it&rdquo;.</p>
+<p>#environment</p>
+<ul>
+<li>Python 3.7.4</li>
+<li>MacOS Mojave 10.14.6</li>
+<li>Django 2.2.8</li>
+</ul>
+<p>#Prerequisite model
+This time, let&rsquo;s assume a site where you can see a list of soccer teams, players, and player information.
+We have created a table (model) of teams, positions and players.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/models.py" data-lang="python:sample/models.py"><span style="color:#f92672">from</span> django.db <span style="color:#f92672">import</span> models
+
+FOOT_CHOICES <span style="color:#f92672">=</span> (
+    (<span style="color:#e6db74">&#39;right&#39;</span>,<span style="color:#e6db74">&#39;right foot&#39;</span>),
+    (<span style="color:#e6db74">&#39;left&#39;</span>,<span style="color:#e6db74">&#39;left foot&#39;</span>),
+    (<span style="color:#e6db74">&#39;both&#39;</span>,<span style="color:#e6db74">&#39;both legs&#39;</span>),
+)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Team</span>(models<span style="color:#f92672">.</span>Model):
+    name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+    country <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+
+    <span style="color:#66d9ef">def</span> __str__(self):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>name
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Meta</span>:
+        <span style="color:#75715e"># Name displayed on Django admin site</span>
+        verbose_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;team&#34;</span>
+        verbose_name_plural <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Team&#34;</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Position</span>(models<span style="color:#f92672">.</span>Model):
+    name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+
+    <span style="color:#66d9ef">def</span> __str__(self):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>name
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Meta</span>:
+        verbose_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;position&#34;</span>
+        verbose_name_plural <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;position&#34;</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SoccerPlayer</span>(models<span style="color:#f92672">.</span>Model):
+    name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+    foot <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, choices<span style="color:#f92672">=</span>FOOT_CHOICES)
+    <span style="color:#75715e"># Players belong to one club. Multiple players belong to a team. 1-to-n structure</span>
+    <span style="color:#75715e"># Players may become independent. on_delete=models.SET_NULL</span>
+    team <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>ForeignKey(Team, null<span style="color:#f92672">=</span>True, on_delete<span style="color:#f92672">=</span>models<span style="color:#f92672">.</span>SET_NULL, related_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player&#39;</span>)
+    <span style="color:#75715e"># Players may serve multiple positions. There are multiple players in a position. n-to-n structure</span>
+    position <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>ManyToManyField(Position, related_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player&#39;</span>)
+
+    <span style="color:#66d9ef">def</span> __str__(self):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>name
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Meta</span>:
+        verbose_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;player&#34;</span>
+        verbose_name_plural <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;player&#34;</span>
+</code></pre></div><p>Register the model so that you can register the data from the Django admin site.
+(I have entered the data appropriately.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/admin.py" data-lang="python:sample/admin.py"><span style="color:#f92672">from</span> django.contrib <span style="color:#f92672">import</span> admin
+
+<span style="color:#f92672">from</span> .import models
+
+admin<span style="color:#f92672">.</span>site<span style="color:#f92672">.</span>register(models<span style="color:#f92672">.</span>Position)
+admin<span style="color:#f92672">.</span>site<span style="color:#f92672">.</span>register(models<span style="color:#f92672">.</span>SoccerPlayer)
+admin<span style="color:#f92672">.</span>site<span style="color:#f92672">.</span>register(models<span style="color:#f92672">.</span>Team)
+</code></pre></div><p>Also, django-debug-toolbar is introduced to check the query.
+It is not an exaggeration to say that it is essential for Django development, so if you have not included it, please do so.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:config/urls.py" data-lang="python:config/urls.py"><span style="color:#f92672">from</span> django.contrib <span style="color:#f92672">import</span> admin
+<span style="color:#f92672">from</span> django.urls <span style="color:#f92672">import</span> path, include
+<span style="color:#f92672">from</span> django.conf <span style="color:#f92672">import</span> settings
+
+urlpatterns <span style="color:#f92672">=</span> [
+    path(<span style="color:#e6db74">&#39;admin/&#39;</span>, admin<span style="color:#f92672">.</span>site<span style="color:#f92672">.</span>urls),
+    path(<span style="color:#e6db74">&#39;sample/&#39;</span>, include(<span style="color:#e6db74">&#39;sample.urls&#39;</span>), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sample&#39;</span>) <span style="color:#75715e">#This app</span>
+]
+
+<span style="color:#66d9ef">if</span> settings<span style="color:#f92672">.</span>DEBUG:
+    <span style="color:#f92672">import</span> debug_toolbar
+    urlpatterns <span style="color:#f92672">=</span> [
+        path(<span style="color:#e6db74">&#39;__debug__/&#39;</span>, include(debug_toolbar<span style="color:#f92672">.</span>urls)),
+    ] <span style="color:#f92672">+</span> urlpatterns
+</code></pre></div><h1 id="listview">ListView</h1>
+<p>Django has a Web application called Generic View,
+Receiving GET method and displaying page, receiving POST method, form validation, record update, deletion, etc.
+There are classes with very general behavior.</p>
+<p>This time, I will summarize the list display and the handling of relations by using the ListView specialized for the list display of records.</p>
+<h2 id="display-player-list">Display player list</h2>
+<p>First, let&rsquo;s get the names of all players.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/views.py" data-lang="python:sample/views.py"><span style="color:#f92672">from</span> django.views.generic <span style="color:#f92672">import</span> ListView
+<span style="color:#f92672">from</span> .models <span style="color:#f92672">import</span> SoccerPlayer
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PlayerListView</span>(ListView):
+    model <span style="color:#f92672">=</span> SoccerPlayer <span style="color:#75715e"># model that displays a list</span>
+    template_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player_list.html&#39;</span> <span style="color:#75715e"># template</span>
+
+
+player_list <span style="color:#f92672">=</span> PlayerListView<span style="color:#f92672">.</span>as_view()
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/urls.py" data-lang="python:sample/urls.py"><span style="color:#f92672">from</span> django.urls <span style="color:#f92672">import</span> path
+<span style="color:#f92672">from</span> .import views
+
+app_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sample&#39;</span>
+urlpatterns <span style="color:#f92672">=</span> [
+    path(<span style="color:#e6db74">&#39;list/&#39;</span>, views<span style="color:#f92672">.</span>player_list, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player_list&#39;</span>),
+]
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:templates/player_list.html" data-lang="html:templates/player_list.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">title</span>&gt;sample&lt;/<span style="color:#f92672">title</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">table</span>&gt;
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Name&lt;/<span style="color:#f92672">th</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% for player in soccerplayer_list %}
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ player.name }}&lt;/<span style="color:#f92672">td</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% endfor %}
+    &lt;/<span style="color:#f92672">table</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>First of all, it is necessary to remember in ListView that the object is passed from View to Template with the name <strong>[model name (lower case)]_list</strong>. (You can also specify it yourself.)
+You can retrieve this with for in the template, and retrieve the name with <strong>[Variable retrieved with for].name</strong>.
+<strong>name</strong> is the field of the model defined in model.
+Perhaps I have done it in tutorials etc.</p>
+<p>If you access <code>http://localhost:8000/sample/list/</code>, you can see that the list can be displayed.
+![Screenshot 2019-12-16 23.16.56.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/0f2f7df1-8c44-b1d9-68a0-(b7b223496828.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/0f2f7df1-8c44-b1d9-68a0-(b7b223496828.png)</a></p>
+<hr>
+<h3 id="retrieval-of-values-linked-by-foreign-key">Retrieval of values linked by Foreign key</h3>
+<p>Next, let&rsquo;s take out the team associated with the player.
+Even if you say the relation destination, in the case of One to One Field (1 to 1) and Foreign key (1 to n) relationship, it is the same as normal writing.
+Just like the case of name, just specify the field name of the relation destination.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:templates/player_list.html" data-lang="html:templates/player_list.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">title</span>&gt;sample&lt;/<span style="color:#f92672">title</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">table</span>&gt;
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Name&lt;/<span style="color:#f92672">th</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Team&lt;/<span style="color:#f92672">th</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% for player in soccerplayer_list %}
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ player.name }}&lt;/<span style="color:#f92672">td</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ player.team }}&lt;/<span style="color:#f92672">td</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% endfor %}
+    &lt;/<span style="color:#f92672">table</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>![Screenshot 2019-12-16 23.30.16.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/71e8b3ee-2837-3f22-eaf7-(c422d59e4821.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/71e8b3ee-2837-3f22-eaf7-(c422d59e4821.png)</a></p>
+<p>Django will retrieve the record associated with the Player object even if you do not specify it.
+At first, I didn&rsquo;t understand this sensation and had a hard time getting used to it.</p>
+<hr>
+<h3 id="retrieving-the-values-linked-by-manytomanyfield">Retrieving the values linked by ManytoManyField</h3>
+<p>Next is the case of ManytoManyField, an n to n relation.
+Since it is n to n, multiple records are retrieved. In this case, there are multiple positions per player.
+Unlike 1 to n etc., it cannot be acquired by <code>player.position</code>. You need to name it <code>player.position.all</code> and retrieve it with for.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:templates/player_list.html" data-lang="html:templates/player_list.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">title</span>&gt;sample&lt;/<span style="color:#f92672">title</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">table</span>&gt;
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Name&lt;/<span style="color:#f92672">th</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Team&lt;/<span style="color:#f92672">th</span>&gt;&lt;<span style="color:#f92672">th</span>&gt;Position&lt;/<span style="color:#f92672">th</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% for player in soccerplayer_list %}
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ player.name }}&lt;/<span style="color:#f92672">td</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ player.team }}&lt;/<span style="color:#f92672">td</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;
+          {% for position in player.position.all %}
+          {{ position.name }}
+          {% endfor %}
+        &lt;/<span style="color:#f92672">td</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% endfor %}
+    &lt;/<span style="color:#f92672">table</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>(The number of players who put in is too appropriate and there are few players in multiple positions)
+![Screenshot 2019-12-16 23.45.25.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/fd160ba1-e0df-8c45-bc9c-(ccd0634800bd.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/fd160ba1-e0df-8c45-bc9c-(ccd0634800bd.png)</a></p>
+<h2 id="in-case-of-back-reference">In case of back reference</h2>
+<p>Next, let&rsquo;s make a so-called reverse reference, Team -&gt; Player.</p>
+<p>In the case of the reverse reference, unlike the previous pattern, no field is defined in the model.
+However, although it is not included in the field of model, it is properly referenced.
+It&rsquo;s a good idea to define a related_name for clarity and clarity.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/models.py" data-lang="python:sample/models.py"><span style="color:#75715e">#Partially omitted</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Team</span>(models<span style="color:#f92672">.</span>Model):
+    name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+    country <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+    <span style="color:#75715e"># team has no player field!</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SoccerPlayer</span>(models<span style="color:#f92672">.</span>Model):
+    name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+    foot <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, choices<span style="color:#f92672">=</span>FOOT_CHOICES)
+    In case of dereference <span style="color:#f92672">in</span> <span style="color:#75715e">#related_name, specify the phrase to use</span>
+    team <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>ForeignKey(Team, null<span style="color:#f92672">=</span>True, on_delete<span style="color:#f92672">=</span>models<span style="color:#f92672">.</span>SET_NULL, related_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player&#39;</span>)
+    position<span style="color:#f92672">...</span>
+</code></pre></div><p>When you get (Player from Team) from the opposite, you can get it by using the name set in this related_name.
+Since <code>player</code> is specified here, you can get the record of the player associated with that team with <code>team.player.all</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/views.py" data-lang="python:sample/views.py"><span style="color:#75715e"># add to</span>
+<span style="color:#f92672">from</span> .models <span style="color:#f92672">import</span> Team
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TeamList</span>(ListView):
+    model <span style="color:#f92672">=</span> Team
+    template_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;team_list.html&#39;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/urls.py" data-lang="python:sample/urls.py"><span style="color:#f92672">from</span> django.urls <span style="color:#f92672">import</span> path
+<span style="color:#f92672">from</span> .import views
+
+app_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sample&#39;</span>
+urlpatterns <span style="color:#f92672">=</span> [
+    path(<span style="color:#e6db74">&#39;list/&#39;</span>, views<span style="color:#f92672">.</span>player_list, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player_list&#39;</span>),
+    path(<span style="color:#e6db74">&#39;list/team/&#39;</span>, views<span style="color:#f92672">.</span>team_list, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;team_list&#39;</span>),
+]
+</code></pre></div><p>It is the same as before when you retrieve with <code>team.player.all</code> and retrieve with for one by one.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:templates/team_list.html" data-lang="html:templates/team_list.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+  &lt;<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">title</span>&gt;sample&lt;/<span style="color:#f92672">title</span>&gt;
+  &lt;/<span style="color:#f92672">head</span>&gt;
+  &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">table</span>&gt;
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Name&lt;/<span style="color:#f92672">th</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;Number of people&lt;/<span style="color:#f92672">th</span>&gt;
+        &lt;<span style="color:#f92672">th</span>&gt;player&lt;/<span style="color:#f92672">th</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% for team in team_list %}
+      &lt;<span style="color:#f92672">tr</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ team.name }}&lt;/<span style="color:#f92672">td</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;{{ team.player.all.count }}&lt;/<span style="color:#f92672">td</span>&gt;
+        &lt;<span style="color:#f92672">td</span>&gt;
+          {% for player in team.player.all %}
+          {{ player }}
+          {% endfor %}
+        &lt;/<span style="color:#f92672">td</span>&gt;
+      &lt;/<span style="color:#f92672">tr</span>&gt;
+      {% endfor %}
+    &lt;/<span style="color:#f92672">table</span>&gt;
+  &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>If you access <code>http://localhost:8000/sample/list/team/</code>, you can see that the players associated with each team have been acquired. (Sorry, if you don&rsquo;t understand soccer, you may not come to the right position.
+![Screenshot 2019-12-17 0.27.10.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/885f97ba-b2ea-6680-6545-(406c18e2aead.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/885f97ba-b2ea-6680-6545-(406c18e2aead.png)</a></p>
+<h2 id="check-issued-sql">Check issued SQL</h2>
+<p>On the team list page, use django-debug-toolbar to check the SQL.
+If you click the SQL panel from django-debug-toolbar displayed on the side, it is like this.
+![Screenshot 2019-12-17 0.33.10.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/a8d7b40d-38dc-3551-2f56-(881597422ada.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/a8d7b40d-38dc-3551-2f56-(881597422ada.png)</a>
+It&rsquo;s small and confusing, but 13 SQLs have been executed to display the information on this page.
+This phenomenon is because the loop in the template gets the information of the relation destination every time&hellip; (It is called N+1 problem)
+As it is, as the number of records increases, the number of SQL executions at the time of page load increases, resulting in a very heavy page.</p>
+<p>To solve this, use a method called prefetch_related.</p>
+<h3 id="prefetch_related-and-select_related">prefetch_related and select_related</h3>
+<ul>
+<li><strong>Prefetch_related</strong> when fetching n linked records</li>
+<li><strong>Select_related</strong> when fetching one linked record</li>
+</ul>
+<p>Briefly,
+For prefetch_related, fetch records from the DB in advance and associate each with python (Django)
+Get select_related by JOIN from DB
+It is a method called. (I apologize if I&rsquo;m wrong.)</p>
+<p>In the case of ListView, View has a method called <em>get_queryset</em>, which can be achieved by rewriting this method.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/views.py" data-lang="python:sample/views.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TeamList</span>(ListView):
+    model <span style="color:#f92672">=</span> Team
+    template_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;team_list.html&#39;</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_queryset</span>(self):
+        <span style="color:#75715e"># Method to get the query set to be displayed in View</span>
+        qs <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>prefetch_related(<span style="color:#e6db74">&#39;player&#39;</span>) <span style="color:#75715e"># team -&gt; player&#39;s dereference so use related_name</span>
+        <span style="color:#66d9ef">return</span> qs
+</code></pre></div><p>By doing this, the number of SQL executions has been reduced to two.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/846c4d8c-071d-a9b3-7d27-fb1425e3c900.png" alt="Screenshot 2019-12-17 0.51.25.png"></p>
+<p>Looking at the first player list page as well, 13 queries have been issued.
+![Screenshot 2019-12-17 0.55.26.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/ff107800-4694-87cc-2548-(fa5095c678e4.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/ff107800-4694-87cc-2548-(fa5095c678e4.png)</a></p>
+<p>In this page, team and position are obtained from player.
+In such cases, it&rsquo;s OK if you connect prefetch_related and select_related.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:sample/views.py" data-lang="python:sample/views.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">PlayerListView</span>(ListView):
+    model <span style="color:#f92672">=</span> SoccerPlayer
+    template_name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;player_list.html&#39;</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_queryset</span>(self):
+        qs <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>prefetch_related(<span style="color:#e6db74">&#39;position&#39;</span>)<span style="color:#f92672">.</span>select_related(<span style="color:#e6db74">&#39;team&#39;</span>)
+        <span style="color:#66d9ef">return</span> qs
+</code></pre></div><p>As a result, the number of queries issued has been reduced to 2.
+![Screenshot 2019-12-17 0.59.54.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/17e87145-545f-d4ca-ce83-(ce150dd7738d.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/508043/17e87145-545f-d4ca-ce83-(ce150dd7738d.png)</a></p>
+<p>Check the SQL and if you see <code>6 similar queries</code> or <code>4 duplicates</code>, don&rsquo;t forget to use prefetch_related(select_related).</p>
+<p>#Summary</p>
+<ul>
+<li><strong>1 to n</strong> and <strong>1 to 1</strong> relations can retrieve values using field names</li>
+<li><strong>n to n</strong> relation is fetched by [field name].all and fetched one by one using for</li>
+<li>In case of <strong>back reference</strong>, retrieve using related_name set in the field</li>
+<li>Remember to use prefetch_related(select_related) when fetching the relation value with for</li>
+</ul>
+<p>We hope you find this helpful.
+Personally, I would like to increase the output of Django, which is said to have less Japanese information.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

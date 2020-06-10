@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[PyTorch] How to use BERT-fine tuning Japanese pre-trained models to solve classification problem | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[PyTorch] How to use BERT-fine tuning Japanese pre-trained models to solve classification problem</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 18, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch"> PyTorch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/bert"> bert</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Although BERT is updating SOTA with various tasks of natural language processing, what is published by [Google] on <a href="https://github.com/google-research/bert">Github</a> is based on Tensorflow. It has been implemented.
+People who use PyTorch want to use the PyTorch version, but I have not created the PyTorch version, so please use <a href="https://github.com/huggingface/transformers">the one made by HuggingFace</a>,butwedevelopedAskthemformoreinformationastheyarenotinvolvedin!And<a href="https://github.com/google-research/bert#is-there-a-pytorch-version-available">QA</a>.</p>
+<p>Although it is a BERT made by Hugging Face, there was no Japanese pre-trained model until December 2019.
+Therefore, I could feel free to try it in English, but in Japanese I had to prepare the pre-trained models myself.
+However, in December 2019, Japanese pre-trained models were finally added.
+<a href="https://huggingface.co/transformers/pretrained_models.html">https://huggingface.co/transformers/pretrained_models.html</a></p>
+<ol>
+<li>bert-base-japanese</li>
+<li>bert-base-japanese-whole-word-masking</li>
+<li>bert-base-japanese-char</li>
+<li>bert-base-japanese-char-whole-word-masking</li>
+</ol>
+<p><a href="https://github.com/cl-tohoku/bert-japanese">Created by Inui Laboratory of Tohoku University</a>, 4 models can be used.
+The second <code>bert-base-japanese-whole-word-masking</code> should be used unless there are special circumstances.
+In the regular version and the whole word masking version, the whole word masking version seems to tend to have a slightly higher accuracy of the fine tuning task <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>.</p>
+<p>This makes it easy to try the PyTorch version of BERT in Japanese.</p>
+<p>What is # BERT?
+The BERT mechanism has already been introduced in various blogs and books, so I will omit a detailed explanation.
+Briefly,</p>
+<ul>
+<li>Create pre-trained models from large unsupervised corpus
+-Pre-learn by solving two kinds of language tasks, Masked Language Model and Next Sentence Predicition</li>
+<li>Solve tasks by fine tuning pre-trained models</li>
+</ul>
+<p>It will be the flow of processing.
+Creating a pre-trained model requires a large amount of computer resources and time, but one of the points of BERT is that it can improve the accuracy of tasks.</p>
+<h1 id="japanese-pre-trained-models">Japanese Pre-trained models</h1>
+<p>First, check the accuracy of pre-trained Japanese pre-trained models.
+This time we will check the accuracy of Masked Language Model.
+The short description of the Masked Language Model is to mask some words in a sentence and predict the masked words.</p>
+<p>Using BertJapaneseTokenizer and BertForMaskedLM you can write:
+It is to predict the word by masking &ldquo;soccer&rdquo; in the sentence &ldquo;Watch a soccer match on TV.&rdquo;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">from</span> transformers <span style="color:#f92672">import</span> BertJapaneseTokenizer, BertForMaskedLM
+
+<span style="color:#75715e"># Load pre-trained tokenizer</span>
+tokenizer <span style="color:#f92672">=</span> BertJapaneseTokenizer<span style="color:#f92672">.</span>from_pretrained(<span style="color:#e6db74">&#39;bert-base-japanese-whole-word-masking&#39;</span>)
+
+<span style="color:#75715e"># Tokenize input</span>
+text <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Watch a football match on TV. &#39;</span>
+tokenized_text <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>tokenize(text)
+<span style="color:#75715e"># [&#39;TV&#39;,&#39;in&#39;,&#39;soccer&#39;,&#39;in&#39;,&#39;match&#39;,&#39;see&#39;,&#39;watch&#39;,&#39;. &#39;]</span>
+
+<span style="color:#75715e"># Mask a token that we will try to predict back with `BertForMaskedLM`</span>
+masked_index <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+tokenized_text[masked_index] <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;[MASK]&#39;</span>
+<span style="color:#75715e"># [&#39;TV&#39;,&#39;in&#39;,&#39;[MASK]&#39;,&#39;in&#39;,&#39;match&#39;,&#39;see&#39;,&#39;watch&#39;,&#39;. &#39;]</span>
+
+<span style="color:#75715e"># Convert token to vocabulary indices</span>
+indexed_tokens <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>convert_tokens_to_ids(tokenized_text)
+<span style="color:#75715e"># [571, 12, 4, 5, 608, 11, 2867, 8]</span>
+
+<span style="color:#75715e"># Convert inputs to PyTorch tensors</span>
+tokens_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor([indexed_tokens])
+<span style="color:#75715e"># tensor([[ 571, 12, 4, 5, 608, 11, 2867, 8]])</span>
+
+<span style="color:#75715e"># Load pre-trained model</span>
+model <span style="color:#f92672">=</span> BertForMaskedLM<span style="color:#f92672">.</span>from_pretrained(<span style="color:#e6db74">&#39;bert-base-japanese-whole-word-masking&#39;</span>)
+model<span style="color:#f92672">.</span>eval()
+
+<span style="color:#75715e"># Predict</span>
+<span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+    outputs <span style="color:#f92672">=</span> model(tokens_tensor)
+    predictions <span style="color:#f92672">=</span> outputs[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>, masked_index]<span style="color:#f92672">.</span>topk(<span style="color:#ae81ff">5</span>) <span style="color:#75715e"># Extract the top 5 prediction results</span>
+
+<span style="color:#75715e"># Show results</span>
+<span style="color:#66d9ef">for</span> i, index_t <span style="color:#f92672">in</span> enumerate(predictions<span style="color:#f92672">.</span>indices):
+    index <span style="color:#f92672">=</span> index_t<span style="color:#f92672">.</span>item()
+    token <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>convert_ids_to_tokens([index])[<span style="color:#ae81ff">0</span>]
+    <span style="color:#66d9ef">print</span>(i, token)
+</code></pre></div><p>The execution result of the above program is as follows.
+“Soccer” has appeared in 3rd place, and other words seem to be correct in Japanese.
+In Japan, the names of &ldquo;cricket&rdquo; and major league teams, which are not so familiar, appear to be due to prior learning from Wikipedia data.</p>
+<pre><code>0 cricket
+1 tigers
+2 soccer
+3 mets
+4 cubs
+</code></pre><p>From the above, it was confirmed that the pre-trained models were correctly pre-trained.
+Next, solve the task by fine tuning based on this pre-trained model.</p>
+<h1 id="fine-tuning-with-bert">Fine tuning with BERT</h1>
+<h2 id="modified-the-source-code-to-work-with-the-original-japanese-data">Modified the source code to work with the original Japanese data</h2>
+<p><a href="https://github.com/huggingface/transformers/tree/master/examples">HuggingFace GitHub</a> has some examples of fine tuning and solving tasks.
+However, these are intended for English datasets, not Japanese datasets <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>.</p>
+<p>Therefore, we will modify the existing source code so that it will work with the original Japanese data.
+Assuming text classification, which is a basic task in natural language processing, we target the source code used for GLUE text classification.
+And</p>
+<ol>
+<li><a href="https://github.com/huggingface/transformers/blob/master/src/transformers/data/processors/glue.py">transformers/data/processors/glue.py</a></li>
+<li><a href="https://github.com/huggingface/transformers/blob/master/src/transformers/data/metrics/__init__.py">transformers/data/metrics/__init__.py</a></li>
+</ol>
+<p>Fix two programs.</p>
+<p><strong>Note</strong>
+In addition, this is not the file downloaded by <code>git clone</code> etc., it is necessary to change the file in the installation destination directory.
+For example, if you are using venv, the installation directory will be <code>[venv directory]/lib/python3.7/site-packages/transformers</code>.</p>
+<h3 id="1-transformersdataprocessorsgluepy">1. transformers/data/processors/glue.py</h3>
+<p>This is the part that reads the training data (train.tsv) and verification data (dev.tsv).
+Add a task called <code>original</code> to <code>glue_tasks_num_labels</code>, <code>glue_processors</code>, and <code>glue_output_modes</code> as shown below, and then add a class called <code>OriginalProcessor</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">glue_tasks_num_labels <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#34;cola&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;mnli&#34;</span>: <span style="color:#ae81ff">3</span>,
+    <span style="color:#e6db74">&#34;mrpc&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;sst-2&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;sts-b&#34;</span>: <span style="color:#ae81ff">1</span>,
+    <span style="color:#e6db74">&#34;qqp&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;qnli&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;rte&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;wnli&#34;</span>: <span style="color:#ae81ff">2</span>,
+    <span style="color:#e6db74">&#34;original&#34;</span>: <span style="color:#ae81ff">2</span>, <span style="color:#75715e"># added</span>
+}
+
+glue_processors <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#34;cola&#34;</span>: ColaProcessor,
+    <span style="color:#e6db74">&#34;mnli&#34;</span>: MnliProcessor,
+    <span style="color:#e6db74">&#34;mnli-mm&#34;</span>: MnliMismatchedProcessor,
+    <span style="color:#e6db74">&#34;mrpc&#34;</span>: MrpcProcessor,
+    <span style="color:#e6db74">&#34;sst-2&#34;</span>: Sst2Processor,
+    <span style="color:#e6db74">&#34;sts-b&#34;</span>: StsbProcessor,
+    <span style="color:#e6db74">&#34;qqp&#34;</span>: QqpProcessor,
+    <span style="color:#e6db74">&#34;qnli&#34;</span>: QnliProcessor,
+    <span style="color:#e6db74">&#34;rte&#34;</span>: RteProcessor,
+    <span style="color:#e6db74">&#34;wnli&#34;</span>: WnliProcessor,
+    <span style="color:#e6db74">&#34;original&#34;</span>: OriginalProcessor, <span style="color:#75715e"># added</span>
+}
+
+glue_output_modes <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#34;cola&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;mnli&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;mnli-mm&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;mrpc&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;sst-2&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;sts-b&#34;</span>: <span style="color:#e6db74">&#34;regression&#34;</span>,
+    <span style="color:#e6db74">&#34;qqp&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;qnli&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,<span style="color:#e6db74">&#34;rte&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;wnli&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>,
+    <span style="color:#e6db74">&#34;original&#34;</span>: <span style="color:#e6db74">&#34;classification&#34;</span>, <span style="color:#75715e"># 追加</span>
+}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">OriginalProcessor</span>(DataProcessor):
+    <span style="color:#e6db74">&#34;&#34;&#34;Processor for the original data set.&#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_example_from_tensor_dict</span>(self, tensor_dict):
+        <span style="color:#e6db74">&#34;&#34;&#34;See base class.&#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> InputExample(
+            tensor_dict[<span style="color:#e6db74">&#34;idx&#34;</span>]<span style="color:#f92672">.</span>numpy(),
+            tensor_dict[<span style="color:#e6db74">&#34;sentence&#34;</span>]<span style="color:#f92672">.</span>numpy()<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#34;utf-8&#34;</span>),
+            None,
+            str(tensor_dict[<span style="color:#e6db74">&#34;label&#34;</span>]<span style="color:#f92672">.</span>numpy()),
+        )
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_train_examples</span>(self, data_dir):
+        <span style="color:#e6db74">&#34;&#34;&#34;See base class.&#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_create_examples(self<span style="color:#f92672">.</span>_read_tsv(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(data_dir, <span style="color:#e6db74">&#34;train.tsv&#34;</span>)), <span style="color:#e6db74">&#34;train&#34;</span>)
+ 
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_dev_examples</span>(self, data_dir):
+        <span style="color:#e6db74">&#34;&#34;&#34;See base class.&#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_create_examples(self<span style="color:#f92672">.</span>_read_tsv(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(data_dir, <span style="color:#e6db74">&#34;dev.tsv&#34;</span>)), <span style="color:#e6db74">&#34;dev&#34;</span>)
+ 
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_labels</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34;See base class.&#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> [<span style="color:#e6db74">&#34;0&#34;</span>, <span style="color:#e6db74">&#34;1&#34;</span>]
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_create_examples</span>(self, lines, set_type):
+        <span style="color:#e6db74">&#34;&#34;&#34;Creates examples for the training and dev sets.&#34;&#34;&#34;</span>
+        examples <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> (i, line) <span style="color:#f92672">in</span> enumerate(lines):
+            <span style="color:#75715e"># TSVファイルにヘッダー行がある場合はコメントアウトを外す</span>
+            <span style="color:#75715e"># if i == 0:</span>
+            <span style="color:#75715e">#     continue</span>
+            guid <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">-</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (set_type, i)
+            text_a <span style="color:#f92672">=</span> line[<span style="color:#ae81ff">0</span>]
+            label <span style="color:#f92672">=</span> line[<span style="color:#ae81ff">1</span>]
+            examples<span style="color:#f92672">.</span>append(InputExample(guid<span style="color:#f92672">=</span>guid, text_a<span style="color:#f92672">=</span>text_a, text_b<span style="color:#f92672">=</span>None, label<span style="color:#f92672">=</span>label))
+        <span style="color:#66d9ef">return</span> examples
+</code></pre></div><p>学習データと検証データは、</p>
+<ol>
+<li>テキスト</li>
+<li>ラベル</li>
+</ol>
+<p>の2列から成るTSVファイルを想定しています。</p>
+<pre><code class="language-train.tsv" data-lang="train.tsv">面白かった  0
+楽しかった  0
+退屈だった  1
+悲しかった  1
+</code></pre><pre><code class="language-dev.tsv" data-lang="dev.tsv">満喫した  0
+辛かった  1
+</code></pre><p>上記のプログラムは2値分類を想定していますが、多値分類のときはラベルの数と値を適宜修正して下さい。</p>
+<h3 id="2-transformersdatametrics__init__py">2. transformers/data/metrics/__init__.py</h3>
+<p>検証データを使って精度を算出する部分です。
+次のように条件式で <code>task_name == &quot;original&quot;</code> の場合を追加するだけです。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">glue_compute_metrics</span>(task_name, preds, labels):
+        <span style="color:#66d9ef">assert</span> len(preds) <span style="color:#f92672">==</span> len(labels)
+        <span style="color:#66d9ef">if</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;cola&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;mcc&#34;</span>: matthews_corrcoef(labels, preds)}
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;sst-2&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;mrpc&#34;</span>:
+            <span style="color:#66d9ef">return</span> acc_and_f1(preds, labels)
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;sts-b&#34;</span>:
+            <span style="color:#66d9ef">return</span> pearson_and_spearman(preds, labels)
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;qqp&#34;</span>:
+            <span style="color:#66d9ef">return</span> acc_and_f1(preds, labels)
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;mnli&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;mnli-mm&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;qnli&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;rte&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;wnli&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#75715e"># 追加</span>
+        <span style="color:#66d9ef">elif</span> task_name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;original&#34;</span>:
+            <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;acc&#34;</span>: simple_accuracy(preds, labels)}
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">KeyError</span>(task_name)
+</code></pre></div><h2 id="fine-tuningして分類問題を解く">Fine tuningして分類問題を解く</h2>
+<p>日本語のオリジナルデータでも動くようになったので、あとはfine tuningして分類問題を解くだけです。
+これは次のコマンドを実行するのみです。学習データと検証データのファイルは<code>data/original/</code>配下に入れておきます。</p>
+<pre><code>$ python examples/run_glue.py \
+    --data_dir=data/original/ \
+    --model_type=bert \
+    --model_name_or_path=bert-base-japanese-whole-word-masking \
+    --task_name=original \
+    --do_train \
+    --do_eval \
+    --output_dir=output/original
+</code></pre><p>上記のコマンドを実行して問題なく終了すれば、次のようなログが出力されます。
+accの値が<code>1.0</code>となっており、検証データの2件が正しく分類できていることが分かります。</p>
+<pre><code>01/18/2020 17:08:39 - INFO - __main__ -   Saving features into cached file data/original/cached_dev_bert-base-japanese-whole-word-masking_128_original
+01/18/2020 17:08:39 - INFO - __main__ -   ***** Running evaluation  *****
+01/18/2020 17:08:39 - INFO - __main__ -     Num examples = 2
+01/18/2020 17:08:39 - INFO - __main__ -     Batch size = 8
+Evaluating: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00&lt;00:00,  2.59it/s]
+01/18/2020 17:08:40 - INFO - __main__ -   ***** Eval results  *****
+01/18/2020 17:08:40 - INFO - __main__ -     acc = 1.0
+</code></pre><p>そして、<code>output/original/</code>配下にモデルファイルが作成されていることが確認できます。</p>
+<pre><code>$ find output/original 
+output/original
+output/original/added_tokens.json
+output/original/tokenizer_config.json
+output/original/special_tokens_map.json
+output/original/config.json
+output/original/training_args.bin
+output/original/vocab.txt
+output/original/pytorch_model.bin
+output/original/eval_results.txt
+</code></pre><h1 id="おわりに">おわりに</h1>
+<p>PyTorch版のBERTを使って日本語のテキスト分類をする方法を紹介しました。
+他のソースコードも修正すれば、テキスト分類だけでなくテキスト生成や質問応答などのタスクも行うことができます。</p>
+<p>これまでPyTorchを使ってBERTを日本語で動かすのはハードルが高かったですが、日本語のpre-trained modelsが公開されたことでそのハードルが非常に低くなったように思います。
+是非、皆さんもPyTorch版のBERTを日本語のタスクで試して下さい。</p>
+<h1 id="参考記事">参考記事</h1>
+<p><a href="https://techlife.cookpad.com/entry/2018/12/04/093000">https://techlife.cookpad.com/entry/2018/12/04/093000</a>
+<a href="http://kento1109.hatenablog.com/entry/2019/08/23/092944">http://kento1109.hatenablog.com/entry/2019/08/23/092944</a></p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p><a href="http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB">http://nlp.ist.i.kyoto-u.ac.jp/index.php?BERT%E6%97%A5%E6%9C%AC%E8%AA%9EPretrained%E3%83%A2%E3%83%87%E3%83%AB</a> <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>2020/01/18時点 <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

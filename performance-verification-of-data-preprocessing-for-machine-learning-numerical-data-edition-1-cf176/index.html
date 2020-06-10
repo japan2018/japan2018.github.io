@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Performance verification of data preprocessing for machine learning (numerical data edition) (1) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Performance verification of data preprocessing for machine learning (numerical data edition) (1)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 10, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/spark"> Spark</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas"> pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/preprocessing"> preprocessing</a></code></small>
+
+</p>
+<pre><code>First Edition: March 10, 2020 &lt;br&gt;
+</code></pre>
+<p>Author: Soichi Takashige, Masahiro Ito, Hitachi, Ltd.</p>
+<p>#Introduction
+In this post, I will introduce the design know-how of data preprocessing and the results of performance verification of data preprocessing when designing a system incorporating a machine learning model.</p>
+<p>The second article introduces know-how for performance improvement and verification results in data preprocessing using Python.</p>
+<p><strong>Post list:</strong></p>
+<ol>
+<li><a href="https://qiita.com/takashige/items/4882555f4a99a0d96220">Data preprocessing for systems that use machine learning</a></li>
+<li>Performance Verification of Data Preprocessing for Machine Learning (Numerical Data) (Part 1) (Posted)</li>
+<li><a href="https://qiita.com/takashige/items/455d7cd1ed9bf0246f09">Performance Verification of Data Preprocessing for Machine Learning (Numerical Data) (Part 2)</a></li>
+</ol>
+<p>#About the benchmark (BigBench) referenced in the performance verification
+Before introducing design know-how and performance verification results, we will introduce the benchmarks that were referenced as references in verification. This time, I used <a href="http://dx.doi.org/10.1145/2463676.2463712">BigBench</a>, which is one of the benchmark programs for big data analysis. BigBench is a benchmark program that simulates a system that analyzes data such as access users on online e-commerce sites. Individual business scenarios and benchmark programs are defined. Figure 1 shows the BigBench data structure.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/c059ebc2-fdb4-d49e-d353-ded7fe7736b7.png" alt="BigBench overview"></p>
+<p>Figure 1 BigBench data structure</p>
+<p>This time, among the 30 business scenarios of BigBench, we referred to business scenario #5, which is the most complicated process and can be said to be a typical example of data preprocessing, as a verification target, and implemented the initial code in python independently. .. Business scenario #5 looks like this:</p>
+<blockquote>
+<p>Create a logistic regression model that estimates the categories of products that the user is interested in from the web access history of the user of the online store.</p>
+</blockquote>
+<p>Figure 2 shows an overview of the processing for business scenario #5.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/34b123c9-689b-cc5e-4b02-80a9e89a6cd4.png" alt="BigBench Business Scenario #5"></p>
+<p>Figure 2 Overview of processing of BigBench Business Scenario #5</p>
+<p>This scenario is divided into a learning phase and an inference phase.
+In the learning phase, related information such as access history (web_clickstreams) to the online store on the Web, database of product information (item), database of user (customer) information (customer, customer_demographics), etc. is used for each user (customer). The transition history of online stores and user characteristics (educational background, gender, etc.) are organized as statistical data. Based on this statistical data, we will create a regression model that estimates whether a user is interested in a certain field (eg &ldquo;Books&rdquo;).
+In the inference phase, statistical data that summarizes the access history of a user is created and applied to the regression model created in the learning phase to estimate how interested that user is in the &ldquo;Books&rdquo; field. I will.
+Here, referring to the business scenario #5, the flow of data preprocessing implemented for this verification is shown in Figure 3.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/a0988c01-d56f-b641-25d1-feae9a2735d1.png" alt="BigBench#5 flow"></p>
+<p>Figure 3 BigBench Business Scenario #5 Preprocessing Algorithm Overview (Learning Phase)</p>
+<p>This preprocessing consists of the following four phases.</p>
+<p><strong>1) [Combining access history and product information]</strong>
+Web access history is associated with the product DB so that it can be classified by category ((1) in Figure 3).</p>
+<p><strong>2) [Aggregate by user]</strong>
+The number of clicks on the products in each category for each accessed user is totaled on the table ((2) and (3) in Figure 3).</p>
+<p><strong>3) [Combining user information]</strong>
+By associating the attribute information of the accessed user with the aggregate information for each user, it is possible to classify by the attribute of the user (④ and ⑤ in Fig. 3).</p>
+<p><strong>4) [Characterization]</strong>
+Convert text information etc. into a numerical sequence so that it can be used in machine learning (6 and 7 in Fig. 3).</p>
+<h2 id="bigbench-business-scenario-5-python-coding-example">BigBench Business Scenario #5 Python Coding Example</h2>
+<p>Figure 4 shows an example of implementing data preprocessing in Python for Business Scenario #5 of BigBench. This time, we will consider improving the processing based on this code.</p>
+<pre><code class="language-python:" data-lang="python:">import pandas as pd
+import numpy as np
+
+# Data read
+web_clickstreams = pd.read_csv(&quot;web_clickstreams.csv&quot;)
+item = pd.read_csv(&quot;item.csv&quot;);
+customer = pd.read_csv(&quot;customer.csv&quot;)
+customer_demographics = pd.read_csv(&quot;customer_demographics.csv&quot;)
+
+#Processing ①: Combining access history and product information
+data = web_clickstreams.loc[web_clickstreams['web_clickstreams.wcs_user_sk'].notnull(), :]
+data = pd.merge(data, item, how='inner', left_on=['wcs_item_sk'], right_on=['i_item_sk'])
+
+#Processing ②: Divide data by user ID
+data = data.groupby('wcs_user_sk')
+
+#Process ③: Total for each user
+i_category_index = &quot;Books&quot;
+types = ['wcs_user_sk','clicks_in_category']+['clicks_in_%d'%i for i in range(1, 8)]
+def summarize_per_user(data_mr):
+    wcs_user_sk_index = data_mr.name
+    # ③-1, ③-2 Count the number of accesses to a specified product category (Books)
+    clicks_in_category = len(data_mr[data_mr['i_category'] == i_category_index])
+    # ③-3 Calculate each for ‘i_category_id’==1…7
+    # ③-3-1, ③-3-2 Count the number of access logs for ‘i_category_id’==i
+    return pd.Series([wcs_user_sk_index, i_category_index] + \
+                     [len(data_mr[data_mr['i_category_id']==i]) for i in range(1, 8)], \
+                     index = types)
+data = data.apply(summarize_per_user)
+
+#Process ④: Combine with user information
+data = pd.merge(data, customer, how='inner', left_on=['wcs_user_sk'], right_on=['c_customer_sk'])
+
+#Process ⑤: Combine with user attribute information
+data = pd.merge(data, customer_demographics, how='inner', \
+                left_on=['c_current_cdemo_sk'], right_on=['cd_demo_sk'])
+
+#Process ⑥: Characterize
+data['college_education'] = data['cd_education_status'].apply( \
+    lambda x: 1 if x =='Advanced Degree' or x =='College' or \
+    x == '4 yr Degree' or x == '2 yr Degree' else 0)
+data['male'] = data['cd_gender'].apply(lambda x: 1 if x =='M' else 0)
+
+#Process ⑦: Extract necessary information and substitute
+result = pd.DataFrame(data[['clicks_in_category','college_education','male', \
+                            'clicks_in_1','clicks_in_2','clicks_in_3', \
+                            'clicks_in_4','clicks_in_5','clicks_in_6','clicks_in_7']])
+# Save result
+result.to_csv('result-apply.csv')
+</code></pre><p>Figure 4 Code example of BigBench business scenario #5</p>
+<h1 id="data-preprocessing-design-know-how-in-python-logic-optimization">Data preprocessing design know-how in Python: Logic optimization</h1>
+<p>To get started, we&rsquo;ll start with the improvements we can make within the scope of pure python.
+In Python coding, optimizing logic is important as know-how for improving performance. We examined and applied the following two points as logic optimization that can be expected to have a great effect on the code of the target business this time.</p>
+<h2 id="using-pandas-function-in-loop">Using pandas function in loop</h2>
+<p>When iterative processing is executed in for loop etc., processing is executed only on a single CPU due to Python limitation. By rewriting this into a pandas function such as apply, map, etc., it may be executed in parallel in multiple threads internally, resulting in speedup.</p>
+<h2 id="simplifying-duplicate-loops">Simplifying duplicate loops</h2>
+<p>When performing processing for different cases for the same data range, data filtering processing such as filter may be executed multiple times with different conditional expressions. In such code, the condition comparison of data is performed many times over the same data range, which results in poor execution efficiency. This kind of processing can be sped up by rewriting it so that only one loop is required.</p>
+<h3 id="bigbench-business-scenario-5-logic-optimization-example">BigBench Business Scenario #5 Logic Optimization Example</h3>
+<ol>
+<li>
+<p>Using the pandas function in a loop</p>
+<p>In this example, the pandas function is used at the time of the code in Figure 4.</p>
+</li>
+<li>
+<p>Simplifying duplicate loopsIn the code before optimization on the upper side of Figure 5 below, &ldquo;③-3 map loop (iteration of 0&hellip;7)&rdquo; in Figure 3 is written. Looking at this, we refer to the column of&rsquo;i_category_id&rsquo; of the element of the array data_mr and count the number of elements whose values are 1 to 7, respectively. In this implementation, the same range of data is searched seven times. By rewriting this process using groupby, it becomes possible to make the number of searches once.</p>
+<pre><code class="language-python:" data-lang="python:"># [Before optimization] Execute all element search 7 times
+return pd.Series([wcs_user_sk_index, i_category_index] + \
+               [len(data_mr[data_mr['i_category_id']==i]) for i in range(1, 8)],\
+index=types)
+</code></pre><pre><code class="language-python:" data-lang="python:">#[After optimization] Perform all element search only once
+    clicks_in = [0] * 8
+    for name, df in data_mr.groupby('i_category_id'):
+        if name &lt;len(clicks_in):
+            clicks_in[name] = len(df)
+    return pd.Series([wcs_user_sk_index, i_category_index] + clicks_in[1:], \
+                     index = types);
+</code></pre></li>
+</ol>
+<p>Figure 5 Example of replacing the search process in the loop with a single search</p>
+<h1 id="validate-the-effects-of-logic-optimization">Validate the effects of logic optimization</h1>
+<p>Here, we will actually measure the effect of the logic optimization in Figure 5.</p>
+<h2 id="verification-environment">Verification environment</h2>
+<p>In this performance verification, AWS is used and its specifications are shown in Table 1 below.</p>
+<p>Table 1 Hardware specifications of the verification environment</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Python Data Preprocessing Verification Environment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Instance</td>
+<td>AWS EC2</td>
+</tr>
+<tr>
+<td>OS</td>
+<td>CentOS 7 64bit</td>
+</tr>
+<tr>
+<td>CPU (number of cores)</td>
+<td>32</td>
+</tr>
+<tr>
+<td>Memory(GB)</td>
+<td>256</td>
+</tr>
+<tr>
+<td>HDD(TB)</td>
+<td>5 (1TB HDD x 5 units)</td>
+</tr>
+</tbody>
+</table>
+<p>The software version used for verification is shown in Table 2 below.</p>
+<p>Table 2 Software version of the verification environment</p>
+<table>
+<thead>
+<tr>
+<th>Software</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.7.3</td>
+</tr>
+<tr>
+<td>Pandas</td>
+<td>0.24.2</td>
+</tr>
+<tr>
+<td>Numpy</td>
+<td>1.16.4</td>
+</tr>
+</tbody>
+</table>
+<h2 id="processing-method-to-compare-performance">Processing method to compare performance</h2>
+<p>This time, we measured the performance using the following two processing methods.</p>
+<ol>
+<li>
+<p>Single node processing with Python (without logic optimization in Figure 5) <br><br> Run the code in Figure 4 on Python. <br><br></p>
+</li>
+<li>
+<p>Single node processing by Python (with logic optimization of Figure 5) <br><br> Execute the code of Figure 5 optimized on Figure 4 on Python. <br><br></p>
+</li>
+</ol>
+<h2 id="processing-content-to-be-measured">Processing content to be measured</h2>
+<p>In measurement, the total time required for the following three processes is measured.</p>
+<ol>
+<li>
+<p>Loading data from the data source into memory</p>
+<p>To process the data, we load all the data from the tables (web_clickstream, item, customer, customer-demographics) needed for processing from disk into a data frame. The data to be read is a text file and will be read from the local disk.</p>
+</li>
+<li>
+<p>Pre-processing such as data combination and aggregation for the read data</p>
+</li>
+<li>
+<p>Writing the processing result to the data store</p>
+<p>Write the data to the local disk in text format.</p>
+</li>
+</ol>
+<h2 id="measurement-target-data">Measurement target data</h2>
+<p>Assuming that the data size processed by the production system is about 50 GB (estimated size when expanded in memory), measure at several data sizes between 1/100 of that data size and the data size expected for production Then, I confirmed how the processing time changes.
+For each measurement size, Table 3 shows the size when the input data to be processed is expanded in the memory and the data size when it is originally stored in the HDD in text format. After that, the data size in the memory is used as the data size in the measurement result.</p>
+<p>Table 3 Size of measurement data</p>
+<table>
+<thead>
+<tr>
+<th>Percentage of production data size [%]</th>
+<th>1</th>
+<th>5</th>
+<th>10</th>
+<th>25</th>
+<th>50</th>
+<th>75</th>
+<th>100</th>
+<th>200</th>
+<th>300</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Number of data lines-web_clickstreams</td>
+<td>6.7M</td>
+<td>39M</td>
+<td>83M</td>
+<td>226M</td>
+<td>481M</td>
+<td>749M</td>
+<td>1.09G</td>
+<td>2.18G</td>
+<td>3.39G</td>
+</tr>
+<tr>
+<td>Number of data rows-item</td>
+<td>18K</td>
+<td>40K</td>
+<td>56K</td>
+<td>89K</td>
+<td>126K</td>
+<td>154K</td>
+<td>178K</td>
+<td>252K</td>
+<td>309K</td>
+</tr>
+<tr>
+<td>Number of data rows-customer</td>
+<td>99K</td>
+<td>221K</td>
+<td>313K</td>
+<td>495K</td>
+<td>700K</td>
+<td>857K</td>
+<td>990K</td>
+<td>1.4M</td>
+<td>1,715</td>
+</tr>
+<tr>
+<td>Data Row Count-customer_demographics</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+<td>1.9M</td>
+</tr>
+<tr>
+<td>Data size in memory (GB)</td>
+<td>0.4</td>
+<td>1.9</td>
+<td>3.9</td>
+<td>10.3</td>
+<td>21.8</td>
+<td>33.7</td>
+<td>49.1</td>
+<td>97.9</td>
+<td>152.1</td>
+</tr>
+<tr>
+<td>Data size on HDD (GB)</td>
+<td>0.2</td>
+<td>1.0</td>
+<td>2.2</td>
+<td>6.3</td>
+<td>13.8</td>
+<td>21.7</td>
+<td>29.8</td>
+<td>63.6</td>
+<td>100.6</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>K, M, and G in the table are abbreviations for 1,000 lines, 1 million lines, and 1 billion lines, respectively.</li>
+</ul>
+<h2 id="performance-measurement-results">Performance measurement results</h2>
+<p>Figure 6 shows the results of measuring the processing time by executing each of the two types of processing (with/without logic optimization in Figure 5) for BigBench business scenario #5 for each data size. .. In addition, the data size was up to about 22GB (50% of the actual data size), and when I tried to process the data of larger size, I couldn&rsquo;t process because of lack of memory. Here, when the input data size is 0.4GB (the leftmost point in the graph in Figure 6), the execution time is 412 seconds without logic optimization, and 246 seconds with logic optimization, which is about 40%. It was shortened. Also, when the input data size is 22GB (the rightmost point in the graph in Figure 6), the execution time is 5,039 seconds without logic optimization, and 3,892 seconds with logic optimization, a reduction of approximately 23%. Stayed in.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/185f9eab-a835-11a2-60e5-8fa0908096b9.png" alt="Performance"></p>
+<p>Figure 6 Data pre-processing time measurement results for each input data size</p>
+<p>Figure 7 shows the progress of CPU, memory and disk I/O usage when processing 22GB data. This time the verification machine has 32 cores, but Python has only 1 core available. Therefore, the CPU usage rate is always about 1/32=3%. On the other hand, it can be seen that about 200GB of memory is consumed for processing input data of about 22GB in memory. This is probably because the intermediate processing result is held in memory during data processing, and its size is also consumed.
+I/O is performed only at the initial data read, and it can be confirmed that I/O does not occur during data processing and is basically processed in on-memory.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/585266/4c21cff3-45fe-cac4-5a51-2697dd1fa316.png" alt="resource"></p>
+<p>Figure 7 Temporal change in CPU, memory, and I/O usage in Python + Pandas environment</p>
+<h2 id="effects-and-notes-of-logic-optimization">Effects and notes of logic optimization</h2>
+<p>It was confirmed that the performance improvement effect of 40-23% can be obtained by the logic optimization that avoids repeatedly searching the same data. At this time, the performance improvement effect decreased as the data size increased, but the improvement effect depends on the characteristics of the data (range of values and distribution), and the characteristics change when the data size increases. I think it is because I did it.
+Therefore, even if you excessively optimize the logic with data of a different size (a small subset) from the production such as PoC, the effect may change with production-scale data. Therefore, we recommend that you perform logic optimization in the final tuning.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>In this post, I introduced the know-how for improving the performance of numerical data preprocessing using Python, and the results of performance verification on an actual machine. Next time, I will introduce the performance verification results when using Spark, which is a parallel distributed processing platform, for preprocessing numerical data.</p>
+<p>Part 3: <a href="https://qiita.com/takashige/items/455d7cd1ed9bf0246f09">Performance Verification of Data Preprocessing for Machine Learning (Numerical Data) (Part 2)</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

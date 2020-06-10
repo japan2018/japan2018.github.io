@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to write GP with numpy | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to write GP with numpy</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 21, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numpy">numpy</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Nice to meet you, My name is Mimura and I am in charge of the 21st day of Advent Calendar, NTT Docomo Service Innovation Department.
+This year as well, I&rsquo;ve decided to write an Advent Calendar with volunteers from DoCoMo, so I&rsquo;d like to write an article.</p>
+<p>Suddenly, do you know the regression problem? The regression problem is used in various places such as stock price forecasts.
+DoCoMo handles this regression problem in various places.</p>
+<p>In this article, Gaussian process regression is one of the methods to solve this regression problem, and I will implement it. This time, the purpose is to implement it in numpy, not a theoretical explanation. Thank you.
+Those who want to know the specific contents of this area [[Gaussian process and machine learning (machine learning professional series)]](<a href="https://www.amazon.co.jp/%E3%82%AC%E3%82%A6%E3%82%B9%E9%81%8E%E7%A8%8B%E3%81%A8%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92-%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E3%83%97%E3%83%AD%E3%83%95%E3%82%A7%E3%83%83%E3%82%B7%E3%83%A7%E3%83%8A%E3%83%AB%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E6%8C%81%E6%A9%8B-%E5%A4%A7%E5%9C%B0/dp/4061529269/ref=sr_1_1?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;keywords=%E3%82%AC%E3%82%A6%E3%82%B9%E9%81%8E%E7%A8%8B&amp;qid=1575191954&amp;sr=8-1%5D(https://www.amazon.co.jp/GaussianProcessandMachineLearning-MachineLearningProfessionalSeries-Mochihashi-Daichi/dp/4061529269/ref=sr_1_1?__mk_ja_JP=Katakana&amp;keywords=GaussianProcess&amp;qid=1575191954&amp;sr=8-1%22Call%22GaussianProcessandMachineLearning(MachineLearningProfessionalSeries)%22%22">https://www.amazon.co.jp/%E3%82%AC%E3%82%A6%E3%82%B9%E9%81%8E%E7%A8%8B%E3%81%A8%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92-%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E3%83%97%E3%83%AD%E3%83%95%E3%82%A7%E3%83%83%E3%82%B7%E3%83%A7%E3%83%8A%E3%83%AB%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E6%8C%81%E6%A9%8B-%E5%A4%A7%E5%9C%B0/dp/4061529269/ref=sr_1_1?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;keywords=%E3%82%AC%E3%82%A6%E3%82%B9%E9%81%8E%E7%A8%8B&amp;qid=1575191954&amp;sr=8-1](https://www.amazon.co.jp/GaussianProcessandMachineLearning-MachineLearningProfessionalSeries-Mochihashi-Daichi/dp/4061529269/ref=sr_1_1?__mk_ja_JP=Katakana&amp;keywords=GaussianProcess&amp;qid=1575191954&amp;sr=8-1&quot;Call&quot;GaussianProcessandMachineLearning(MachineLearningProfessionalSeries)&quot;&quot;</a></p>
+<p>Also, if you actually use various Gaussian processes, use <a href="https://gpytorch.ai/">GPyTorch</a>or<a href="https://sheffieldml.github.io/GPy/">GPy</a>! Finally, this time we have not been able to optimize kernel functions or adjust parameters. sorry…</p>
+<h1 id="for-a-brief-explanation-of-the-method-of-solving-regression-problem">For a brief explanation of the method of solving regression problem</h1>
+<p>To put it simply, the regression problem is &ldquo;I want to predict something $Y$ from some observable data $X$&rdquo;.
+One way to solve this problem is to prepare a function like $y=Ax+B$. This is how you can predict $y_i$ if you can observe the variable $x_i$.</p>
+<p>However, in reality, it is difficult to express it with a simple function such as $y=Ax+B$. As a way to solve this, we make the formula difficult and raise the expressive power like $y=Ax^2+Bx+C$.</p>
+<p>This time, this complicated function is expressed as $y = W^T \phi(x)$. For example, if $W=[A,B,C],\phi(x)=[x^2,x^1,x^0]$, $y=Ax^2+Bx+C$ can be expressed well. can do.
+So if you make $\phi(x)$ difficult and find $W$ for it, you can predict $Y$ well! ! ! !</p>
+<p>Yay! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !</p>
+<p>…</p>
+<p>If you finish here, it will be against the subject, so I will explain the Gaussian process from here.</p>
+<h2 id="brief-explanation-of-gaussian-process">Brief explanation of Gaussian process</h2>
+<p>First of all, consider making $\phi(x)$ of $y = W^T \phi(x)$ Gaussian. In other words, try $\phi(x)=\exp(-\frac{(x-\mu_h)^2}{\sigma})$. You can still solve the regression problem.</p>
+<p>However, with this method, the amount of calculation is enormous due to the curse of dimension. To solve this problem, let&rsquo;s consider how to take the expected value at $W$ and eliminate it from the model.</p>
+<p>If $w$ as $y=\Phi W$ is generated from a Gaussian distribution with mean $0$ and variance $\lambda^2 I$, then $w \sim N(0,\lambda^2 I)$ .. This means that $y$ is &ldquo;a linear transformation of the Gaussian distribution $W$ with the constant matrix $\Phi$&rdquo;.</p>
+<p>At this time, the expected value and covariance are</p>
+<ul>
+<li>
+<p>$E[y]=E[\Phi W]=\Phi E[ww^T]=0$</p>
+</li>
+<li>
+<p>$\Sigma = E[yy^T]-E[y]E[y]^T=E[(\Phi w)(\Phi w)^T]=\Phi E[ww^T]\Phi^ T=\lambda^2\Phi\Phi^T$</p>
+</li>
+</ul>
+<p>Will be</p>
+<p>From this result, it follows that $y$ follows the multivariate Gaussian distribution of $y\sim N(0,\lambda^2\Phi\Phi^2)$.</p>
+<p>$K=\lambda^2\Phi\Phi^T$ and $K_{n,n&rsquo;}=\lambda^2\phi(X_n)\phi(X_{n&rsquo;})$ and the average of $y$ If is normalized to be $0$, it becomes $y\sim N(0,K)$.
+Even with this, the calculation of $K_{n,n&rsquo;}=\phi(X_n)\phi(X_{n&rsquo;})$ is still heavy&hellip; But here&rsquo;s the famous &ldquo;Use a kernel trick!&rdquo; This is the idea that $K_{n,n&rsquo;}$ can be calculated without trying hard to calculate $\phi(X_n)$.</p>
+<p>When I come up here, I will have more data</p>
+<pre><code class="language-math" data-lang="math">D=\{(x_1,y_1),(x_2,y_2),\cdots,(x_N,y_N)\} \\
+</code></pre><p>Based on this, we learned what $y^{new}$ would look like when we observed new data $x^{new}$ $y^{new}=w^T\phi(x^{new }) Just solve $.</p>
+<p>To achieve this, if we set $y'=(y_1,y_2,\cdots,y_N,y^{new}),X=(x_1,x_2,\cdots,x_N,x^{new})$ It becomes y\sim N(0,K&rsquo;)$.</p>
+<p>This way</p>
+<pre><code class="language-math" data-lang="math">\begin{pmatrix}
+y \\
+y^{new}
+\end{pmatrix}
+\sim
+N\left(0,\begin{pmatrix}
+K,k_{new} \\
+k_{new}^T,k_{new,new}
+\end{pmatrix}\right)
+</code></pre><p>You can write Where $k_{new} and k_{new,new}$ are as follows.</p>
+<pre><code class="language-math" data-lang="math">\left\{
+\begin{array}{}
+k_{new} &amp;=(k(x^{new},x_1),k(x^{new},x_2),\cdots,k(x^{new},x_N))^T \\
+k_{new,new}&amp;= (k(x^{new},x^{new}))
+\end{array}
+\right.
+</code></pre><p>here</p>
+<pre><code class="language-math" data-lang="math">\begin{pmatrix}
+y_1 \\
+y_2
+\end{pmatrix}
+\sim N\left(
+\begin{pmatrix}
+\mu_1 \\
+\mu_2
+\end{pmatrix}
+,
+\begin{pmatrix}
+\Sigma_{1,1},\Sigma_{1,2} \\
+\Sigma_{2,1},\Sigma_{2,2}
+\end{pmatrix}
+\right)
+</code></pre><p>When there is an expression, $p(y_2|y_1)$ is changed to $p(y_2|y_1)=N(\mu_2+\Sigma_{2,1}\Sigma_{1,1}^{-1}(y_1- It is known that it can be represented by \mu_1),\Sigma_{2,2}-\Sigma_{2,1}\Sigma_{2,1}^{-1}\Sigma_{1,2})$ .. This time $\mu_1=0,\mu_2=0$, so $p(y_2|y_1)=N(\Sigma_{2,1}\Sigma_{1,1}^{-1}y_1,\Sigma_{2, It can be expressed as 2}-\Sigma_{2,1}\Sigma_{2,1}^{-1}\Sigma_{1,2})$.</p>
+<p>It’s been so long, but I mean</p>
+<pre><code class="language-math" data-lang="math">p(y^{new}|X^{new},D)=N(k_{new}^TK^{-1}y,k_{new,new}-k_{new}^TK^{-1} k_{new})
+</code></pre><p>Is to implement! ! !</p>
+<h2 id="lets-actually-implement-it">Let&rsquo;s actually implement it!</h2>
+<pre><code class="language-math" data-lang="math">p(y^{new}|X^{new},D)=N(k_{new}^TK^{-1}y,k_{new,new}-k_{new}^TK^{-1} k_{new})
+</code></pre><p>I found that I should implement this.</p>
+<p>Also, $K,k_{new},k_{new,new}$ is</p>
+<pre><code class="language-math" data-lang="math">\left\{
+\begin{array}{}
+K &amp;=\left[\begin{array}{}
+k(x_1,x_1),k(x_1,x_2),\cdots,k(x_1,x_N) \\
+k(x_2,x_1),k(x_2,x_2),\cdots,k(x_2,x_N) \\
+\cdots \\
+k(x_N,x_1),k(x_N,x_2),\cdots,k(x_N,x_N)
+\end{array}
+\right] \\
+k_{new} &amp;=(k(x^{new},x_1),k(x^{new},x_2),\cdots,k(x^{new},x_N))^T \\
+k_{new,new}&amp;= (k(x^{new},x^{new}))
+\end{array}
+\right.
+</code></pre><p>was.</p>
+<pre><code class="language-math" data-lang="math">k(x,x')=\theta_1\exp \left(-\frac{(x-x')^2}{\theta_2}\right)+\theta_3\delta(x,x')
+</code></pre><p>Then the kernel function is</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">RBF</span>(X,X_):
+    theta_1 <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+    theta_2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.2</span>
+    theta_3 <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+    distance <span style="color:#f92672">=</span> ((X<span style="color:#f92672">-</span>X_)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">if</span> distance<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> distance<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]:
+        <span style="color:#66d9ef">return</span> theta_1 <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">*</span> distance<span style="color:#f92672">/</span>theta_2) <span style="color:#f92672">+</span> theta_3 <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>eye(len(X))[:,:X<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]]
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">return</span> theta_1 <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">*</span> distance<span style="color:#f92672">/</span>theta_2)
+</code></pre></div><p>You can write at</p>
+<p>Let&rsquo;s use this to calculate $K^{-1},k_{new},k_{new,new}$.
+First, calculate $K^{-1}$.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">X_ <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([X <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(len(X))])
+K <span style="color:#f92672">=</span> RBF(X_,X_<span style="color:#f92672">.</span>transpose(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">2</span>))
+inv_K <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>inv(K)
+</code></pre></div><p>Then calculate $k_{new}$ and $k_{new,new}$.</p>
+<pre><code class="language-pythonX__" data-lang="pythonX__">Test_X__ = np.array([Test_X for _ in range(len(X))]).transpose(1,0,2)
+Test_X__a = np.array([Test_X for _ in range(len(Test_X))]).transpose(1,0,2)
+k = RBF(X__,Test_X__)
+k__ = RBF(Test_X__a,Test_X__a)
+</code></pre><p>Finally</p>
+<pre><code class="language-math" data-lang="math">p(y^{new}|X^{new},D)=N(k_{new}^TK^{-1}y,k_{new,new}-k_{new}^TK^{-1} k_{new})
+</code></pre><p>To generate from</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Y_result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>multivariate_normal(k<span style="color:#f92672">.</span>dot(inv_K)<span style="color:#f92672">.</span>dot(Y),k__<span style="color:#f92672">-</span>k<span style="color:#f92672">.</span>dot(inv_K)<span style="color:#f92672">.</span>dot(k<span style="color:#f92672">.</span>T))
+</code></pre></div><p>Just call</p>
+<h2 id="experiment-with-bike-share-data-in-new-york">Experiment with bike share data in New York</h2>
+<p>Let&rsquo;s predict the picture using <a href="https://www.citibikenyc.com/system-data">Bike Share Data</a> in New York.
+This time, I visualized the number of returned bicycles from 8 am to 12 pm on June 30.</p>
+<p>The numbers returned are normalized by logarithm for clarity.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320448/38b0e937-f38f-f68b-a718-ee280f336c4c.png" alt="plot_demand.png"></p>
+<p>Let&rsquo;s use the Gaussian process for visualization
+Then it looks like this.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320448/a297f24b-692f-2288-8b40-14af6f269817.png" alt="GP_result_port.png"></p>
+<p>The star is the position of the port.
+To make it easier to see, $0$ and below are complemented with $0$.</p>
+<p>From the results, we can see that there is a high demand in the center.
+It is inferred that there is a high demand this time because various values are sampled because the position where there is no port has a large variance.
+Thus, the good thing about the Gaussian process is that you can not only predict where there is no data, but also calculate the variance for that part.</p>
+<h2 id="finally">Finally</h2>
+<p>You can solve the regression problem like this, so why not try it again?</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

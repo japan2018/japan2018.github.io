@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Parse responses so you can scrape your own Wantedly story | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Parse responses so you can scrape your own Wantedly story</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 26, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/beautifulsoup">BeautifulSoup</a></code></small>
+
+</p>
+<pre><code>#Foreword
+</code></pre>
+<p>Nijibox uses Wantedly for career adoption. (If you are interested <a href="https://www.wantedly.com/companies/nijibox">From here</a>)</p>
+<p>So, when I updated the story, I thought I could notify something like Slack in the company, so I looked at the source,
+RSS feed does not exist. <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>
+Then, it becomes necessary to make good use of the parser to process the data structure properly&hellip;</p>
+<p>I&rsquo;ll leave what I did for this article.</p>
+<p>#Today&rsquo;s start and goal</p>
+<p>The material is the &ldquo;story&rdquo; in Wantedly of Nijibox.
+<a href="https://www.wantedly.com/companies/nijibox/feed">https://www.wantedly.com/companies/nijibox/feed</a></p>
+<p>From here, I will write the code to extract the &ldquo;data structure that can withstand another output&rdquo;.</p>
+<h1 id="answer--finished-product">Answer (= finished product)</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:feed-from-wantedly.py" data-lang="python:feed-from-wantedly.py"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> pprint
+<span style="color:#f92672">import</span> requests
+<span style="color:#f92672">from</span> bs4 <span style="color:#f92672">import</span> BeautifulSoup
+
+URL <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.wantedly.com/companies/nijibox/feed&#39;</span>
+
+resp <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(URL)
+soup <span style="color:#f92672">=</span> BeautifulSoup(resp<span style="color:#f92672">.</span>content,<span style="color:#e6db74">&#39;html.parser&#39;</span>)
+<span style="color:#75715e"># Getting the contents of &lt;script data-placeholder-key=&#34;wtd-ssr-placeholder&#34;&gt;</span>
+<span style="color:#75715e">#The content of this tag is a JSON string, but since it has&#39;//&#39; at the beginning, it is removed for reading.</span>
+feed_raw <span style="color:#f92672">=</span> soup<span style="color:#f92672">.</span>find(<span style="color:#e6db74">&#39;script&#39;</span>, {<span style="color:#e6db74">&#39;data-placeholder-key&#39;</span>: <span style="color:#e6db74">&#34;wtd-ssr-placeholder&#34;</span>})<span style="color:#f92672">.</span>string[<span style="color:#ae81ff">3</span>:]
+feeds <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(feed_raw)
+<span style="color:#75715e"># There are various things in the body in the whole JSON, but the body itself was the key that seems to be the company key in dict</span>
+<span style="color:#75715e"># However, it seems that there is only one, so it is extracted super coarsely</span>
+feed_body <span style="color:#f92672">=</span> feeds[<span style="color:#e6db74">&#39;body&#39;</span>][list(feeds[<span style="color:#e6db74">&#39;body&#39;</span>]<span style="color:#f92672">.</span>keys())[<span style="color:#ae81ff">0</span>]]
+
+<span style="color:#75715e"># Items that seem to be fixed posts</span>
+pprint<span style="color:#f92672">.</span>pprint(feed_body[<span style="color:#e6db74">&#39;latest_pinnable_posts&#39;</span>])
+</code></pre></div><p>When you run this, it looks like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$python3 feed-from-wantedly.py
+<span style="color:#f92672">[{</span><span style="color:#e6db74">&#39;id&#39;</span>: 188578,
+  <span style="color:#e6db74">&#39;image&#39;</span>: <span style="color:#f92672">{</span><span style="color:#e6db74">&#39;id&#39;</span>: 4141479,
+            <span style="color:#e6db74">&#39;url&#39;</span>:<span style="color:#e6db74">&#39;https://d2v9k5u4v94ulw.cloudfront.net/assets/images/4141479/original/9064f3ba-9327-4fce-9724-c11bf1ea71e2?1569833471&#39;</span><span style="color:#f92672">}</span>,
+  <span style="color:#e6db74">&#39;post_path&#39;</span>:<span style="color:#e6db74">&#39;/companies/nijibox/post_articles/188578&#39;</span>,
+  <span style="color:#e6db74">&#39;title&#39;</span>:<span style="color:#e6db74">&#39;First of all, casual casual interview! What Nijbox wants to convey to job seekers, their desire for hiring&#39;</span><span style="color:#f92672">}</span>,
+ <span style="color:#f92672">{</span><span style="color:#e6db74">&#39;id&#39;</span>: 185158,
+  <span style="color:#e6db74">&#39;image&#39;</span>: <span style="color:#f92672">{</span><span style="color:#e6db74">&#39;id&#39;</span>: 4063780,
+            <span style="color:#e6db74">&#39;url&#39;</span>:<span style="color:#e6db74">&#39;https://d2v9k5u4v94ulw.cloudfront.net/assets/images/4063780/original/44109f75-6590-43cb-a631-cb8b719564d4?1567582305&#39;</span><span style="color:#f92672">}</span>,
+  <span style="color:#e6db74">&#39;post_path&#39;</span>:<span style="color:#e6db74">&#39;/companies/nijibox/post_articles/185158&#39;</span>,
+  <span style="color:#e6db74">&#39;title&#39;</span>:<span style="color:#e6db74">&#39;[For beginners] Design is not &#34;sense&#34; but &#34;theory&#34;. You can do it today! How to become a UI designer&#39;</span><span style="color:#f92672">}</span>,
+ <span style="color:#f92672">{</span><span style="color:#e6db74">&#39;id&#39;</span>: 185123,
+  <span style="color:#e6db74">&#39;image&#39;</span>: <span style="color:#f92672">{</span><span style="color:#e6db74">&#39;id&#39;</span>: 4062946,
+            <span style="color:#e6db74">&#39;url&#39;</span>:<span style="color:#e6db74">&#39;https://d2v9k5u4v94ulw.cloudfront.net/assets/images/4062946/original/ff2169c7-568e-4992-b082-56f1e1be2780?1567573415&#39;</span><span style="color:#f92672">}</span>,
+  <span style="color:#e6db74">&#39;post_path&#39;</span>:<span style="color:#e6db74">&#39;/companies/nijibox/post_articles/185123&#39;</span>,
+  <span style="color:#e6db74">&#39;title&#39;</span>:<span style="color:#e6db74">&#39;We held a React study session with Mr. Ikeda from ICS! &#39;</span><span style="color:#f92672">}]</span>
+</code></pre></div><p>#Preparation</p>
+<p>This time, I&rsquo;m making it in the following environment.</p>
+<ul>
+<li>Python 3.7.3</li>
+<li>beautifulsoup4==4.8.1</li>
+<li>requests==2.20.0</li>
+</ul>
+<h1 id="look-in-order">Look in order</h1>
+<p>It&rsquo;s a so-called common thing until you receive the response with <code>requests</code> and parse it with <code>BeautifulSoup4</code>, so I will skip this time.</p>
+<h2 id="where-to-parse-more">Where to parse more</h2>
+<p>This time, I will find and parse the &ldquo;notable posts&rdquo;, but there are about two issues here.</p>
+<ul>
+<li>There is an easy-to-understand area called <code>id=&quot;posts&quot;</code>, but there are quite a few <code>div</code> in it, which is troublesome.</li>
+<li><strong>At the time of response, the <code>body</code> part is almost empty</strong></li>
+</ul>
+<p>The latter is especially troublesome, and the method of chasing tags with <code>soup.find</code> does not work. <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup></p>
+<p>Then, where to parse
+<img width="800" alt=" Screenshot 2019-11-26 19.40.05.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/6805/f48a08c3-5192-0e92-7e0d-4ca11b1619af.png"></p>
+<p>Here</p>
+<h2 id="wantedly-ssr-consideration-source-only">Wantedly SSR consideration (source only)</h2>
+<img width="600" alt="Screenshots 2019-11-26 19.42.30.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/6805/b9c8d7c3-2ad4-e9f1-db06-fa77350bb530.png">
+<p>This is the result of a Google search for &ldquo;Nijibox&rdquo; and &ldquo;Wantedly&rdquo; as described above, but there is a summary that is not in the <code>body</code> tag of the response.
+Wantedly&rsquo;s site seems to be a specification that renders this by having the content itself as JSON at the time of JS execution.</p>
+<h2 id="extract-the-relevant-items-with-beautiful-soup">Extract the relevant items with Beautiful Soup</h2>
+<p>This is the only line where <code>BeautifulSoup</code> does its job.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">feed_raw <span style="color:#f92672">=</span> soup<span style="color:#f92672">.</span>find(<span style="color:#e6db74">&#39;script&#39;</span>, {<span style="color:#e6db74">&#39;data-placeholder-key&#39;</span>: <span style="color:#e6db74">&#34;wtd-ssr-placeholder&#34;</span>})<span style="color:#f92672">.</span>string[<span style="color:#ae81ff">3</span>:]
+</code></pre></div><p>Since <code>find_all</code> of <code>BeautifulSoup</code> can be narrowed down not only at the tag but also at the attribute level, I can get the contents I want in one shot. It&rsquo;s convenient.
+Note that the reason why it is <code>string[3:]</code> is that there is a character at the beginning of this content that is an obstacle to parsing as JSON, <code>//</code>. <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup></p>
+<h2 id="after-that-i-think-that-json-string-is-made-into-an-object-and-only-parsing-is-">After that, I think that JSON string is made into an object and only parsing is &hellip;</h2>
+<p>If you write it roughly, the contents of the parsed object will be like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;router&#34;</span>:{<span style="color:#f92672">&#34;short&#34;</span>},
+  <span style="color:#f92672">&#34;page&#34;</span>:<span style="color:#e6db74">&#34;companies#feed&#34;</span>,
+  <span style="color:#f92672">&#34;auth&#34;</span>:{<span style="color:#f92672">&#34;short&#34;</span>},
+  <span style="color:#f92672">&#34;body&#34;</span>:{
+    <span style="color:#f92672">&#34;c29bc423-7f81-41c2-8786-313d0998988c&#34;</span>:{
+      <span style="color:#f92672">&#34;company&#34;</span>:{<span style="color:#f92672">&#34;short&#34;</span>}
+    }
+  }
+}
+</code></pre></div><p>Mysterious UUID. Maybe something different from the company ID.</p>
+<p>So we need to dig into this content.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">feed_body <span style="color:#f92672">=</span> feeds[<span style="color:#e6db74">&#39;body&#39;</span>][list(feeds[<span style="color:#e6db74">&#39;body&#39;</span>]<span style="color:#f92672">.</span>keys())[<span style="color:#ae81ff">0</span>]]
+</code></pre></div><p>Fortunately, the key used in the contents of <code>body</code> seems to be only for one company, so I will sneak in on the other side.</p>
+<h2 id="finally-extract-items">Finally extract items</h2>
+<p>At the moment, the following two items seem to be useful.</p>
+<p><code>posts</code>: All stories so far?
+<code>latest_pinnable_posts</code>: The part that corresponds to &ldquo;Featured posts&rdquo;</p>
+<p>This time, we decided to require only the minimum, and output <code>latest_pinnable_posts</code> to finish. Thank you for your hard work.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">pprint<span style="color:#f92672">.</span>pprint(feed_body[<span style="color:#e6db74">&#39;latest_pinnable_posts&#39;</span>])
+</code></pre></div><p>#Slack notification?</p>
+<p>I haven&rsquo;t made it yet.</p>
+<ul>
+<li>See the difference from the parse result of the last post, and notify only the new one</li>
+<li>Convert to RSS feed and throw to Slack Integration <sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup></li>
+</ul>
+<p>There is such an approach. For the time being this time not covered.</p>
+<h1 id="looking-back">Looking back</h1>
+<p>I touched <code>BeautifulSoup4</code> after a long time, but it has all the functions and is easy to use.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>Wantedly There is something when you search for &ldquo;application/rss+xml&rdquo; in the source of the top or company page, but it seems that there is nothing particular in this content <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>Of course, you can run JS on a headless browser and create a DOM up to what the browser is seeing, but this time it is not adopted. <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>I don&rsquo;t know why <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p>Since there is no posting date and time in the data that can be taken, it is a bottleneck that you cannot do something like &ldquo;re-notify when edited&rdquo;. <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

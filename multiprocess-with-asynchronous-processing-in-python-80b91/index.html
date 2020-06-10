@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Multiprocess with asynchronous processing in python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Multiprocess with asynchronous processing in python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 1, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/asynchronous-processing"> asynchronous processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/parallel-processing"> parallel processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/asyncio"> asyncio</a></code></small>
+
+</p>
+<pre><code># What is this article?
+</code></pre>
+<p>I just wanted to write code because I wanted to make python faster.
+#What did you want to do
+My scientific calculations are slow. Both CPU processing and io are slow. Now, there are various speedups in the street.</p>
+<ul>
+<li>multiprocess</li>
+<li>multithread</li>
+<li>Asynchronous processing</li>
+</ul>
+<p>In the case of python, it seems that multithread is not fast due to GIL, so
+Inevitably it becomes multiprocess and asynchronous processing.
+However, even if I try to do async processing and introduce asyncio,
+<strong>Coroutines used in asyncio cannot pickle and cannot be compatible with multi-process</strong>
+…It looks like it, but **it seems to be compatible. **</p>
+<p>However, I&rsquo;m not sure if it will be faster when both are compatible.</p>
+<p>We will not talk about &ldquo;process-based asynchronous processing&rdquo; this time.
+We will talk about &ldquo;moving coroutines in multiple processes&rdquo;.</p>
+<h1 id="reinventing-the-wheel">Reinventing the wheel?</h1>
+<p>Although there are packages that asynchronously multiprocess,
+In fact, it&rsquo;s not as good as bringing out packages to increase dependency&hellip;
+So, I don&rsquo;t know which one is better, because it is old and I use multithread.
+Then, it was easy to implement it&hellip; Then I should write it myself.</p>
+<h1 id="required-items-asyncio--poolmap">Required Items: asyncio + Pool().map</h1>
+<p>Speaking of asynchronous in python is asyncio.
+And multiprocessing in python is multiprocessing.Pool.
+Use these two at the same time.</p>
+<h1 id="failure-example">Failure example</h1>
+<p>However, the following does not work. Coroutines are angry that they can&rsquo;t pickle.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">async calc(x):
+    <span style="color:#66d9ef">return</span> x <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">async_calc</span>(x):
+    result <span style="color:#f92672">=</span> await calc(x)
+    <span style="color:#66d9ef">return</span> result
+
+<span style="color:#66d9ef">with</span> Pool() <span style="color:#66d9ef">as</span> pool:
+    pool<span style="color:#f92672">.</span>map(calc, range(<span style="color:#ae81ff">3</span>))
+</code></pre></div><p>#If you can&rsquo;t pickle a coroutine, why not throw a function that returns a coroutine?
+Now, let&rsquo;s return to the availability of pickle.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Object</th>
+<th align="center">Pickle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Coroutine</td>
+<td align="center">No</td>
+</tr>
+<tr>
+<td align="center">lambda expression</td>
+<td align="center">impossibility</td>
+</tr>
+<tr>
+<td align="center">Function by</td>
+<td align="center">def</td>
+</tr>
+</tbody>
+</table>
+<p>In other words, functions that return coroutines are Pickle capable.</p>
+<h2 id="things-necessary">Things necessary</h2>
+<p>As a premise, you want to run the following in parallel.</p>
+<ul>
+<li>read_text: function to read text asynchronously</li>
+<li>main: Function that actually processes</li>
+</ul>
+<h2 id="i-tried-to-write">I tried to write</h2>
+<p>Here, pass the async function and its argument to the function called _wrap_async,
+The coroutine is turning in that.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> List, Iterable, Callable, Any, cast
+<span style="color:#f92672">from</span> asyncio <span style="color:#f92672">import</span> get_event_loop, Task
+<span style="color:#f92672">from</span> os <span style="color:#f92672">import</span> cpu_count
+<span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Pool
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_text</span>(fname: str) <span style="color:#f92672">-&gt;</span> str:
+    <span style="color:#66d9ef">with</span> open(fname) <span style="color:#66d9ef">as</span> fp:
+        result <span style="color:#f92672">=</span> fp<span style="color:#f92672">.</span>read()
+    <span style="color:#66d9ef">return</span> result
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(fname: str) <span style="color:#f92672">-&gt;</span> str:
+    txt <span style="color:#f92672">=</span> Task(read_text(fname))
+    result <span style="color:#f92672">=</span> await txt
+    <span style="color:#66d9ef">return</span> result
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_wrap_async</span>(func: Callable, <span style="color:#f92672">*</span>args: Any) <span style="color:#f92672">-&gt;</span> Any:
+    loop <span style="color:#f92672">=</span> get_event_loop()
+    result <span style="color:#f92672">=</span> loop<span style="color:#f92672">.</span>run_until_complete(func(<span style="color:#f92672">*</span>args))
+    loop<span style="color:#f92672">.</span>close()
+    <span style="color:#66d9ef">return</span> result
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">pmap_async</span>(func: Callable, arg: Iterable,
+               chunk: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">-&gt;</span> List[Any]:
+    <span style="color:#66d9ef">with</span> Pool(chunk) <span style="color:#66d9ef">as</span> pool:
+        result <span style="color:#f92672">=</span> pool<span style="color:#f92672">.</span>starmap_async(_wrap_async,
+                                    [(func, a) <span style="color:#66d9ef">for</span> a <span style="color:#f92672">in</span> arg])<span style="color:#f92672">.</span>get()
+    <span style="color:#66d9ef">return</span> result
+
+result <span style="color:#f92672">=</span> pmap_async(main, [<span style="color:#e6db74">&#39;test.py&#39;</span>])
+<span style="color:#66d9ef">print</span>(result)
+</code></pre></div><p>You can do it like this. So, I will write down something like the failure of the map function.</p>
+<h1 id="because-its-a-matter-of-fact-i-tried-chaining-like-nodejs">Because it&rsquo;s a matter of fact, I tried chaining like node.js</h1>
+<p>Suddenly, I am map(func1, map(func2, map(func3, iterator)))
+I hate to write code like this.
+Even if this is broken, I don&rsquo;t know how to name the map object in the middle.
+So I tried to write it like Array of node.js.</p>
+<p>I wrote it, but the code is too long, so I will write it at the end.
+Specifically, it can be written as follows.
+I&rsquo;m trying to use Generator as much as possible, so there should be little overhead&hellip;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test</span>(x): <span style="color:#66d9ef">return</span> x <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>
+ChainIter([<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>])<span style="color:#f92672">.</span>async_map(test, <span style="color:#ae81ff">2</span>)[<span style="color:#ae81ff">0</span>]
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#ae81ff">2</span>
+</code></pre></div><p>This allows coroutines to be chained in multiple processes.
+~~ And, it is said that it is a violation of the coding standard, and I will be divided into Murahachi. ~~</p>
+<p>#Long code
+It has become longer because of the tail fin</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> asyncio <span style="color:#f92672">import</span> new_event_loop, ensure_future, Future
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> (Any, Callable, Iterable, cast, Coroutine,
+                    (Iterator, List, Union)
+<span style="color:#f92672">from</span> itertools <span style="color:#f92672">import</span> starmap
+<span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Pool
+<span style="color:#f92672">from</span> doctest <span style="color:#f92672">import</span> testmod
+<span style="color:#f92672">from</span> functools <span style="color:#f92672">import</span> reduce, wraps, partial
+<span style="color:#f92672">from</span> logging <span style="color:#f92672">import</span> Logger, INFO, getLogger, basicConfig
+<span style="color:#f92672">import</span> time
+
+
+logger <span style="color:#f92672">=</span> getLogger(<span style="color:#e6db74">&#39;ChainIter&#39;</span>)
+logger<span style="color:#f92672">.</span>setLevel(INFO)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">future</span>(func: Callable) <span style="color:#f92672">-&gt;</span> Callable:
+    <span style="color:#a6e22e">@wraps</span>(func)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">wrap</span>(<span style="color:#f92672">*</span>args: Any, <span style="color:#f92672">**</span>kwargs: Any) <span style="color:#f92672">-&gt;</span> Future:
+        <span style="color:#66d9ef">return</span> ensure_future(func(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs))
+    <span style="color:#66d9ef">return</span> wrap
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run_coroutine</span>(cor: Coroutine) <span style="color:#f92672">-&gt;</span> Any:
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Just run coroutine.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    loop <span style="color:#f92672">=</span> new_event_loop()
+    result <span style="color:#f92672">=</span> loop<span style="color:#f92672">.</span>run_until_complete(cor)
+    loop<span style="color:#f92672">.</span>close()
+    <span style="color:#66d9ef">return</span> result
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run_async</span>(func: Callable, <span style="color:#f92672">*</span>args: Any, <span style="color:#f92672">**</span>kwargs: Any) <span style="color:#f92672">-&gt;</span> Any:
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Assemble coroutine and run.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    loop <span style="color:#f92672">=</span> new_event_loop()
+    result <span style="color:#f92672">=</span> loop<span style="color:#f92672">.</span>run_until_complete(func(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs))
+    loop<span style="color:#f92672">.</span>close()
+    <span style="color:#66d9ef">return</span> result
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ChainIter</span>:
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Iterator which can used by method chain like Arry of node.js.
+</span><span style="color:#e6db74">    Multi processing and asyncio can run.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">def</span> __init__(self, data: Union[list, Iterable],
+                 indexable: bool <span style="color:#f92672">=</span> False, max_num: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        data: Iterable
+</span><span style="color:#e6db74">            It need not to be indexable.
+</span><span style="color:#e6db74">        indexable: bool
+</span><span style="color:#e6db74">            If data is indexable, indexable should be True.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        self<span style="color:#f92672">.</span>data <span style="color:#f92672">=</span> data
+        self<span style="color:#f92672">.</span>indexable <span style="color:#f92672">=</span> indexable
+        self<span style="color:#f92672">.</span>num <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># Iterator needs number.</span>
+        self<span style="color:#f92672">.</span>max <span style="color:#f92672">=</span> len(data) <span style="color:#66d9ef">if</span> hasattr(data,<span style="color:#e6db74">&#39;__len__&#39;</span>) <span style="color:#66d9ef">else</span> max_num
+        self<span style="color:#f92672">.</span>bar <span style="color:#f92672">=</span> True
+        self<span style="color:#f92672">.</span>bar_len <span style="color:#f92672">=</span> <span style="color:#ae81ff">30</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">map</span>(self, func: Callable, core: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">-&gt;</span><span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Chainable map.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">            Function to run.
+</span><span style="color:#e6db74">        core: int
+</span><span style="color:#e6db74">            Number of cpu cores.
+</span><span style="color:#e6db74">            If it is larger than 1, multiprocessing based on
+</span><span style="color:#e6db74">            multiprocessing.Pool will be run.
+</span><span style="color:#e6db74">            And so, If func cannot be lambda or coroutine if
+</span><span style="color:#e6db74">            it is larger than 1.
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ---------
+</span><span style="color:#e6db74">        ChainIter with result
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        &gt;&gt;&gt; ChainIter([5, 6]).map(lambda x: x * 2).get()
+</span><span style="color:#e6db74">        [10, 12]
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#39;Running&#39;</span>, str(func<span style="color:#f92672">.</span>__name__))))
+        <span style="color:#66d9ef">if</span> (core <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>):<span style="color:#66d9ef">return</span> ChainIter(map(func, self<span style="color:#f92672">.</span>data), False, self<span style="color:#f92672">.</span>max)
+        <span style="color:#66d9ef">with</span> Pool(core) <span style="color:#66d9ef">as</span> pool:
+            result <span style="color:#f92672">=</span> pool<span style="color:#f92672">.</span>map_async(func, self<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>get()
+        <span style="color:#66d9ef">return</span> ChainIter(result, True, self<span style="color:#f92672">.</span>max)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">starmap</span>(self, func: Callable, core: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Chainable starmap.
+</span><span style="color:#e6db74">        In this case, ChainIter.data must be Iterator of iterable objects.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">            Function to run.
+</span><span style="color:#e6db74">        core: int
+</span><span style="color:#e6db74">            Number of cpu cores.
+</span><span style="color:#e6db74">            If it is larger than 1, multiprocessing based on
+</span><span style="color:#e6db74">            multiprocessing.Pool will be run.
+</span><span style="color:#e6db74">            And so, If func cannot be lambda or coroutine if
+</span><span style="color:#e6db74">            it is larger than 1.
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ---------
+</span><span style="color:#e6db74">        ChainIter with result
+</span><span style="color:#e6db74">        &gt;&gt;&gt; def multest2(x, y): return x * y
+</span><span style="color:#e6db74">        &gt;&gt;&gt; ChainIter([5, 6]).zip([2, 3]).starmap(multest2).get()
+</span><span style="color:#e6db74">        [10, 18]
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39; &#39;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#39;Running&#39;</span>, str(func<span style="color:#f92672">.</span>__name__))))
+        <span style="color:#66d9ef">if</span> core <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            <span style="color:#66d9ef">return</span> ChainIter(starmap(func, self<span style="color:#f92672">.</span>data), False, self<span style="color:#f92672">.</span>max)
+        <span style="color:#66d9ef">with</span> Pool(core) <span style="color:#66d9ef">as</span> pool:
+            result <span style="color:#f92672">=</span> pool<span style="color:#f92672">.</span>starmap_async(func, self<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>get()
+        <span style="color:#66d9ef">return</span> ChainIter(result, True, self<span style="color:#f92672">.</span>max)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">filter</span>(self, func: Callable) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Simple filter function.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39; &#39;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#39;Running&#39;</span>, str(func<span style="color:#f92672">.</span>__name__))))
+        <span style="color:#66d9ef">return</span> ChainIter(filter(func, self<span style="color:#f92672">.</span>data), False, <span style="color:#ae81ff">0</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">async_map</span>(self, func: Callable, chunk: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Chainable map of coroutine, for example, async def function.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">            Function to run.
+</span><span style="color:#e6db74">        core: int
+</span><span style="color:#e6db74">            Number of cpu cores.
+</span><span style="color:#e6db74">            If it is larger than 1, multiprocessing based on
+</span><span style="color:#e6db74">            multiprocessing.Pool will be run.
+</span><span style="color:#e6db74">            And so, If func cannot be lambda or coroutine if
+</span><span style="color:#e6db74">            it is larger than 1.
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ---------
+</span><span style="color:#e6db74">        ChainIter with result
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39; &#39;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#39;Running&#39;</span>, str(func<span style="color:#f92672">.</span>__name__))))
+        <span style="color:#66d9ef">if</span> chunk <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            <span style="color:#66d9ef">return</span> ChainIter(starmap(run_async,
+                                     ((func, a) <span style="color:#66d9ef">for</span> a <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>data)),
+                             False, self<span style="color:#f92672">.</span>max)
+        <span style="color:#66d9ef">with</span> Pool(chunk) <span style="color:#66d9ef">as</span> pool:
+            result <span style="color:#f92672">=</span> pool<span style="color:#f92672">.</span>starmap_async(run_async,
+                                        ((func, a) <span style="color:#66d9ef">for</span> a <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>data))<span style="color:#f92672">.</span>get()
+        <span style="color:#66d9ef">return</span> ChainIter(result, True, self<span style="color:#f92672">.</span>max)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">has_index</span>(self) <span style="color:#f92672">-&gt;</span> bool:
+        <span style="color:#66d9ef">return</span> True <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>indexable <span style="color:#66d9ef">else</span> hasattr(self<span style="color:#f92672">.</span>data, <span style="color:#e6db74">&#39;__getitem__&#39;</span>)
+
+    <span style="color:#66d9ef">def</span> __getitem__(self, num: int) <span style="color:#f92672">-&gt;</span> Any:
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>has_index():
+            <span style="color:#66d9ef">return</span> cast(list, self<span style="color:#f92672">.</span>data)[num]
+        self<span style="color:#f92672">.</span>data <span style="color:#f92672">=</span> tuple(self<span style="color:#f92672">.</span>data)
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>data[num]
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">reduce</span>(self, func: Callable) <span style="color:#f92672">-&gt;</span> Any:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Simple reduce function.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        Result of reduce.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39; &#39;</span><span style="color:#f92672">.</span>join((<span style="color:#e6db74">&#39;Running&#39;</span>, str(func<span style="color:#f92672">.</span>__name__))))
+        <span style="color:#66d9ef">return</span> reduce(func, self<span style="color:#f92672">.</span>data)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, kind: type <span style="color:#f92672">=</span> list) <span style="color:#f92672">-&gt;</span> Any:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Get data as list.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        kind: Callable
+</span><span style="color:#e6db74">            If you want to convert to object which is not list,
+</span><span style="color:#e6db74">            you can set it. For example, tuple, dqueue, and so on.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> kind(self<span style="color:#f92672">.</span>data)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">zip</span>(self, <span style="color:#f92672">*</span>args: Iterable) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Simple chainable zip function.
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        *args: Iterators to zip.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        Result of func(*ChainIter, *args, **kwargs)
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> ChainIter(zip(self<span style="color:#f92672">.</span>data, <span style="color:#f92672">*</span>args), False, <span style="color:#ae81ff">0</span>)
+
+    <span style="color:#66d9ef">def</span> __iter__(self) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        self<span style="color:#f92672">.</span>calc()
+        self<span style="color:#f92672">.</span>max <span style="color:#f92672">=</span> len(cast(list, self<span style="color:#f92672">.</span>data))
+        <span style="color:#66d9ef">return</span> self
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__next__</span>(self) <span style="color:#f92672">-&gt;</span> Any:
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>bar:
+            start_time <span style="color:#f92672">=</span> current_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+            bar_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74">{percent}%[{bar}{arrow}{space}]{div}&#39;</span>
+            cycle_token <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;-&#39;</span>, <span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">&#39;</span>, <span style="color:#e6db74">&#39;|&#39;</span>, <span style="color:#e6db74">&#39;/&#39;</span>)
+            cycle_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74">[{cycle}]&#39;</span>
+            stat_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39; | {epoch_time:.2g}sec/epoch | Speed: {speed:.2g}/sec&#39;</span>
+            progress <span style="color:#f92672">=</span> bar_str <span style="color:#f92672">+</span> stat_str
+            cycle <span style="color:#f92672">=</span> cycle_str <span style="color:#f92672">+</span> stat_str
+
+            prev_time <span style="color:#f92672">=</span> current_time
+            current_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+            epoch_time <span style="color:#f92672">=</span> current_time <span style="color:#f92672">-</span> prev_time
+            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>max <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+                bar_num <span style="color:#f92672">=</span> int((self<span style="color:#f92672">.</span>num <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>max <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>bar_len)
+                <span style="color:#66d9ef">print</span>(progress<span style="color:#f92672">.</span>format(
+                    percent<span style="color:#f92672">=</span>int(<span style="color:#ae81ff">100</span> <span style="color:#f92672">*</span> (self<span style="color:#f92672">.</span>num <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>max),
+                    bar<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;=&#39;</span> <span style="color:#f92672">*</span> bar_num,
+                    arrow<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&gt;&#39;</span>,
+                    space<span style="color:#f92672">=</span><span style="color:#e6db74">&#39; &#39;</span> <span style="color:#f92672">*</span> (self<span style="color:#f92672">.</span>bar_len <span style="color:#f92672">-</span> bar_num),
+                    div<span style="color:#f92672">=</span><span style="color:#e6db74">&#39; &#39;</span> <span style="color:#f92672">+</span> str(self<span style="color:#f92672">.</span>num <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> str(self<span style="color:#f92672">.</span>max),
+                    epoch_time<span style="color:#f92672">=</span>round(epoch_time, <span style="color:#ae81ff">3</span>),speed<span style="color:#f92672">=</span>round(<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> epoch_time, <span style="color:#ae81ff">3</span>)
+                    ), end<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>)
+            <span style="color:#66d9ef">else</span>:
+                <span style="color:#66d9ef">print</span>(cycle<span style="color:#f92672">.</span>format(
+                    cycle<span style="color:#f92672">=</span>cycle_token[self<span style="color:#f92672">.</span>num <span style="color:#f92672">%</span> <span style="color:#ae81ff">4</span>],
+                    div<span style="color:#f92672">=</span><span style="color:#e6db74">&#39; &#39;</span> <span style="color:#f92672">+</span> str(self<span style="color:#f92672">.</span>num <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> str(self<span style="color:#f92672">.</span>max),
+                    epoch_time<span style="color:#f92672">=</span>round(epoch_time, <span style="color:#ae81ff">3</span>),
+                    speed<span style="color:#f92672">=</span>round(<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> epoch_time, <span style="color:#ae81ff">3</span>)
+                    ), end<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>)
+        self<span style="color:#f92672">.</span>num <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>num <span style="color:#f92672">==</span> self<span style="color:#f92672">.</span>max:
+            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>bar:
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">Complete in {sec} sec!&#39;</span><span style="color:#f92672">.</span>format(
+                    sec<span style="color:#f92672">=</span>round(time<span style="color:#f92672">.</span>time()<span style="color:#f92672">-</span>start_time, <span style="color:#ae81ff">3</span>)))
+            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">StopIteration</span>
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>__getitem__(self<span style="color:#f92672">.</span>num <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+
+    <span style="color:#66d9ef">def</span> __reversed__(self) <span style="color:#f92672">-&gt;</span> Iterable:
+        <span style="color:#66d9ef">if</span> hasattr(self<span style="color:#f92672">.</span>data, <span style="color:#e6db74">&#39;__reversed__&#39;</span>):
+            <span style="color:#66d9ef">return</span> cast(list, self<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>__reversed__()
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">IndexError</span>(<span style="color:#e6db74">&#39;Not reversible&#39;</span>)
+
+    <span style="color:#66d9ef">def</span> __setitem__(self, key: Any, item: Any) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">if</span> hasattr(self<span style="color:#f92672">.</span>data, <span style="color:#e6db74">&#39;__setitem__&#39;</span>):
+            cast(list, self<span style="color:#f92672">.</span>data)[key] <span style="color:#f92672">=</span> item
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">IndexError</span>(<span style="color:#e6db74">&#39;Item cannot be set.&#39;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">arg</span>(self, func: Callable, <span style="color:#f92672">*</span>args: Any, <span style="color:#f92672">**</span>kwargs: Any) <span style="color:#f92672">-&gt;</span> Any:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Use ChainIter object as argument.
+</span><span style="color:#e6db74">        It is same as func(*ChainIter, *args, **kwargs)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        Result of func(*ChainIter, *args, **kwargs)
+</span><span style="color:#e6db74">        &gt;&gt;&gt; ChainIter([5, 6]).arg(sum)
+</span><span style="color:#e6db74">        11
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> func(tuple(self<span style="color:#f92672">.</span>data), <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">stararg</span>(self, func: Callable, <span style="color:#f92672">*</span>args: Any, <span style="color:#f92672">**</span>kwargs: Any) <span style="color:#f92672">-&gt;</span> Any:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Use ChainIter object as argument.
+</span><span style="color:#e6db74">        It is same as func(*tuple(ChainIter), *args, **kwargs)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        func: Callable
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        ChainIter object
+</span><span style="color:#e6db74">        &gt;&gt;&gt; ChainIter([5, 6]).stararg(lambda x, y: x * y)
+</span><span style="color:#e6db74">        30
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> func(<span style="color:#f92672">*</span>tuple(self<span style="color:#f92672">.</span>data), <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">calc</span>(self) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        ChainIter.data may be list, map, filter and so on.
+</span><span style="color:#e6db74">        This method translate it to list.
+</span><span style="color:#e6db74">        If you do not run parallel, it can print progress bar if you want.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Parameters
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        max_len: int = 0
+</span><span style="color:#e6db74">            Length of data.
+</span><span style="color:#e6db74">            If 0, it print pivot bar.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns
+</span><span style="color:#e6db74">        ----------
+</span><span style="color:#e6db74">        ChainIter object
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>bar:
+            res <span style="color:#f92672">=</span> []
+            start_time <span style="color:#f92672">=</span> current_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+            bar_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74">{percent}%[{bar}{arrow}{space}]{div}&#39;</span>
+            cycle_token <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;-&#39;</span>, <span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">&#39;</span>, <span style="color:#e6db74">&#39;|&#39;</span>, <span style="color:#e6db74">&#39;/&#39;</span>)
+            cycle_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74">[{cycle}]&#39;</span>
+            stat_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39; | {epoch_time:.2g}sec/epoch | Speed: {speed:.2g}/sec&#39;</span>
+            progress <span style="color:#f92672">=</span> bar_str <span style="color:#f92672">+</span> stat_str
+            cycle <span style="color:#f92672">=</span> cycle_str <span style="color:#f92672">+</span> stat_str
+            <span style="color:#66d9ef">for</span> n, v <span style="color:#f92672">in</span> enumerate(self<span style="color:#f92672">.</span>data):
+                res<span style="color:#f92672">.</span>append(v)
+                prev_time <span style="color:#f92672">=</span> current_time
+                current_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+                epoch_time <span style="color:#f92672">=</span> current_time <span style="color:#f92672">-</span> prev_time
+                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>max <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+                    bar_num <span style="color:#f92672">=</span> int((n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>max <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>bar_len)
+                    <span style="color:#66d9ef">print</span>(progress<span style="color:#f92672">.</span>format(
+                        percent<span style="color:#f92672">=</span>int(<span style="color:#ae81ff">100</span> <span style="color:#f92672">*</span> (n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>max),
+                        bar<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;=&#39;</span> <span style="color:#f92672">*</span> bar_num,
+                        arrow<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&gt;&#39;</span>,
+                        space<span style="color:#f92672">=</span><span style="color:#e6db74">&#39; &#39;</span> <span style="color:#f92672">*</span> (self<span style="color:#f92672">.</span>bar_len <span style="color:#f92672">-</span> bar_num),
+                        div<span style="color:#f92672">=</span><span style="color:#e6db74">&#39; &#39;</span> <span style="color:#f92672">+</span> str(n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> str(self<span style="color:#f92672">.</span>max),
+                        epoch_time<span style="color:#f92672">=</span>round(epoch_time, <span style="color:#ae81ff">3</span>),
+                        speed<span style="color:#f92672">=</span>round(<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> epoch_time, <span style="color:#ae81ff">3</span>)
+                        ), end<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>)
+                <span style="color:#66d9ef">else</span>:
+                    <span style="color:#66d9ef">print</span>(cycle<span style="color:#f92672">.</span>format(
+                        cycle<span style="color:#f92672">=</span>cycle_token[n <span style="color:#f92672">%</span> <span style="color:#ae81ff">4</span>],
+                        div<span style="color:#f92672">=</span><span style="color:#e6db74">&#39; &#39;</span> <span style="color:#f92672">+</span> str(n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> str(self<span style="color:#f92672">.</span>max),
+                        epoch_time<span style="color:#f92672">=</span>round(epoch_time, <span style="color:#ae81ff">3</span>),
+                        speed<span style="color:#f92672">=</span>round(<span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> epoch_time, <span style="color:#ae81ff">3</span>)
+                        ), end<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>)
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">Complete in {sec} sec!&#39;</span><span style="color:#f92672">.</span>format(
+                sec<span style="color:#f92672">=</span>round(time<span style="color:#f92672">.</span>time()<span style="color:#f92672">-</span>start_time, <span style="color:#ae81ff">3</span>)))
+            self<span style="color:#f92672">.</span>data <span style="color:#f92672">=</span> res
+            <span style="color:#66d9ef">return</span> self
+        self<span style="color:#f92672">.</span>data <span style="color:#f92672">=</span> list(self<span style="color:#f92672">.</span>data)
+        <span style="color:#66d9ef">return</span> self
+
+    <span style="color:#66d9ef">def</span> __len__(self) <span style="color:#f92672">-&gt;</span> int:
+        self<span style="color:#f92672">.</span>calc()
+        <span style="color:#66d9ef">return</span> len(cast(list, self<span style="color:#f92672">.</span>data))
+
+    <span style="color:#66d9ef">def</span> __repr__(self) <span style="color:#f92672">-&gt;</span> str:
+        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#39;ChainIter[{}]&#39;</span><span style="color:#f92672">.</span>format(str(self<span style="color:#f92672">.</span>data))
+
+    <span style="color:#66d9ef">def</span> __str__(self) <span style="color:#f92672">-&gt;</span> str:
+        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#39;ChainIter[{}]&#39;</span><span style="color:#f92672">.</span>format(str(self<span style="color:#f92672">.</span>data))
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">print</span>(self) <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#39;ChainIter&#39;</span>:
+        <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>data)
+        <span style="color:#66d9ef">return</span> self
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+    testmod()
+
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Regular serverless scraping with AWS lambda&#43;scrapy Part 1 | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Regular serverless scraping with AWS lambda+scrapy Part 1</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 1, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scraping"> scraping</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lambda"> lambda</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scrapy"> Scrapy</a></code></small>
+
+</p>
+<pre><code>First post!
+</code></pre>
+<p>Actually, I wanted to include serverless in one article, but I couldn&rsquo;t make it in time.
+So this time it will be scraping.</p>
+<h2 id="thing-you-want-to-do">Thing you want to do</h2>
+<p>I want to automatically scrape web pages where information is updated regularly!</p>
+<h2 id="target">Target</h2>
+<p>Obtain Yahoo! Weather (Tokyo) data every 6 hours.</p>
+<h2 id="method">Method</h2>
+<p>Is it possible to go around Python + Scrapy + AWSlambda + CroudWatchEvents&hellip;?</p>
+<h2 id="try-it-for-now">Try it for now</h2>
+<h3 id="first-from-scraping">First from scraping</h3>
+<p>Follow the steps below to create crawling and scraping parts.</p>
+<ol>
+<li>Install Scrapy</li>
+<li>Create Scrapy project</li>
+<li>Creating a spider</li>
+<li>Execution</li>
+</ol>
+<h3 id="1-scrapy-installation">1. Scrapy installation</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$python3 -V
+Python 3.7.4
+
+$ pip3 install scrapy
+...
+Successfully installed
+
+$ scrapy version
+Scrapy 1.8.0
+</code></pre></div><h3 id="2-create-scrapy-project">2. Create Scrapy project</h3>
+<p>The project folder is created in the hierarchy where the command is entered.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ scrapy startproject yahoo_weather_crawl
+New Scrapy project<span style="color:#e6db74">&#39;yahoo_weather_crawl&#39;</span>
+
+$ls
+yahoo_weather_crawl
+</code></pre></div><p>This time I will try to get this part of yahoo weather.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515105/06bf1bd2-ee0a-e259-d658-dccd653e6836.png" alt="image.png">
+Let&rsquo;s pick up the announcement date, date, weather, temperature, and probability of precipitation.</p>
+<p>Scrapy has a command line shell, and you can enter a command to check whether the acquisition target is properly taken, so let&rsquo;s check it once and proceed.</p>
+<p>Specify the acquisition target with xpath.
+You can easily get the xpath from the google chrome developer tools (the one that appears when you press F12).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515105/eca9fa8d-30e2-70df-2591-26d3cf1b8553.png" alt="image.png"></p>
+<p>The xpath of the announcement date acquired this time is as follows
+<code>//*[@id=&quot;week&quot;]/p</code></p>
+<p>Let&rsquo;s pull this out of the response.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">
+<span style="color:#75715e"># start scrapy shell</span>
+$ scrapy shell https://weather.yahoo.co.jp/weather/jp/13/4410.html
+
+&gt;&gt;&gt; announcement_date <span style="color:#f92672">=</span> response.xpath<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;//*[@id=&#34;week&#34;]/p/text()&#39;</span><span style="color:#f92672">)</span>.extract_first<span style="color:#f92672">()</span>
+&gt;&gt;&gt; announcement_date
+<span style="color:#e6db74">&#39;Announced 19:00 on November 29, 2019&#39;</span>
+</code></pre></div><p>If you specify text(), you can get only the body.
+For details, see <a href="https://doc.scrapy.org/en/latest/index.html">References</a>.</p>
+<p>For the time being, I got the date and time, so let&rsquo;s get the others as well.</p>
+<p>Since other information is in the table tag, you can get all the contents of the table once.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515105/08477581-53be-3b26-1a79-aa8cdba657d2.png" alt="image.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">
+&gt;&gt;&gt; table <span style="color:#f92672">=</span> response.xpath<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;//*[@id=&#34;yjw_week&#34;]/table&#39;</span><span style="color:#f92672">)</span>
+</code></pre></div><p>Now you can get the elements in the table tag of <code>id=&quot;yjw_week&quot;</code>.
+Get each element from here.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">
+<span style="color:#75715e">#Date</span>
+&gt;&gt;&gt; date <span style="color:#f92672">=</span> table.xpath<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;//tr[1]/td[2]/small/text()&#39;</span><span style="color:#f92672">)</span>.extract_first<span style="color:#f92672">()</span>
+&gt;&gt;&gt; date
+<span style="color:#e6db74">&#39;December 1&#39;</span>
+
+<span style="color:#75715e">#Weather</span>
+&gt;&gt;&gt; weather <span style="color:#f92672">=</span> table.xpath<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;//tr[2]/td[2]/small/text()&#39;</span><span style="color:#f92672">)</span>.extract_first<span style="color:#f92672">()</span>
+&gt;&gt;&gt; weather
+<span style="color:#e6db74">&#34;Cloudy sometimes fine&#34;</span>
+
+<span style="color:#75715e"># Temperature</span>
+&gt;&gt;&gt; temperature <span style="color:#f92672">=</span> table.xpath<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;//tr[3]/td[2]/small/font/text()&#39;</span><span style="color:#f92672">)</span>.extract<span style="color:#f92672">()</span>
+&gt;&gt;&gt; temperature
+<span style="color:#f92672">[</span><span style="color:#e6db74">&#39;14&#39;</span>, <span style="color:#e6db74">&#39;5&#39;</span><span style="color:#f92672">]</span>
+
+<span style="color:#75715e"># rainy percent</span>
+&gt;&gt;&gt; rainy_percent <span style="color:#f92672">=</span> table.xpath<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;//tr[4]/td[2]/small/text()&#39;</span><span style="color:#f92672">)</span>.extract_first<span style="color:#f92672">()</span>
+&gt;&gt;&gt; rainy_percent
+<span style="color:#e6db74">&#39;20&#39;</span>
+
+</code></pre></div><p>Now that we know how to get each,
+We will create Spider (main part of processing).</p>
+<h3 id="3-creating-a-spider">3. Creating a spider</h3>
+<p>The structure of the project folder created earlier is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">
+.
+├── scrapy.cfg
+└── yahoo_weather_crawl
+    ├── __init__.py
+    ├── __pycache__
+    ├── items.py
+    ├── middlewares.py
+    ├── pipelines.py
+    ├── settings.py
+    └── spiders
+        ├── __init__.py
+        └── __pycache__
+</code></pre></div><p>First, define the items to be acquired.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash:items.py" data-lang="bash:items.py">
+<span style="color:#f92672">import</span> scrapy
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">YahooWeatherCrawlItem</span>(scrapy<span style="color:#f92672">.</span>Item):
+    announcement_date <span style="color:#f92672">=</span> scrapy<span style="color:#f92672">.</span>Field() <span style="color:#75715e"># announcement date</span>
+    date <span style="color:#f92672">=</span> scrapy<span style="color:#f92672">.</span>Field() <span style="color:#75715e"># date</span>
+    weather <span style="color:#f92672">=</span> scrapy<span style="color:#f92672">.</span>Field() <span style="color:#75715e"># weather</span>
+    temperature <span style="color:#f92672">=</span> scrapy<span style="color:#f92672">.</span>Field() <span style="color:#75715e"># temperature</span>
+    rainy_percent <span style="color:#f92672">=</span> scrapy<span style="color:#f92672">.</span>Field() <span style="color:#75715e"># probability of precipitation</span>
+</code></pre></div><p>Next, create the body of spider in the spiders folder.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:spider/weather_spider.py" data-lang="python:spider/weather_spider.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#f92672">import</span> scrapy
+<span style="color:#f92672">from</span> yahoo_weather_crawl.items <span style="color:#f92672">import</span> YahooWeatherCrawlItem
+
+<span style="color:#75715e"># spider</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">YahooWeatherSpider</span>(scrapy<span style="color:#f92672">.</span>Spider):
+
+    name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;yahoo_weather_crawler&#34;</span>
+    allowed_domains <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;weather.yahoo.co.jp&#39;</span>]
+    start_urls <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;https://weather.yahoo.co.jp/weather/jp/13/4410.html&#34;</span>]
+
+    <span style="color:#75715e"># Extraction process for response</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">parse</span>(self, response):
+        <span style="color:#75715e"># Announcement date and time</span>
+        <span style="color:#66d9ef">yield</span> YahooWeatherCrawlItem(announcement_date <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>xpath(<span style="color:#e6db74">&#39;//*[@id=&#34;week&#34;]/p/text()&#39;</span>)<span style="color:#f92672">.</span>extract_first())
+        table <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>xpath(<span style="color:#e6db74">&#39;//*[@id=&#34;yjw_week&#34;]/table&#39;</span>)
+
+        <span style="color:#75715e"># Date loop</span>
+        <span style="color:#66d9ef">for</span> day <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">7</span>):
+
+            <span style="color:#66d9ef">yield</span> YahooWeatherCrawlItem(
+                <span style="color:#75715e"># Data extraction</span>
+                date<span style="color:#f92672">=</span>table<span style="color:#f92672">.</span>xpath(<span style="color:#e6db74">&#39;//tr[1]/td[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">]/small/text()&#39;</span> <span style="color:#f92672">%</span>day)<span style="color:#f92672">.</span>extract_first(),
+                weather<span style="color:#f92672">=</span>table<span style="color:#f92672">.</span>xpath(<span style="color:#e6db74">&#39;//tr[2]/td[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">]/small/text()&#39;</span> <span style="color:#f92672">%</span>day)<span style="color:#f92672">.</span>extract_first(),
+                temperature<span style="color:#f92672">=</span>table<span style="color:#f92672">.</span>xpath(<span style="color:#e6db74">&#39;//tr[3]/td[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">]/small/font/text()&#39;</span> <span style="color:#f92672">%</span>day)<span style="color:#f92672">.</span>extract(),
+                rainy_percent<span style="color:#f92672">=</span>table<span style="color:#f92672">.</span>xpath(<span style="color:#e6db74">&#39;//tr[4]/td[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">]/small/text()&#39;</span> <span style="color:#f92672">%</span>day)<span style="color:#f92672">.</span>extract_first(),
+                )
+</code></pre></div><h3 id="4-do-it-now">4. Do it now!</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">scrapy crawl yahoo_weather_crawler
+
+2019-12-01 20:17:21 <span style="color:#f92672">[</span>scrapy.core.scraper<span style="color:#f92672">]</span> DEBUG: Scraped from &lt;<span style="color:#ae81ff">200</span> https://weather.yahoo.co.jp/weather/jp/13/4410.html&gt;
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#39;announcement_date&#39;</span>:<span style="color:#e6db74">&#39;Announced 17:00, December 1, 2019&#39;</span><span style="color:#f92672">}</span>
+2019-12-01 20:17:21 <span style="color:#f92672">[</span>scrapy.core.scraper<span style="color:#f92672">]</span> DEBUG: Scraped from &lt;<span style="color:#ae81ff">200</span> https://weather.yahoo.co.jp/weather/jp/13/4410.html&gt;
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#39;date&#39;</span>:<span style="color:#e6db74">&#39;December 3&#39;</span>,
+ <span style="color:#e6db74">&#39;rainy_percent&#39;</span>: <span style="color:#e6db74">&#39;10&#39;</span>,
+ <span style="color:#e6db74">&#39;temperature&#39;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;17&#39;</span>, <span style="color:#e6db74">&#39;10&#39;</span><span style="color:#f92672">]</span>,
+ <span style="color:#e6db74">&#39;weather&#39;</span>:<span style="color:#e6db74">&#39;sunny&#39;</span><span style="color:#f92672">}</span>
+2019-12-01 20:17:21 <span style="color:#f92672">[</span>scrapy.core.scraper<span style="color:#f92672">]</span> DEBUG: Scraped from &lt;<span style="color:#ae81ff">200</span> https://weather.yahoo.co.jp/weather/jp/13/4410.html&gt;
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#39;date&#39;</span>:<span style="color:#e6db74">&#39;December 4&#39;</span>,
+ <span style="color:#e6db74">&#39;rainy_percent&#39;</span>: <span style="color:#e6db74">&#39;0&#39;</span>,
+ <span style="color:#e6db74">&#39;temperature&#39;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;15&#39;</span>, <span style="color:#e6db74">&#39;4&#39;</span><span style="color:#f92672">]</span>,
+ <span style="color:#e6db74">&#39;weather&#39;</span>:<span style="color:#e6db74">&#39;sunny&#39;</span><span style="color:#f92672">}</span>
+2019-12-01 20:17:21 <span style="color:#f92672">[</span>scrapy.core.scraper<span style="color:#f92672">]</span> DEBUG: Scraped from &lt;<span style="color:#ae81ff">200</span> https://weather.yahoo.co.jp/weather/jp/13/4410.html&gt;
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#39;date&#39;</span>:<span style="color:#e6db74">&#39;December 5&#39;</span>,
+ <span style="color:#e6db74">&#39;rainy_percent&#39;</span>: <span style="color:#e6db74">&#39;0&#39;</span>,
+ <span style="color:#e6db74">&#39;temperature&#39;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;14&#39;</span>, <span style="color:#e6db74">&#39;4&#39;</span><span style="color:#f92672">]</span>,
+ <span style="color:#e6db74">&#39;weather&#39;</span>:<span style="color:#e6db74">&#39;Sometimes cloudy&#39;</span><span style="color:#f92672">}</span>2019-12-01 20:17:21 <span style="color:#f92672">[</span>scrapy.core.scraper<span style="color:#f92672">]</span> DEBUG: Scraped from &lt;<span style="color:#ae81ff">200</span> https://weather.yahoo.co.jp/weather/jp/13/4410.html&gt;
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#39;date&#39;</span>:<span style="color:#e6db74">&#39;December 6th&#39;</span>,
+ <span style="color:#e6db74">&#39;rainy_percent&#39;</span>: <span style="color:#e6db74">&#39;10&#39;</span>,
+ <span style="color:#e6db74">&#39;temperature&#39;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;11&#39;</span>, <span style="color:#e6db74">&#39;4&#39;</span><span style="color:#f92672">]</span>,
+ <span style="color:#e6db74">&#39;weather&#39;</span>:<span style="color:#e6db74">&#39;cloudy&#39;</span><span style="color:#f92672">}</span>
+2019-12-01 20:17:21 <span style="color:#f92672">[</span>scrapy.core.scraper<span style="color:#f92672">]</span> DEBUG: Scraped from &lt;<span style="color:#ae81ff">200</span> https://weather.yahoo.co.jp/weather/jp/13/4410.html&gt;
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#39;date&#39;</span>:<span style="color:#e6db74">&#39;December 7&#39;</span>,
+ <span style="color:#e6db74">&#39;rainy_percent&#39;</span>: <span style="color:#e6db74">&#39;30&#39;</span>,
+ <span style="color:#e6db74">&#39;temperature&#39;</span>: <span style="color:#f92672">[</span><span style="color:#e6db74">&#39;9&#39;</span>, <span style="color:#e6db74">&#39;3&#39;</span><span style="color:#f92672">]</span>,
+ <span style="color:#e6db74">&#39;weather&#39;</span>:<span style="color:#e6db74">&#39;cloudy&#39;</span><span style="color:#f92672">}</span>
+</code></pre></div><p>It seems to be taken off well!
+Since it is a big deal, let&rsquo;s output it to a file.</p>
+<p>When outputting to a file, Japanese is garbled by default, so
+Add encoding settings to settings.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:settings.py" data-lang="python:settings.py">FEED_EXPORT_ENCODING<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ scrapy crawl yahoo_weather_crawler -o weather_data.json
+...
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json:weather_data.json" data-lang="json:weather_data.json">[
+{<span style="color:#f92672">&#34;announcement_date&#34;</span>: <span style="color:#e6db74">&#34;December 1, 2019 17:00 Announcement&#34;</span>},
+{<span style="color:#f92672">&#34;date&#34;</span>: <span style="color:#e6db74">&#34;December 3&#34;</span>, <span style="color:#f92672">&#34;weather&#34;</span>: <span style="color:#e6db74">&#34;sunny&#34;</span>, <span style="color:#f92672">&#34;temperature&#34;</span>: [<span style="color:#e6db74">&#34;17&#34;</span>, <span style="color:#e6db74">&#34;10&#34;</span>], <span style="color:#f92672">&#34;rainy_percent&#34;</span>: <span style="color:#e6db74">&#34;10&#34;</span>},
+{<span style="color:#f92672">&#34;date&#34;</span>: <span style="color:#e6db74">&#34;December 4th&#34;</span>, <span style="color:#f92672">&#34;weather&#34;</span>: <span style="color:#e6db74">&#34;sunny&#34;</span>, <span style="color:#f92672">&#34;temperature&#34;</span>: [<span style="color:#e6db74">&#34;15&#34;</span>, <span style="color:#e6db74">&#34;4&#34;</span>], <span style="color:#f92672">&#34;rainy_percent&#34;</span>: <span style="color:#e6db74">&#34;0&#34;</span>},
+{<span style="color:#f92672">&#34;date&#34;</span>: <span style="color:#e6db74">&#34;December 5th&#34;</span>, <span style="color:#f92672">&#34;weather&#34;</span>: <span style="color:#e6db74">&#34;Sometimes cloudy&#34;</span>, <span style="color:#f92672">&#34;temperature&#34;</span>: [<span style="color:#e6db74">&#34;14&#34;</span>, <span style="color:#e6db74">&#34;4&#34;</span>], <span style="color:#f92672">&#34;rainy_percent&#34;</span>: <span style="color:#e6db74">&#34;0&#34;</span>},
+{<span style="color:#f92672">&#34;date&#34;</span>: <span style="color:#e6db74">&#34;December 6th&#34;</span>, <span style="color:#f92672">&#34;weather&#34;</span>: <span style="color:#e6db74">&#34;Cloudy&#34;</span>, <span style="color:#f92672">&#34;temperature&#34;</span>: [<span style="color:#e6db74">&#34;11&#34;</span>, <span style="color:#e6db74">&#34;4&#34;</span>], <span style="color:#f92672">&#34;rainy_percent&#34;</span>: <span style="color:#e6db74">&#34;10&#34;</span>},
+{<span style="color:#f92672">&#34;date&#34;</span>: <span style="color:#e6db74">&#34;December 7th&#34;</span>, <span style="color:#f92672">&#34;weather&#34;</span>: <span style="color:#e6db74">&#34;Cloudy&#34;</span>, <span style="color:#f92672">&#34;temperature&#34;</span>: [<span style="color:#e6db74">&#34;9&#34;</span>, <span style="color:#e6db74">&#34;3&#34;</span>], <span style="color:#f92672">&#34;rainy_percent&#34;</span>: <span style="color:#e6db74">&#34;30&#34;</span>}
+]
+</code></pre></div><p>I was able to output!</p>
+<p>Next time, I will combine this process with AWS and try to run it serverless.</p>
+<h2 id="references">References</h2>
+<p>Scrapy 1.8 documentation
+<a href="https://doc.scrapy.org/en/latest/index.html">https://doc.scrapy.org/en/latest/index.html</a>
+Understand Scrapy in 10 minutes
+<a href="https://qiita.com/Chanmoro/items/f4df85eb73b18d902739">https://qiita.com/Chanmoro/items/f4df85eb73b18d902739</a>
+Web scraping with Scrapy
+<a href="https://qiita.com/Amtkxa/items/4c1172c932264ae941b4">https://qiita.com/Amtkxa/items/4c1172c932264ae941b4</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

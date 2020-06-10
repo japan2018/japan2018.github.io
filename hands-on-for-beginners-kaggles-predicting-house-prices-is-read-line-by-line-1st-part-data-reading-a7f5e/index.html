@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Hands-on for beginners] Kaggle&#39;s Predicting house prices is read line by line (1st part: Data reading) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Hands-on for beginners] Kaggle&rsquo;s Predicting house prices is read line by line (1st part: Data reading)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 18, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/beginner"> Beginner</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> Machine Learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/hands-on"> Hands-On</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kaggle"> Kaggle</a></code></small>
+
+</p>
+<pre><code># theme
+</code></pre>
+<p>A job that operates a real estate system as a service, a story broke out that there is no loss in doing hands-on at the field level. That&rsquo;s why we decided to challenge kaggle&rsquo;s &ldquo;House Price&rdquo; problem, which is a famous title. So, if you make a note of this properly, it will be useful for later, so I decided to post it to qiita after reading the line by line. It may be a summary of notes rather than commentary, but I hope it will be useful for someone somewhere.</p>
+<ul>
+<li>Original title: <a href="https://www.kaggle.com/c/house-prices-advanced-regression-techniques">https://www.kaggle.com/c/house-prices-advanced-regression-techniques</a></li>
+<li>Referenced article: <a href="https://yolo-kiyoshi.com/2018/12/17/post-1003/">https://yolo-kiyoshi.com/2018/12/17/post-1003/</a></li>
+</ul>
+<p>#Today&rsquo;s work</p>
+<h2 id="library-preparation">Library preparation</h2>
+<p>I will explain each library one by one when I used it in the work, so I copied and copied it here as a spell.</p>
+<pre><code>import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+import seaborn as sns
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import (
+    LinearRegression,
+    Ridge,
+    Lasso
+)
+%matplotlib inline
+</code></pre><h2 id="data-import">Data import</h2>
+<p>Actual work starts from here. First, read and format the CSV file to use. For now, copy and paste this. Commentary one by one.</p>
+<pre><code>#Read data
+train = pd.read_csv('train.csv') # training data
+test = pd.read_csv('test.csv') # test data
+# Merging learning data and test data
+train['WhatIsData'] ='Train'
+test['WhatIsData'] ='Test'
+test['SalePrice'] = 9999999999
+alldata = pd.concat([train,test],axis=0).reset_index(drop=True)
+print('The size of train is :'+ str(train.shape))
+print('The size of test is :'+ str(test.shape))
+</code></pre><h3 id="read-csv-file">Read CSV file</h3>
+<ul>
+<li>
+<p>Applicable source: <code>train = pd.read_csv('train.csv') # training data</code></p>
+</li>
+<li>
+<p>Description: Import CSV file using pandas imported by &ldquo;import pandas as pd&rdquo; and store in variable &ldquo;train&rdquo;. Pandas, for my personal interpretation, is an iron plate library used to easily process data in a spreadsheet.</p>
+</li>
+<li>
+<p>Reference: <a href="https://dividable.net/programming/python-pandas/">https://dividable.net/programming/python-pandas/</a></p>
+</li>
+</ul>
+<h3 id="store-data-uniformly-in-the-train-variable-column">Store data uniformly in the train variable column</h3>
+<ul>
+<li>Applicable source: <code>train['WhatIsData'] ='Train'</code>
+*Description: In the test, put the items &ldquo;WhatIsData (item for distinguishing from test or train)&rdquo; and &ldquo;SalePrice (data that originally does not exist in test)&rdquo; that are not in the train.</li>
+</ul>
+<h3 id="gutchan-test-data-and-train-data">Gutchan test data and train data</h3>
+<ul>
+<li>Applicable source: <code>alldata = pd.concat([train,test],axis=0).reset_index(drop=True)</code></li>
+<li>Description: Prepare summary data, alldata to be used later.</li>
+<li>concat: Connect data. If axis is not specified, it will be connected like adding a line.</li>
+<li>Concat reference: <a href="http://sinhrks.hatenablog.com/entry/2015/01/28/073327">http://sinhrks.hatenablog.com/entry/2015/01/28/073327</a></li>
+<li>index: Basic knowledge for handling data in the first place. A number that is arbitrarily assigned to be processed. I use it in reset_index.</li>
+<li>index Reference: <a href="https://techacademy.jp/magazine/24150">https://techacademy.jp/magazine/24150</a></li>
+</ul>
+<h3 id="display-summary-of-captured-data">Display summary of captured data</h3>
+<ul>
+<li>Applicable source: <code>print('The size of train is :'+ str(train.shape))</code></li>
+<li>print: Display the contents put in () on the screen.</li>
+<li>.shape: Outputs the dimensions, height and width of the array, and a summary.</li>
+<li>.shape reference: <a href="http://www.kamishima.net/mlmpyja/nbayes2/shape.html">http://www.kamishima.net/mlmpyja/nbayes2/shape.html</a></li>
+</ul>
+<p>#End.
+That&rsquo;s all for today. I&rsquo;m going to use it for one hour a week to put it together, so it&rsquo;s like a turtle, but thank you for your patronage.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to analyze the hearing survey results with text mining | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to analyze the hearing survey results with text mining</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 2, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/text-mining"> text mining</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/word2vec"> word2vec</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/distributed-representation"> distributed representation</a></code></small>
+
+</p>
+<pre><code>#Background
+</code></pre>
+<p>It seems that you conducted an interview with a resident in a certain area in a study by a certain university at a certain university, but there was something unconsciously aware of the people in that area based on the content of the hearing. I decided to try it because I wanted to analyze it.</p>
+<h1 id="used">Used</h1>
+<h2 id="mecab">MeCab</h2>
+<p>This is also a familiar morphological analysis engine.</p>
+<h3 id="what-is-morphological-analysis">What is morphological analysis?</h3>
+<p>Decomposing a document into morphemes (the smallest unit in which a word has meaning) based on word part-of-speech information.
+Well, there is an example of &ldquo;Peach Momomo&rdquo;, so if you show what you executed in another example, it will be decomposed into words and the part of speech will be shown in the following form.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">echo <span style="color:#e6db74">&#34;Give me the mayor&#39;s record.&#34;</span> | Mecab
+Mayor noun, general, *,*,*,*, mayor, butterfly, chocho
+A little adverb, particle conjunction, *,*,*,*, little, little, little
+Butterfly noun, general, *,*,*,*, butterfly, butterfly, butterfly
+Verb, self-reliance, *, *, five-dan, line, continuous connection, take, tot, tot
+Auxiliary verb, *, *, *, special/ta, basic form, ta, ta, ta
+Record noun, general, *,*,*,*, record, butterfly, chosho
+Verb, self-reliance, *, *, five-dan, line, continuous connection, take, tot, tot
+Te particle, connective particle, *,*,*,*,te,te,te
+Give me noun, verb non-autonomous, *,*,*,*, give, chodai, chodai
+</code></pre></div><h4 id="wakati">wakati</h4>
+<p>The previous value comes out with the option <code>-Ochasen</code>, but there is <code>-Owakati</code> in the command options of Mecab.
+You can use this to get a string with each word separated.
+Often used to preprocess documents.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">echo <span style="color:#e6db74">&#34;Give me a transcript of the mayor.&#34;</span> | Mecab -Owakati
+Mayor please give me a brief record
+</code></pre></div><h3 id="install">install</h3>
+<p>If you use Homebrew for Mac, it&rsquo;s fast.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">brew install mecab
+brew install mecab-ipadic <span style="color:#75715e"># Standard system dictionary</span>
+<span style="color:#75715e"># There is also a dictionary called mecab-ipadic-NEologd, which is good for documents on the Web. (https://github.com/neologd/mecab-ipadic-neologd)</span>
+
+<span style="color:#75715e">### Install dictionary</span>
+cd
+git clone --depth <span style="color:#ae81ff">1</span> https://github.com/neologd/mecab-ipadic-neologd.git
+cd mecab-ipadic-neologd
+./bin/install-mecab-ipadic-neologd -n -a
+</code></pre></div><p>For Windows, it is good to run the released installer.
+<a href="https://github.com/ikegami-yukino/mecab/releases">https://github.com/ikegami-yukino/mecab/releases</a></p>
+<h2 id="word2vec">Word2Vec</h2>
+<p>I used familiar word2vec for text mining.
+A library that analyzes text data and vectorizes words.
+The package used gensim.</p>
+<h3 id="what-do-you-mean-by-vectorization">What do you mean by vectorization</h3>
+<p>Is it good to say that the relationship between words and their surnames is digitized?
+The expression method using high-dimensional vectors called distributed expression (Word Embeddings)*1 is used.For each word, the degree of similarity between words is measured in the form shown in the figure below. is.
+*1. Expression method that solves the one-hot expression problem
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/270964/8770ba3c-e289-60e6-86b9-9ef7718440cc.png" alt="image.png"></p>
+<h3 id="learning-algorithm">Learning algorithm</h3>
+<p>gensim word2vec contains two types of learning algorithms (models).
+Both are neural nets that have one-hot vectors as input layers and are transformed into output layers via n-dimensional hidden layers.</p>
+<p>By the way, a one-hot vector is a word assigned to each element of a dimensional vector for the number of words, so in short, it would be nice to have an image like a word book.
+If you want to show an egg, it feels like the egg flag is on.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/270964/585cc9b9-135a-9abe-8519-593cce26d97b.png" alt="image.png"></p>
+<ol>
+<li>
+<p>Skip-gram model
+It is a model that learns surrounding words from the target word.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/270964/a343c36d-59b4-6e8c-594e-97b460505a83.png" alt="image.png"></p>
+</li>
+<li>
+<p>Countinuous Bag-of-Words Model (CBOW)
+It is a model that learns the target word from surrounding words.</p>
+</li>
+</ol>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/270964/1d972083-0b4b-5c0e-eead-24f44f81f05a.png" alt="image.png"></p>
+<p>Basically, Skip-gram is more accurate with less data, so it is recommended to execute it here.</p>
+<h3 id="install-1">install</h3>
+<p>I used word2vec included in gensim this time, so I installed it with the following command only.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install gensim
+</code></pre></div><h3 id="similar-packages">Similar packages</h3>
+<ul>
+<li>GloVe</li>
+<li>WordNet</li>
+<li>Doc2Vec ← It may have been this time to use</li>
+<li>fastText ← A library that accelerates natural language processing published by Artificial Intelligence Laboratory of Facebook. The developer is Mikolov who created Word2Vec, so is it upward compatible?</li>
+</ul>
+<h2 id="scikit-learn">scikit-learn</h2>
+<p>Speaking of an open source library for machine learning, I used it to cluster the words that came out this time.</p>
+<h3 id="what-can-scikit-learn-do">What can scikit-learn do?</h3>
+<p>I&rsquo;m tired of writing, so roughly&hellip; I can do the following:</p>
+<h4 id="classification">classification</h4>
+<p>Solve supervised learning classification problems. The following methods can be used.</p>
+<ol>
+<li>SGD (stochastic gradient descent)</li>
+<li>Kernel approximation</li>
+<li>Linear SVC
+4.k neighborhood method</li>
+</ol>
+<h4 id="regression">Regression</h4>
+<p>Perform regression analysis. It&rsquo;s something you do in a machine learning tutorial.
+The methods that can be used are as follows.</p>
+<ol>
+<li>SGD (stochastic gradient descent)</li>
+<li>LASSO, ElasticNet</li>
+<li>Ridge, Liner SVR</li>
+<li>SVR (Gaussian kernel), Ensemble</li>
+</ol>
+<h4 id="clustering">clustering</h4>
+<p>You can solve clustering problems for unsupervised learning.
+This time I used it because I wanted to do it without a teacher.
+The methods that can be used are as follows.</p>
+<ol>
+<li>KMeans
+This time I am doing this method.</li>
+<li>Spectral clustering, GMM
+It seems to be a non-linear clustering analysis method used when KMeans cannot analyze well.
+I&rsquo;m not studying properly</li>
+<li>MeanShift, VBGMM</li>
+</ol>
+<h1 id="what-you-did">What you did</h1>
+<p>First, we conducted a morphological analysis of the hearing data using Mecab.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Initialization</span>
+chasen <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;-Ochasen -d ./resource/dictionary/&#39;</span>) <span style="color:#75715e"># ./resource/dictionary/ ← This is the directory that contains the dictionary.</span>
+
+<span style="color:#75715e">#Text morphological analysis</span>
+raw <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_chasen(s) <span style="color:#75715e"># s</span>
+
+<span style="color:#75715e"># Split analysis result document into columns</span>
+chunks <span style="color:#f92672">=</span> raw<span style="color:#f92672">.</span>splitlines()[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+
+<span style="color:#75715e"># Save it in a variable for each item and use it for subsequent calculations.</span>
+surface, yomi, origin, feature <span style="color:#f92672">=</span> chunk<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span>)[:<span style="color:#ae81ff">4</span>]
+
+</code></pre></div><p>Then create the text to put into Word2Vec using the <code>-Owakati</code> option and bring it into word2Vec.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Initialization</span>
+file_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;hoge.txt&#39;</span>
+f <span style="color:#f92672">=</span> open(file_path,<span style="color:#e6db74">&#39;w&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8_sig&#34;</span>)
+wakati <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;-Owakati -d ./resource/dictionary/&#39;</span>)
+raw <span style="color:#f92672">=</span> wakati<span style="color:#f92672">.</span>parse(s)
+f<span style="color:#f92672">.</span>write(raw)
+
+<span style="color:#75715e"># Each sentence is read.</span>
+sentences <span style="color:#f92672">=</span> word2vec<span style="color:#f92672">.</span>LineSentence(file_path)
+</code></pre></div><p>I am writing the contents of the method that was finally used, but when I implemented it by another method at the beginning, and when I was doing it with a small amount of transcription data, the data I did not want at all ..</p>
+<p>For that reason, we decided to use the existing trained model, add hearing data to it, train it, and analyze it.</p>
+<p>So let&rsquo;s load the trained model from the net.
+<a href="https://aial.shiroyagi.co.jp/2017/02/japanese-word2vec-model-builder/">About learned models</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">model <span style="color:#f92672">=</span> word2vec<span style="color:#f92672">.</span>Word2Vec<span style="color:#f92672">.</span>load (trained model path)
+
+<span style="color:#75715e"># Add training data</span>
+model<span style="color:#f92672">.</span>build_vocab(sentences, update<span style="color:#f92672">=</span>True)
+
+<span style="color:#75715e"># Process to apply bias to the training data (I am overtrained a little because I am drunk by the existing learning model)</span>
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range (BIAS):
+    model<span style="color:#f92672">.</span>train(sentences, epochs<span style="color:#f92672">=</span>model<span style="color:#f92672">.</span>epochs, total_examples<span style="color:#f92672">=</span>model<span style="color:#f92672">.</span>corpus_count)
+    model<span style="color:#f92672">.</span>alpha <span style="color:#f92672">-=</span> <span style="color:#ae81ff">0.002</span> <span style="color:#75715e"># Learning rate setting</span>
+    model<span style="color:#f92672">.</span>min_alpha <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>alpha <span style="color:#75715e"># Modify learning rate</span>
+</code></pre></div><p>After training, you can get a vector by putting words in the model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">model<span style="color:#f92672">.</span>wv [word]
+</code></pre></div><p>Next is clustering.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sklearn.cluster <span style="color:#f92672">import</span> KMeans
+
+Import <span style="color:#75715e">#KMeans from sklern and call the model.</span>
+kmeans_model <span style="color:#f92672">=</span> KMeans(n_clusters<span style="color:#f92672">=</span>CLUSTER_NUM, verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">42</span>, n_jobs<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)<span style="color:#75715e"># If you put the vector array that you had in your hand here, you can cluster them.</span>
+kmeans_model<span style="color:#f92672">.</span>fit(vectors)
+</code></pre></div><p>It is like that for a rough flow.
+Details in source code: <a href="https://github.com/AMDlab/questionnaire_mining">https://github.com/AMDlab/questionnaire_mining</a></p>
+<p>As a result, I get a value like this,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">cluster name, words
+cluster_0, research, architecture, work, magazine, craftsman, property
+cluster_1, sales, region, independence, under, planning, free, exchange, preparation, above, information, media, friend, introduction, sale, member, center, management, purpose, self, association, origin, photograph, gallery, folk ,Location,art,sou,exhibition,designer,writer,freelance,hotel,office,not,map,department store,employee,work,cooperation,commercial,staff,duties,building,president,suzuki,street , Also, aoyama, interview, shipping, study, demonstration, town revitalization, part-time job, shopping, client, thank you, bento, bookstore, internet, please, workshop, department store, photographer, 1964, craft, meeting, store, office , Acquaintance, friend, cafe, docomo, food, cake, memory, visit, greeting, meguro, event, business partner, culture, title, uncle, roppongi, taito, feature, dad, tell, business card, drinking party, pastry chef, town page , Food coordinator
+cluster_2, era, reason, relationship, world, style, content, balance, process, voice, one, culture, art, method, part, name, flow, process, meaning, background, reverse, trying, not, certain meaning, Each other, product, store, male, female, father, connection, building, interest, direction, imagination, observation, area, generation, experiment, opportunity, family, opposition, table, sideways, interest, technology, individual, consciousness, value, Situation, memory, environment, timing, both, image, goodness, daily life, approach, chance, parent, feeling, underground, movement, menu, impression, circumstances, industry, supermarket, mouth, let&#39;s do, money, atmosphere, youth, communication , Back, heaven, motivation, true, sense, world, energy, trouble, business, around, keyword, young, way, body, thing, couple, graphic, food, motivation, somewhere, pity, ourselves, advice, gaze , Habit, idea, customer, blog, foundation, commitment, walk, feel, bad thing, community, everyone, usability, side street, holding theory, happiness, children, affection, hierarchical relationships, comfort, parentheses, mom, goodwill, Good things, ramen shop, myself, jewelry, town factory, depth, story, smell, artistic, young people, five senses, coziness, saiko
+cluster_3,1,one,school,mother,local,next,real estate,corner,children,together,matsuya,us,neighborhood,oden,asakusa,tanaka,kuramae,beyond,street food,torikoshi,geidai,croquette,father , Sento, butcher, child, starfish, grilled pork
+cluster_4, broadcast, move, withdrawal, offer, 2 generations, 3 people, sword, enemy, story, base, development, map, battle, description, directing, condition, fixed, final, organization, body, playback, display, reproduction, Logic, production, poster, general, access, another, position, design, correspondence, basic, composition, designation, width, not, way of thinking, method, realization, peripheral, theme, itself, understanding, expression, possibility, japan, Done, symbol, foreign, related, brand, logo, sum, specialty store, public, contact, consultation, ultimate, two, shift, basic, title, exchange, city, area, person, success, topic, conviction, project, 2008, One person, Page, Car, Itself, Skill, Nationwide, Character, Activity, Collecting, Shooting, 1999, Attempt, Kabuki, Preparation, Saving, Survey, Closeness, Tool, Lower fire, Promise, Synchronization, Recruitment Experience, stage, produce, original, charm, electric, east, founding, two, while, cooperation, concrete, button, print, agree, document, outside, material, type, age, structure, door, addition, local , Space, strategy, negotiation, reduction, concrete, performance, hasan, station, design office, record, mother, inheritance, one-story, guidance, analysis, activity, laboratory, opening, ramen, game, disassembly, subcontract, Process, team, major, emotion, inquiry, connotation, secret, question, play, authentic, processing, developer, key, western side, pre, cost, on-air, decoration, redevelopment, contribution, larger, revival, accumulation, renovation, Big, floor, touching, talent, object, thank you, phone, waited, best, by, camera, derivation, instruction, style, how many, kin, worker, platform, hurdle, root, drawer, aquarium, ice, blood , Network, request, current situation, effort, conflict, share, behind, design, someone, package, share, cover, cheering, completion, obstruction, cognition, air, people, gps, unity, car, regret, convince, surprised, decided Joy, Pursuit, Ring, Permanent, Mass production, Strategic, Fair, Reality, Device, Idea, Townscape, Hand, Publisher, Interior, Arrow, Product, Stock, Store, Confidence, Modern, One point, Oxygen, Sketch , Kendo, migratory, abusive, trial and error, jewellery, passers-by, differentiation, visible, elderly, parenting, potential, favor, initiative, earrings, subject, speak, destination, filter, refrigerator, retail, backbone, cost, economy Growth, consent, warmth, digression, coexistence, plus, participant, C4, succession, prologue, same industry, rude, repeat, bookmark, door, empathy, review, no, oblique, social experiment, lot, Kitchen knife, normally, fertilizer, effort, skeleton, yell, contact, tablet, wheelchair, car navigation system, try, snack, nostalgia, consulting, quantity, gallery, drastic change, chazuke, geometric pattern, spout, overlap, inevitable , Spear, display, read, eat, direct exposure, creation, branding, quality, engraving, cooperating company, routine, store setting, refusal, talk, made, 1410,2521
+cluster_5, egg, color, china, place of origin, precious metal, price, oil, cow, fishmonger, 1 bottle, gram, fire, salt, water, ceiling, bag, coffee, 3 bottles, silver, pine, pack, Uji, pig, Aroma, meat, ingredient, melon, juice, kimono, bamboo, tofu, grilled, shoulder, sweets, rice, seasoning, strawberries, tea, handmade, cup, high temperature, clothes, clothes, tavern, shellfish, how much, chocolate, clams , Shiba, mochi, pork, chicken, stove, fry, eggplant, uri, seasoning, ham, bean, gunji, livestock, leek, chicken, leaf, miso, rice ball, stew, skewer, curry, sweet potato, ingredients, Miso, potatoes, pickles, packing, quail, kamaboko, soy sauce, sold by weight, lard, starch starch, ginger, quail eggs, bread crumbs, grilled fish, caramel, brooches, mayonnaise, side dish, fried foods, loin, turnip, kyowa, shavings, soup Fried, french fries, pork cutlet, char siu, shijimi, ginger, paste, azuki bean, minced meat, thigh, rag, bagel, chili oil, shichimi
+cluster_6, net, okinawa, journey, house, man, 3 years, sister, child, eldest son, father, wife, 14 years old, daughter, companion, work, place, teens, 3, mutual, the, 2, thailand, words, Rice, university, student, match, signboard, corporation, intersection, actor, america, acquaintance, mansion, road, middle school, rim, opposite, art, bon, son, encounter, green, complain, showa, parents&#39; house, senior, folk art , Folk art movement, Germany, Boom, Start, Soba shop, Well-established, Together, Old-fashioned, West, Lined, Specialty, Training, World, Home, Tanaka, At home, Adopted, Ten thousand, Acquaintance, Ryukyu, Wall, Sat, Tree, chairman, nobody knows, kindergarten, nursery school, back, parking lot, clock, 2 chome, flower, ward, factory, life, 1st period, 3rd generation, 95, east side, get out, house, quotient, elder, Ichibancho, Family, Tohoku, 6 people, Active, Classmate, Shopping district, Come, Standing, New Year, Event, 1st floor, Letter, Straight, Hunk, Tama, Middle, 400 yen, Tourist destination, NTT, Entrance, Wallet , Fashion, ginza, second generation, can, package design, downtown, sakura, container, soba, adult, traffic, naka, shrine, laboratory, kanda, cuisine, star, convenience store, exit, meet, basket, leisure, deadly, Props, sorry, wholesaler, prosperity, go, architect, relatives, homepage, last time, personal, flyer, shop name, dignity, calling, mochizuki, 0001, ventilation fan, kojimacho, rice, rose, opening, NPO corporation, Leather, kanagawa, satake, jean, 0041,441, perch, wagashi, diagonal, cup, graduate student, apprentice, 150 yen, countryside, restaurant, grocery, many times, 10 people, i like it, when, triangle, fork Song, on the left, group company, 1929, bar, grandfather, aki, customer, rumor, after a long absence, bunkyo ward, tin plate, greengrocers, at some time, Okachimachi, disaster area, festival, koto ward, grocery store, everyday, Yoneya, Real Estate Company, Mogami, Miscellaneous Goods, Moto, Sumida Ward, Yoshi, Morioka, Tokushima, Flower, Classico, Takuya Kimura, Souvenir, MEN&#39;S NON-NO, 1500 Yen, Aunt, Nobu, Marugame, Sake, Nagaya, Sheep, Beautician, 1905, dinner, sunny man, grandfather, coffee shop, 2227,1202, taitō, ghoul, step, cutout, swallow, lunch, 2127, festival, that day, indian food, 9th, mizu, patronize, 9 Years ago, familiar, grandma, year-end party, sanma, miya, peach, kabuki, social gathering, 2550, raii, life and death problem, Kaminarimon, 1224, sukiyaki, hat shop, flower artist, bukkake, 1307, older brother, kita, 2 225, kayabacho, who, dry matter, horse chestnut, crab, horizontal, yama, berthing, 15 years ago, bubuyama, tanaka-san, snacks, builder, talking, stroller, candy shop, iriya, catchy, piggybacker, 1200 Yen, how to buy, 3901, flower shop, chiku, 1329, kamisan, dara, sakuragi, recommendation, bitches, coffee, set meal, catch, like, tory, 0052, unpleasant, teahouse, 5150,2204, nanohana, bakurocho, gusset ,Morikai,kamiyama-cho,happy thing,1527,masu mirai,nit,previously,1411,lady,grandma,gyoza,katagata,yoshino,depa underground,2117,behind,old tools,confectionery shop,thank you Masu, Mizore, Misono, Agata, Daikokuya, Story only here, Chari, Segal, Takezawa, 1547, 0125, Dento, NTT Urban Development, 3744, Joshibi, 1518, Yonehisa, Ishii, 0814, Takao, 3039
+cluster_7, 9 years, show, start, range, overseas, April 15, 10 years, October 7, April, limited, 10, 2 years, 1 person, 20 years, last, between, 1995, successor Person, 4 years, State, 4, Next, Number, Week, Face, May, 5, Came, Radio, Production, Television, November, September, July, Twice, Elementary school, Ten, 20, 2 hours ,One time,Private broadcast,Twenties,November 4,Hundred,Winter,One year,Change,One year,Condition,Demand,Only this,Extension,February,Head,Schedule,Order,1 hour,Open,1 day , 2nd, summer, FM, rain, rent, spring, NHK, 30 years old, jazz, Todai, sales, 1 week, put out, festival, stop, 1 week, 5 hours, DVD, meal, 40s, 30s, Heavy rain, 10 o&#39;clock, 25 years, limit, 6 years, 80, 1st year, 30 years, 40 years, day of the week, 4 days, 7 hours, 3 o&#39;clock, as is, early, 6 o&#39;clock, year-end and new year&#39;s weekends, orders, 40 Teenager, Wholesale, Coverage, Side dish, 5 days, Parade, 1 year old, Lunch, Facebook, 3 months, Closed, AM, 80 people, 6 hours, 5 seconds, 50s, Evening, Sold out, 1:00, Lunch break, 5 years Before, 2 o&#39;clock, 45 years, 15:00, light, shaved ice, 80s, 50 bottles
+cluster_8, event, first, company, design, editing, dispatch, food, bicycle, hearing, manufacturing, SyuRo
+cluster_9, myself, people, town, side dishes
+</code></pre></div><p>After this, I continued to make various adjustments to the values, and finally figured out what kind of features they had.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

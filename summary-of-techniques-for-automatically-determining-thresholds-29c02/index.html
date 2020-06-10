@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Summary of techniques for automatically determining thresholds | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Summary of techniques for automatically determining thresholds</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 18, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/math">math</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/classification">classification</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/threshold">threshold</a></code></small>
+
+</p>
+<pre><code>Recently, I often talk about talk about wanting to automatically determine the threshold, so I summarized it.
+</code></pre>
+<p>Threshold design corresponds to two-dimensional unsupervised clustering of two groups.
+Yes.
+This time, we will summarize 5 classical and useful methods, taking image binarization as an example.</p>
+<p><strong>Note:</strong> If the distribution system is unknown, there is no correct answer for threshold determination</p>
+<h2 id="preparation">Preparation</h2>
+<p>This time I will use this photo taken properly.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/acefc858-b82c-cd87-65d4-d18b89de173a.png" alt="main.png"></p>
+<p>The brightness histogram of this image is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/eeb120d7-d570-0b59-5396-14f0e532732e.png" alt="hist.png"></p>
+<p>The problem is that an optimal threshold is set from this brightness distribution and a binary image is created.</p>
+<h2 id="k-means-1">K-means [1]</h2>
+<p>The most famous method for unsupervised learning is K-means (<a href="https://en.wikipedia.org/wiki/K-means">wiki</a>).
+K-means aims to find the center point {m1,&hellip;,mM} of each class that will be the solution to the following optimization problem.</p>
+<p>$$
+{\rm minimize}_{m_1,\ldots, m_M} \quad \sum_{i=1}^N \min_j |x_i-m_j|
+$$</p>
+<p>Where {x1,&hellip;,xN} is the given data.</p>
+<p>The center point {m1,&hellip;,mM)} of the class is obtained by repeating the following two.</p>
+<ol>
+<li>Calculate the average value within the class.</li>
+<li>Reassign the data to the nearest central class.</li>
+</ol>
+<p>K-means can be applied to multi-dimensional cases, but M=2 in the threshold design problem.</p>
+<p>The result of this classification is shown in the following figure.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/85c5cc4c-6f73-d315-f30a-70cf667ca844.png" alt="hist_kmeans.png"></p>
+<p>The features of K-means are as follows.</p>
+<ul>
+<li>It is necessary to calculate the N×M order distance for each update.</li>
+<li>There is an initial value dependency.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> cv2
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#75715e">#Read data</span>
+img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#39;img/main.png&#39;</span>,<span style="color:#ae81ff">0</span>)
+data <span style="color:#f92672">=</span> img<span style="color:#f92672">.</span>reshape(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e"># Label initialization</span>
+labels <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">2</span>,data<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>])
+
+<span style="color:#75715e"># Exit conditions</span>
+OPTIMIZE_EPSILON <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+
+m_0_old <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>inf
+m_1_old <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>inf
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1000</span>):
+<span style="color:#75715e"># Calculate each average</span>
+    m_0 <span style="color:#f92672">=</span> data[labels<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>mean()
+    m_1 <span style="color:#f92672">=</span> data[labels<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>mean()
+<span style="color:#75715e"># Label recalculation</span>
+    labels[np<span style="color:#f92672">.</span>abs(data<span style="color:#f92672">-</span>m_0) <span style="color:#f92672">&lt;</span>np<span style="color:#f92672">.</span>abs(data<span style="color:#f92672">-</span>m_1)] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    labels[np<span style="color:#f92672">.</span>abs(data<span style="color:#f92672">-</span>m_0) <span style="color:#f92672">&gt;=</span> np<span style="color:#f92672">.</span>abs(data<span style="color:#f92672">-</span>m_1)] <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+<span style="color:#75715e">#     Exit conditions</span>
+    <span style="color:#66d9ef">if</span> np<span style="color:#f92672">.</span>abs(m_0<span style="color:#f92672">-</span>m_0_old) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>abs(m_1<span style="color:#f92672">-</span>m_1_old) <span style="color:#f92672">&lt;</span>OPTIMIZE_EPSILON:
+        <span style="color:#66d9ef">break</span>
+    m_0_old <span style="color:#f92672">=</span> m_0
+    m_1_old <span style="color:#f92672">=</span> m_1
+<span style="color:#75715e">#Since the class changes depending on the initial value, the smaller upper bound is adopted.</span>
+thresh_kmeans <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>minimum(data[labels<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>max(),data[labels<span style="color:#f92672">==</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>max())
+</code></pre></div><h2 id="otsu-law-2">Otsu Law [2]</h2>
+<p>The Otsu method is a method that maximizes the difference between the weighted averages of each class (<a href="https://en.wikipedia.org/wiki/Otsu%27s_method">wiki</a>).
+Specifically, it corresponds to finding a threshold T that solves the following optimization problem.</p>
+<p>$$
+{\rm maximize}_T\quad \sigma_b^2 (T):= w_1 (m_1-m)^2 +w_2 (m_2-m)^2
+$$</p>
+<p>here,
+$$
+w_1 = \frac{ | {x_1,\ldots, x_N}\leq T|}{N},\quad w_2 = \frac{ | {x_1,\ldots, x_N} &gt;T|}{N}
+$$
+$$
+m_1 = \frac{\sum_{x_i\leq T} x_i}{\sum x_i},\quad m_2 = \frac{\sum_{x_i&gt;T} x_i}{\sum x_i}
+$$
+It becomes.</p>
+<p>The problem of maximizing σb is the weighted sum of variances of each class.</p>
+<p>$$
+\sigma_a^2 (T) := w_1 \frac{\sum_{x_i\leq T} (x_i-m_1)^2}{N} +w_2 \frac{\sum_{x_i&gt;T} (x_i-m_2)^ 2}{N}
+$$
+Is consistent with the problem of minimizing.
+Therefore, we sometimes solve the problem of minimizing σa and the problem of minimizing σa/σb.</p>
+<p>The result of this classification is shown in the following figure.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/99bbc181-03d4-414e-e9af-156d35e13ef2.png" alt="hist_otsu.png"></p>
+<p>The code in python is described below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Define Otsu scoring function</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">OtsuScore</span>(data,thresh):
+    w_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sum(data<span style="color:#f92672">&lt;=</span>thresh)<span style="color:#f92672">/</span>data<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]
+    w_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sum(data<span style="color:#f92672">&gt;</span>thresh)<span style="color:#f92672">/</span>data<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]
+    <span style="color:#75715e"># check ideal case</span>
+    <span style="color:#66d9ef">if</span> (w_0 <span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>) <span style="color:#f92672">|</span> (w_1 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>):
+        <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>
+    mean_all <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>mean()
+    mean_0 <span style="color:#f92672">=</span> data[data<span style="color:#f92672">&lt;=</span>thresh]<span style="color:#f92672">.</span>mean()
+    mean_1 <span style="color:#f92672">=</span> data[data<span style="color:#f92672">&gt;</span>thresh]<span style="color:#f92672">.</span>mean()
+    sigma2_b <span style="color:#f92672">=</span> w_0 <span style="color:#f92672">*</span>((mean_0<span style="color:#f92672">-</span>mean_all)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span> w_1 <span style="color:#f92672">*</span>((mean_1<span style="color:#f92672">-</span>mean_all)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+
+    <span style="color:#66d9ef">return</span> sigma2_b
+
+<span style="color:#75715e"># Callculation of Otsu score and analyze the optimal</span>
+scores_otsu <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(<span style="color:#ae81ff">256</span>)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(scores_otsu<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]):
+    scores_otsu[i] <span style="color:#f92672">=</span> OtsuScore(data,i)
+thresh_otsu <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argmax(scores_otsu)
+</code></pre></div><h2 id="method-by-sezan-et-al-3">Method by Sezan et al. [3]</h2>
+<p>This is a threshold design method that takes advantage of the fact that there are two peaks in the image brightness distribution.
+Design the threshold value by finding the value of the inside of the two peaks.</p>
+<p>First, the leftmost (smallest value) peak and the rightmost (largest value) peak are detected by polar calculation of the smoothed histogram and set as [m0, m1].
+Similarly, by calculating the polar regions, the left and right tails of each peak are calculated, and the left tail is [s0,s1] and the right tail is [e0,e1].</p>
+<p>At this time, the threshold value is considered to be between the right-hand hem e0 of the left peak and the left-hand s1 of the right peak.
+Therefore, the threshold is designed using the design parameter γ that is between 0 and 1 inclusive.</p>
+<p>$$
+{\rm Sezan~threshold} := (1-\gamma )e_0 + \gamma s_1
+$$</p>
+<p>The result of this classification is shown in the following figure.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/6289165c-7d5c-f753-9c14-e71e13426d8f.png" alt="hist_Sezan.png"></p>
+<p>The features of the binary method by Sezan et al. are as follows.</p>
+<ul>
+<li>There are many hyperparameters to adjust, but you can use them according to the situation</li>
+<li>Multidimensional is difficult</li>
+</ul>
+<p>The python code is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Smoothing parameter</span>
+sigma <span style="color:#f92672">=</span> <span style="color:#ae81ff">5.0</span>
+
+<span style="color:#75715e"># Percentage to attach importance</span>
+<span style="color:#75715e"># gamma = 1: widen the black area</span>
+<span style="color:#75715e"># gamma = 0: Widen the white area</span>
+gamma <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span>
+<span style="color:#75715e">#Gaussian kernel for smoothing</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getGaus</span>(G_size,G_sigma):
+    G_kernel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(G_size)
+    G_i0 <span style="color:#f92672">=</span> G_size<span style="color:#f92672">//</span><span style="color:#ae81ff">2</span>
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(G_size):
+        G_kernel[i] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span>(i<span style="color:#f92672">-</span>G_i0)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span> (<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>G_sigma<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>))
+<span style="color:#75715e"># Adjust so that the sum is 1.</span>
+    G_kernel <span style="color:#f92672">=</span> G_kernel<span style="color:#f92672">/</span>G_kernel<span style="color:#f92672">.</span>sum()
+
+    <span style="color:#66d9ef">return</span> G_kernel
+<span style="color:#75715e"># Create Gaussian kernel</span>
+kernel <span style="color:#f92672">=</span> getGaus(<span style="color:#ae81ff">55</span>,sigma)
+<span style="color:#75715e"># Histogram</span>
+num_hist, range_hist <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>histogram(data, bins<span style="color:#f92672">=</span> <span style="color:#ae81ff">256</span>)
+mean_hist <span style="color:#f92672">=</span> (range_hist[<span style="color:#ae81ff">1</span>:] <span style="color:#f92672">+</span> range_hist[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>
+
+<span style="color:#75715e"># Smoothing</span>
+hist_bar <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>convolve(num_hist,kernel,<span style="color:#e6db74">&#39;same&#39;</span>)
+<span style="color:#75715e">#Calculate the difference</span>
+d_hist <span style="color:#f92672">=</span> hist_bar[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>hist_bar[<span style="color:#ae81ff">1</span>:]
+<span style="color:#75715e"># Edge processing</span>
+d_hist <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>r_[[<span style="color:#ae81ff">0</span>],d_hist,[<span style="color:#ae81ff">0</span>]]
+
+<span style="color:#75715e">#Peak detection</span>
+m <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where((d_hist[<span style="color:#ae81ff">1</span>:] <span style="color:#f92672">&gt;=</span><span style="color:#ae81ff">0</span>) <span style="color:#f92672">&amp;</span> (d_hist[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">&lt;=</span><span style="color:#ae81ff">0</span>))[<span style="color:#ae81ff">0</span>]
+<span style="color:#75715e"># Local detection</span>
+es <span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>where((d_hist[<span style="color:#ae81ff">1</span>:] <span style="color:#f92672">&lt;=</span><span style="color:#ae81ff">0</span>) <span style="color:#f92672">&amp;</span> (d_hist[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">&gt;=</span><span style="color:#ae81ff">0</span>))[<span style="color:#ae81ff">0</span>]
+
+<span style="color:#75715e"># Maximum and minimum peaks</span>
+m0 <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>min()
+m1 <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>max()
+
+<span style="color:#75715e"># Local before and after the peak</span>
+s0 <span style="color:#f92672">=</span> es[es<span style="color:#f92672">&lt;</span>m0]<span style="color:#f92672">.</span>max()
+e0 <span style="color:#f92672">=</span> es[es<span style="color:#f92672">&gt;</span>m0]<span style="color:#f92672">.</span>min()
+s1 <span style="color:#f92672">=</span> es[es<span style="color:#f92672">&lt;</span>m1]<span style="color:#f92672">.</span>max()
+e1 <span style="color:#f92672">=</span> es[es<span style="color:#f92672">&gt;</span>m1]<span style="color:#f92672">.</span>min()
+
+<span style="color:#75715e">#Set threshold</span>
+thresh_Sezan <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>gamma) <span style="color:#f92672">*</span> mean_hist[e0] <span style="color:#f92672">+</span> gamma <span style="color:#f92672">*</span> mean_hist[s1]
+</code></pre></div><h2 id="minimization-of-kalback-leibler-information-4this-is-a-method-that-uses-the-kullback-leibler-kl-information-content-which-is-familiar-to-researchers-in-information-theory">Minimization of Kalback-Leibler information [4]This is a method that uses the Kullback-Leibler (KL) information content, which is familiar to researchers in information theory.</h2>
+<p>There are many papers that have been studied on other information criteria besides KL information.</p>
+<p>First, we define p as the probability distribution obtained by normalizing the luminance histogram.
+Next, the probability function distribution q(T) corresponding to the binarization determined by the threshold T is defined as follows.
+$$
+q(i\leq T) = 0,\quad q(i&gt;T) = 1/M
+$$</p>
+<p>Where M is the number of elements greater than the threshold.
+The threshold value is the value that minimizes the KL information amount D(q(T)||p) by q(T) and p.
+That is, solve the following optimization problem.
+$$
+{\rm minimize}_T\quad D(q(T)||p)
+$$
+The results are shown in the figure below.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/73305e21-a6ab-971d-ad65-bfdb60ef6a25.png" alt="hist_info.png"></p>
+<p>The features are as follows.</p>
+<ul>
+<li>Useful for background noise estimation</li>
+<li>It cannot be applied unless the distribution is biased.</li>
+</ul>
+<p>Below is the python code.
+Note that in the code, the KL information is transformed as follows to avoid &ldquo;0log0&rdquo;.</p>
+<p>$$
+D(q(T)||p) = \sum_{i=1}^N q(T) \ln \frac{q(T)}{p}= -\ln M-\sum_{i=1} ^N q(T) \ln p \<br>
+$$</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">InfoScore</span>(data,thresh,bins<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>):
+    num_hist, range_hist <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>histogram(data, bins<span style="color:#f92672">=</span> bins)
+    mean_hist <span style="color:#f92672">=</span> (range_hist[<span style="color:#ae81ff">1</span>:] <span style="color:#f92672">+</span> range_hist[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>
+    p <span style="color:#f92672">=</span> num_hist<span style="color:#f92672">/</span>num_hist<span style="color:#f92672">.</span>sum()
+    N <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]
+    M <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sum(mean_hist<span style="color:#f92672">&gt;</span>thresh)
+    <span style="color:#66d9ef">if</span> (M<span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>):
+        <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>inf
+    q <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(N)
+    q[mean_hist<span style="color:#f92672">&gt;</span>thresh] <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span> <span style="color:#f92672">/</span> M
+    Dqp <span style="color:#f92672">=-</span>np<span style="color:#f92672">.</span>log(M)<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>sum(q<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>log(p))
+    <span style="color:#66d9ef">return</span> Dqp
+
+<span style="color:#75715e"># Callculation of Otsu score and analyze the optimal</span>
+scores_info <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(<span style="color:#ae81ff">256</span>)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(scores_info<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]):
+    scores_info[i] <span style="color:#f92672">=</span> InfoScore(data,i,bins <span style="color:#f92672">=</span> <span style="color:#ae81ff">190</span>)
+thresh_info <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argmin(scores_info)
+</code></pre></div><h2 id="fitting-gaussian-mixture-model">Fitting Gaussian mixture model</h2>
+<p>This is a method for fitting a Gaussian mixture mixture, assuming that the distributions of the two classes are Gaussian distributions.
+It is known to have a Gaussian distribution and it is recommended to use it only when there is enough data.</p>
+<p>The threshold is the intersection of the two Gaussian distributions.</p>
+<p>The problem is:</p>
+<ul>
+<li>If the shape is not Gaussian + long tail, it cannot be estimated well.</li>
+<li>Has initial value dependency</li>
+</ul>
+<p>There is a problem.</p>
+<p>Below is the result and python code.
+The pyhton code does not use the package for study, but if there is no biased feelings, please <a href="https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html">here</a> Please use it.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/4e309b08-2ca5-3cea-3a3d-453faa066471.png" alt="hist_gaus.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#def gaus func</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">gaus</span>(x,mu,sigma2):
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>np<span style="color:#f92672">.</span>sqrt(<span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> sigma2) <span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span>(x<span style="color:#f92672">-</span>mu)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>sigma2))
+
+<span style="color:#75715e"># Class Number</span>
+M<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>
+<span style="color:#75715e"># Optimmization Condition</span>
+OPTIMIZE_EPS <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+
+<span style="color:#75715e"># Init</span>
+y <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>copy()
+mu <span style="color:#f92672">=</span> <span style="color:#ae81ff">256</span><span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(M)
+sigma2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span><span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(M)
+w <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(M)
+w <span style="color:#f92672">=</span> w <span style="color:#f92672">/</span> w<span style="color:#f92672">.</span>sum()
+
+
+<span style="color:#66d9ef">for</span> cycle <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1000</span>):
+    <span style="color:#75715e"># E step</span>
+    gamma_tmp <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((M,y<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]))
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(M):
+        gamma_tmp[i] <span style="color:#f92672">=</span> w[i] <span style="color:#f92672">*</span> gaus(y,mu[i],sigma2[i])
+    gamma <span style="color:#f92672">=</span> gamma_tmp<span style="color:#f92672">/</span> gamma_tmp<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+    Nk <span style="color:#f92672">=</span> gamma<span style="color:#f92672">.</span>sum(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    <span style="color:#75715e"># M step</span>
+    mus <span style="color:#f92672">=</span> (gamma <span style="color:#f92672">*</span> y)<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)<span style="color:#f92672">/</span>Nk
+    sigma2s <span style="color:#f92672">=</span> (gamma <span style="color:#f92672">*</span>((y<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">-</span> mu<span style="color:#f92672">.</span>reshape(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>))<span style="color:#f92672">.</span>sum(axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)<span style="color:#f92672">/</span>Nk
+    ws <span style="color:#f92672">=</span> Nk <span style="color:#f92672">/</span> Nk<span style="color:#f92672">.</span>sum()
+    <span style="color:#75715e"># check break condition</span>
+    <span style="color:#66d9ef">if</span> (np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(mu<span style="color:#f92672">-</span>mus)<span style="color:#f92672">&lt;</span>OPTIMIZE_EPS)<span style="color:#f92672">&amp;</span> (np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(sigma2<span style="color:#f92672">-</span>sigma2s)<span style="color:#f92672">&lt;</span>OPTIMIZE_EPS) <span style="color:#f92672">&amp;</span> (np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>norm(w<span style="color:#f92672">-</span>ws)<span style="color:#f92672">&lt;</span>OPTIMIZE_EPS):
+        <span style="color:#66d9ef">break</span>
+    <span style="color:#75715e"># updata</span>
+    mu <span style="color:#f92672">=</span> mus
+    sigma2 <span style="color:#f92672">=</span> sigma2s
+    w <span style="color:#f92672">=</span> ws
+    
+<span style="color:#66d9ef">print</span>(cycle)
+
+<span style="color:#75715e"># make distribution</span>
+x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">256</span>,<span style="color:#ae81ff">1</span>)
+p <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((M,x<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]))
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(M):
+    p[i] <span style="color:#f92672">=</span> w[i] <span style="color:#f92672">*</span> gaus(x,mu[i],sigma2[i])
+
+<span style="color:#75715e"># find threshold</span>
+<span style="color:#66d9ef">if</span> m[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">&lt;</span>m[<span style="color:#ae81ff">1</span>]:
+    thresh_gaus <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(p[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">&lt;</span>p[<span style="color:#ae81ff">1</span>])[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>min()
+<span style="color:#66d9ef">else</span>:
+    thresh_gaus <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(p[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">&gt;</span>p[<span style="color:#ae81ff">1</span>])[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>min()
+        
+</code></pre></div><h2 id="summary">Summary</h2>
+<p>The threshold values using the above four methods are shown in the table below.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>K-means</th>
+<th>Otsu</th>
+<th>Sezan</th>
+<th>KL divergence</th>
+<th>Gauss Fitting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Threshold</td>
+<td>109.0</td>
+<td>109.0</td>
+<td>90.558594</td>
+<td>145.0</td>
+<td>147.0</td>
+</tr>
+<tr>
+<td>Also, the binarized image looks like the figure below.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/245708/909a4bfd-11b0-c621-5a98-2be0d88f6f7e.png" alt="img_all.png"></p>
+<p>I can&rsquo;t say which one is good, so let&rsquo;s use it according to the situation!
+For the time being, I recommend it from the top of this article.</p>
+<p>Some papers refer to [5].
+It&rsquo;s nice to be well organized.</p>
+<h2 id="code-details">Code details</h2>
+<p><a href="https://github.com/yuji0001/Threshold_Technic">https://github.com/yuji0001/Threshold_Technic</a></p>
+<h2 id="reference">Reference</h2>
+<p>[1] H, Steinhaus, “Sur la division des corps matériels en parties” (French). Bull. Acad. Polon. Sci. 4 (12): 801–804 (1957).</p>
+<p>[2] Nobuyuki Otsu. &ldquo;A threshold selection method from gray-level histograms&rdquo;. IEEE Trans. Sys. Man. Cyber. 9 (1): 62–66 (1979).</p>
+<p>[3] M. I. Sezan, ‘‘A peak detection algorithm and its application to histogram-based image data reduction, ‘’ Graph. Models Image Process. 29, 47–59 (1985).</p>
+<p>[4] C. H. Li and C. K. Lee, ‘‘Minimum cross-entropy thresholding,’’ Pattern Recogn. 26, 617–625 (1993).</p>
+<p>[5] Sezgin, M. Survey over image thresholding techniques and quantitative performance evaluation. Journal of Electronic Imaging, 13(1), 220(2004).</p>
+<h2 id="author">Author</h2>
+<p>Yuji Okamoto <a href="mailto:yuji.0001@gmail.com">yuji.0001@gmail.com</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

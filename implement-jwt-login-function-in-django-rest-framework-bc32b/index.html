@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Implement JWT login function in Django REST framework | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Implement JWT login function in Django REST framework</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 4, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django-rest-framework">django-rest-framework</a></code></small>
+
+</p>
+<pre><code># Previous article
+</code></pre>
+<ol>
+<li><a href="https://qiita.com/Syoitu/items/62e6ec1437d98d6b9d28">Django REST framework + Vue.js &ldquo;Let&rsquo;s make SEIYU-like EC site&rdquo; 6 times (plan)</a></li>
+<li><a href="https://qiita.com/Syoitu/items/eae447432c6135ff1174">Let&rsquo;s create a SEIYU-like EC site (1) Requirements analysis and project initialization</a></li>
+<li><a href="https://qiita.com/Syoitu/items/11fac037759220b30cd2">Let&rsquo;s create a SEIYU-like EC site (2) Renew the management screen using Xadmin</a></li>
+<li><a href="https://qiita.com/Syoitu/items/2ab045f5618bf9cb31d4">Let&rsquo;s make an SEIYU-like EC site (3) Let&rsquo;s make an explosion API with Django REST framework</a></li>
+<li><a href="https://qiita.com/Syoitu/items/324a40a954324fab4e96">Create a SEIYU-like EC site (4) Use Vue.js project initialization TypeScript</a></li>
+</ol>
+<p>Even if you do not see the contents so far, you can understand the contents of this time, so I hope that you can have a relationship until the end. :relaxed:</p>
+<h2 id="what-is-jwt">What is JWT</h2>
+<p>It is an abbreviation of JSON Web Token, it is possible to hold arbitrary information (claim) in the token, for example, the server generates a token containing the information &ldquo;logged in as administrator&rdquo; to the client be able to. The client can use the token to prove that it has logged in as an administrator. &ndash;[Wikipedia]
+(<a href="https://ja.wikipedia.org/wiki/JSON_Web_Token">https://ja.wikipedia.org/wiki/JSON_Web_Token</a>)</p>
+<h1 id="implement-by-hand">Implement by hand</h1>
+<p>Even if you use the library <a href="https://github.com/jpadilla/django-rest-framework-jwt">django-rest-framework-jwt</a>, you can easily implement JWT login,
+It is easier to customize by writing directly, so write it directly.
+*If you want to know how to use it, I will add it again. :point_up_tone1:</p>
+<h3 id="create-a-new-django-rest-framework-project">Create a new Django REST framework project</h3>
+<pre><code>pip install Django
+pip install djangorestframework
+pip install markdown
+pip install django-filter
+</code></pre><pre><code>django-admin startproject jwttest
+</code></pre><pre><code>cd jwttest
+python manage.py runserver
+</code></pre><p>It is OK if you start the server and see the rocket normally.</p>
+<h3 id="initial-setting">Initial setting</h3>
+<p>Create a new app.</p>
+<pre><code>python manage.py startapp api
+</code></pre><p>Add it to <code>INSTALLED_APPS</code> along with <code>rest_framework</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:jwttest/settings.py" data-lang="python:jwttest/settings.py">INSTALLED_APPS <span style="color:#f92672">=</span> [
+    <span style="color:#f92672">...</span>
+    <span style="color:#e6db74">&#39;rest_framework&#39;</span>,
+    <span style="color:#e6db74">&#39;api&#39;</span>
+]
+</code></pre></div><p>Create a user model for login.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:jwtest/api/models.py" data-lang="python:jwtest/api/models.py"><span style="color:#f92672">from</span> django.db <span style="color:#f92672">import</span> models
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">UserInfo</span>(models<span style="color:#f92672">.</span>Model):
+    username <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">50</span>, unique<span style="color:#f92672">=</span>True, db_index<span style="color:#f92672">=</span>True)
+    password <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>, db_index<span style="color:#f92672">=</span>True)
+    info <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+</code></pre></div><p>Execute DB migration.</p>
+<pre><code>python manage.py makemigrations
+python manage.py migrate
+</code></pre><h3 id="implement-login-function">implement login function</h3>
+<p>Install the JWTtoken generation library.</p>
+<pre><code>pip install pyjwt
+</code></pre><p>Add a class for login,
+Add a <code>utls</code> folder under the <code>api</code> directory, and add a new <code>auth.py</code> file in it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/utils/auth.py" data-lang="python:api/utils/auth.py"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> jwt
+<span style="color:#f92672">from</span> jwttest.settings <span style="color:#f92672">import</span> SECRET_KEY
+<span style="color:#f92672">from</span> rest_framework.authentication <span style="color:#f92672">import</span> BaseAuthentication
+<span style="color:#f92672">from</span> rest_framework <span style="color:#f92672">import</span> exceptions
+
+<span style="color:#f92672">from</span> api.models <span style="color:#f92672">import</span> UserInfo
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">NormalAuthentication</span>(BaseAuthentication):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate</span>(self, request):
+        username <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span>_request<span style="color:#f92672">.</span>POST<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;username&#34;</span>)
+        password <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span>_request<span style="color:#f92672">.</span>POST<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;password&#34;</span>)
+        user_obj <span style="color:#f92672">=</span> UserInfo<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>filter(username<span style="color:#f92672">=</span>username)<span style="color:#f92672">.</span>first()
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> user_obj:
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(<span style="color:#e6db74">&#39;Authentication failed&#39;</span>)
+        <span style="color:#66d9ef">elif</span> user_obj<span style="color:#f92672">.</span>password <span style="color:#f92672">!=</span> password:
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(<span style="color:#e6db74">&#39;No password&#39;</span>)
+        token <span style="color:#f92672">=</span> generate_jwt(user_obj)
+        <span style="color:#66d9ef">return</span> (token, None)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate_header</span>(self, request):
+        <span style="color:#66d9ef">pass</span>
+
+<span style="color:#75715e"># Generate Token with the jwt library installed earlier</span>
+The content of <span style="color:#75715e">#Token includes user information and timeout</span>
+<span style="color:#75715e">#It is fixed that the timeout key is exp</span>
+<span style="color:#75715e">#Document: https://pyjwt.readthedocs.io/en/latest/usage.html?highlight=exp</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">generate_jwt</span>(user):
+    timestamp <span style="color:#f92672">=</span> int(time<span style="color:#f92672">.</span>time()) <span style="color:#f92672">+</span> <span style="color:#ae81ff">60</span><span style="color:#f92672">*</span><span style="color:#ae81ff">60</span><span style="color:#f92672">*</span><span style="color:#ae81ff">24</span><span style="color:#f92672">*</span><span style="color:#ae81ff">7</span>
+    <span style="color:#66d9ef">return</span> jwt<span style="color:#f92672">.</span>encode(
+        {<span style="color:#e6db74">&#34;userid&#34;</span>: user<span style="color:#f92672">.</span>pk, <span style="color:#e6db74">&#34;username&#34;</span>: user<span style="color:#f92672">.</span>username, <span style="color:#e6db74">&#34;info&#34;</span>: user<span style="color:#f92672">.</span>info, <span style="color:#e6db74">&#34;exp&#34;</span>: timestamp},
+        SECRET_KEY)<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#34;utf-8&#34;</span>)
+</code></pre></div><p>Also add a view for login.
+If login is successful, JWT is returned.
+Add the <code>NormalAuthentication</code> created earlier to the <code>authentication_classes</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/views.py" data-lang="python:api/views.py"><span style="color:#f92672">from</span> rest_framework.views <span style="color:#f92672">import</span> APIView
+<span style="color:#f92672">from</span> rest_framework.response <span style="color:#f92672">import</span> Response
+
+<span style="color:#f92672">from</span> .utils.auth <span style="color:#f92672">import</span> NormalAuthentication
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Login</span>(APIView):
+
+    authentication_classes <span style="color:#f92672">=</span> [NormalAuthentication,]
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">post</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#66d9ef">return</span> Response({<span style="color:#e6db74">&#34;token&#34;</span>: request<span style="color:#f92672">.</span>user})
+</code></pre></div><p>Add the url.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:jwttest/urls.py" data-lang="python:jwttest/urls.py"><span style="color:#f92672">...</span>
+<span style="color:#f92672">from</span> api.views <span style="color:#f92672">import</span> Login
+
+urlpatterns <span style="color:#f92672">=</span> [
+    <span style="color:#f92672">...</span>
+    path(<span style="color:#e6db74">&#39;login/&#39;</span>, Login<span style="color:#f92672">.</span>as_view()),
+]
+</code></pre></div><p>Add one additional user information<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/9608aed2-dfb2-7b90-bce8-5bf6bc953926.jpeg" alt="B2DC6C55-949F-4FB9-ADCB-ED3C0F894B1E_4_5005_c.jpeg"></p>
+<p>Start the server and try logging in.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/967b21da-ed1f-ee16-deee-d27a45460e32.jpeg" alt="82BFEFD1-D012-4F3A-80D8-5CC828590481.jpeg">
+Let&rsquo;s analyze the returned JWT with <code>https://jwt.io/</code>.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/dce27067-419b-bcb6-a001-f80e1e239c3c.jpeg" alt="BE755CEB-725D-4833-A954-0300EF1A4E0B.jpeg">
+It contains the information you have specified in the JWT.
+Let&rsquo;s make a view that you can not see unless you log in and use this token to access.
+First, add the authentication class for JWT to <code>api/utils/auth.py</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/utils/auth.py" data-lang="python:api/utils/auth.py"><span style="color:#f92672">...</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">JWTAuthentication</span>(BaseAuthentication):
+    keyword <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;JWT&#39;</span>
+    model <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate</span>(self, request):
+        auth <span style="color:#f92672">=</span> get_authorization_header(request)<span style="color:#f92672">.</span>split()
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> auth <span style="color:#f92672">or</span> auth[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>lower() <span style="color:#f92672">!=</span> self<span style="color:#f92672">.</span>keyword<span style="color:#f92672">.</span>lower()<span style="color:#f92672">.</span>encode():
+            <span style="color:#66d9ef">return</span> None
+
+        <span style="color:#66d9ef">if</span> len(auth) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Authorization disabled&#34;</span>
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+        <span style="color:#66d9ef">elif</span> len(auth) <span style="color:#f92672">&gt;</span><span style="color:#ae81ff">2</span>:
+            msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Authorization has no invalid spaces&#34;</span><span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+
+        <span style="color:#66d9ef">try</span>:
+            jwt_token <span style="color:#f92672">=</span> auth[<span style="color:#ae81ff">1</span>]
+            jwt_info <span style="color:#f92672">=</span> jwt<span style="color:#f92672">.</span>decode(jwt_token, SECRET_KEY)
+            userid <span style="color:#f92672">=</span> jwt_info<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;userid&#34;</span>)
+            <span style="color:#66d9ef">try</span>:
+                user <span style="color:#f92672">=</span> UserInfo<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>get(pk<span style="color:#f92672">=</span>userid)
+                user<span style="color:#f92672">.</span>is_authenticated <span style="color:#f92672">=</span> True
+                <span style="color:#66d9ef">return</span> (user, jwt_token)
+            <span style="color:#66d9ef">except</span>:
+                msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;User does not exist&#34;</span>
+                <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+        <span style="color:#66d9ef">except</span> jwt<span style="color:#f92672">.</span>ExpiredSignatureError:
+            msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;token has timed out&#34;</span>
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate_header</span>(self, request):
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#f92672">...</span>
+</code></pre></div><p>Added view to <code>api/views.py</code> that cannot be accessed without logging in.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/views.py" data-lang="python:api/views.py"><span style="color:#f92672">...</span>
+<span style="color:#f92672">from</span> rest_framework.permissions <span style="color:#f92672">import</span> IsAuthenticated
+<span style="color:#f92672">...</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Something</span>(APIView):
+    authentication_classes <span style="color:#f92672">=</span> [JWTAuthentication,]
+    <span style="color:#75715e"># Only the logged-in user can access.</span>
+    permission_classes <span style="color:#f92672">=</span> [IsAuthenticated,]
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#66d9ef">return</span> Response({<span style="color:#e6db74">&#34;data&#34;</span>: <span style="color:#e6db74">&#34;contents&#34;</span>})
+<span style="color:#f92672">...</span>
+</code></pre></div><p>I will access it after adding the url.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:jwttest:urls.py" data-lang="python:jwttest:urls.py">    path(<span style="color:#e6db74">&#39;data/&#39;</span>, Something<span style="color:#f92672">.</span>as_view())
+</code></pre></div><p>First, access with no token.
+I&rsquo;m returned <code>No credentials provided.</code>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/0b631466-d82f-8779-19f7-1498d91f5c8b.jpeg" alt="FFA8B8F1-6250-40FF-9FA9-6DDEB186B3EB_4_5005_c.jpeg"></p>
+<p>After adding the Token, I was able to access it.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/320164/50934c14-49bc-ebbc-9f9a-95781f65f1da" alt="528923C5-B32E-44B4-A33F-2ED3F4564042_4_5005_c.jpeg">.jpeg)</p>
+<p>That&rsquo;s all for the above, but I would also like to analyze some of the login-related source code of Django REST framework.
+Please read if you are interested. :relaxed:</p>
+<h1 id="drf-login-source-code-analysis">DRF login source code analysis</h1>
+<h3 id="link-with-the-authentication-class-to-use">Link with the authentication class to use</h3>
+<p>I will analyze it based on the code I wrote earlier,
+If you use <a href="https://docs.djangoproject.com/en/3.0/topics/class-based-views/">CBV</a>(Class-basedviews), <code>dispatch</code> will be executed.
+Let&rsquo;s look at the source code with that as the entrance.
+As a point of view, add <code>self.dispatch()</code> to the login class that I wrote earlier.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/view.py" data-lang="python:api/view.py"><span style="color:#f92672">...</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Login</span>(APIView):
+    authentication_classes <span style="color:#f92672">=</span> [NormalAuthentication,]
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">post</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#75715e"># Add and follow the source code</span>
+        When to use <span style="color:#75715e">#PyCharm</span>
+        <span style="color:#75715e"># command + click on mac</span>
+        <span style="color:#75715e"># win should be Alt+click</span>
+        self<span style="color:#f92672">.</span>dispatch()
+        <span style="color:#66d9ef">return</span> Response({<span style="color:#e6db74">&#34;token&#34;</span>: request<span style="color:#f92672">.</span>user})
+<span style="color:#f92672">...</span>
+</code></pre></div><p>The destination is <code>def dispatch(self, request, *args, **kwargs):</code> in line 481 of <code>rest_framework/views.py</code>.
+Let&rsquo;s look at the contents of the <code>initialize_request</code> function on line 488.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/views.py" data-lang="python:rest_framework/views.py">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dispatch</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#f92672">...</span>
+        <span style="color:#75715e">#Look at the contents of this function</span>
+        request <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>initialize_request(request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        self<span style="color:#f92672">.</span>request <span style="color:#f92672">=</span> request
+</code></pre></div><p>The definition of the contents is in line 381 of <code>rest_framework/views.py</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/views.py" data-lang="python:rest_framework/views.py">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">initialize_request</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Returns the initial request object.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        parser_context <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_parser_context(request)
+
+        <span style="color:#66d9ef">return</span> Request(
+            request,
+            parsers<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>get_parsers(),
+            <span style="color:#75715e"># here </span>
+            authenticators<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>get_authenticators(),
+            negotiator<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>get_content_negotiator(),
+            parser_context<span style="color:#f92672">=</span>parser_context
+        )
+</code></pre></div><p>And if you look at the contents of <code>self.get_authenticators()</code> on line 390,
+There is the following code, what is the authentication class used by the corresponding CBV, taken from <code>self.authentication_classes</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/views.py" data-lang="python:rest_framework/views.py">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_authenticators</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Instantiates and returns the list of authenticators that this view can use.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> [auth() <span style="color:#66d9ef">for</span> auth <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>authentication_classes]
+</code></pre></div><p>Following the definition of <code>self.authentication_classes</code>,
+Line 109 of <code>rest_framework/views.py</code> has the following definitions.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/views.py" data-lang="python:rest_framework/views.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">APIView</span>(View):
+   <span style="color:#f92672">...</span>
+   authentication_classes <span style="color:#f92672">=</span> api_settings<span style="color:#f92672">.</span>DEFAULT_AUTHENTICATION_CLASSES
+</code></pre></div><p>Therefore, there are two places where you can directly define what authentication class is used,</p>
+<ol>
+<li>Inside of <code>CBV</code> class which inherits <code>APIView</code></li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/views.py" data-lang="python:api/views.py"><span style="color:#f92672">...</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Login</span>(APIView):
+    <span style="color:#75715e"># here</span>
+    authentication_classes <span style="color:#f92672">=</span> [NormalAuthentication,]
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">post</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#66d9ef">return</span> Response({<span style="color:#e6db74">&#34;token&#34;</span>: request<span style="color:#f92672">.</span>user})
+<span style="color:#f92672">...</span>
+</code></pre></div><ol start="2">
+<li>Internal settings for <code>REST_FRAMEWORK</code> in <code>settings.py</code></li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">REST_FRAMEWORK <span style="color:#f92672">=</span> {
+  <span style="color:#e6db74">&#39;DEFAULT_AUTHENTICATION_CLASSES&#39;</span>: [<span style="color:#e6db74">&#39;api.utils.auth.NormalAuthentication&#39;</span>]
+}
+</code></pre></div><p>After grasping the relationship between CBV and authentication class, next we will look at the functions of authentication class.
+We will also follow from <code>dispatch </code>, <code>self.initial(request, *args, **kwargs)</code> on line 493 of <code>rest_framework/views.py</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/views.py" data-lang="python:rest_framework/views.py">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dispatch</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#f92672">...</span>
+
+        <span style="color:#66d9ef">try</span>:
+            self<span style="color:#f92672">.</span>initial(request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        <span style="color:#f92672">...</span>
+</code></pre></div><p>I will follow the definition of it. Line 395 of <code>rest_framework/views.py</code>.
+There is <code>perform_authentication</code>, and we will go further.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework.py/views.py" data-lang="python:rest_framework.py/views.py"><span style="color:#f92672">...</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">initial</span>(self, request, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#f92672">...</span>
+        self<span style="color:#f92672">.</span>perform_authentication(request)
+        <span style="color:#f92672">...</span>
+</code></pre></div><p>After that, there is <code>request.user</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/views.py" data-lang="python:rest_framework/views.py"><span style="color:#f92672">...</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">perform_authentication</span>(self, request):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Perform authentication on the incoming request.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Note that if you override this and simply&#39;pass&#39;, then authenticationwill instead be performed lazily, the first time either
+</span><span style="color:#e6db74">        `request.user` or `request.auth` is accessed.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        request<span style="color:#f92672">.</span>user
+<span style="color:#f92672">...</span>
+</code></pre></div><p>Its definition is in line 213 of <code>rest_framework/request.py</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/request.py" data-lang="python:rest_framework/request.py"><span style="color:#f92672">...</span>
+    <span style="color:#a6e22e">@property</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">user</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Returns the user associated with the current request, as authenticated
+</span><span style="color:#e6db74">        by the authentication classes provided to the request.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> hasattr(self,<span style="color:#e6db74">&#39;_user&#39;</span>):
+            <span style="color:#66d9ef">with</span> wrap_attributeerrors():
+                self<span style="color:#f92672">.</span>_authenticate()
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_user
+<span style="color:#f92672">...</span>
+</code></pre></div><p>Let&rsquo;s look at the definition of <code>self._authenticate()</code>. Line 366 of <code>rest_framework/request.py</code>.
+As a content, it retrieves a class from the CBV authentication class list and executes the <code>authenticate</code> method for that class.
+The result of the execution is a <code>tuple</code> containing two elements, the first tuple is <code>self.user</code> and the second is <code>self.auth</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:rest_framework/request.py" data-lang="python:rest_framework/request.py">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_authenticate</span>(self):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Attempt to authenticate the request using each authentication instance
+</span><span style="color:#e6db74">        in turn.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">for</span> authenticator <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>authenticators:
+            <span style="color:#66d9ef">try</span>:
+                user_auth_tuple <span style="color:#f92672">=</span> authenticator<span style="color:#f92672">.</span>authenticate(self)
+            <span style="color:#66d9ef">except</span> exceptions<span style="color:#f92672">.</span>APIException:
+                self<span style="color:#f92672">.</span>_not_authenticated()
+                <span style="color:#66d9ef">raise</span>
+
+            <span style="color:#66d9ef">if</span> user_auth_tuple <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+                self<span style="color:#f92672">.</span>_authenticator <span style="color:#f92672">=</span> authenticator
+                self<span style="color:#f92672">.</span>user, self<span style="color:#f92672">.</span>auth <span style="color:#f92672">=</span> user_auth_tuple
+                <span style="color:#66d9ef">return</span>
+
+        self<span style="color:#f92672">.</span>_not_authenticated()
+</code></pre></div><p>Based on that, let&rsquo;s look at the authentication class for JWT defined earlier.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:api/utils/auth.py" data-lang="python:api/utils/auth.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">JWTAuthentication</span>(BaseAuthentication):
+    keyword <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;JWT&#39;</span>
+    model <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate</span>(self, request):
+        auth <span style="color:#f92672">=</span> get_authorization_header(request)<span style="color:#f92672">.</span>split()
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> auth <span style="color:#f92672">or</span> auth[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>lower() <span style="color:#f92672">!=</span> self<span style="color:#f92672">.</span>keyword<span style="color:#f92672">.</span>lower()<span style="color:#f92672">.</span>encode():
+            <span style="color:#66d9ef">return</span> None
+
+        <span style="color:#66d9ef">if</span> len(auth) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Authorization disabled&#34;</span>
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+        <span style="color:#66d9ef">elif</span> len(auth) <span style="color:#f92672">&gt;</span><span style="color:#ae81ff">2</span>:
+            msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Authorization has no invalid spaces&#34;</span>
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+
+        <span style="color:#66d9ef">try</span>:
+            jwt_token <span style="color:#f92672">=</span> auth[<span style="color:#ae81ff">1</span>]
+            jwt_info <span style="color:#f92672">=</span> jwt<span style="color:#f92672">.</span>decode(jwt_token, SECRET_KEY)
+            userid <span style="color:#f92672">=</span> jwt_info<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;userid&#34;</span>)
+            <span style="color:#66d9ef">try</span>:
+                user <span style="color:#f92672">=</span> UserInfo<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>get(pk<span style="color:#f92672">=</span>userid)
+                user<span style="color:#f92672">.</span>is_authenticated <span style="color:#f92672">=</span> True
+                <span style="color:#66d9ef">return</span> (user, jwt_token)
+            <span style="color:#66d9ef">except</span>:
+                msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;User does not exist&#34;</span>
+                <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+        <span style="color:#66d9ef">except</span> jwt<span style="color:#f92672">.</span>ExpiredSignatureError:
+            msg <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;token is timeout&#34;</span>
+            <span style="color:#66d9ef">raise</span> exceptions<span style="color:#f92672">.</span>AuthenticationFailed(msg)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">authenticate_header</span>(self, request):
+        <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>The class includes the <code>authenticate </code>method.
+If authentication is successful, a tuple containing user information is returned.
+This concludes the analysis of login-related sources.</p>
+<p>Thank you for staying with me until the end. :raised_hand_tone1:</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

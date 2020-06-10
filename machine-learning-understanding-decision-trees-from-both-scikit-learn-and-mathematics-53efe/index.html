@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Machine learning] Understanding decision trees from both scikit-learn and mathematics | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Machine learning] Understanding decision trees from both scikit-learn and mathematics</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 10, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scikit-learn"> scikit-learn</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mathematics"> mathematics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/decision-tree"> decision tree</a></code></small>
+
+</p>
+<pre><code>#1. Purpose
+</code></pre>
+<p>If you want to do machine learning, anyone can use scikit-learn etc. to implement it relatively easily.
+However, in order to achieve results at work or to improve your level,
+<strong>The explanation &ldquo;I don&rsquo;t really understand the background but I got this result&rdquo; clearly shows the weakness</strong>.</p>
+<p>In this article, the purpose of ** is 2-3, &ldquo;I will use scikit-learn first because the theory is good,&rdquo; and 4 and &ldquo;understand the background from mathematics&rdquo; **.</p>
+<p>*Since I am a liberal arts graduate, I am not good at mathematics. I tried to explain it to people who are not good at mathematics so that it is easy to understand.</p>
+<ul>
+<li>I have posted a similar article in the &ldquo;Understanding from Mathematics&rdquo; series, so I hope you also read it.
+<a href="https://qiita.com/Hawaii/items/150897d4f807e5597f18">[Machine learning] Understanding linear simple regression from both scikit-learn and mathematics</a>
+[[Machine learning] Understanding linear multiple regression from both scikit-learn and mathematics]
+(<a href="https://qiita.com/Hawaii/items/b84a0d669bcf5267e750">https://qiita.com/Hawaii/items/b84a0d669bcf5267e750</a>)
+[[Machine learning] Understanding logistic regression from both scikit-learn and mathematics]
+(<a href="https://qiita.com/Hawaii/items/ee2a0687ca451fe213be">https://qiita.com/Hawaii/items/ee2a0687ca451fe213be</a>)
+[[Machine learning] Understanding SVM from both scikit-learn and mathematics]
+(<a href="https://qiita.com/Hawaii/items/4688a50cffb2140f297d">https://qiita.com/Hawaii/items/4688a50cffb2140f297d</a>)
+[[Machine learning] Understanding from mathematics why the correlation coefficient ranges from -1 to 1]
+(<a href="https://qiita.com/Hawaii/items/3f4e91cf9b86676c202f">https://qiita.com/Hawaii/items/3f4e91cf9b86676c202f</a>)</li>
+</ul>
+<p>#2. What is a decision tree?</p>
+<p><a href="https://en.wikipedia.org/wiki/%E6%B1%BA%E5%AE%9A%E6%9C%A8">Wikipedia</a> has the following description.</p>
+<p>Decision trees are created to help make decisions. Decision trees are a special form of tree structure.</p>
+<p>It&rsquo;s a bit difficult to put into words, but to put it simply, it is a model in which human judgment is subdivided like a tree structure to advance judgment.</p>
+<p>This is also difficult to understand, so let&rsquo;s give a concrete example.</p>
+<h3 id="specific-example"><Specific example></h3>
+<p>Assuming you are a real estate agent, we would like to select some rooms that are easy for young women and those that are not so, in advance.
+Therefore, we collected information on the rooms that were actually selected by young women, those that were not, and the rooms based on the past 13 data.</p>
+<img width="200" alt="Capture1.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/465870/21ef954d-6115-33c4-817c-71c4ff7e3f02.png">
+<p>| | How many floors | Room size $m^2$ | Auto lock |
+|:&mdash;&mdash;|&mdash;&mdash;-:|:&mdash;&mdash;-:|:&mdash;&mdash;&mdash;&mdash;:|:&mdash;&mdash; &mdash;&mdash;:|
+| Property 1 | 4 | 30 | Yes |
+Property 2 | 5 | 45 | None |
+| Property 3 | 3 | 32 | Yes |
+Property 4 | 1 | 20 | Yes |
+Property 5 | 6 | 35 | Yes |
+Property 6 | 3 | 40 | Yes |
+Property 7 | 4 | 38 | Yes |
+Property 8 | 1 | 20 | None | ×
+Property 9 | 2 | 18 | None | ×
+| Property 10 | 1 | 20 | None | ×
+| Property 11 | 1 | 22 | None | ×
+| Property 12 | 1 | 24 | Yes |
+Property 13 | 3 | 25 | None | ×</p>
+<p>This time, I gave an easy-to-understand example, but when deciding on a room, I think we should think as follows.</p>
+<img width="412" alt="Capture2.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/465870/33938355-648f-87f6-eadf-f6389c0f54ae.png">
+<p>It depends on each person which condition comes to the top, but for example, I hate the first floor a little, so first think about whether it is the second floor or above, and if it is the second floor or above, it would be nice if there was also auto-lock. Rent a room.
+On the contrary, even if it is not on the second floor or above (room on the first floor), it may be okay to rent it if it is a certain size of room, or on the other hand, if it is on the first floor and it is small, do not borrow &hellip; I think about it.</p>
+<p>** This is exactly the structure of the tree, and the decision tree branches the conditions in this way to make the decision. **</p>
+<p>So how is the branch of this condition determined? I think the example I just provided was an intuitive explanation and had no basis.</p>
+<p>What appears here is &ldquo;impurity.&rdquo;
+The details will be given to the latter half of the mathematics chapter, but the decision tree decides the branch of the condition based on this impurity.
+In short, I want to divide the original data as cleanly as possible (in this example, renting or not renting a room). This &ldquo;clean&rdquo; index is &ldquo;impurity.&rdquo;</p>
+<p>Those who are not sure a little can use the index of impureness in the decision tree to judge the structure of a branched tree in a good way in order to classify the desired variables (borrowed/unborrowed this time) in a neat manner. You can think of it as being made.</p>
+<p>#3.scikit-learn decision tree
+##(1) Import required libraries
+Import the following required to perform a decision tree.
+(In addition, import numpy etc.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> sklearn.tree <span style="color:#f92672">import</span> DecisionTreeClassifier, export_graphviz
+<span style="color:#75715e"># Below is a tool for visualizing decision trees</span>
+<span style="color:#f92672">import</span> graphviz
+<span style="color:#f92672">import</span> pydotplus
+<span style="color:#f92672">from</span> IPython.display <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">from</span> sklearn.externals.six <span style="color:#f92672">import</span> StringIO
+</code></pre></div><p>##(2) Data preparation
+Set the information as to what floor, the size of the room, whether it is auto-locked or not, and whether or not the room was rented as data as follows (the table of data presented at the beginning is the same as the contents).
+*For example, in the example below, Property 1 is on the 4th floor, the room size is 30$m^2$, and there is an auto lock.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">data <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({
+        <span style="color:#e6db74">&#34;buy(y)&#34;</span>:[True,True,True,True,True,True,True,False,False,False,False,False,False],
+        <span style="color:#e6db74">&#34;high&#34;</span>:[<span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">6</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">3</span>],
+        <span style="color:#e6db74">&#34;size&#34;</span>:[<span style="color:#ae81ff">30</span>, <span style="color:#ae81ff">45</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">35</span>, <span style="color:#ae81ff">40</span>, <span style="color:#ae81ff">38</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">18</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">22</span>,<span style="color:#ae81ff">24</span>,<span style="color:#ae81ff">25</span>],
+        <span style="color:#e6db74">&#34;autolock&#34;</span>:[<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>]
+    })
+</code></pre></div><p>##(3) Model building</p>
+<h4 id="i-data-shaping">(i) Data shaping</h4>
+<p>First of all, the shape of the data is adjusted to build the model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">y <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>loc[:,[<span style="color:#e6db74">&#34;buy(y)&#34;</span>]]
+X <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>loc[:,[<span style="color:#e6db74">&#34;high&#34;</span>, <span style="color:#e6db74">&#34;size&#34;</span>,<span style="color:#e6db74">&#34;autolock&#34;</span>]]
+</code></pre></div><p>This article is not a python grammar article, so I won&rsquo;t go into details, but I&rsquo;ll arrange X and y into a form for decision trees with scikit-learn.
+*I think that this is a code that I can not write unless I understand it to some extent, so I would like to put it somewhere.</p>
+<h4 id="ii-model-construction">(ii) Model construction</h4>
+<p>Finally, the code for model building.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clf <span style="color:#f92672">=</span> DecisionTreeClassifier()
+clf <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>fit(X, y)
+</code></pre></div><p>If it is a simple model, this is the end.
+Let&rsquo;s create a decision tree model in a variable called clf! It is an image of doing something like the declaration and then fitting (= learning) the prepared X and y to that clf in the next line.</p>
+<p>##(3) Model visualization</p>
+<h3 id="visualization-code">◆Visualization code</h3>
+<p>If it is a simple model, it ends with (2), but one of the advantages of decision tree is &ldquo;high readability&rdquo;. To put it simply, it&rsquo;s easy for people who don&rsquo;t know much about machine learning to understand why the model had this result.</p>
+<p>Let&rsquo;s visualize the decision process of the tree structure.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+dot_data <span style="color:#f92672">=</span> StringIO() <span style="color:#75715e">#dot File information storage location</span>
+export_graphviz(clf, out_file<span style="color:#f92672">=</span>dot_data,
+                     feature_names<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;high&#34;</span>, <span style="color:#e6db74">&#34;size&#34;</span>,<span style="color:#e6db74">&#34;autolock&#34;</span>],<span style="color:#75715e">#edit here</span>
+                     class_names<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;False&#34;</span>,<span style="color:#e6db74">&#34;True&#34;</span>],<span style="color:#75715e">#Here to edit (Why Fase and True are in order later)</span>
+                     filled<span style="color:#f92672">=</span>True, rounded<span style="color:#f92672">=</span>True,
+                     special_characters<span style="color:#f92672">=</span>True)
+graph <span style="color:#f92672">=</span> pydotplus<span style="color:#f92672">.</span>graph_from_dot_data(dot_data<span style="color:#f92672">.</span>getvalue())
+Image(graph<span style="color:#f92672">.</span>create_png())
+</code></pre></div><p>When you execute the above code, you will see the following figure.
+<img width="250" alt="Capture5.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/465870/e8127c97-8966-60ac-124a-56b8d18838d1.png"></p>
+<h3 id="-how-to-view-branches">◆ How to view branches</h3>
+<p>I was able to visualize it above! There are many articles and sites ending with, but I didn&rsquo;t understand how to read this figure, so I had a hard time at first, so I will add a simple view.
+*The terms gini coefficient and impurity appear, but they will be dealt with in detail in the mathematics chapter.</p>
+<p><strong>(a) Light blue box on top</strong>This is the very first condition. Below gini shows the current status.</p>
+<hr>
+<p>gini coefficient: 0.497
+sample (number of data): 13
+value: The data is divided into 6 and 7, and the larger True is displayed as class.</p>
+<hr>
+<p>** ※ Regarding the order of values **
+Since there are few data this time, I know that 7 is True, but if there is a lot of data, even if the number is displayed as value, which one (True in this case is False) data is not known think.
+At that time, describe as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">
+clf <span style="color:#f92672">=</span> DecisionTreeClassifier()<span style="color:#75715e"># same as before</span>
+clf <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>fit(X, y)<span style="color:#75715e"># same as before</span>
+<span style="color:#66d9ef">print</span>(clf<span style="color:#f92672">.</span>classes_)<span style="color:#75715e">#Add here</span>
+</code></pre></div><p>Then, this time, [False, True] is displayed. In other words, you can see that the sequence of values is False, then True.</p>
+<p>That&rsquo;s why in the visualization code I wrote <code>class_names=[&quot;False&quot;,&quot;True&quot;],# to edit here (we'll see why Fase and True are in order later) </code>. **.
+The order is False, True in DecisionTreeClassifier(), so if you do not set class_names in the same order, you will get the opposite name when you visualize it. (I stumbled a lot here)</p>
+<p><strong>(b) Second line, blue box on the right</strong>
+It refers to the case where the size (room size) is not less than 27.5$m^2$ (=27.5$m^2$ or more) at the first branch, at which time the gini coefficient is 0, sample (the number of data) 6 and True are divided into 6 pieces.</p>
+<p>In other words, if the room is 27.5$m^2$ or larger, it means that the room can be rented! Since the gini coefficient has become 0, that is, the impurity has become 0, no further branching is done, and this is the end.</p>
+<p>If you look at the other branches in the same way below, you will understand.</p>
+<ul>
+<li>As a supplement, if you set a binary value of 0 and 1 like autolock, you can see it by looking at the branch condition, but the condition is whether it is 0.5 or less (or more). If it is 0.5 or more, it means 1 (with auto lock in this case), and if it is 0.5 or less, it means 0 (without auto lock).</li>
+</ul>
+<p>Up to this point, the decision tree is implemented with scikit-learn and the flow of visualization is over.</p>
+<p>##(4) In the real world&hellip;
+After making a model, it doesn&rsquo;t make sense. In the real world, it is necessary to use this predictive model to predict whether or not a new room will be rented in the future.
+You wrote down the data for two new rooms.
+Store it in a variable as shown below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">z <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({
+        <span style="color:#e6db74">&#34;high&#34;</span>:[<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>],
+        <span style="color:#e6db74">&#34;size&#34;</span>:[<span style="color:#ae81ff">25</span>, <span style="color:#ae81ff">18</span>],
+        <span style="color:#e6db74">&#34;autolock&#34;</span>:[<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>]
+    })
+z2 <span style="color:#f92672">=</span> z[[<span style="color:#e6db74">&#34;high&#34;</span>, <span style="color:#e6db74">&#34;size&#34;</span>,<span style="color:#e6db74">&#34;autolock&#34;</span>]]<span style="color:#f92672">.</span>values
+</code></pre></div><p>What I want to do is to apply the above additional data to the decision tree model (clf) constructed with scikit-learn and predict whether or not the room is likely to be rented.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">y_est <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>predict(z2)
+y_est
+</code></pre></div><p>This will display the result as &ldquo;([False,False])&rdquo;. In other words, unfortunately, there is a high possibility that these two rooms will not be available for rent, so it may be necessary to take a strategy to sell to a target group other than young women.</p>
+<p>There are many other details, but I think it&rsquo;s good to implement an orthodox decision tree first.</p>
+<p>#4. Understand the decision tree from mathematics
+By the way, up to 3 I tried to implement the flow of building a decision tree model using scikit-learn → visualization → prediction using new data.
+Here, I would like to clarify how the decision tree model of this flow is mathematically calculated.
+*If you don&rsquo;t need this knowledge at present, you can skip this step.</p>
+<p>For that purpose, it is necessary to talk about &ldquo;impurity&rdquo; and &ldquo;information amount&rdquo; introduced in the first half, and &ldquo;entropy&rdquo; and &ldquo;Gini coefficient&rdquo; as indicators for measuring impurity.</p>
+<p>###(Ⅰ) Impurity
+In the first half, it was stated that decision trees build a decision process based on impurities.
+To describe it in a little more detail, the impurity is &ldquo;an indicator of how much the data is scattered&rdquo;**.</p>
+<p>For example, in classification, the impurity will be 0 if it can be completely classified, and in regression, the impurity will be 0 if the variance of the data in one node is 0.</p>
+<p>Therefore, the decision tree makes this impurity as small as possible (close to 0).
+There are &ldquo;entropy&rdquo; and &ldquo;Gini coefficient&rdquo; as indicators to measure this impurity. To get into that, I&rsquo;ll deal with the amount of information below.</p>
+<p>###(Ii) Information volume
+Here, I would like to give a rough idea of the amount of information.
+The amount of information is ** &ldquo;an index that quantifies the degree of surprise when you know the phenomenon&rdquo; **.</p>
+<p>For example, you were talking to a friend and you heard the following: Which will be more surprising?
+<img width="157" alt="Capture3.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/465870/6d32c8d1-7950-917b-6d7b-bec955acf76a.png"></p>
+<p>First: It seems that Okinawa will be fine tomorrow.
+Second: Mr. Hanyu of figure skating seems to be really professional rugby. (It&rsquo;s just a fancy story)</p>
+<p>Obviously the second story is more surprising. Because I got the information of the phenomenon that is unlikely to happen in the second story.
+In this case, it can be said that the second one has more information.</p>
+<p>This amount of information is defined as follows in the world of information theory.</p>
+<pre><code class="language-math" data-lang="math">I(x) = -\log_{2} P(x)
+</code></pre><p>*$I(x)$ is the information amount of event $x$ (unit is bits)
+*$P(x)$ is the probability that an event will occur</p>
+<p>In the case above, for example, if the probability of clearing Okinawa is 0.8, and if Hanyu actually has an amazing probability of rugby at 0.01, then the amount of information can be calculated as follows.</p>
+<p>Information on the event of clearing Okinawa: $-\log_{2} 0.8 = 0.322$
+Information on Hanyu&rsquo;s phenomenon: $-\log_{2} 0.01 = 6.644$</p>
+<p>The amount of information about Hanyu&rsquo;s events is overwhelmingly large!</p>
+<p>※reference※
+You can easily calculate $\log$ with Wolfram Alpha on the following site.
+(Type &ldquo;<code>-log2(0.8)</code>&rdquo; in the bar that appears above and the value will be returned.)
+<a href="https://www.wolframalpha.com/">https://www.wolframalpha.com/</a></p>
+<p>Up to this point, I have explained the amount of information. Receiving this content, let&rsquo;s move on to the topic of entropy.</p>
+<p>###(Iii) Entropy</p>
+<h4 id="-about-entropy">◆ About entropy</h4>
+<p>Entropy is an index that averages the amount of information in (i) and indicates the degree of variation in the amount of information.</p>
+<p>Most have low entropy when the same event is observed multiple times.
+On the other hand, if different events occur each time you observe, entropy is large.</p>
+<p>For example, the weather in Okinawa like the one above is always sunny, so the entropy is small.
+On the other hand, the weather in Kanto is not always sunny, but there is much cloudy and rainy, so it can be said that entropy is large.</p>
+<p>Entropy is defined as:</p>
+<pre><code class="language-math" data-lang="math">H = \sum_{i=1}P(x_i)I(x_i) = -\sum_{i=1}P(x_i)\log_{2}P(x_i)
+</code></pre><p>*$H$ is entropy, $I(x_i)$ is the amount of information for a certain event $x_i$</p>
+<p>In the case above, for example, the probability of clearing Okinawa is 0.8, the probability of cloudy is 0.05, and the probability of rain is 0.15. Then, assuming that the probability of clearing Kanto is 0.6, the probability of cloudy is 0.2, and the probability of rain is 0.2, the entropy of each can be calculated as follows.</p>
+<p>Okinawa weather entropy: 0.884
+*Enter the following in Wolfram Alpha.
+80/100(log2(0.8)) +5/100(log2(0.05)) + 15/100(log2(0.15))</p>
+<p>Kanto Weather Entropy: 0.953
+*Enter the following in Wolfram Alpha.
+60/100(log2(0.6)) +20/100(log2(0.2)) + 20/100(log2(0.2))</p>
+<p>Since the entropy of the Kanto weather is larger, you can see that the amount of information varies.</p>
+<h4 id="relationship-between-entropy-and-impurity">◆Relationship between entropy and impurity</h4>
+<p>I stated that the decision tree tries to make the impurity as small as possible.
+As for the relationship between entropy and impurity, the entropy is 0 when the impurity is the lowest and the entropy is higher when the impurity is high**.</p>
+<p>Impurity showed the degree of variation in the data, and entropy also showed the degree of variation in the amount of information, so it may be intuitively easy to understand.</p>
+<h4 id="-about-decision-trees-and-entropy">◆ About decision trees and entropy</h4>
+<p>Then, how is entropy specifically calculated in the decision tree and how is the model constructed?</p>
+<p>It calculates the difference between the entropy before branching and the entropy after branching, searches for branching conditions that maximize the difference, and builds a model**.</p>
+<p>Although it seems to be long if written in words, the point is that in order to make a good decision tree model, we want to minimize the impurity, which is the variation of the data, that is, the entropy.</p>
+<p>To do so, we need to find a branching condition that makes the entropy after the next branch smaller than the previous branch, that is, the difference between the entropy before the branch and the entropy after the branch is as large as possible. It will be</p>
+<p>###(Ⅳ) Gini coefficient</p>
+<h4 id="about-gini-coefficient">◆About Gini coefficient</h4>
+<p>In addition to entropy, the Gini coefficient is an index for measuring impurity.
+The Gini coefficient is an index that averages the <strong>probability of misclassification</strong>.</p>
+<p>More specifically, if the probability that the class $x_i$ is selected at a node $t$ is $P(X_i \mid t)$, the Gini coefficient is defined as the expected value of the probability of misclassification at a node. .. In other words, it is an indicator of <strong>how much misclassification is likely to occur</strong>.</p>
+<p>The Gini coefficient is defined as:</p>
+<pre><code class="language-math" data-lang="math">G(t) = \sum_{i=1}^{K}P(x_i \mid t)\left(1-P(x_i \mid t)\right) = 1-\sum_{i=1}^{ K}P(x_i \mid t)^2
+</code></pre><p>*$G$ is the Gini coefficient, $K$ is the number of classes, and $P(x_i \midt)$ is the probability that class $x_i$ will be selected at a node $t$.</p>
+<h4 id="relationship-between-gini-coefficient-and-impurity">◆Relationship between Gini coefficient and impurity</h4>
+<p>I stated that the decision tree tries to make the impurity as small as possible.
+As for the relationship between Gini coefficient and impurity, the entropy is 0 when the impurity is the lowest and the entropy is higher when the impurity is higher (maximum 1)**.</p>
+<h4 id="about-decision-tree-and-gini-coefficienti-will-omit-this-range-because-it-has-the-same-idea-as--about-decision-trees-and-entropy-above-construct-a-conditional-branch-that-maximizes-the-difference-between-the-gini-coefficient-before-branching-and-the-gini-coefficient-after-branching">◆About decision tree and Gini coefficientI will omit this range because it has the same idea as &ldquo;◆ About decision trees and entropy&rdquo; above. Construct a conditional branch that maximizes the difference between the Gini coefficient before branching and the Gini coefficient after branching.</h4>
+<h3 id="v-summary">(v) Summary</h3>
+<p>As described above, the decision tree is a model that builds a decision process like a tree structure, and the decision criterion is to minimize the &ldquo;impurity&rdquo; that represents the variation in data.</p>
+<p>The indicators for measuring the impurity are &ldquo;entropy, which indicates the degree of variation in events,&rdquo; and &ldquo;Gini coefficient, which indicates how much misclassification is likely to occur.&rdquo; In both cases, the difference between before and after branching is the largest. The decision tree is behind the scenes because it sets such a branching condition.</p>
+<p>I also looked at specific formulas for entropy and Gini coefficients.</p>
+<ul>
+<li>Supplement *
+When you actually run the model in python, you can set the following as an argument to the code introduced in 3 (The following is when the Gini coefficient is the index of impurity. If you want to make it entropy, set it to entropy) ..</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">clf <span style="color:#f92672">=</span> DecisionTreeClassifier(criterion<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;gini&#34;</span>)
+clf <span style="color:#f92672">=</span> clf<span style="color:#f92672">.</span>fit(X, y)
+</code></pre></div><p>#5. Conclusion
+How was the above?
+In my opinion, &ldquo;I can&rsquo;t interpret it by myself even if I see a very complicated code from the beginning, so I don&rsquo;t care about the accuracy, so I will implement a basic series of steps with scikit-learn etc.&rdquo; I think it is very important.</p>
+<p>However, I feel that it is very important to understand how they work behind the scenes once you get used to them, from a mathematical background.</p>
+<p>I think that there are many contents that are difficult to understand, but I hope that it will help deepen your understanding.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>When outputting S3 list with Boto3, use Bucket().objects.filter instead of list_objects_v2 | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>When outputting S3 list with Boto3, use Bucket().objects.filter instead of list_objects_v2</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 7, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/boto3">boto3</a></code></small>
+
+</p>
+<pre><code># Low-level API and high-level API
+</code></pre>
+<p>It is boto3 which is aws python library, but there is a low level API which is a naive API and an object oriented high level API which wraps it.</p>
+<p>Manipulating S3 Objects with Boto3 (High Level API and Low Level API)-Qiita
+<a href="https://qiita.com/sokutou-metsu/items/5ba7531117224ee5e8af">https://qiita.com/sokutou-metsu/items/5ba7531117224ee5e8af</a></p>
+<p>I used to use the low-level API client.list_objects_v2 to output the list of S3, but there is a corresponding high-level API, resource.Bucket().objects.filter.
+(I couldn&rsquo;t find myself because there were too many s3 materials)</p>
+<p>It is an article that I will use the high level API because the amount of description is reduced and the speed is improved by using the high level API</p>
+<h1 id="low-level-api">Low level API</h1>
+<p>Use new version of ListObjectsV2 of S3 ListObjects API ｜ Developers.IO
+<a href="https://dev.classmethod.jp/cloud/aws/s3-new-api-list-object-v2/">https://dev.classmethod.jp/cloud/aws/s3-new-api-list-object-v2/</a></p>
+<p>With list_objects_v2, you can get 1000 records each. Since pagination processing is required, it will be described as an example.
+(We call this description recursively)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        s3client <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_session()<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;s3&#39;</span>)
+        <span style="color:#66d9ef">if</span> next_token:
+            response <span style="color:#f92672">=</span> s3client<span style="color:#f92672">.</span>list_objects_v2(
+                Bucket<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_bucket,
+                Prefix<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_prefix,
+                ContinuationToken<span style="color:#f92672">=</span>next_token,
+            )
+        <span style="color:#66d9ef">else</span>:
+            response <span style="color:#f92672">=</span> s3client<span style="color:#f92672">.</span>list_objects_v2(
+                Bucket<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_bucket,
+                Prefix<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_prefix,
+            )
+
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;Contents&#39;</span> <span style="color:#f92672">in</span> response:
+            keys <span style="color:#f92672">=</span> [i[<span style="color:#e6db74">&#39;Key&#39;</span>] <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> response[<span style="color:#e6db74">&#39;Contents&#39;</span>]]
+        <span style="color:#66d9ef">else</span>:
+            keys <span style="color:#f92672">=</span> []
+
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;NextContinuationToken&#39;</span> <span style="color:#f92672">in</span> response:
+            next_token <span style="color:#f92672">=</span> response[<span style="color:#e6db74">&#39;NextContinuationToken&#39;</span>]
+        <span style="color:#66d9ef">else</span>:
+            next_token <span style="color:#f92672">=</span> None
+</code></pre></div><h3 id="speed">speed</h3>
+<p>78733 objects → 46 seconds
+<code>Executed &lt;function test at 0x10c0743b0&gt; in 46.35232996940613 seconds</code></p>
+<h1 id="high-level-api">High level API</h1>
+<p>Bucket().objects is an ObjectSummary type and specifies attributes by chaining filter, all, limit, page_size etc. here
+The return value is also ObjectSummary
+<a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Bucket.objects">https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Bucket.objects</a>
+<a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.ObjectSummary">https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.ObjectSummary</a></p>
+<p>ObjectSummary itself is an iterator, and actually acquires data at the timing of calling the iterator
+If you specify <code>KeyMarker</code> in the argument of filter, you can search in the middle, you can specify RequestPayer and you can do almost anything you can do with list_objects_v2</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        s3_resource <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_session()<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)
+        a <span style="color:#f92672">=</span> s3_resource<span style="color:#f92672">.</span>Bucket(self<span style="color:#f92672">.</span>source_bucket)<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>filter(Prefix<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_prefix)
+<span style="color:#75715e"># a = s3_resource.Bucket(self.source_bucket).objects.filter(Prefix=self.source_prefix).limit(count=2000)</span>
+        b <span style="color:#f92672">=</span> [k<span style="color:#f92672">.</span>key <span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> a]
+</code></pre></div><h3 id="speed-1">speed</h3>
+<p>78733 objects → 33 seconds
+<code>Executed &lt;function test at 0x10191f200&gt; in 33.14992713928223 seconds</code></p>
+<h1 id="the-whole-source-code">The whole source code</h1>
+<p>Since it is a discarded code, there are some suitable parts</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> Optional
+
+<span style="color:#f92672">import</span> boto3
+<span style="color:#f92672">from</span> dataclasses <span style="color:#f92672">import</span> dataclass
+<span style="color:#f92672">from</span> lauda <span style="color:#f92672">import</span> stopwatch
+
+
+<span style="color:#a6e22e">@dataclass</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">S3Manager</span>:
+    source_bucket: str
+    source_prefix: str
+    profile: Optional[str] <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_session</span>(self):
+        s <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>session<span style="color:#f92672">.</span>Session(
+            profile_name<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>profile
+        )
+        <span style="color:#66d9ef">return</span> s
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_list_source</span>(self, <span style="color:#f92672">*</span>, accumulated<span style="color:#f92672">=</span>None, next_token<span style="color:#f92672">=</span>None, func<span style="color:#f92672">=</span>None):
+        s3client <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_session()<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;s3&#39;</span>)
+        <span style="color:#66d9ef">if</span> next_token:
+            response <span style="color:#f92672">=</span> s3client<span style="color:#f92672">.</span>list_objects_v2(
+                Bucket<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_bucket,
+                Prefix<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_prefix,
+                ContinuationToken<span style="color:#f92672">=</span>next_token,
+            )
+        <span style="color:#66d9ef">else</span>:
+            response <span style="color:#f92672">=</span> s3client<span style="color:#f92672">.</span>list_objects_v2(
+                Bucket<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_bucket,
+                Prefix<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_prefix,
+            )
+
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;Contents&#39;</span> <span style="color:#f92672">in</span> response:
+            keys <span style="color:#f92672">=</span> [i[<span style="color:#e6db74">&#39;Key&#39;</span>] <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> response[<span style="color:#e6db74">&#39;Contents&#39;</span>]]
+        <span style="color:#66d9ef">else</span>:
+            keys <span style="color:#f92672">=</span> []
+
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;NextContinuationToken&#39;</span> <span style="color:#f92672">in</span> response:
+            next_token <span style="color:#f92672">=</span> response[<span style="color:#e6db74">&#39;NextContinuationToken&#39;</span>]
+        <span style="color:#66d9ef">else</span>:
+            next_token <span style="color:#f92672">=</span> None
+
+        <span style="color:#66d9ef">if</span> func:
+            <span style="color:#66d9ef">return</span> func(response<span style="color:#f92672">=</span>response, keys<span style="color:#f92672">=</span>keys, func<span style="color:#f92672">=</span>func, next_token<span style="color:#f92672">=</span>next_token, accumulated<span style="color:#f92672">=</span>accumulated)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_accumulate</span>(self, <span style="color:#f92672">*</span>, response, keys, func, next_token, accumulated):
+        got_keys <span style="color:#f92672">=</span> (accumulated <span style="color:#f92672">or</span> []) <span style="color:#f92672">+</span> keys
+        <span style="color:#66d9ef">if</span> next_token:
+            <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;searching... current fetch keys are :{len(got_keys)}&#39;</span>)
+            <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_list_source(accumulated<span style="color:#f92672">=</span>got_keys, next_token<span style="color:#f92672">=</span>next_token, func<span style="color:#f92672">=</span>func)
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">return</span> got_keys
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">list_all</span>(self) <span style="color:#f92672">-&gt;</span> list:
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_list_source(func<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>_accumulate)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_delete</span>(self, <span style="color:#f92672">*</span>, response, keys, func, next_token, accumulated):
+        <span style="color:#66d9ef">if</span> keys:
+            <span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;deleting: {self.source_bucket}/{self.source_prefix}&#39;</span>)
+            s3client <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>Session()<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;s3&#39;</span>)
+            s3client<span style="color:#f92672">.</span>delete_objects(
+                Bucket<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_bucket,
+                Delete<span style="color:#f92672">=</span>{
+                    <span style="color:#e6db74">&#39;Objects&#39;</span>: [{<span style="color:#e6db74">&#39;Key&#39;</span>: key} <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> keys],
+                    <span style="color:#e6db74">&#39;Quiet&#39;</span>: False
+                },
+            )
+
+        <span style="color:#66d9ef">if</span> next_token:
+            <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>_list_source(next_token<span style="color:#f92672">=</span>next_token, func<span style="color:#f92672">=</span>func)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">delete_all</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        self<span style="color:#f92672">.</span>_list_source(func<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>_delete)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">list_all_test</span>(self):
+        s3_resource <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_session()<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)
+        a <span style="color:#f92672">=</span> s3_resource<span style="color:#f92672">.</span>Bucket(self<span style="color:#f92672">.</span>source_bucket)<span style="color:#f92672">.</span>objects<span style="color:#f92672">.</span>filter(Prefix<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>source_prefix)
+        b <span style="color:#f92672">=</span> [k<span style="color:#f92672">.</span>key <span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> a]
+        <span style="color:#66d9ef">print</span>(len(b))
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:os<span style="color:#f92672">.</span>chdir(Path(__file__)<span style="color:#f92672">.</span>parents[<span style="color:#ae81ff">1</span>])
+
+     <span style="color:#a6e22e">@stopwatch</span>
+     <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test</span>():
+         s3 <span style="color:#f92672">=</span> S3Manager(
+             source_bucket<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Bakette&#39;</span>,
+             source_prefix<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Path to search&#39;</span>,
+         )
+         <span style="color:#75715e"># s3.list_all()</span>
+         s3<span style="color:#f92672">.</span>list_all_test()
+
+     test()
+</code></pre></div><p>#Summary
+The low-level API passes functions for extensibility, and may have some overhead
+The high level API is not slow, and the description is simple, so let&rsquo;s use the high level API.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

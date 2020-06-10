@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[AWS/Lambda] How to read Python external library | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[AWS/Lambda] How to read Python external library</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 7, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lambda">lambda</a></code></small>
+
+</p>
+<pre><code># Overview
+</code></pre>
+<p>With AWS lambda, external libraries such as pandas and numpy cannot be loaded in the initial state. There are two ways to load it, the first is to zip up the installed libraries and executable files in a zip file and upload to lambda, and the second is to load lambda as a layer. The latter method is recommended, but in this article, these methods are summarized as Tips together with the aspect of code management.</p>
+<p>#Environment
+MacOS Catalina
+docker installed
+AWS CLI installed</p>
+<p>#Introduction
+It is not good to do lambda development on the browser in terms of code management, so we will allow local development. In other words, it takes the form of working locally and uploading code changes to lambda as needed so that gitHub can be managed.
+So I created a deployment environment using <a href="https://hub.docker.com/r/lambci/lambda/">docker-lambda</a>.(Pleaseclonewhenusing)
+<a href="https://github.com/shoda888/local2lambda">https://github.com/shoda888/local2lambda</a></p>
+<p>First, I need a docker image, so I will create it. (First time only)
+<code>$ docker build -t shoda888/local2pylambda .</code></p>
+<p>After that, if you give the lambda function name created in advance to the funcname variable of <code>deploy.sh</code> and execute the following, the upload will be done automatically.
+<code>$ sh deploy.sh</code></p>
+<p>Please rewrite <code>lambda_function.py</code> and deploy.sh again to check if it has been changed.</p>
+<h1 id="how-to-upload-the-library-to-a-lambda-in-a-zip-file">How to upload the library to a lambda in a zip file</h1>
+<p>All you have to do is give a library name to requirements.txt and deploy.sh (pandas, numpy, requests, etc.). A large number of library directories are created in the working directory. Pandas is too heavy and it takes about 5 minutes to upload. When I check it on lambda, the upload is successful, but a warning appears.</p>
+<blockquote>
+<p>The deployment package for the Lambda function &ldquo;*******&rdquo; is too large to enable inline code editing. However, you can call the function.</p>
+</blockquote>
+<img width="1292" alt="Screenshots 2019-12-07 15.27.14.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/234751/46f2b561-07d8-37ef-1ae3-64249a5e42d5.png">
+<p>It seems that the function can be called even with this.</p>
+<p>#How to assemble a library into a layer
+Since it is tedious to upload the zipped library every time, it is recommended to leave requirements.txt empty. I think that it is convenient and possible to reuse the library by putting it in a layer. (However, version control of the library may be troublesome in the future)
+Let&rsquo;s check how to put the library into a layer.</p>
+<h2 id="for-pure-python-libraries">For pure Python libraries</h2>
+<p>In the case of a pure Python library, for example, a library configured with 100% Python like the image can easily create a zip file for layer on your Mac without preparing Amazon Linux or ubuntu environment with EC2.
+<img width="1019" alt="purepython.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/234751/d623a75f-8ae5-1ab5-fc48-33b27ab7e541.png"></p>
+<p>If you want to install ask_sdk_core as an example, this is all. (example for python3.7)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ mkdir -p build/python/lib/python3.7/site-packages
+$ pip3 install ask_sdk_core -t build/python/lib/python3.7/site-packages/
+$ cd build
+$ zip -r ask_sdk.zip.
+</code></pre></div><p>The library is read by adding the generated ask_sdk.zip to layer and adapting the layer in lambda.
+<img width="885" alt="Screenshots 2019-12-07 17.22.29.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/234751/b0ac913a-2321-8e5e-db2b-fe46ddbbb6c7.png">
+<img width="829" alt="layer.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/234751/b49c90e7-fb87-58c9-7c82-110bb812ecdc.png"></p>
+<h2 id="for-non-pure-python-libraries">For non-pure Python libraries</h2>
+<p>Numpy and pandas are examples. It seems good to create an Amazon Linux environment with EC2 and zip it. (I think I made the layer with ubuntu before, but is it possible with ubuntu?)</p>
+<p>Many people have already done this, so other articles are very helpful.
+[Add pandas as a layer of Lambda]
+(<a href="https://qiita.com/thimi0412/items/4c725ec2b26aef59e5bd">https://qiita.com/thimi0412/items/4c725ec2b26aef59e5bd</a>)
+<a href="https://qiita.com/t_okkan/items/394a15577bd1aad46ec3">Commonize library with AWS Lambda Layers</a></p>
+<p>The following is youtube, but the layer is made using ubuntu. (Easy to understand)
+[AWS Lambda Layers for Pandas library]
+(<a href="https://youtu.be/zrrH9nbSPhQ">https://youtu.be/zrrH9nbSPhQ</a>)</p>
+<h2 id="summary">Summary</h2>
+<p>Lambda development was made possible while managing the code locally, and the method of reading the external library was summarized as Tips.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

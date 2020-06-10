@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Things I stumbled upon using Airflow | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Things I stumbled upon using Airflow</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 9, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/airflow"> airflow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-infrastructure"> data infrastructure</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-pipeline"> data pipeline</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>We used Airflow as a data pipeline when constructing our data infrastructure.
+At that time, there were some stumbling blocks, so write them down.</p>
+<h2 id="our-airflow">Our Airflow</h2>
+<p>We are developing and operating multiple systems using machine learning.
+In order to increase the number of projects and the operation, it is necessary to meet the following requirements in common.</p>
+<ul>
+<li>Access multiple required data sources with a single endpoint</li>
+<li>The same query always returns the same result</li>
+<li>Queries don&rsquo;t get stuck</li>
+</ul>
+<p>Therefore, we decided that the data infrastructure was a necessary phase, and came to build it.
+When building the data infrastructure, the original data needs to be processed for a data warehouse or data mart.</p>
+<p>At that time, the data pipeline had to meet the following requirements.</p>
+<ul>
+<li>If the same logic is used, the data that is finally created will be the same even in situations where data is created and restarted due to an error, etc.</li>
+<li>Data is processed every day</li>
+<li>You can immediately notice that the process failed and it is clear where to restart</li>
+</ul>
+<p>We chose Airflow as a tool that can meet these requirements.</p>
+<p>It is the lower part in the conceptual diagram.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/52249/69c192c0-0bb9-5854-5f66-b7d3b6f09b98.png" alt="Data Infrastructure Conceptual Diagram with_Airflow.png"></p>
+<p>Aiflow has been implemented to meet the above requirements.</p>
+<ul>
+<li>Do not move this TaskInstance until the previous TaskInstance is completed</li>
+<li>If the data you want to create has already been created, skip the task</li>
+<li>After processing the past minutes, execute at the date and time</li>
+<li>Notify if TaskInstance for this time succeeded or failed</li>
+</ul>
+<h2 id="assumption">Assumption</h2>
+<p>Airflow version is <code>1.10.5</code>.</p>
+<h2 id="stumble-1-execution_date-and-execution-date">Stumble 1. execution_date and execution date</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">default_args <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;owner&#39;</span>:<span style="color:#e6db74">&#39;Airflow&#39;</span>,
+    <span style="color:#e6db74">&#39;start_date&#39;</span>: datetime(<span style="color:#ae81ff">2019</span>, <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">1</span>),
+}
+dag <span style="color:#f92672">=</span> DAG(<span style="color:#e6db74">&#39;tutorial1&#39;</span>, default_args<span style="color:#f92672">=</span>default_args,
+          schedule_interval<span style="color:#f92672">=</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>))
+</code></pre></div><p>This code is from <code>2019-12-01T00:00:00+00:00</code> for <code>execution_date</code>
+It will be executed as 12/1, 12/2, 12/3 &hellip;, and will be executed every day when the past executions are completed.
+At this time, assuming today was <code>2019-12-06T01:00:00+00:00(UTC)</code>, how long will execution_date be executed?</p>
+<p>The answer is that the TaskInstance up to <code>2019-12-05T00:00:00+00:00(UTC)</code> is executed.
+I was confusing that if today&rsquo;s date was 12/6, execution_date would run until 12/6.
+Below is an image diagram.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/52249/4a5a010e-cd5e-9c37-914c-b90b7a51780b.png" alt="execution_date_flow.png"></p>
+<p>In addition to this, if there are overlapping requirements such as handling time in the time zone: <code>Asia/Tokyo</code> in the task
+Be careful, as it can be confusing.</p>
+<h2 id="stumble-2-wait-for-the-previous-days-task-instance">Stumble 2. Wait for the previous day&rsquo;s Task Instance</h2>
+<p>Since it was necessary to perform today&rsquo;s processing by using the execution result of TaskInstance of the previous day,
+Today&rsquo;s TaskInstance had to wait for the previous TaskInstance to succeed.
+So I used <code>wait_for_downstream</code> to wait for the specific task result of the previous TaskInstance.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">t1 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;print1&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo 1&#39;</span>,
+    wait_for_downstream<span style="color:#f92672">=</span>True,
+    dag<span style="color:#f92672">=</span>dag)
+</code></pre></div><p>However, <code>wait_for_downstream</code> does not wait for the result of the previous entire TaskInstance.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">t1 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;print1&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo 1&#39;</span>,
+    wait_for_downstream<span style="color:#f92672">=</span>True,
+    dag<span style="color:#f92672">=</span>dag)
+
+t2 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;print2&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo 2&#39;</span>,
+    wait_for_downstream<span style="color:#f92672">=</span>True,
+    dag<span style="color:#f92672">=</span>dag)
+
+t1 <span style="color:#f92672">&gt;&gt;</span> t2
+</code></pre></div><p>If you write, the t1 task for this time will be executed when the t1 task for the previous time is completed (without waiting for the completion of t2). However, the t1 task for this time must wait for both t1 and t2 tasks for the previous time.
+So I used <code>ExternalTaskSensor</code> and set it to wait for the last task of the previous time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">t_check_previous_dag_run <span style="color:#f92672">=</span> ExternalTaskSensor(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;is_success_pre_dag_run&#39;</span>,
+    external_dag_id<span style="color:#f92672">=</span>dag<span style="color:#f92672">.</span>dag_id,
+    allowed_states<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;success&#39;</span>,<span style="color:#e6db74">&#39;skipped&#39;</span>],
+    external_task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;your_last_task_id&#39;</span>,
+    execution_delta<span style="color:#f92672">=</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+)
+
+<span style="color:#75715e"># t1 is the task you want to execute first</span>
+t_check_previous_dag_run <span style="color:#f92672">&gt;&gt;</span> t1
+</code></pre></div><p>However, with this description only, TaskInstance(execution_date=start_date) that works first
+Keeps waiting for the completion of a task that does not exist and does not proceed.</p>
+<p>Therefore,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># is_initial uses the function for determining whether it is the first execution set in user_defined_macros</span>
+t_check_is_initial <span style="color:#f92672">=</span> BranchPythonOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;is_initial&#39;</span>,
+    python_callable<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> is_initial_str:<span style="color:#e6db74">&#39;do_nothing&#39;</span> <span style="color:#66d9ef">if</span> is_initial_str <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;True&#39;</span> <span style="color:#66d9ef">else</span><span style="color:#e6db74">&#39;is_success_pre_dag_run&#39;</span>, <span style="color:#75715e"># NOQA</span>
+    op_args<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;{{ is_initial(execution_date) }}&#39;</span>]
+)
+
+t_do_nothing <span style="color:#f92672">=</span> DummyOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;do_nothing&#39;</span>
+)
+
+<span style="color:#75715e"># set trigger_rule=&#39;none_failed&#39; to not be skipped</span>
+t1 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;print1&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo 1&#39;</span>,
+    trigger_rule<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;none_failed&#39;</span>,
+    dag<span style="color:#f92672">=</span>dag)
+
+t_check_is_initial <span style="color:#f92672">&gt;&gt;</span> t_check_previous_dag_run <span style="color:#f92672">&gt;&gt;</span> t1
+t_check_is_initial <span style="color:#f92672">&gt;&gt;</span> t_do_nothing <span style="color:#f92672">&gt;&gt;</span> t1
+</code></pre></div><p>I wrote a code like this and skipped it by skipping the <code>ExternalTaskSensor</code> in the first execution.</p>
+<div align="center"><img width="400" alt="externaltasksensor.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/52249/3eb096dc-f66b-53bc-3cde-9fe5ea16e1ed.png"></div>
+<p>It became redundant, but it became clear to wait for the TaskInstance of the previous day.</p>
+<p>However, since it is still redundant, please teach me if you know another way to wait for the execution result of the previous day.</p>
+<h2 id="stumble-3-shortcircuitoperatorskip-status-rule">Stumble 3. ShortCircuitOperator,Skip status rule</h2>
+<p><code>ShortCircuitOperator</code> gives the following tasks <code>skip</code> status to <code>all</code> when the function declared in python_callable returns false.
+Therefore, you cannot skip the task immediately after, but want to execute the task further ahead.</p>
+<img width="400" alt="Screenshots 2019-12-06 22.51.16.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/52249/c3e3277e-913f-cb6b-849f-e20d2d9bcc69.png">
+<p>In the above example, you cannot use short circuit task (ShortCircuitOperator) to skip print2_2 and execute finish task.</p>
+<p>Also in <code>BranchPythonOperator</code>, a similar thing happens when the following task&rsquo;s trigger_rule is set to the default <code>all_success</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">t0 <span style="color:#f92672">=</span> BranchPythonOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;first_and_branch&#39;</span>,
+    python_callable<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span>:<span style="color:#e6db74">&#39;print1&#39;</span>,
+    dag<span style="color:#f92672">=</span>dag)
+
+t1 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;print1&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo 1&#39;</span>,
+    dag<span style="color:#f92672">=</span>dag)
+
+t2 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;print2&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo 2&#39;</span>,
+    dag<span style="color:#f92672">=</span>dag)
+
+t3 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;finish&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo finish&#39;</span>,
+    dag<span style="color:#f92672">=</span>dag
+)
+
+t0 <span style="color:#f92672">&gt;&gt;</span> t1
+t0 <span style="color:#f92672">&gt;&gt;</span> t2
+t1 <span style="color:#f92672">&gt;&gt;</span> t3
+t2 <span style="color:#f92672">&gt;&gt;</span> t3
+</code></pre></div><p><img width="400" alt="Screenshots 2019-12-06 23.10.15.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/52249/d63ff584-90bd-d859-43ed-04ba2561a4a5.png">If trigger_rule of finish task is <code>all_sucess</code>, it will be skip status if any one of the parent tasks has skip status.</p>
+<p>If you want to execute the finish task when there is no fail status in the parent task
+Setting trigger_rule to&rsquo;none_failed&rsquo; as shown below will work as expected.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">t3 <span style="color:#f92672">=</span> BashOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;finish&#39;</span>,
+    bash_command<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;echo finish&#39;</span>,
+    trigger_rule<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;none_failed&#39;</span>,
+    dag<span style="color:#f92672">=</span>dag
+)
+</code></pre></div><p>If the first_and_branch task part is <code>ShortCircuitOperator</code> and the result of python_callable is false, all subsequent tasks will be in skip status regardless of trigger_rule.</p>
+<h2 id="stumble-4-notification-of-failure">Stumble 4. Notification of failure</h2>
+<p>Use default_args to send slack notifications if any task fails
+I wrote it as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send_slack</span>():
+    <span style="color:#75715e">#Slack notification process</span>
+
+default_args <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;start_date&#39;</span>: datetime(<span style="color:#ae81ff">2019</span>, <span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">1</span>),
+    <span style="color:#e6db74">&#39;on_failure_callback&#39;</span>: send_slack
+}
+</code></pre></div><p>However, in the case of this writing, when slack notification is not sent for some reason, that is not displayed on the management screen of airflow. As a result, it was sometimes impossible to notice that the slack notification task itself was missing.
+Therefore, by explicitly sending a slack notification at the end of the task as shown below, even if the slack notification itself fails, you can notice it by looking at the management screen.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">t_finish <span style="color:#f92672">=</span> DummyOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;task_finish&#39;</span>,
+    trigger_rule<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;none_failed&#39;</span>,
+)
+
+<span style="color:#75715e"># Use Operator to send your own Slack notifications</span>
+By assigning tasks <span style="color:#66d9ef">with</span> <span style="color:#75715e"># trigger_rule, notifications will skip regardless of success or failure</span>
+t_notification_on_success <span style="color:#f92672">=</span> CustomSlackOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;notification_on_success&#39;</span>,
+    trigger_rule<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;none_failed&#39;</span>
+)
+
+t_notification_on_failed <span style="color:#f92672">=</span> CustomSlackOperator(
+    task_id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;notification_on_failed&#39;</span>,
+    is_success<span style="color:#f92672">=</span>False,
+    trigger_rule<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;one_failed&#39;</span>
+)
+
+t_finish <span style="color:#f92672">&gt;&gt;</span> t_notification_on_success
+t_finish <span style="color:#f92672">&gt;&gt;</span> t_notification_on_failed
+</code></pre></div><img width="400" alt="Screenshots 2019-12-06 22.36.00.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/52249/0b0fad21-858d-299b-5dae-5f9011d7711a.png">
+<p>It is possible that the notification itself may fail because the settings on the slack side have been changed without notice.
+I think it is safer to specify the notification task.</p>
+<h2 id="summary">Summary</h2>
+<p>I also stumbled on other details,
+Most of the patterns were solved by reading the documentation thoroughly (sometimes I also read the source code).</p>
+<p>Airflow</p>
+<ul>
+<li>Flexible definition of Dag with python code</li>
+<li>The past minute works like batch, after that it works like regular execution (it is difficult to express.)</li>
+</ul>
+<p>It is one of the few tools that can
+Therefore, I think that it can be a powerful candidate when steadily moving multiple complicated tasks.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

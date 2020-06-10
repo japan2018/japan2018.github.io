@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to predict Titanic survival on PyCaret | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to predict Titanic survival on PyCaret</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 25, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-analysis"> data analysis</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kaggle"> Kaggle</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pycaret"> PyCaret</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>The other day, I tried using the machine learning library PyCaret that was released.
+Data feature analysis and performance comparison work with multiple models will be automated, and the work time of data scientists up to now will be considerably reduced.</p>
+<p>This time, I will apply PyCaret to the Titanic survival prediction problem, submit the prediction result to Kaggle, and see the result.</p>
+<p>**This is a follow-up article to <a href="https://qiita.com/kotai2003/items/c8fa7e55230d0fa0cc8e">I tried to classify wine quality with PyCaret</a>, which I posted last time. **</p>
+<p>#1. Install PyCaret</p>
+<p>Run the following code to install.
+I use Anaconda, but I launched and installed a virtual environment dedicated to PyCaret.
+An error may occur in a virtual environment managed by an existing Conda. (Probably due to a collision between pip and conda)</p>
+<pre><code>pip install pycaret
+</code></pre><p>#2. Acquisition of data</p>
+<p>You can download train.csv and test.csv on Kaggle&rsquo;s Titanic site.
+<a href="https://www.kaggle.com/c/titanic/data">https://www.kaggle.com/c/titanic/data</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+train_data <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#34;train.csv&#34;</span>)
+train_data<span style="color:#f92672">.</span>head()
+</code></pre></div><blockquote>
+<p>Result
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/b56402a1-d82d-b371-a2c7-291a4565e89f.png" alt="image.png"></p>
+</blockquote>
+<p>Use Pandas profile_report() to see the contents of the data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> pandas_profiling
+train_data<span style="color:#f92672">.</span>profile_report()
+</code></pre></div><blockquote>
+<p>Result
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/5ade2cfb-9f4a-0e08-6589-35ae23bfacc5.png" alt="image.png"></p>
+</blockquote>
+<p>#3. Data pre-processing
+Preprocess the data using setup(). At that time, specify the target variable as Survived as an argument.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">from</span> pycaret.classification <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+exp_titanic <span style="color:#f92672">=</span> setup(data <span style="color:#f92672">=</span> train_data, target <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Survived&#39;</span>)
+</code></pre></div><p>Results (up to 10 items)</p>
+<blockquote>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/b23c77c9-a775-f91a-a1b2-3c2762b20c6e.png" alt="image.png"></p>
+</blockquote>
+<p>#4. Model comparison</p>
+<p>With compare_models(), the dataset is analyzed using multiple classification models and the results are tabulated. This is a very useful feature when considering which classification model to use.</p>
+<p>There are more than 10 classification models provided by Pycaret, which you can check with the link below.</p>
+<p><a href="https://pycaret.org/classification/">https://pycaret.org/classification/</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">compare_models()
+</code></pre></div><p>The accuracy of catBoost Classifier was 83.63%. This time, I will talk about the performance evaluation of PyCaret, so I will proceed with the 9th place Random Forest Classifier.</p>
+<p>The result</p>
+<blockquote>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/aaa17d9a-5963-df38-f04b-8f46bc61936d.png" alt="image.png"></p>
+</blockquote>
+<p>#5. Generate analytical model
+Select a classification model to model. Use create_model().
+This time, we will use the Random Forest Classifier model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">dt <span style="color:#f92672">=</span> create_model(<span style="color:#e6db74">&#39;rf&#39;</span>, round<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+</code></pre></div><p>The result</p>
+<blockquote>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/6517e9e7-a057-16de-cc73-63383407fdb8.png" alt="image.png"></p>
+</blockquote>
+<p>#6. Analytical model tuning
+The model is also tuned using tune_model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">tuned_rf <span style="color:#f92672">=</span> tune_model(<span style="color:#e6db74">&#39;rf&#39;</span>,round<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+</code></pre></div><p>The result</p>
+<p>The average accuracy before tuning was improved to 0.80, and the average accuracy after tuning was improved to 0.81.</p>
+<blockquote>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/2fbb0806-9725-7b51-5601-ec8ad6c724e7.png" alt="image.png"></p>
+</blockquote>
+<p>#7. Visualization of analytical model
+Visualize the analysis results using plot_model.</p>
+<p>First, plot the AUC curve.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">plot_model(tuned_rf, plot <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;auc&#39;</span>)
+</code></pre></div><p>The result</p>
+<blockquote>
+<p>!<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/dd819bb3-be1c-fd22-2597-c9af31a7f0c0.png" alt="image.png"></p>
+</blockquote>
+<p>Next, plot the confusion matrix.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">plot_model(tuned_lightgbm, plot <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;confusion_matrix&#39;</span>)
+</code></pre></div><p>The result</p>
+<blockquote>
+<p>!<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/4d38bc7b-6eac-05fd-b78f-d227111b8d72.png" alt="image.png"></p>
+</blockquote>
+<p>#8. Analytical model evaluation
+It is possible to perform multiple evaluations simultaneously using evaluate_model().</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">evaluate_model(tuned_rf)
+</code></pre></div><p>When you press the button in the yellow frame, each evaluation result is displayed.</p>
+<p>The result</p>
+<blockquote>
+<p>!<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/abe048e8-cd21-cc9e-ae57-8d813fd0dda7.png" alt="image.png"></p>
+</blockquote>
+<p>#9. Forecast</p>
+<p>Finalize the model with finalize_model() and then predict with model predict_model().
+At the time of prediction, use test data (here, test.csv).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">final_rf <span style="color:#f92672">=</span> finalize_model(tuned_rf)
+data_unseen <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;test.csv&#39;</span>)
+result <span style="color:#f92672">=</span> predict_model(final_rf, data <span style="color:#f92672">=</span> data_unseen)
+</code></pre></div><p>The Label column means the result of the prediction.</p>
+<p>The result</p>
+<blockquote>
+</blockquote>
+<p>!<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/44918df1-891d-f6ad-064e-c01fc7f2f4fc.png" alt="image.png"></p>
+<p>I uploaded these results to Kaggle. The score was 0.76076.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/208980/d8442fd7-fc66-0dd0-03af-fd38e4970b76.png" alt="image.png"></p>
+<p>#10. Summary</p>
+<ol>
+<li>PyCaret analysis was performed using the Titanic survival prediction data set.</li>
+<li>Very easy to use. I think it has a high level of analysis capability that is comparable to Alteryx and Data Robot, which are commercial analysis tools.</li>
+</ol>
+<h2 id="101-list-of-pycaret-functions-used-for-analysis">10.1 List of Pycaret functions used for analysis</h2>
+<ol>
+<li>Data pre-processing: setup()</li>
+<li>Compare models: compare_models()</li>
+<li>Generate analysis model: create_model()</li>
+<li>Tuning: tune_model()</li>
+<li>Visualization: plot_model()</li>
+<li>Evaluation: evaluate_model()</li>
+<li>Prediction: finalize_model(), predict_model()</li>
+</ol>
+<p>#11. Reference materials</p>
+<p>1.PyCaret Home Page ,http://www.pycaret.org/
+2.PyCaret Classification, <a href="https://pycaret.org/classification/">https://pycaret.org/classification/</a>
+3. I tried using PyCaret at the fastest speed, <a href="https://qiita.com/s_fukuzawa/items/5dd40a008dac76595eea">https://qiita.com/s_fukuzawa/items/5dd40a008dac76595eea</a>
+4.I tried to classify the wine quality by PyCaret.https://qiita.com/kotai2003/items/c8fa7e55230d0fa0cc8e</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

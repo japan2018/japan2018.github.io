@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Judging food photos using Google Cloud Vision API | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Judging food photos using Google Cloud Vision API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 12, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlecloudplatform">GoogleCloudPlatform</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/visionapi">VisionAPI</a></code></small>
+
+</p>
+<pre><code>This article is the 12th day article of [Fujitsu Systems Web Technology Advent Calendar](https://qiita.com/advent-calendar/2019/fsweb).
+</code></pre>
+<p>(Promise) The content of this article is my own opinion, not representative of the organization to which it belongs.</p>
+<p>#Introduction
+This article summarizes the minimum procedure for using Google&rsquo;s image recognition API &ldquo;Cloud Vision API&rdquo;.
+Lastly, I am trying to judge food photos.</p>
+<h2 id="aside">Aside</h2>
+<p>My personal hobby is Mesitello <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>, and I post food photos on the LINE timeline to make me think &ldquo;I&rsquo;m hungry&rdquo;.
+I took a picture that looked tastier and thought that something could be done with the image recognition API to improve the quality of Mesitello, so this time I started by trying the Google Cloud Vision API.</p>
+<h1 id="what-i-used-this-time">What I used this time</h1>
+<ul>
+<li>Google Cloud Platform
+-Services required to use Cloud Vision API</li>
+<li>Anaconda
+-Package containing Python itself and commonly used libraries</li>
+</ul>
+<h1 id="preparation-for-using-api">Preparation for using API</h1>
+<h2 id="google-cloud-platform-registration">Google Cloud Platform registration</h2>
+<p>First, register to use Google Cloud Platform to use the Cloud Vision API.</p>
+<p>Click &ldquo;Start for free&rdquo; on the following site to start the registration procedure.
+It can be used with a Google account.</p>
+<p><a href="https://cloud.google.com/">Cloud Computing Services | Google Cloud</a></p>
+<p>*Registration of a credit card is required even when using for free.</p>
+<h2 id="creating-a-project">Creating a project</h2>
+<p>When registration is completed, a screen like this will be displayed and the default project has been created.
+You can create a new project from the red frame.
+The API is also available in the default project, but I created a &ldquo;Meshitero&rdquo; project here.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/f7a302cc-2597-5e1e-a208-1e0561484db1.png" alt="Console Top.PNG"></p>
+<h2 id="enable-cloud-vision-api">Enable Cloud Vision API</h2>
+<p>If you enter &ldquo;Visoin API&rdquo; in the search form, the Cloud Vision API will be hit.
+Select &ldquo;Enable&rdquo; on the screen after transition.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/3647b5c1-653e-e5d2-95d8-660209568219.png" alt="Console Top_Search.png"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/a21bed55-82b5-f9c4-d1cc-7195343e7b6a.png" alt="Vision_API_Top.PNG"></p>
+<p>Aside: By the way, you can try the demo on the screen by selecting &ldquo;<a href="https://cloud.google.com/vision/?hl=ja">Try this API</a>&rdquo;.</p>
+<p>When activated, a screen like this will be displayed.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/797bda71-ed05-9345-b2dd-c45e69bef50e.png" alt="vision_API_on_top.PNG"></p>
+<h2 id="issue-api-key">Issue API key</h2>
+<p>This time we will call it in Python, so we will create the authentication information.
+Click &ldquo;Create Credentials&rdquo; on the Cloud Vision API screen to move to the &ldquo;APIs and Services&rdquo; credentials page.
+Select &ldquo;API key&rdquo; from the pull-down menu of &ldquo;Create authentication information&rdquo; to issue the API key.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/e6d22e6d-1142-bf06-3101-f9e30c398372.png" alt="API key.PNG"></p>
+<img width="400" alt="Create API key.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/1de624ec-35c0-76bb-7512-273cb5242f46.png">
+<p>Restrict keys to prevent unauthorized use.
+Click &ldquo;Restrict Keys&rdquo; on the above screen to move to the screen where you can restrict keys.
+Apply restrictions as needed.
+This time, we restricted usage by IP address, and once again restricted the APIs that could be used to Cloud Vision API.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/88187e3b-3e61-38b9-a23f-2e9efee8de33.png" alt="Restrict Keys.PNG"></p>
+<p>This is the end of the settings for using the API.</p>
+<h1 id="api-call">API call</h1>
+<h2 id="install-anaconda">Install Anaconda</h2>
+<p>Because I call the API in Python,
+I installed Anaconda referring to the following.</p>
+<p><a href="https://qiita.com/takanorimutoh/items/ea0a3c73220f37858720">Installation of Anaconda (Windows)</a></p>
+<h2 id="creating-the-source">Creating the source</h2>
+<p>Create the source by referring to the content of <a href="https://cloud.google.com/vision/docs/reference/rest/">Reference</a> of API.</p>
+<h3 id="create-request-data-to-be-passed-to-api">Create request data to be passed to API</h3>
+<p>It seems that the image data needs to be passed as a base64 encoded string.
+Also, specify the type of image analysis and the maximum number of results to return in &ldquo;features&rdquo;.
+This time, specify label detection (LABEL_DETECTION).
+*Other types of image analysis include face detection and logo/landmark detection.</p>
+<p>When passing it to the API, it is also encoded in Json format so that it is in Json format.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">img_request <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">with</span> open(filename,<span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+    ctxt <span style="color:#f92672">=</span> b64encode(f<span style="color:#f92672">.</span>read())<span style="color:#f92672">.</span>decode()
+    img_requests<span style="color:#f92672">.</span>append({
+            <span style="color:#e6db74">&#39;image&#39;</span>: {<span style="color:#e6db74">&#39;content&#39;</span>: ctxt},
+            <span style="color:#e6db74">&#39;features&#39;</span>: [{
+                <span style="color:#e6db74">&#39;type&#39;</span>:<span style="color:#e6db74">&#39;LABEL_DETECTION&#39;</span>,
+                <span style="color:#e6db74">&#39;maxResults&#39;</span>: <span style="color:#ae81ff">10</span>
+            }]
+    })
+request_data <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>dumps({<span style="color:#e6db74">&#34;requests&#34;</span>: img_request })<span style="color:#f92672">.</span>encode()
+</code></pre></div><h3 id="api-call-part">API call part</h3>
+<p>Specify the request data and the API key output in the previous step, and send the API request.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">API_URL <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://vision.googleapis.com/v1/images:annotate&#39;</span>
+
+response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(API_URL,
+                         data<span style="color:#f92672">=</span>request_data,
+                         params<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;key&#39;</span>: api_key},
+                         headers<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;Content-Type&#39;</span>:<span style="color:#e6db74">&#39;application/json&#39;</span>})
+</code></pre></div><h3 id="output-result">Output result</h3>
+<p>Output the data returned from the API.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> resp <span style="color:#f92672">in</span> enumerate(response<span style="color:#f92672">.</span>json()[<span style="color:#e6db74">&#39;responses&#39;</span>]):
+            <span style="color:#66d9ef">print</span> (json<span style="color:#f92672">.</span>dumps(resp, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>))
+</code></pre></div><h2 id="execute">execute</h2>
+<p>Pass the API key issued by GCP and the image path to the created source and execute it.
+Try some food images.</p>
+<pre><code>$ Python Meshitero.py [API key] [image path]
+</code></pre><details><summary>Whole source (Meshitero.py)</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Meshitero.py" data-lang="Meshitero.py"><span style="color:#f92672">from</span> base64 <span style="color:#f92672">import</span> b64encode
+<span style="color:#f92672">from</span> sys <span style="color:#f92672">import</span> argv
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> requests
+
+API_URL <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://vision.googleapis.com/v1/images:annotate&#39;</span>
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    api_key <span style="color:#f92672">=</span> argv[<span style="color:#ae81ff">1</span>]
+    filename <span style="color:#f92672">=</span> argv[<span style="color:#ae81ff">2</span>]
+    
+    img_request <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">with</span> open(filename,<span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        ctxt <span style="color:#f92672">=</span> b64encode(f<span style="color:#f92672">.</span>read())<span style="color:#f92672">.</span>decode()
+        img_request<span style="color:#f92672">.</span>append({
+                <span style="color:#e6db74">&#39;image&#39;</span>: {<span style="color:#e6db74">&#39;content&#39;</span>: ctxt},
+                <span style="color:#e6db74">&#39;features&#39;</span>: [{
+                    <span style="color:#e6db74">&#39;type&#39;</span>:<span style="color:#e6db74">&#39;LABEL_DETECTION&#39;</span>,
+                    <span style="color:#e6db74">&#39;maxResults&#39;</span>: <span style="color:#ae81ff">10</span>
+                }]
+        })
+
+    request_data <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>dumps({<span style="color:#e6db74">&#34;requests&#34;</span>: img_request })<span style="color:#f92672">.</span>encode()
+    
+    response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(API_URL,
+                            data<span style="color:#f92672">=</span>request_data,
+                            params<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;key&#39;</span>: api_key},
+                            headers<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;Content-Type&#39;</span>:<span style="color:#e6db74">&#39;application/json&#39;</span>})
+
+    <span style="color:#66d9ef">if</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">!=</span> <span style="color:#ae81ff">200</span> <span style="color:#f92672">or</span> response<span style="color:#f92672">.</span>json()<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;error&#39;</span>):
+        <span style="color:#66d9ef">print</span>(response<span style="color:#f92672">.</span>text)
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">for</span> resp <span style="color:#f92672">in</span> enumerate(response<span style="color:#f92672">.</span>json()[<span style="color:#e6db74">&#39;responses&#39;</span>]):
+            <span style="color:#66d9ef">print</span> (json<span style="color:#f92672">.</span>dumps(resp, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>))
+
+</code></pre></div></div></details><img width="400" alt="DSC_1113.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/157416d8-e9a7-8e97-e5d1-656176e4e70e.jpeg">
+<details><summary>実行結果(牡蠣)</summary><div>
+<pre><code> {
+    &quot;labelAnnotations&quot;: [
+      {
+        &quot;mid&quot;: &quot;/m/0_cp5&quot;,
+        &quot;description&quot;: &quot;Oyster&quot;,
+        &quot;score&quot;: 0.9910632,
+        &quot;topicality&quot;: 0.9910632
+      },
+      {
+        &quot;mid&quot;: &quot;/m/02wbm&quot;,
+        &quot;description&quot;: &quot;Food&quot;,
+        &quot;score&quot;: 0.9903261,
+        &quot;topicality&quot;: 0.9903261
+      },
+      {
+        &quot;mid&quot;: &quot;/m/06nwz&quot;,
+        &quot;description&quot;: &quot;Seafood&quot;,
+        &quot;score&quot;: 0.9609892,
+        &quot;topicality&quot;: 0.9609892
+      },
+      {
+        &quot;mid&quot;: &quot;/m/01cqy9&quot;,
+        &quot;description&quot;: &quot;Bivalve&quot;,
+        &quot;score&quot;: 0.9138548,
+        &quot;topicality&quot;: 0.9138548
+      },
+      {
+        &quot;mid&quot;: &quot;/m/02q08p0&quot;,
+        &quot;description&quot;: &quot;Dish&quot;,
+        &quot;score&quot;: 0.8472096,
+        &quot;topicality&quot;: 0.8472096
+      },
+      {
+        &quot;mid&quot;: &quot;/m/01ykh&quot;,
+        &quot;description&quot;: &quot;Cuisine&quot;,
+        &quot;score&quot;: 0.811229,
+        &quot;topicality&quot;: 0.811229
+      },
+      {
+        &quot;mid&quot;: &quot;/m/07xgrh&quot;,
+        &quot;description&quot;: &quot;Ingredient&quot;,
+        &quot;score&quot;: 0.8011539,
+        &quot;topicality&quot;: 0.8011539
+      },
+      {
+        &quot;mid&quot;: &quot;/m/088kg2&quot;,
+        &quot;description&quot;: &quot;Oysters rockefeller&quot;,
+        &quot;score&quot;: 0.70525026,
+        &quot;topicality&quot;: 0.70525026
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0fbdv&quot;,
+        &quot;description&quot;: &quot;Shellfish&quot;,
+        &quot;score&quot;: 0.6510715,
+        &quot;topicality&quot;: 0.6510715
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0ffhy&quot;,
+        &quot;description&quot;: &quot;Clam&quot;,
+        &quot;score&quot;: 0.6364975,
+        &quot;topicality&quot;: 0.6364975
+      }
+    ]
+  }
+</code></pre></div></details>
+<img width="400" alt="DSC_1052.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/dff93515-a291-73e9-4987-a57a5241ad0f.jpeg">
+<details><summary>実行結果(寿司)</summary><div>
+<pre><code>  {
+    &quot;labelAnnotations&quot;: [
+      {
+        &quot;mid&quot;: &quot;/m/02q08p0&quot;,
+        &quot;description&quot;: &quot;Dish&quot;,
+        &quot;score&quot;: 0.9934035,
+        &quot;topicality&quot;: 0.9934035
+      },
+      {
+        &quot;mid&quot;: &quot;/m/01ykh&quot;,
+        &quot;description&quot;: &quot;Cuisine&quot;,
+        &quot;score&quot;: 0.9864208,
+        &quot;topicality&quot;: 0.9864208
+      },
+      {
+        &quot;mid&quot;: &quot;/m/02wbm&quot;,
+        &quot;description&quot;: &quot;Food&quot;,
+        &quot;score&quot;: 0.97343695,
+        &quot;topicality&quot;: 0.97343695
+      },
+      {
+        &quot;mid&quot;: &quot;/m/048wsd&quot;,
+        &quot;description&quot;: &quot;Gimbap&quot;,
+        &quot;score&quot;: 0.96859926,
+        &quot;topicality&quot;: 0.96859926
+      },
+      {
+        &quot;mid&quot;: &quot;/m/07030&quot;,
+        &quot;description&quot;: &quot;Sushi&quot;,
+        &quot;score&quot;: 0.9650486,
+        &quot;topicality&quot;: 0.9650486
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0cjyd&quot;,
+        &quot;description&quot;: &quot;Sashimi&quot;,
+        &quot;score&quot;: 0.9185767,
+        &quot;topicality&quot;: 0.9185767
+      },
+      {
+        &quot;mid&quot;: &quot;/m/04q6ng&quot;,
+        &quot;description&quot;: &quot;Comfort food&quot;,
+        &quot;score&quot;: 0.8544887,
+        &quot;topicality&quot;: 0.8544887
+      },
+      {
+        &quot;mid&quot;: &quot;/m/07xgrh&quot;,
+        &quot;description&quot;: &quot;Ingredient&quot;,
+        &quot;score&quot;: 0.8450334,
+        &quot;topicality&quot;: 0.8450334
+      },
+      {
+        &quot;mid&quot;: &quot;/m/05jrv&quot;,
+        &quot;description&quot;: &quot;Nori&quot;,
+        &quot;score&quot;: 0.8431285,
+        &quot;topicality&quot;: 0.8431285
+      },
+      {
+        &quot;mid&quot;: &quot;/m/027lnr6&quot;,
+        &quot;description&quot;: &quot;Sakana&quot;,
+        &quot;score&quot;: 0.8388547,
+        &quot;topicality&quot;: 0.8388547
+      }
+    ]
+  }
+</code></pre></div></details>
+<img width="400" alt="DSC_0883.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/8ce9b497-df8a-2e55-372e-c3113fc2d533.jpeg">
+<details><summary>実行結果(ハンバーガー)</summary><div>
+<pre><code> {
+    &quot;labelAnnotations&quot;: [
+      {
+        &quot;mid&quot;: &quot;/m/02q08p0&quot;,
+        &quot;description&quot;: &quot;Dish&quot;,
+        &quot;score&quot;: 0.9934035,
+        &quot;topicality&quot;: 0.9934035
+      },
+      {
+        &quot;mid&quot;: &quot;/m/02wbm&quot;,
+        &quot;description&quot;: &quot;Food&quot;,
+        &quot;score&quot;: 0.9903261,
+        &quot;topicality&quot;: 0.9903261
+      },
+      {
+        &quot;mid&quot;: &quot;/m/01ykh&quot;,
+        &quot;description&quot;: &quot;Cuisine&quot;,
+        &quot;score&quot;: 0.9864208,
+        &quot;topicality&quot;: 0.9864208
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0h55b&quot;,
+        &quot;description&quot;: &quot;Junk food&quot;,
+        &quot;score&quot;: 0.9851551,
+        &quot;topicality&quot;: 0.9851551
+      },
+      {
+        &quot;mid&quot;: &quot;/m/01_bhs&quot;,
+        &quot;description&quot;: &quot;Fast food&quot;,
+        &quot;score&quot;: 0.97022384,
+        &quot;topicality&quot;: 0.97022384
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0cdn1&quot;,
+        &quot;description&quot;: &quot;Hamburger&quot;,
+        &quot;score&quot;: 0.9571771,
+        &quot;topicality&quot;: 0.9571771
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0cc7bks&quot;,
+        &quot;description&quot;: &quot;Buffalo burger&quot;,
+        &quot;score&quot;: 0.94575346,
+        &quot;topicality&quot;: 0.94575346
+      },
+      {
+        &quot;mid&quot;: &quot;/m/03f476&quot;,
+        &quot;description&quot;: &quot;Veggie burger&quot;,
+        &quot;score&quot;: 0.9283731,
+        &quot;topicality&quot;: 0.9283731
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0bp3f6m&quot;,
+        &quot;description&quot;: &quot;Fried food&quot;,
+        &quot;score&quot;: 0.9257971,
+        &quot;topicality&quot;: 0.9257971
+      },
+      {
+        &quot;mid&quot;: &quot;/m/02y6n&quot;,
+        &quot;description&quot;: &quot;French fries&quot;,
+        &quot;score&quot;: 0.92217153,
+        &quot;topicality&quot;: 0.92217153
+      }
+    ]
+  }
+</code></pre></div></details><img width="400" alt="DSC_1050.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/531905/1c3b7bf9-d5fa-bc2c-7a55-651353c07633.jpeg">
+<details><summary>実行結果(エビフライ)</summary><div>
+<pre><code>  {
+    &quot;labelAnnotations&quot;: [
+      {
+        &quot;mid&quot;: &quot;/m/02q08p0&quot;,
+        &quot;description&quot;: &quot;Dish&quot;,
+        &quot;score&quot;: 0.9934035,
+        &quot;topicality&quot;: 0.9934035
+      },
+      {
+        &quot;mid&quot;: &quot;/m/02wbm&quot;,
+        &quot;description&quot;: &quot;Food&quot;,
+        &quot;score&quot;: 0.9903261,
+        &quot;topicality&quot;: 0.9903261
+      },
+      {
+        &quot;mid&quot;: &quot;/m/01ykh&quot;,
+        &quot;description&quot;: &quot;Cuisine&quot;,
+        &quot;score&quot;: 0.9864208,
+        &quot;topicality&quot;: 0.9864208
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0g9vs81&quot;,
+        &quot;description&quot;: &quot;Steamed rice&quot;,
+        &quot;score&quot;: 0.9271187,
+        &quot;topicality&quot;: 0.9271187
+      },
+      {
+        &quot;mid&quot;: &quot;/m/07xgrh&quot;,
+        &quot;description&quot;: &quot;Ingredient&quot;,
+        &quot;score&quot;: 0.9207317,
+        &quot;topicality&quot;: 0.9207317
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0bp3f6m&quot;,
+        &quot;description&quot;: &quot;Fried food&quot;,
+        &quot;score&quot;: 0.9098738,
+        &quot;topicality&quot;: 0.9098738
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0dxjn&quot;,
+        &quot;description&quot;: &quot;Deep frying&quot;,
+        &quot;score&quot;: 0.9049985,
+        &quot;topicality&quot;: 0.9049985
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0f99t&quot;,
+        &quot;description&quot;: &quot;Tonkatsu&quot;,
+        &quot;score&quot;: 0.901048,
+        &quot;topicality&quot;: 0.901048
+      },
+      {
+        &quot;mid&quot;: &quot;/m/0krfg&quot;,
+        &quot;description&quot;: &quot;Meal&quot;,
+        &quot;score&quot;: 0.81980187,
+        &quot;topicality&quot;: 0.81980187
+      },
+      {
+        &quot;mid&quot;: &quot;/m/04q6ng&quot;,
+        &quot;description&quot;: &quot;Comfort food&quot;,
+        &quot;score&quot;: 0.8160322,
+        &quot;topicality&quot;: 0.8160322
+      }
+    ]
+  }
+</code></pre></div></details>
+<h1 id="cloud-vision-apiで食べ物の写真を判定した結果">Cloud Vision APIで食べ物の写真を判定した結果</h1>
+<p>牡蠣、寿司、ハンバーガーは食べ物であることだけでなく、種類まで特定できています。
+エビフライは揚げ物であることは判定できていますが、「エビフライ」であることは判断できていないようです。
+本記事にあげていない写真でも試しましたが、基本的には食べ物の種類まで特定できそうでした。
+揚げ物というジャンルはわかりやすいものの、エビの要素が画像上わかりにくいエビフライと同条件の写真は種類の特定が難しいようでした。</p>
+<h1 id="最後に">最後に</h1>
+<p>今回はラベル検出を試しましたが、Cloud Vision APIでは画像の色合いの検出もできるようです。
+食べ物の写真の色合いの傾向がつかめるとどのような色合いがおいしそうかがわかるかもしれないですね。
+画像認識API自体はGoogle以外でも提供されているため、今後そちらも試す必要があると考えています。</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>深夜の時間帯などにおいしそうな食事の写真をアップすることで見るものを空腹にさせる行為 <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

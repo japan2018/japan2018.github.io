@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Numerical calculation of lens point spread function and MTF curve (diffraction calculation) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Numerical calculation of lens point spread function and MTF curve (diffraction calculation)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 11, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numerical-calculation"> Numerical calculation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/optics"> optics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/raytracing"> RayTracing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lensdesign"> LensDesign</a></code></small>
+
+</p>
+<pre><code>I recently researched the point spread function (PSF), which often appears in the context of lens design, and the specific numerical calculation method for MTF curves, so I summarized them. I'm not an expert in lens design, and I'm not from a physics department, so I'm afraid there are some mistakes, but I'd appreciate it if anyone noticed.
+</code></pre>
+<h2 id="about-point-spread-function-psf">About point spread function (PSF)</h2>
+<p><strong>Point spread function (PSF)</strong> is a function that represents the intensity distribution of light on the image plane when a point light source forms an image on the image plane.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/fba1cb18-953b-b90f-9bd6-0d24e4cc52bd.png" alt="psf.png"></p>
+<p>The above image is an example of PSF. The closer to red, the higher the light intensity. In ideal image formation, the point light source focuses at one point, so the PSF is a function that has a peak at only one point, such as the delta function. However, due to the effects of aberration and diffraction, the light is not actually focused at one point, and an image with a certain degree of spread as shown in Fig. 1 is obtained.</p>
+<p>There are two types of PSFs, <strong>geometric optical PSF</strong> that does not consider the influence of diffraction and <strong>wave optical PSF</strong> that considers the influence of diffraction. Generally speaking, PSF seems to refer to wave-optical PSF. The above example is a wave-optical PSF with diffraction taken into account, with another peak around the center, which appears wavy.</p>
+<h2 id="about-mtf-curve">About MTF curve</h2>
+<p><a href="https://www.sigma-global.com/jp/lenses/cas/product/popups/mtf2/">Here</a> is easy to understand, so I quote it.</p>
+<blockquote>
+<p>MTF (Modulation Transfer Function) is one of the criteria for evaluating lens performance, and expresses how faithfully the contrast of a subject can be reproduced on the image plane as a spatial frequency characteristic.</p>
+</blockquote>
+<p>MTF is generally represented by the following graph called MTF Curve. This graph is also quoted from <a href="https://www.sigma-global.com/jp/lenses/cas/product/popups/mtf2/">here</a>.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/a5b5f638-db44-e5a3-c58a-c14e37a3001e.gif" alt="figure_diffraction.gif"></p>
+<p>The vertical axis represents contrast and the horizontal axis represents the image height, which is the distance from the center of the image plane. Red and green lines correspond to specific spatial frequencies, and solid and broken lines correspond to sagittal (S) and meridional (M) directions. The meanings of the sagittal and meridional directions here are not well understood, but perhaps when the image plane is represented by the polar coordinate system $(r, \theta)$, the meridional direction $r$ and the azimuth direction $\theta It seems to correspond to $.</p>
+<p>In summary, the MTF curve is a representation of the contrast at a particular spatial frequency in the longitude and azimuth directions while changing the image height.</p>
+<p>Like PSF, MTF has <strong>geometric optical MTF</strong> and <strong>wave optical MTF</strong>, depending on whether or not the effect of light diffraction is taken into consideration.</p>
+<h2 id="psf-numerical-calculation">PSF numerical calculation</h2>
+<p>There were two types of PSF: geometrical optical PSF and wave optical PSF. First, let&rsquo;s see how to calculate the geometrical optical PSF.</p>
+<h3 id="numerical-calculation-of-geometrical-optical-psf">Numerical calculation of geometrical optical PSF</h3>
+<p>Geometrical optics PSF was a way of expressing how a point light source forms an image on the image plane without considering the influence of diffraction. This can be calculated relatively easily using <strong>ray tracing</strong>.</p>
+<p>A point light source is placed at an appropriate position (generally at infinity?), and a large number of rays are emitted from there toward the front of the lens. Each time these rays hit the lens, they are refracted, the next direction is calculated, and the collision position with the next lens is calculated again. Finally, calculate the position where the ray intersects the image plane, and add the radiance that the light has at that position.</p>
+<p>By repeating ray tracing for many rays in this way and interpolating appropriately between sample points, the intensity distribution of light on the image plane can be obtained. In this way, you can get geometrical optical PSF.</p>
+<p>The graph that shows the position where the ray intersects the image plane is called <strong>Spot Diagram</strong>. The following figure is an example.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/5ab1e184-85ee-98f7-762d-d2b7950362b7.png" alt="spot_diagram.png"></p>
+<h2 id="diffraction-calculation">Diffraction calculation</h2>
+<p>In order to calculate the wave-optical PSF, it is necessary to express the light as a wave and calculate the intensity of the light on the image plane by considering the diffraction when passing through the lens. First, let&rsquo;s look at the basic diffraction calculation method. Finally, I will try numerical calculation using Python.</p>
+<p>Here we will look at the following diffraction calculation methods.</p>
+<ul>
+<li>Fresnel approximation</li>
+<li>Fraunhofer approximation</li>
+<li>Angular spectrum method</li>
+</ul>
+<h3 id="expressing-as-a-wave-of-light">Expressing as a wave of light</h3>
+<p>Expressions using complex numbers are used to think of light as waves and to express it in mathematical expressions.</p>
+<p>For plane waves, the complex amplitude $u(\boldsymbol{r}, t)$ at the position $\boldsymbol{r}$, time $t$ is</p>
+<p>$$ u(\boldsymbol{r}, t) = A\exp[i(\boldsymbol{k}\cdot\boldsymbol{r}-\omega t + \delta)]$$</p>
+<p>It is expressed as Where $A$ is the amplitude, $i$ is the imaginary unit, $\boldsymbol{k}$ is the wave vector, $\omega$ is the angular frequency, and $\delta$ is the initial phase.</p>
+<p>In the case of spherical waves, the distance from the source is $r$</p>
+<p>$$ u(r, t) = \frac{A}{r}\exp[i(kr-\omega t + \delta)] $$</p>
+<p>It is expressed as Where $k$ is the wavenumber.</p>
+<p>In the calculations below, the $\omega t$ and $\delta$ terms have no effect and are ignored.</p>
+<h3 id="diffraction-integral">diffraction integral</h3>
+<p>In explaining the diffraction calculation, consider the following coordinate system.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/594c712d-1c5c-01f8-0993-3099f6e03c04.png" alt="diagram-20200411.png"></p>
+<p>$\Sigma$ represents the opening, and $P(x_p, y_p, 0)$ is a point on $\Sigma$. $Q(x_q, y_q, z_q)$ is a point on the image plane. $r$ is the length of the segment $PQ$, and $\theta$ is the angle between the segment $PQ$ and the $z$ axis.</p>
+<p>Consider the situation where a plane wave passing through the aperture $\Sigma$ reaches the point $Q$ while diffracting. Using the Fresnel-Huygens principle, the complex amplitude at the point $Q$ can be expressed as a superposition of the secondary waves generated on $\Sigma$.</p>
+<p>First, consider the complex amplitude of the secondary wave that reaches from point $P$ to point $Q$.
+$$ \frac{1}{i\lambda}\frac{e^{ikr}}{r}u(x_p, y_p, 0)\cos{\theta} $$
+Will be. Where $\lambda$ is the wavelength of light, $k$ is the wavenumber, $u(x_p, y_p, 0)$ is the complex amplitude at the point $P$.</p>
+<p>Since the complex amplitude $u(x_q, y_q, z_q)$ of the point $Q$ is the superposition of these second-order waves over $\Sigma$,</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+u(x_q, y_q, z_q) &amp;= \frac{1}{i\lambda}\int\int_{\Sigma} u(x, y, 0)\frac{e^{ikr}}{r}\cos {\theta}dxdy \tag{1} \\
+&amp;= \frac{z_q}{i\lambda}\int\int_{\Sigma} u(x, y, 0)\frac{e^{ikr}}{r^2}dxdy
+\end{align}
+</code></pre><p>Will be. In the expression transformation, we used $\cos{\theta} = \frac{z_q}{r}$.</p>
+<p>This integral is called the Fresnel-Kirchhoff diffraction integral**. By numerically integrating this, the complex amplitude at the point $Q$ can be calculated, so the intensity on the image plane can be obtained by calculating the square of its absolute value. However, this calculation method is not practical because the calculation amount of $O(N^4)$ is $N$ if the number of divisions of the aperture plane and the image plane is $N$.</p>
+<h3 id="fresnel-approximation">Fresnel approximation</h3>
+<p>Consider the situation (paraxial approximation) where $\theta$ is small and $\cos{\theta} \approx 1$.</p>
+<p>Looking at Equation 1, the part of $\cos{\theta}$ becomes 1, and $\frac{1}{r}$ can be approximated as $\frac{1}{z}$. On the other hand, the term $e^{ikr}$ has a large value of $k = \frac{2\pi}{\lambda}$, so if $r$ is replaced with $z$, the accuracy of approximation is good. There is none.</p>
+<p>Therefore, consider expanding $r$ into a series and using it up to the second term. Series expansion of $r = \sqrt{(x_q-x)^2 + (y_q-y)^2 + z_q^2}$ to the second term</p>
+<p>$$ r = z_q + \frac{(x_q-x)^2 + (y_q-y)^2}{2z_q} + \cdots $$</p>
+<p>Substituting this into the equation of diffraction integration</p>
+<p>$$ u(x_q, y_q, z_q) = \frac{1}{i\lambda z_q}e^{ikz_q} \int\int_{\Sigma} u(x, y, 0)e^{ik\frac{ (x_q-x)^2 + (y_q-y)^2}{2z_q}}dxdy \tag{2} $$</p>
+<p>Will be. This approximation is called the <strong>Fresnel approximation</strong>, and Equation 2 is called the <strong>Fresnel diffraction integral</strong>.</p>
+<p>If you expand the contents of $e$ in Equation 2</p>
+<p>$$ u(x_q, y_q, z_q) = \frac{1}{i\lambda z_q}e^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \int\int_ {\Sigma} u(x_p, y_p, 0)e^{-ik\frac{xx_q + yy_q}{z_q}}e^{ik\frac{x^2 + y^2}{2z_q}}dx dy \ tag{3} $$</p>
+<p>Will be. If $f_x = \frac{x_q}{\lambda z_q}$, $f_y = \frac{y_q}{\lambda z_q}$ in Equation 3</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+u(x_q, y_q, z_q) &amp;= \frac{1}{i\lambda z_q}e^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \int\int_{ \Sigma} u(x, y, 0)e^{-ik\frac{xx_q + yy_q}{z_q}}e^{ik\frac{x^2 + y^2}{2z_q}}dx dy \\&amp;= \frac{1}{i\lambda z_q}e^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \int\int_{\Sigma} u(x, y , 0)e^{ik\frac{x^2 + y^2}{2z_q}}e^{-2\pi i(f_x x + f_y y)}dx dy \\
+&amp;= \frac{1}{i\lambda z_q}e^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \mathcal{F}\{u(x, y, 0)e^{ik\frac{x^2 + y^2}{2z_q}}\}_{f_x = \frac{x_q}{\lambda z_q}, f_y = \frac{y_q}{\lambda z_q} } \end{align}
+</code></pre><p>Then, you can see that it can be calculated by the two-dimensional Fourier transform of $u(x, y, 0)e^{ik\frac{x^2 + y^2}{2z_q}}$.</p>
+<p>In order for the Fresnel approximation to hold, the product of $k$ and the third term of the series expansion of $r$</p>
+<p>$$ \frac{k}{8z_q^3}[(x_q-x)^2 + (y_q-y)^2]^2 \ll 1 $$</p>
+<p>Should be rewritten for $z_q$</p>
+<p>$$ z_q^3 \gg \frac{\pi}{4\lambda}[(x_q-x)^2 + (y_q-y)^2]^2 $$</p>
+<p>Will be.</p>
+<h3 id="fraunhofer-approximation">Fraunhofer approximation</h3>
+<p>In Equation 3, $\frac{x^2 + y^2}{2z_q}$ is sufficiently small and approximated as $e^{ik\frac{x^2 + y^2}{2z_q}} \approx 1$ Then</p>
+<p>$$ u(x_q, y_q, z_q) = \frac{1}{i\lambda z_q}e^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \int\int_ {\Sigma} u(x, y, 0)e^{-ik\frac{xx_q + yy_q}{z_q}}dxdy \tag{4}$$</p>
+<p>Will be. This approximation is called the <strong>Fraunhofer approximation</strong> and Equation 4 is called the <strong>Fraunhofer diffraction integral</strong>.</p>
+<p>If $f_x = \frac{x_q}{\lambda z_q}$, $f_y = \frac{y_q}{\lambda z_q}$ in Equation 4</p>
+<pre><code class="language-math" data-lang="math">\begin{align} u(x_q, y_q, z_q) &amp;= \frac{1}{i\lambda z_q}e^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \int\int_{\Sigma} u(x, y, 0)e^{-2\pi i(f_x x + f_y y)}dx dy \\ &amp;= \frac{1}{i\lambda z_q}e ^{ikz_q}e^{ik\frac{x_q^2 + y_q^2}{2z_q}} \mathcal{F}\{u(x, y, 0)\}_{f_x = \frac{x_q}{ \lambda z_q}, f_y = \frac{y_q}{\lambda z_q}}
+\end{align}
+</code></pre><p>It can be seen that it can be calculated by the two-dimensional Fourier transform of $u(x_p, y_p, 0)$. In order for the Fraunhofer approximation to hold, it must satisfy $$ \frac{k}{2z_q}(x^2 + y^2) \ll 1 $$, which can be rewritten in terms of $z_q$ $$ z_q \ It becomes gg \frac{\pi}{\lambda}(x^2 + y^2) $$.</p>
+<p>The Fraunhofer approximation can be said to be an effective approximation when the image is observed very far from the aperture because the aperture is sufficiently small. On the other hand, the Fresnel approximation is a valid approximation closer to the Fraunhofer approximation.</p>
+<h3 id="angular-spectrum-method">Angular spectrum method</h3>
+<p>The inverse Fourier transform of $U(f_x, f_y, 0)$, which is the Fourier transform of the complex amplitude $u(x, y, 0)$ of the aperture plane, is</p>
+<p>$$
+u(x, y, 0) = \int\int U(f_x, f_y, 0)\exp[2\pi i(x f_x + y f_y)]df_x df_y
+$$</p>
+<p>is. This expression is the complex amplitude $u(x, y, 0)$ of the aperture surface plus the plane wave $U(f_x, f_y, 0)\exp[2\pi i(x f_x + y f_y)]$ Represents what can be expressed as.</p>
+<p>Finding each component of the wave vector $\boldsymbol{k}$ of each plane wave</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+k_x &amp;= 2\pi f_x \\
+k_y &amp;= 2\pi f_y \\
+k_z &amp;= \sqrt{k^2-k_x^2-k_y^2}
+\end{align}
+</code></pre><p>Will be. $k_z$ follows from $|\boldsymbol{k}| = k$.</p>
+<p>When each plane wave advances in the $z$ direction by $z_q$, its complex amplitude becomes</p>
+<p>$$
+U(f_x, f_y, 0)\exp[2\pi i(x f_x + y f_y)] \exp[i k_z z_q]
+$$</p>
+<p>Will be. Then the complex amplitude $u(x&rsquo;, y&rsquo;, z_q)$ on the image plane is the sum of those plane waves.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+u(x', y', z_q) &amp;= \int\int U(f_x, f_y, 0)\exp[2\pi i(x f_x + y f_y)] \exp[i k_z z_q] df_x df_y \\
+&amp;= \mathcal{F}^{-1}\{ U(f_x, f_y, 0) \exp[i k_z z_q] \}
+\end{align}
+</code></pre><p>It can be seen that the complex amplitude $u(x&rsquo;, y, z_q)$ on the image plane can be calculated by the inverse Fourier transform of $U(f_x, f_y, 0) \exp[i k_z z_q]$. This method of calculation is called <strong>Angular Spectrum Method</strong>.</p>
+<p>The angular spectrum method can calculate diffraction in a region closer to the aperture than the Fresnel approximation or the Fraunhofer approximation. Moreover, since the Fourier transform and the inverse Fourier transform are performed only once, the calculation can be performed at high speed.</p>
+<h2 id="example-of-numerical-calculation-of-diffraction">Example of numerical calculation of diffraction</h2>
+<p>Aperture $\Sigma$ is a circular aperture with radius $r = 1~\mathrm{[mm]}$, $\lambda = 550~\mathrm{[nm]}$, $z_q = 5~\mathrm{[m] Let&rsquo;s try numerical calculation as }$. The Jupyter Notebook used for the calculation can be found in <a href="https://colab.research.google.com/github/yumcyaWiz/psf_and_mtf/blob/master/diffraction_calculation.ipynb">Google Colab</a>.</p>
+<h3 id="fraunhofer-diffraction-numerical-calculation">Fraunhofer diffraction numerical calculation</h3>
+<p>First, let&rsquo;s try numerical calculation by Fraunhofer approximation. If you check the conditions for approximation, $x$ and $y$ will be $r$ at maximum.</p>
+<p>$$ z_q \gg \frac{\pi}{\lambda}r^2 \approx 5.71 $$</p>
+<p>Will be. Although it does not meet the assumption conditions, I will continue the calculation as it is.</p>
+<p>Fraunhofer diffraction can be calculated by two-dimensional Fourier transforming the complex amplitude $u(x, y, 0)$ on the aperture $\Sigma$. To calculate numerically with a program, divide the calculation area with one side of $D$ into a grid of $N \times N$ so as to cover the opening surface, and store the complex amplitude on each grid. Can be calculated by two-dimensional discrete Fourier transform.</p>
+<p>Let&rsquo;s try numerical calculation using Python. First, prepare an array that stores the complex amplitude on the grid.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+l <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.55e-6</span> <span style="color:#75715e"># wavelength [m]</span>
+k <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi <span style="color:#f92672">/</span> l <span style="color:#75715e"># wavenumber</span>
+zq <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span> <span style="color:#75715e"># Distance from aperture plane to image plane [m]</span>
+N <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span> <span style="color:#75715e"># number of grid divisions</span>
+r <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.001</span> <span style="color:#75715e"># opening radius [m]</span>
+D <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.05</span> <span style="color:#75715e"># Calculation area on the aperture [m]</span>
+
+fscale <span style="color:#f92672">=</span> l<span style="color:#f92672">*</span>zq
+
+<span style="color:#75715e"># Returns the complex amplitude on the aperture</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">P</span>(x, y):
+    <span style="color:#66d9ef">if</span> x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> y<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">&lt;</span>r<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>:
+        <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e">#Generate grid</span>
+X, Y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>meshgrid(np<span style="color:#f92672">.</span>linspace(<span style="color:#f92672">-</span>D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, num<span style="color:#f92672">=</span>N), np<span style="color:#f92672">.</span>linspace(<span style="color:#f92672">-</span>D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, num<span style="color:#f92672">=</span>N))
+Pv <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>vectorize(P)
+Z <span style="color:#f92672">=</span> Pv(X, Y)
+</code></pre></div><p>I will plot it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>imshow(Z, extent<span style="color:#f92672">=</span>[<span style="color:#f92672">-</span>D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, <span style="color:#f92672">-</span>D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>], cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;gray&#39;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;$x_p$ [m]&#39;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;$y_p$ [m]&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/f8b04925-7dc6-e32a-04f1-859ad2cb591c.png" alt="download.png"></p>
+<p>The white part corresponds to the opening surface.</p>
+<p>Next, this is subjected to the discrete Fourier transform, but before that, the area on the image plane corresponding to the calculation area is calculated.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">v <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fftfreq(N, d<span style="color:#f92672">=</span>D<span style="color:#f92672">/</span>N)
+v <span style="color:#f92672">=</span> fscale <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fftshift(v)
+<span style="color:#75715e"># Unit is [mm]</span>
+extent<span style="color:#f92672">=</span> [<span style="color:#ae81ff">1e3</span> <span style="color:#f92672">*</span> v[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1e3</span> <span style="color:#f92672">*</span> v[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>], <span style="color:#ae81ff">1e3</span> <span style="color:#f92672">*</span> v[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">1e3</span> <span style="color:#f92672">*</span> v[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]]
+</code></pre></div><p>Obtain the Fraunhofer diffraction pattern by performing a discrete Fourier transform on the complex amplitude on the aperture plane.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Compute the complex amplitude on the image plane</span>
+U_fraun <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fft2(Z)
+U_fraun <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> l <span style="color:#f92672">*</span> zq) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k <span style="color:#f92672">*</span> zq) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k <span style="color:#f92672">*</span> (v<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> v<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>zq )) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fftshift(U_fraun)
+
+<span style="color:#75715e"># Calculate strength</span>
+I_fraun <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(U_fraun)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+<span style="color:#75715e"># Normalization</span>
+I_fraun <span style="color:#f92672">=</span> I_fraun <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>max(I_fraun)
+</code></pre></div><p>Let&rsquo;s plot the intensity.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>imshow(I_fraun, cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;jet&#39;</span>, extent<span style="color:#f92672">=</span>extent)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;$x_q$ [mm]&#39;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;$y_q$ [mm]&#39;</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Fraunhofer Diffraction&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/ad528505-7cd6-2637-75df-7c58c6f371b2.png" alt="download (1).png"></p>
+<p>There is also an intensity peak around the center, which shows that the effect of diffraction can be calculated.</p>
+<h3 id="numerical-calculation-of-fresnel-diffraction">Numerical calculation of Fresnel diffraction</h3>
+<p>First, check the approximation conditions. The approximate conditional expression for Fresnel diffraction is$$ z_q^3 \gg \frac{\pi}{4\lambda}[(x_q-x)^2 + (y_q-y)^2]^2 $$</p>
+<p>was. Unlike Fraunhofer diffraction, it is a little complicated because the size of the observation surface must be taken into consideration. For the time being, set the size of one side of the observation surface to $l$. Then $|x_q-x| \le r + \frac{l}{2}$ and $y$ are similar, so if you substitute this</p>
+<p>$$
+z_q \gg \sqrt[3]{\frac{\pi}{\lambda}(r + \frac{l}{2})^4} \approx 0.21
+$$</p>
+<p>Will be.</p>
+<p>Fresnel diffraction can be calculated using the two-dimensional discrete Fourier transform as well as Fraunhofer diffraction.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Compute the complex amplitude on the image plane</span>
+U_fresnel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fft2(Z <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k <span style="color:#f92672">*</span> (X<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> Y<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>zq)))
+U_fresnel <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> l <span style="color:#f92672">*</span> zq) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k <span style="color:#f92672">*</span> zq) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k <span style="color:#f92672">*</span> (v<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> v<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>zq )) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fftshift(U_fresnel)
+
+<span style="color:#75715e"># Calculate strength</span>
+I_fresnel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(U_fresnel)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+<span style="color:#75715e"># Normalization</span>
+I_fresnel <span style="color:#f92672">=</span> I_fresnel <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>max(I_fresnel)
+</code></pre></div><p>Let&rsquo;s plot the intensity.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>imshow(I_fresnel, cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;jet&#39;</span>, extent<span style="color:#f92672">=</span>extent)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;$x_q$ [mm]&#39;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;$y_q$ [mm]&#39;</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Fresnel Diffraction&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/06b0f0ab-90c5-55c7-07ba-7d18174a9760.png" alt="download (2).png"></p>
+<p>The peak around the center seems to be stronger than in the Fraunhofer approximation.</p>
+<h3 id="direct-calculation-of-fresnel-kirchhoff-diffraction-equation">Direct calculation of Fresnel Kirchhoff diffraction equation</h3>
+<p>Fresnel Kirchhoff diffraction formula</p>
+<p>$$
+\frac{z_q}{i\lambda}\int\int_{\Sigma} u(x, y, 0)\frac{e^{ikr}}{r^2}dx dy
+$$</p>
+<p>Let&rsquo;s calculate by directly numerically integrating. This method is relatively strict because it does not use approximation, but it is not practical due to the overwhelming amount of calculations. I wanted to compare it with the approximation method, so I calculated it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Fresnel Kirchhoff diffraction integral</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">Uf</span>(x_q, y_q):
+    r <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sqrt((x_q<span style="color:#f92672">-</span>X)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> (y_q<span style="color:#f92672">-</span>Y)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> zq<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+    <span style="color:#66d9ef">return</span> zq<span style="color:#f92672">/</span>(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> l) <span style="color:#f92672">*</span> (Z <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k <span style="color:#f92672">*</span> r) <span style="color:#f92672">/</span> r<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum()
+
+<span style="color:#75715e"># Calculation area on the image plane</span>
+X_Q, Y_Q <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>meshgrid(np<span style="color:#f92672">.</span>linspace(extent[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">1e-3</span>, extent[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">1e-3</span>, num<span style="color:#f92672">=</span>N), np<span style="color:#f92672">.</span>linspace(extent[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">1e-3</span>, extent[ <span style="color:#ae81ff">3</span>]<span style="color:#f92672">*</span><span style="color:#ae81ff">1e-3</span>, num<span style="color:#f92672">=</span>N))
+<span style="color:#75715e"># Numerical integration (scaling is appropriate)</span>
+U_strict <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>vectorize(Uf)(X_Q, Y_Q)
+
+<span style="color:#75715e"># Calculate strength</span>
+I_strict <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(U_strict)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+<span style="color:#75715e"># Normalization</span>
+I_strict <span style="color:#f92672">=</span> I_strict <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>max(I_strict)
+</code></pre></div><p>Let&rsquo;s plot the intensity.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>imshow(I_strict, cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;jet&#39;</span>, extent<span style="color:#f92672">=</span>extent)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;$x_q$ [mm]&#39;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;$y_q$ [mm]&#39;</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Fresnel Kirchhoff Diffraction&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/7b74721d-88c9-4842-cbd2-2908294c1763.png" alt="download (3).png"></p>
+<h3 id="numerical-calculation-by-angular-spectrum-method">Numerical calculation by angular spectrum method</h3>
+<p>Finally, let&rsquo;s try numerical calculation by the angular spectrum method. The procedure is to first find the Fourier transform $U(f_x, f_y, 0)$ of the complex amplitude $u(x, y, 0)$ of the aperture plane, and then $U(f_x, f_y, 0)$ and $\ Inverse Fourier transform of the product of exp[ik_z z_q]$.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Fourier transform of complex amplitude of aperture plane</span>
+U <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fft2(Z)
+
+<span style="color:#75715e">#Calculation of wave vector</span>
+k_x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fftfreq(N, d<span style="color:#f92672">=</span>D<span style="color:#f92672">/</span>N) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi
+k_y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>fftfreq(N, d<span style="color:#f92672">=</span>D<span style="color:#f92672">/</span>N) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi
+K_X, K_Y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>meshgrid(k_x, k_y)
+k_z <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sqrt(k<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">-</span>K_X<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">-</span>K_Y<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)
+
+<span style="color:#75715e">#Compute the complex amplitude of the image plane</span>
+U_angular <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fft<span style="color:#f92672">.</span>ifft2(U <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>exp(<span style="color:#ae81ff">1.0j</span> <span style="color:#f92672">*</span> k_z <span style="color:#f92672">*</span> zq))
+
+<span style="color:#75715e"># Calculate strength</span>
+I_angular <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(U_angular)<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+<span style="color:#75715e"># Normalization</span>
+I_angular <span style="color:#f92672">=</span> I_angular <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>max(I_angular)
+</code></pre></div><p>I will plot it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>imshow(I_angular, cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;jet&#39;</span>, extent<span style="color:#f92672">=</span>[<span style="color:#f92672">-</span>D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, <span style="color:#f92672">-</span>D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>, D<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>])
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;$x_q$ [m]&#39;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;$y_q$ [m]&#39;</span>)
+plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;Angular Spectrum Diffraction&#39;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/116322/429612b2-e7a0-6725-e273-f8d1cdf9023a.png" alt="download (4).png"></p>
+<p>Unlike the Fresnel approximation and Fraunhofer approximation, the image plane area matches the calculation area, so it looks small.</p>
+<p>It&rsquo;s getting longer, so I&rsquo;ll write the rest on another page.</p>
+<h2 id="references-etc">References, etc.</h2>
+<ul>
+<li>Introduction to wave optics, Masayuki Yamazaki, Moriaki Wakaki, Chen Army, Practical Publishing, 2004</li>
+<li>Light and Fourier Transform, Toyohiko Yatagai, Asakura Shoten, 2012</li>
+<li>Diffraction and Imaging Optics, Masato Shibuya and Hiroshi Oki, Asakura Shoten, 2005</li>
+<li><a href="https://www.sigma-global.com/jp/lenses/cas/product/popups/mtf2/">What is MTF curve? | SIGMA</a></li>
+<li><a href="https://meltingrabbit.com/blog/article/2017122301/">[Wave Optics] Wave Optics Introduction 1-Derivation of System Response</a></li>
+<li><a href="https://meltingrabbit.com/blog/article/2017122401/">[Wave Optics] Introduction to Wave Optics 2-Appropriate Numerical Calculation Examples</a></li>
+<li><a href="http://www.sp.u-tokai.ac.jp/~yagi/OpticsandLaser/%E7%AC%AC4%E7%AB%A0%E3%80%80%E3%83%95%E3%83%AC%E3%83%8D%E3%83%AB%E3%83%BB%E3%82%AD%E3%83%AB%E3%83%92%E3%83%9B%E3%83%83%E3%83%95%E3%81%AE%E5%9B%9E%E6%8A%98%E7%90%86%E8%AB%96.pdf">Chapter 4 Fresnel Kirchhoff&rsquo;s Diffraction Theory</a></li>
+<li><a href="http://www.hikari.scphys.kyoto-u.ac.jp/jp/index.php?plugin=attach&amp;refer=%E9%9B%BB%E7%A3%81%E6%B0%97%E5%AD%A64%202012%E8%AC%9B%E7%BE%A9%E3%83%8E%E3%83%BC%E3%83%88&amp;openfile=4th.pdf">5 light diffraction</a></li>
+<li><a href="http://cgh.ist.hokudai.ac.jp/cgh/object-light_calc.html">Calculation method of object light</a></li>
+<li><a href="http://www.laser.ee.kansai-u.ac.jp/pdf/Matsushima2011j.pdf">Analysis of light wave propagation in free space and its application</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Sentiment analysis with Python (word2vec) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Sentiment analysis with Python (word2vec)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 19, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/study-session"> study session</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/study-session-memo"> study session memo</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/word2vec"> word2vec</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/sentiment-analysis"> sentiment analysis</a></code></small>
+
+</p>
+<pre><code>I recently attended a Python study group sponsored by Team Zet Co., Ltd. The theme this time is &quot;text emotion using word2vec
+</code></pre>
+<p>&ldquo;Analysis.&rdquo;
+Honestly, it was a pungent theme for me who first touched Python a week ago, but maybe I&rsquo;m going to experience how the grammar I&rsquo;m studying now is being put into shape. I rushed into the train one day before the event.</p>
+<p>By the way, let&rsquo;s leave this foreword and go into the main subject.</p>
+<p>#What is Word2Vec in the first place? ? ?
+Neural network model for analyzing words (machine learning). In short, it seems that words can be vectorized and weighted. (For more information, see <a href="https://www.randpy.tokyo/entry/word2vec_skip_gram_model">here</a>)</p>
+<p>This time
+<a href="https://aial.shiroyagi.co.jp/2017/02/japanese-word2vec-model-builder/">White Goat Corporation</a>
+I used the word2vec model.</p>
+<p>How to install word2vec <a href="https://qiita.com/opankopan/items/2a999e0209504dca0a3f">here</a></p>
+<p>First,
+Make sure the word is vectorized by word2vec.
+Let&rsquo;s hit this code with word2vec implemented.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py"><span style="color:#f92672">import</span> gensim.models.word2vec.Word2Vec <span style="color:#f92672">as</span> wv
+
+<span style="color:#66d9ef">print</span>(len(model<span style="color:#f92672">.</span>wv[<span style="color:#e6db74">&#34;love&#34;</span>]))
+model<span style="color:#f92672">.</span>wv[<span style="color:#e6db74">&#34;love&#34;</span>]
+</code></pre></div><p>Then</p>
+<p>Fifty
+array([ 0.09289702, -0.16302316, -0.08176763, -0.29827002, 0.05170078,
+0.07736144, -0.06452437, 0.19822665, -0.11941547, -0.11159643,
+0.03224859, 0.03042056, -0.09065174, -0.1677992, -0.19054233,
+0.10354111, 0.02630192, -0.06666993, -0.06296805, 0.00500843,
+0.26934028, 0.05273635, 0.0192258, 0.2924312, -0.23919497,
+0.02317964, -0.21278766, -0.01392282, 0.24962738, 0.11264788,
+0.05772769, 0.20941015, -0.01239212, -0.1256235, -0.19794041,
+0.1267719 ,-0.12306885, 0.01006295, 0.08548331, -0.08936502,
+-0.05429656, -0.09757583, 0.10338967, 0.13714872, 0.23966707,
+0.02216845, 0.02270923, 0.32569838, -0.0311841 ,-0.00150117],
+dtype=float32)</p>
+<p>The result is returned. This is the word &ldquo;love&rdquo; made in 50 dimensions. It indicates that the component is composed of the above elements.</p>
+<p>next</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py">Extract words similar to <span style="color:#75715e">#keyword</span>
+sim_do <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>most_similar(positive<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;her&#34;</span>], topn<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>)
+<span style="color:#75715e"># Listed so it&#39;s formatted for easy viewing</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#f92672">*</span>[<span style="color:#e6db74">&#34; &#34;</span><span style="color:#f92672">.</span>join([v, str(<span style="color:#e6db74">&#34;{:.5f}&#34;</span><span style="color:#f92672">.</span>format(s))]) <span style="color:#66d9ef">for</span> v, s <span style="color:#f92672">in</span> sim_do], sep<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+</code></pre></div><p>And hit
+Herself 0.82959
+Molly 0.82547
+He 0.82406
+Sylvia 0.80452
+Charlie 0.80336
+Lover 0.80197
+You can extract words with similar meanings such as. The number on the right side of the word is a numerical representation of how close you are to the word &ldquo;she.&rdquo;</p>
+<p>Also, when you want to know how long two words are,</p>
+<pre><code>similarity = model.wv.similarity(w1=&quot;apple&quot;, w2=&quot;strawberry&quot;)
+print(similarity)
+
+similarity = model.wv.similarity(w1=&quot;apple&quot;, w2=&quot;Aomori&quot;)
+print(similarity)
+
+similarity = model.wv.similarity(w1=&quot;apple&quot;, w2=&quot;Anpanman&quot;)
+print(similarity)
+</code></pre><p>Then
+0.79041845
+0.30861858
+0.45321244
+Will be returned. We quantified how similar the words in w1 and w2 are. Speaking of apples, Aomori! I think there are a lot of people who associate this with Anpanman, but I think that this model is not perfect yet.</p>
+<p>Well here</p>
+<p><b> &ldquo;King&rdquo;-&ldquo;Man&rdquo; + &ldquo;Woman&rdquo; = &ldquo;Queen&rdquo;???
+</br></p>
+<p>We will consider the famous proposition.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py">sim_do <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>most_similar(positive <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;king&#34;</span>, <span style="color:#e6db74">&#34;female&#34;</span>], negative<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;male&#34;</span>], topn<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#f92672">*</span>[<span style="color:#e6db74">&#34; &#34;</span><span style="color:#f92672">.</span>join([v, str(<span style="color:#e6db74">&#34;{:.5f}&#34;</span><span style="color:#f92672">.</span>format(s))]) <span style="color:#66d9ef">for</span> v, s <span style="color:#f92672">in</span> sim_do], sep<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+
+Compare the degree of similarity between words <span style="color:#f92672">in</span> <span style="color:#75715e">#positive and dissimilarity in terms of negative</span>
+</code></pre></div><p>Result is…</p>
+<p>Princess 0.85313
+Bride 0.83918
+The beast 0.83155
+Witch 0.82982
+Maiden 0.82356</p>
+<p>Although it did not exactly match the &ldquo;Queen&rdquo;, a similar answer was obtained.</p>
+<p>Up to now, I have compared only words, but you can also quantify what emotion a certain sentence contains.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+t <span style="color:#f92672">=</span> Tokenizer()
+s <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;</span>
+<span style="color:#75715e"># Please enter your favorite text.</span>
+<span style="color:#e6db74">&#39;</span>
+output_data<span style="color:#f92672">=</span>[]
+x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>empty((<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">4</span>), float)
+<span style="color:#66d9ef">for</span> token <span style="color:#f92672">in</span> t<span style="color:#f92672">.</span>tokenize(s):
+  <span style="color:#66d9ef">if</span> token<span style="color:#f92672">.</span>part_of_speech<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;,&#39;</span>)[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">==</span><span style="color:#e6db74">&#34;noun&#34;</span> <span style="color:#f92672">or</span> token<span style="color:#f92672">.</span>part_of_speech<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;,&#39;</span>)[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">==</span><span style="color:#e6db74">&#34;adjective&#34;</span>:
+    <span style="color:#66d9ef">print</span>(token<span style="color:#f92672">.</span>surface)
+    similarity1 <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>similarity(w1<span style="color:#f92672">=</span>token<span style="color:#f92672">.</span>surface, w2<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;happy&#34;</span>)
+    <span style="color:#75715e">#print(&#34;joy: {0}&#34;.format(similarity1))</span>
+    similarity2 <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>similarity(w1<span style="color:#f92672">=</span>token<span style="color:#f92672">.</span>surface, w2<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;fun&#34;</span>)
+    <span style="color:#75715e">#print(&#34;Sadness: {0}&#34;.format(similarity2))</span>
+    similarity3 <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>similarity(w1<span style="color:#f92672">=</span>token<span style="color:#f92672">.</span>surface, w2<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sad&#34;</span>)
+    <span style="color:#75715e">#print(&#34;Anxiety: {0}&#34;.format(similarity3))</span>
+    similarity4 <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>wv<span style="color:#f92672">.</span>similarity(w1<span style="color:#f92672">=</span>token<span style="color:#f92672">.</span>surface, w2<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;excitement&#34;</span>)
+    <span style="color:#75715e">#print(&#34;Interest: {0}&#34;.format(similarity4))</span>
+    x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>append(x, np<span style="color:#f92672">.</span>array([[similarity1, similarity2, similarity3, similarity4]]), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;-&#34;</span><span style="color:#f92672">*</span><span style="color:#ae81ff">30</span>)
+<span style="color:#66d9ef">print</span>(np<span style="color:#f92672">.</span>mean(x, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Happiness: {0}&#34;</span><span style="color:#f92672">.</span>format(np<span style="color:#f92672">.</span>mean(x, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)[<span style="color:#ae81ff">0</span>]))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Easy: {0}&#34;</span><span style="color:#f92672">.</span>format(np<span style="color:#f92672">.</span>mean(x, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)[<span style="color:#ae81ff">1</span>]))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Sad: {0}&#34;</span><span style="color:#f92672">.</span>format(np<span style="color:#f92672">.</span>mean(x, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)[<span style="color:#ae81ff">2</span>]))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Heung: {0}&#34;</span><span style="color:#f92672">.</span>format(np<span style="color:#f92672">.</span>mean(x, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)[<span style="color:#ae81ff">3</span>]))
+
+
+
+</code></pre></div><p>Put your favorite sentence in the variable s
+As an example
+&ldquo;I proposed at a restaurant with a night view&rdquo;
+Let&rsquo;s put a romantic sentence
+Result is</p>
+<p>Night view
+The restaurant
+propose</p>
+<p>[0.29473324 0.44027831 0.27123818 0.20060815]</p>
+<p>Happy: 0.29473323623339337
+Easy: 0.4402783115704854
+Sadness: 0.27123818174004555
+Entertainment: 0.20060815351704755</p>
+<p>Comes out. So this system
+&ldquo;I proposed at a restaurant with a night view&rdquo;
+You have decided that the sentence is a &ldquo;fun&rdquo; sentence. (The larger the number, the stronger the feeling)</p>
+<p>So another example
+&ldquo;A handgun murder occurred in a late-night prison.&rdquo;
+So let&rsquo;s put in a negative aura-plump sentence
+Then</p>
+<p>Midnight
+prison
+Handgun
+murder
+Case</p>
+<p>[-0.00661952 0.01671012 0.12141706 0.23172273]
+Happy:-0.006619524117559195
+Fun: 0.01671011543367058
+Sad: 0.12141705807298422
+Excitement: 0.2317227303981781</p>
+<p>As a result,
+Actually, the value may take a negative value. Certainly, I don&rsquo;t feel happy about a millimeter.</p>
+<p>#Impression
+It&rsquo;s a wonderful time to be able to easily analyze sentimental sentences.
+I am truly grateful to Team Zet for providing such a valuable learning opportunity.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Fluid simulation: Implementing the advection equation | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Fluid simulation: Implementing the advection equation</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 19, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numerical-calculation"> numerical calculation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fluid-dynamics"> fluid dynamics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cfd"> cfd</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fluid-simulation"> fluid simulation</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>While also studying Computational Fluid Dynamics (CFD), which is a discipline related to the simulation of fluids such as air and water, I would like to summarize (in multiple articles) the knowledge necessary to construct a numerical fluid analysis code for water.</p>
+<p>I want to write it so that even beginners can understand it. It seems that many mistakes are included, so we would appreciate if you contact us when you discover it. I would also appreciate if you could comment on what is difficult to understand. We will update it from time to time.</p>
+<h3 id="target-audience">Target audience</h3>
+<ul>
+<li>People who can use Python</li>
+<li>People who are interested in numerical calculation</li>
+<li>People who are interested in fluid mechanics</li>
+<li>Those who understand basic university physics and mathematics (about differential equation?)</li>
+</ul>
+<h3 id="series">series</h3>
+<ul>
+<li>Chapter 1: This article</li>
+<li>Chapter 2: <a href="https://qiita.com/KQTS/items/97daa509991bb9777a4a">[Python] Fluid Simulation: Implement Diffusion Equation</a>
+<ul>
+<li>Supplementary position of Chapter 2: <a href="https://qiita.com/KQTS/items/e5500ba6e2681456e268">[Python] Article that enables sparse matrix calculation at high speed</a></li>
+</ul>
+</li>
+<li>Chapter 3: <a href="https://qiita.com/KQTS/items/0c4f6c47a4d56881a178">[Python] Fluid Simulation: From Linear to Nonlinear</a></li>
+<li>Chapter 4: <a href="https://qiita.com/KQTS/items/9d2a92ef4046d80ef4a5">[Python] Fluid Simulation: Incompressible Navier-Stokes Equation</a></li>
+</ul>
+<h3 id="rough-contents-of-this-article">Rough contents of this article</h3>
+<p>As a preliminary step to deal with the basic fluid equations required for water simulation, we will briefly summarize and implement the advection equation.</p>
+<h3 id="change-log">Change log</h3>
+<ul>
+<li>2020/02/19 It was corrected because there was an error in the sentence. Thanks to @picric_acid for commenting!</li>
+<li>Fixed due to a bug in the 2020/02/21 code. Thanks to @fluxCapacitor for commenting!</li>
+</ul>
+<h1 id="advection-equation-equation-expressing-the-movement-of-a-substance">Advection equation (equation expressing the movement of a substance)</h1>
+<p>Solve the one-dimensional <a href="http://zellij.hatenablog.com/entry/20140805/p1">advection equation</a> by the finite difference method.</p>
+<p>Advection equation
+$$
+\frac{\partial u}{\partial t} + c \frac{\partial u}{\partial x} = 0
+$$</p>
+<p>What this expression means is that a certain function u moves at a speed c. In short, it is an equation expressing that the physical quantity moves along the flow of velocity c.</p>
+<div align="center">
+<img width="462" alt="advection_example.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/a9966119-355b-6049-3f1b-469e395e7ee9.png">
+</div>
+<p>Discretize this and solve the equation. This time, we will solve it by a method called <a href="https://www.cradle.co.jp/media/column/a233">explicit method</a>. The explicit method is simply a method of finding a future value using only the current time value. In addition to the explicit method, there is also a method called the implicit method, which calculates based on the current and future values.</p>
+<p>The explicit method implemented this time is as follows. I chose the following four as I wanted.</p>
+<ul>
+<li>FTCS (Forward in Time and Central Difference in Space)</li>
+<li>Upwind differencing</li>
+<li>Lax-Wendroff scheme</li>
+<li>CIP(Constrained Interpolation Profile scheme) method</li>
+</ul>
+<p>For each of them, we will write down the discretized formula. In the formulas, the subscript j means location and n means time. So $f_j^n$ means the value of the function f located at location $x_j$ at time $n$.</p>
+<p>1.FTCS(Forward in Time and Central Difference in Space)
+2. $$
+u_j^{n+1} = u_j^{n}-\frac{c}{2} \left( \frac{\Delta t}{\Delta x} \right) \left(u_{j+1}^ n-u_{j-1}^n \right)
+$$</p>
+<ol start="2">
+<li>
+<p>Upwind differencing
+3. $$
+u_j^{n+1} = u_j^{n}-c \left( \frac{\Delta t}{\Delta x} \right) \left(u_{j}^n-u_{j-1}^ n \right)
+$$</p>
+</li>
+<li>
+<p>Lax-Wendroff scheme
+4. $$
+u_j^{n+1} = u_j^{n}-\frac{c}{2} \left( \frac{\Delta t}{\Delta x} \right) \left(u_{j+1}^ n-u_{j-1}^n \right) + \frac{c^2}{2} \left( \frac{\Delta t}{\Delta x} \right)^2 \left(u_{j +1}^n-2 u_j^n+ u_{j-1}^n \right)
+$$</p>
+</li>
+<li>
+<p>CIP(Constrained Interpolation Profile scheme) method</p>
+</li>
+</ol>
+<p>Details will be described later. Or refer to <a href="http://www.astro.phys.s.chiba-u.ac.jp/netlab/mhd_summer2001/cip-intro.pdf">Introduction to CIP Law</a>.</p>
+<h3 id="stable-condition-of-explicit-method">Stable condition of explicit method</h3>
+<p>I will briefly describe the important stability conditions when using the explicit method. Numerical information propagation speed $\frac{\Delta t}{\Delta x}$ (speed obtained by dividing grid width by time) must be more than physical signal speed $c$. Otherwise, physical phenomena move at a faster speed than numerical calculations, and physical phenomena cannot be represented numerically. Based on that idea
+$$
+c \leq \frac{\Delta x}{\Delta t}
+$$
+The condition is derived. This was transformed
+$$
+\nu = c \frac{\Delta t}{\Delta x} \leq 1
+$$
+Is called the CFL condition and is used as a numerically stable condition. The left side is also called the Courant number. In short, the time step size $ \Delta t$ should be less than $\frac{\Delta x}{c}$. Note that these CFL conditions are not relevant when using the implicit method, so the implicit method has the advantage that it can be made larger in time steps than the explicit method. However, the calculation becomes complicated accordingly.</p>
+<h2 id="implementation">Implementation</h2>
+<p>The language used is Python. I will write Numpy functions without overusing them so that the formulas are easy to understand.</p>
+<h3 id="calculation-target">Calculation target</h3>
+<p>Calculate the square wave advection. The lattice width $\Delta x$, the physical signal speed $c$, and the time step width $\Delta t$ are all calculated as constants. This time, we calculate $\Delta x=1$, $c=1$, and $\Delta t=0.2$ according to the reference. Therefore, it is fixed at $CFL=0.2$ and the CFL condition is satisfied.</p>
+<img width="415" alt="advection_answer.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/a3444cd7-3917-166d-0e72-6a213e3d12c6.png">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#75715e"># Creat square wave</span>
+Num_stencil_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">101</span>
+x_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(Num_stencil_x)
+u_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(((x_array <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">30</span>) <span style="color:#f92672">|</span>(x_array <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">10</span>)), <span style="color:#ae81ff">0.0</span>, <span style="color:#ae81ff">1.0</span>)
+u_lower_boundary <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+u_upper_boundary <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+Time_step <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span>
+Delta_x <span style="color:#f92672">=</span> max(x_array) <span style="color:#f92672">/</span> (Num_stencil_x<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+C <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+Delta_t <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.2</span>
+CFL <span style="color:#f92672">=</span> C <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">/</span> Delta_x
+total_movement <span style="color:#f92672">=</span> C <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">*</span> (Time_step<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)
+exact_u_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(((x_array <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">30</span> <span style="color:#f92672">+</span> total_movement) <span style="color:#f92672">|</span>(x_array <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">10</span> <span style="color:#f92672">+</span> total_movement)), <span style="color:#ae81ff">0.0</span>, <span style="color:#ae81ff">1.0</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, u_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Initial condition&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, exact_u_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;upper right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;u&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>,<span style="color:#ae81ff">1.5</span>)
+</code></pre></div><h3 id="1ftcsforward-in-time-and-central-difference-in-space">1.FTCS(Forward in Time and Central Difference in Space)</h3>
+<p>$$
+u_j^{n+1} = u_j^{n}-\frac{c}{2} \left( \frac{\Delta t}{\Delta x} \right) \left(u_{j+1}^ n-u_{j-1}^n \right)
+$$</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/675599de-62f0-1d73-2fdf-6e22a01ea2a0.png" alt="answer_ftcs.png"></p>
+<p>The solution vibrates. No answer at all</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">u_ftcs <span style="color:#f92672">=</span> u_array<span style="color:#f92672">.</span>copy()
+<span style="color:#75715e"># Set time step</span>
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    u_old <span style="color:#f92672">=</span> u_ftcs<span style="color:#f92672">.</span>copy()
+    u_ftcs[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> u_old[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span>CFL <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_old[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>u_lower_boundary)
+    u_ftcs[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> u_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>CFL <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_upper_boundary<span style="color:#f92672">-</span>u_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,Num_stencil_x<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>):
+        u_ftcs[j] <span style="color:#f92672">=</span> u_old[j]<span style="color:#f92672">-</span>CFL <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_old[j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+plt<span style="color:#f92672">.</span>plot(x_array, exact_u_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, u_ftcs, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;FTCS&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;upper right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;u(FTCS)&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>,<span style="color:#ae81ff">1.5</span>)
+</code></pre></div><h3 id="2-一次精度風上差分upwind-differencing">2. 一次精度風上差分(Upwind differencing)</h3>
+<p>$$
+u_j^{n+1} = u_j^{n} - c \left( \frac{\Delta t}{\Delta x} \right) \left(u_{j}^n - u_{j-1}^n \right)
+$$</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/b66af702-7385-e432-ad86-b4a65df9fb99.png" alt="answer_upwing.png"></p>
+<p>数値拡散が大きく解が滑らかになる。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">u_upwind <span style="color:#f92672">=</span> u_array<span style="color:#f92672">.</span>copy()
+<span style="color:#75715e"># タイムステップを設定</span>
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    u_old <span style="color:#f92672">=</span> u_upwind<span style="color:#f92672">.</span>copy()
+    u_upwind[<span style="color:#ae81ff">0</span>:<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> u_old[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> CFL <span style="color:#f92672">*</span> (u_old[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> u_lower_boundary)
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,Num_stencil_x):
+        u_upwind[j:j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> u_old[j] <span style="color:#f92672">-</span> CFL <span style="color:#f92672">*</span> (u_old[j] <span style="color:#f92672">-</span> u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+plt<span style="color:#f92672">.</span>plot(x_array, exact_u_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, u_upwind, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Upwind differencing&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;upper right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;u(Upwind differencing)&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>,<span style="color:#ae81ff">1.5</span>)
+</code></pre></div><h3 id="3-lax-wendroff-scheme">3. Lax-Wendroff scheme</h3>
+<p>$$
+u_j^{n+1} = u_j^{n} - \frac{c}{2} \left( \frac{\Delta t}{\Delta x} \right) \left(u_{j+1}^n - u_{j-1}^n \right)  + \frac{c^2}{2} \left( \frac{\Delta t}{\Delta x} \right)^2 \left(u_{j+1}^n - 2 u_j^n+ u_{j-1}^n \right)
+$$</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/4008c8c3-7b30-2d68-d09b-a77a9447f7d8.png" alt="answer_laxw.png"></p>
+<p>数値振動と解の鈍りがある。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">u_lw<span style="color:#f92672">=</span> u_array<span style="color:#f92672">.</span>copy()
+<span style="color:#75715e"># タイムステップを設定</span>
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    u_old <span style="color:#f92672">=</span> u_lw<span style="color:#f92672">.</span>copy()
+    u_lw[<span style="color:#ae81ff">0</span>:<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> u_old[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> CFL <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_old[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> u_lower_boundary) \
+                    <span style="color:#f92672">+</span> CFL<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_old[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> u_old[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+</span> u_lower_boundary)
+    u_lw[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> u_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> CFL <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_upper_boundary <span style="color:#f92672">-</span> u_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) \
+                    <span style="color:#f92672">+</span> CFL<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_upper_boundary <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> u_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> u_old[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>])
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,Num_stencil_x<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>):
+        u_lw[j] <span style="color:#f92672">=</span> u_old[j] <span style="color:#f92672">-</span> CFL <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_old[j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) \
+                    <span style="color:#f92672">+</span> CFL<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (u_old[j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> u_old[j] <span style="color:#f92672">+</span> u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+plt<span style="color:#f92672">.</span>plot(x_array, exact_u_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, u_lw, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Lax-Wendroff scheme&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;upper right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;u(Lax-Wendroff scheme)&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>,<span style="color:#ae81ff">1.5</span>)
+</code></pre></div><h3 id="4-cipconstrained-interpolation-profile-scheme-method">4. CIP(Constrained Interpolation Profile scheme) method</h3>
+<p>CIP法の基本的な考え方としては、まずある関数fについて離散化した際、ある点$x_j$とその隣の点$x_{j-1}$の物理量は滑らかに繋がっていると考えます。こうすることにより、それぞれの物理量$f_j$と$f_{j-1}$の微分値を用いて、格子間の傾きを発散させずに時間発展させることができるようになります。</p>
+<p>つまり、<strong>関数の値と微分値が格子点上で連続</strong>という条件のもと、3次補完関数$F(x)$により格子2点間の関係を表すことができるようになる。</p>
+<p>$x_{j-1}&lt;= x &lt; x_j$の領域において、
+$$
+F(x) = a X^3 + b X^2 +c X + d \quad ,where \quad X = x - x_j
+$$
+のように$F(x)$を3次補完で定義すると、**関数の値と微分値が格子点上で連続**という条件から、</p>
+<p>$$
+F(0) = f_j^n, \quad F(\Delta x) = f_{j+1}^n, \quad \frac{\partial F(0)}{\partial x} = \frac{\partial f_j^n}{\partial x}, \quad \frac{\partial F(\Delta x)}{\partial x} = \frac{\partial f_{j+1}^n}{\partial x} \ , where \quad \Delta x = x_{j+1} - x_j
+$$
+が成立するので、これを$F(x)$の式に代入して、$a, b, c, d$を求めると、</p>
+<pre><code class="language-math" data-lang="math">a = \frac{\partial f_j^n / \partial x + \partial f_{j+1}^n / \partial x }{\Delta x^2} + \frac{2 (f_j^n - f_{j+1}^n)}{\Delta x^3} \\
+b =  \frac{3 (f_{j+1}^n - f_j^n)}{\Delta x^2} - \frac{2( \partial f_j^n / \partial x + \partial f_{j+1}^n / \partial x )}{\Delta x} \\
+c = \frac{\partial f_j^n}{\partial x}\\
+d = f_j^n
+</code></pre><p>以上より、速度cが一定の場合、$\frac{\partial u}{\partial t} + c \frac{\partial u}{\partial x} = 0$は微分値も満たすので、時間刻み幅$\Delta t(n+1ステップ目)$秒後における値と微分値は、</p>
+<pre><code class="language-math" data-lang="math">u_j^{n+1} = F(x_j - c \Delta t)= a \xi^3 + b \xi^2 + c\xi + d \\
+\frac{\partial u_j^{n+1}}{\partial x} = \frac{d F(x_j - c \Delta t)}{d x} = 3 a \xi^2 + 2 b \xi + c \\
+, where \quad \xi = - c \Delta t
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/1a9cb96c-4a2f-5ac4-626a-7b64008a2a44.png" alt="answer_cip.png"></p>
+<p>他の三つの手法より数値拡散や振動が圧倒的に小さい。<del>しかし、<a href="http://www.astro.phys.s.chiba-u.ac.jp/netlab/mhd_summer2001/cip-intro.pdf">参考文献</a>ほどうまく移流できなかった。</del>(2020/02/20コメントで頂いた修正をかけたところかなり良くなりました。)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">u_cip<span style="color:#f92672">=</span> u_array<span style="color:#f92672">.</span>copy()
+partial_u_cip <span style="color:#f92672">=</span> ((np<span style="color:#f92672">.</span>append(u_cip[<span style="color:#ae81ff">1</span>:], u_upper_boundary) <span style="color:#f92672">+</span> u_cip)<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">-</span> (np<span style="color:#f92672">.</span>append(u_lower_boundary, u_cip[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) <span style="color:#f92672">+</span> u_cip)<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">/</span> Delta_x
+<span style="color:#75715e"># 時間発展させる</span>
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    u_old <span style="color:#f92672">=</span> u_cip<span style="color:#f92672">.</span>copy()
+    partial_u_old <span style="color:#f92672">=</span> partial_u_cip<span style="color:#f92672">.</span>copy()
+    u_cip[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    partial_u_cip[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, Num_stencil_x):
+        a <span style="color:#f92672">=</span> (partial_u_old[j] <span style="color:#f92672">+</span> partial_u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> (u_old[j] <span style="color:#f92672">-</span> u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">3</span>
+        b <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">*</span> (u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> u_cip[j]) <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> (<span style="color:#ae81ff">2.0</span><span style="color:#f92672">*</span>partial_u_old[j] <span style="color:#f92672">+</span> partial_u_old[j<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]) <span style="color:#f92672">/</span> Delta_x
+        c <span style="color:#f92672">=</span> partial_u_old[j]
+        d <span style="color:#f92672">=</span> u_old[j]
+        xi <span style="color:#f92672">=</span> <span style="color:#f92672">-</span> C <span style="color:#f92672">*</span> Delta_t  <span style="color:#75715e"># C &gt; 0</span>
+        u_cip[j:j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> a <span style="color:#f92672">*</span> xi<span style="color:#f92672">**</span><span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> b <span style="color:#f92672">*</span> xi<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> c <span style="color:#f92672">*</span> xi <span style="color:#f92672">+</span> d
+        partial_u_cip[j:j<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">*</span> a <span style="color:#f92672">*</span> xi<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> b <span style="color:#f92672">*</span> xi <span style="color:#f92672">+</span> c
+plt<span style="color:#f92672">.</span>plot(x_array, exact_u_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Answer&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(x_array, u_cip, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;CIP method&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;upper right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;u(CIP)&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>,<span style="color:#ae81ff">1.5</span>)
+</code></pre></div><h2 id="まとめ">まとめ</h2>
+<p>流体方程式を構成する移流方程式の基礎について簡単に実装とともにまとめました。
+実装したのは以下の4つです。</p>
+<ul>
+<li>FTCS(Forward in Time and Central Difference in Space)</li>
+<li>一次風上差分(Upwind differencing)</li>
+<li>Lax-Wendroff scheme* CIP(Constrained Interpolation Profile scheme) method</li>
+</ul>
+<p>Next time is on <a href="https://qiita.com/KQTS/items/97daa509991bb9777a4a">Diffusion Equation</a>.</p>
+<h3 id="references">References</h3>
+<p>1.http://zellij.hatenablog.com/entry/20140805/p1
+2.https://www.cradle.co.jp/media/column/a233
+3. <a href="http://www.slis.tsukuba.ac.jp/~fujisawa.makoto.fu/cgi-bin/wiki/index.php?%B0%DC%CE%AE%CB%A1">http://www.slis.tsukuba.ac.jp/~fujisawa.makoto.fu/cgi-bin/wiki/index.php?%B0%DC%CE%AE%CB%A1</a>
+4. <a href="http://www.astro.phys.s.chiba-u.ac.jp/netlab/mhd_summer2001/cip-intro.pdf">http://www.astro.phys.s.chiba-u.ac.jp/netlab/mhd_summer2001/cip-intro.pdf</a>
+5. <a href="http://www.astro.phys.s.chiba-u.ac.jp/netlab/summer-school_2004/TEXTBOOK/text3-1.pdf">http://www.astro.phys.s.chiba-u.ac.jp/netlab/summer-school_2004/TEXTBOOK/text3-1.pdf</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

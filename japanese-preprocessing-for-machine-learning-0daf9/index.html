@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Japanese preprocessing for machine learning | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Japanese preprocessing for machine learning</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 29, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/charging"> Charging</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/hard"> Hard</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow"> TensorFlow</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>A memorandum when creating a simple neural network with text as training data in order to understand the mechanism of a chatbot using machine learning.</p>
+<p>#Purpose
+Apply the rule-based chatbot created in English text to Japanese text to operate. Preprocess the Japanese text and make sure it can be passed through the neural network. As training data, Web scraping of support pages related to Niantic&rsquo;s &ldquo;Pokemon GO&rdquo; was used.</p>
+<p><a href="https://niantic.helpshift.com/a/pokemon-go/?l=ja&amp;p=web">Niantic Support Page</a></p>
+<p><a href="https://github.com/KazumaMinami/pgo_ml/blob/master/pgo_train_texts.csv">Using CSV file (GitHub)</a></p>
+<p>#Multi-class classification
+With reference to the &ldquo;rule-based type&rdquo; that returns a prepared response sentence according to the input, the part up to the multi-class classification that identifies and predicts &ldquo;Intents&rdquo; (intent) was formed.</p>
+<p>Since it is not a “generation type” but predicts related “FAQ” from input information, a model is created with a normal neural network layer instead of “RNN”.</p>
+<p>#environment
+Build a virtual environment without using a Jupyter notebook.
+− MacOS Mojave 10.14.6</p>
+<ul>
+<li>Python 3.6.0</li>
+<li>TensorFlow 1.9.0</li>
+<li>MeCab (Japanese morphological analysis tool)</li>
+</ul>
+<p><a href="https://qiita.com/berry-clione/items/b3a537962c84244a2a09">MeCab installation reference page</a></p>
+<p>#code</p>
+<h3 id="read-training-data-and-pre-process-japanese-text">Read training data and pre-process Japanese text</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-wakatigaki.py" data-lang="wakatigaki.py"><span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">import</span> csv
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">from</span> tensorflow.keras.preprocessing.sequence <span style="color:#f92672">import</span> pad_sequences
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_tokenizer</span>():
+<span style="color:#75715e"># Read CSV file</span>
+    text_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#34;pgo_train_texts.csv&#34;</span>, <span style="color:#e6db74">&#34;r&#34;</span>) <span style="color:#66d9ef">as</span> csvfile:
+        texts <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>reader(csvfile)
+
+        <span style="color:#66d9ef">for</span> text <span style="color:#f92672">in</span> texts:
+            text_list<span style="color:#f92672">.</span>append(text)
+
+Divide Japanese text using <span style="color:#75715e">#MeCab.</span>
+        wakati_list <span style="color:#f92672">=</span> []
+        label_list <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> label, text <span style="color:#f92672">in</span> text_list:
+            text <span style="color:#f92672">=</span> text<span style="color:#f92672">.</span>lower()
+
+            wakati <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#34;-O wakati&#34;</span>)
+            text_wakati <span style="color:#f92672">=</span> wakati<span style="color:#f92672">.</span>parse(text)<span style="color:#f92672">.</span>strip()
+            wakati_list<span style="color:#f92672">.</span>append(text_wakati)
+            label_list<span style="color:#f92672">.</span>append(label)
+
+<span style="color:#75715e"># Check the number of elements in the largest sentence.</span>
+<span style="color:#75715e"># Create a list of text data used by the tokenizer.</span>
+        max_len <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+        split_list <span style="color:#f92672">=</span> []
+        sentences <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> text <span style="color:#f92672">in</span> wakati_list:
+            text <span style="color:#f92672">=</span> text<span style="color:#f92672">.</span>split()
+            split_list<span style="color:#f92672">.</span>extend(text)
+            sentences<span style="color:#f92672">.</span>append(text)
+
+            <span style="color:#66d9ef">if</span> len(text)<span style="color:#f92672">&gt;</span> max_len:
+                max_len <span style="color:#f92672">=</span> len(text)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Max length of texts: &#34;</span>, max_len)
+        vocab_size <span style="color:#f92672">=</span> len(set(split_list))
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Vocabularay size: &#34;</span>, vocab_size)
+        label_size <span style="color:#f92672">=</span> len(set(label_list))
+
+<span style="color:#75715e"># Use Tokenizer to assign numbers from index 1 to words.</span>
+<span style="color:#75715e"># Create a dictionary.</span>
+        tokenizer <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>preprocessing<span style="color:#f92672">.</span>text<span style="color:#f92672">.</span>Tokenizer(oov_token<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&lt;oov&gt;&#34;</span>)
+        tokenizer<span style="color:#f92672">.</span>fit_on_texts(split_list)
+        word_index <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>word_index
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Dictionary size: &#34;</span>, len(word_index))
+        sequences <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>texts_to_sequences(sentences)
+
+<span style="color:#75715e"># For tokenized label data, use Tokenizer and assign numbers.</span>
+        label_tokenizer <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>preprocessing<span style="color:#f92672">.</span>text<span style="color:#f92672">.</span>Tokenizer()
+        label_tokenizer<span style="color:#f92672">.</span>fit_on_texts(label_list)
+        label_index <span style="color:#f92672">=</span> label_tokenizer<span style="color:#f92672">.</span>word_index
+        label_sequences <span style="color:#f92672">=</span> label_tokenizer<span style="color:#f92672">.</span>texts_to_sequences(label_list)
+
+<span style="color:#75715e"># Tokenizer assigns numbers from 1, whereas the actual label starts from 0, so add −1.</span>
+        label_seq <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> label <span style="color:#f92672">in</span> label_sequences:
+            l <span style="color:#f92672">=</span> label[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+            label_seq<span style="color:#f92672">.</span>append(l)
+
+Use <span style="color:#75715e"># to_categorical() to create the One-Hot vector which is the actual label data to pass to the model.</span>
+        one_hot_y <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>utils<span style="color:#f92672">.</span>to_categorical(label_seq)
+
+<span style="color:#75715e"># In order to make the training data uniform in size, add 0 to the short text to match the longest text data.</span>
+        padded <span style="color:#f92672">=</span> pad_sequences(sequences, maxlen<span style="color:#f92672">=</span>max_len, padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span>, truncating<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span>)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;padded sequences: &#34;</span>, padded)
+
+        reverse_index <span style="color:#f92672">=</span> dict()
+        <span style="color:#66d9ef">for</span> intent, i <span style="color:#f92672">in</span> label_index<span style="color:#f92672">.</span>items():
+            reverse_index[i] <span style="color:#f92672">=</span> intent
+
+    <span style="color:#66d9ef">return</span> padded, one_hot_y, word_index, reverse_index, tokenizer, max_len, vocab_size
+</code></pre></div><h3 id="create-a-model-using-tensorflow">Create a model using TensorFlow</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-model.py" data-lang="model.py"><span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">model</span>(training, label, vocab_size):
+    model <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>models<span style="color:#f92672">.</span>Sequential((
+        tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>Embedding(input_dim<span style="color:#f92672">=</span>vocab_size, output_dim<span style="color:#f92672">=</span><span style="color:#ae81ff">16</span>, input_length<span style="color:#f92672">=</span>len(training[<span style="color:#ae81ff">0</span>])),
+        tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>Flatten(),
+        tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">30</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;relu&#34;</span>),
+        tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>Dense(len(label[<span style="color:#ae81ff">0</span>]), activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;softmax&#34;</span>)
+    ])
+
+    model<span style="color:#f92672">.</span>compile(loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;categorical_crossentropy&#34;</span>, optimizer<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;adam&#34;</span>, metrics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;accuracy&#34;</span>])
+    model<span style="color:#f92672">.</span>fit(x<span style="color:#f92672">=</span>training, y<span style="color:#f92672">=</span>label, epochs<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+
+    model<span style="color:#f92672">.</span>summary()
+
+    <span style="color:#66d9ef">return</span> model
+</code></pre></div><ul>
+<li>First, use the embedding layer to capture the relationship between words as a vector.</li>
+<li>Insert Flatten() and flatten the Embedding Matrix so that it can be passed to the Dense layer that is Fully connected.
+-If you use AveragePooling1D() instead, you can reduce the number of parameters of neural network and reduce the calculation cost.</li>
+<li>Since the number of &ldquo;Intents&rdquo; you want to identify is the same as the type of label, match the number of elements with index 0 in the One-Hot vector.</li>
+<li>For the activation function of the output layer, select &ldquo;softmax&rdquo; that supports multi-class classification.</li>
+<li>In model compilation, set loss calculation method for multi-class classification.</li>
+<li>Use &ldquo;Adam&rdquo; as a learning algorithm.</li>
+</ul>
+<h3 id="create-input-screen">Create input screen</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-chat.py" data-lang="chat.py">
+<span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">from</span> tensorflow.keras.preprocessing.sequence <span style="color:#f92672">import</span> pad_sequences
+
+<span style="color:#75715e"># Arrange the text received on the console so that the model can process it.</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">prepro_wakati</span>(input, tokenizer, max_len):
+    sentence <span style="color:#f92672">=</span> []
+
+    input <span style="color:#f92672">=</span> input<span style="color:#f92672">.</span>lower()
+    wakati <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#34;-O wakati&#34;</span>)
+    text_wakati <span style="color:#f92672">=</span> wakati<span style="color:#f92672">.</span>parse(input)<span style="color:#f92672">.</span>strip()
+    sentence<span style="color:#f92672">.</span>append(text_wakati)
+    <span style="color:#66d9ef">print</span>(sentence)
+
+    seq <span style="color:#f92672">=</span> tokenizer<span style="color:#f92672">.</span>texts_to_sequences(sentence)
+    seq <span style="color:#f92672">=</span> list(seq)
+    padded <span style="color:#f92672">=</span> pad_sequences(seq, maxlen<span style="color:#f92672">=</span>max_len, padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span>, truncating<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;post&#34;</span>)
+    <span style="color:#66d9ef">print</span>(padded)
+
+    <span style="color:#66d9ef">return</span> padded
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">chat</span>(model, tokenizer, label_index, max_len):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Start talking with the bot (type quit to stop): &#34;</span>)
+    <span style="color:#66d9ef">while</span> True:input_text <span style="color:#f92672">=</span> input(<span style="color:#e6db74">&#34;You: &#34;</span>)
+        <span style="color:#66d9ef">if</span> input_text<span style="color:#f92672">.</span>lower() <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;quit&#34;</span>:
+            <span style="color:#66d9ef">break</span>
+
+        x <span style="color:#f92672">=</span> prepro_wakati(input_text, tokenizer, max_len)
+        results <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict(x, batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;results: &#34;</span>, results)
+        results_index <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argmax(results)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Predicted index: &#34;</span>, results_index)
+
+        intent <span style="color:#f92672">=</span> label_index[results_index <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>]
+
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Type of intent: &#34;</span>, intent)
+</code></pre></div><p>Console screen.
+Pass the input text to the trained model and predict which of the nine &ldquo;Intents&rdquo; will fit.</p>
+<ul>
+<li>Types of Intents
+<ul>
+<li>Contact Us
+-Defect
+-Start guide
+-Accessories</li>
+<li>battle
+-Event</li>
+<li>Partner</li>
+<li>Security
+-Shop</li>
+</ul>
+</li>
+</ul>
+<p>#Execute
+Call and execute the defined function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ex.py" data-lang="ex.py"><span style="color:#f92672">import</span> wakatigaki
+<span style="color:#f92672">import</span> model
+<span style="color:#f92672">import</span> chat
+
+padded, one_hot_y, word_index, label_index, tokenizer, max_len, vocab_size <span style="color:#f92672">=</span> wakatigaki<span style="color:#f92672">.</span>create_tokenizer()
+
+model <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>model(padded, one_hot_y, vocab_size)
+
+chat<span style="color:#f92672">.</span>chat(model, tokenizer, label_index, max_len)
+</code></pre></div><h1 id="training-result">Training result</h1>
+<p>![Screenshot 2020-04-29 16.39.32.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/552502/8e235907-9832-3e2d-c164-(4fc56b0d998a.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/552502/8e235907-9832-3e2d-c164-(4fc56b0d998a.png)</a></p>
+<p>The numerical value in &ldquo;results:&rdquo; indicates the corresponding probability of each category.</p>
+<p>Predict the &ldquo;start guide&rdquo; for the input &ldquo;how to catch Pokemon&rdquo;. Next, predict &ldquo;shop&rdquo; for &ldquo;poke coins and items&rdquo;. Both were able to predict the appropriate category.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

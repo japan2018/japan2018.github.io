@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Understanding Logistic Regression (1)_Odds and Logit Transformation | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Understanding Logistic Regression (1)_Odds and Logit Transformation</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 1, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/logistic-regression"> logistic regression</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I have summarized what I learned about odds and logit transformation, which are prerequisites for understanding logistic regression.</p>
+<p>##reference
+In understanding the odds and logit conversion, I have referred to the following.</p>
+<ul>
+<li><a href="https://bellcurve.jp/statistics/blog/14099.html">Logistic regression analysis (5) ─ Inverse of logistic transformation
+</a></li>
+<li><a href="https://www.nli-research.co.jp/report/detail/id=62065?site=nli">Understanding Statistical Analysis-Overview of Logistic Regression Analysis-
+</a></li>
+<li>(StatQuest: Logistic Regression
+](<a href="https://youtu.be/yIYKR4sgzI8">https://youtu.be/yIYKR4sgzI8</a>)</li>
+<li>(StatQuest: Odds and Log(Odds), Clearly Explained!!!
+](<a href="https://youtu.be/ARfXDSkQf1Y">https://youtu.be/ARfXDSkQf1Y</a>)</li>
+</ul>
+<p>#Logistic regression</p>
+<h2 id="logistic-regression-overview">Logistic regression overview</h2>
+<p>Logistic regression is an algorithm often used to estimate the probability that a given data will belong to a particular class.</p>
+<p>A normal linear regression model is used when predicting that the objective variable is quantitative (such as sales of a store in a month), but the objective variable is qualitative (whether this email is spam or not). , And whether the blood type is A or not), the model cannot be directly applied. A generalized linear model (GLM) is an extension of such a method so that the linear regression concept can be applied even if the objective variable is a qualitative variable.</p>
+<p>Logistic regression itself is expressed by the following formula.
+($\beta$ is a parameter, $p$ is the probability of being output)</p>
+<pre><code class="language-math" data-lang="math">
+\log(\frac{p}{1-p})=\beta_{0} + \beta_{1}x_{1} + \beta_{2}x_{2} + ...+ \beta_{n} x_{n}
+
+</code></pre><p>The concept of odds and logit transformation, which is a prerequisite for understanding this, is summarized below.</p>
+<h2 id="odds">odds</h2>
+<h2 id="overview-of-odds">Overview of odds</h2>
+<p>The idea that comes up when doing logistic analysis is called &ldquo;odds&rdquo;.
+Odds are expressed as the ratio of the probability that an event will occur to the probability that it will not occur. If the probability that a certain event occurs is put as $p$, it is expressed by the following formula.</p>
+<pre><code class="language-math" data-lang="math">
+\frac{p}{1-p}
+
+</code></pre><p>Consider the following case as a concrete example.
+Consider the odds when your team wins one and the other team wins four, assuming five baseball games. Then you can find the odds as follows:</p>
+<pre><code class="language-math" data-lang="math">
+\frac{\frac{1}{5}}{1-\frac{1}{5}}=0.25
+
+</code></pre><h3 id="log-odds">Log odds</h3>
+<p>Often the logarithm of the above odds is used for calculation. What can be expressed by taking the logarithm of the odds is explained below.</p>
+<p>In considering the significance of taking the logarithm of odds, consider two patterns of odds: when your team is very weak and when your team is very strong.</p>
+<h4 id="when-my-team-is-very-weak">When my team is very weak</h4>
+<p>When your team is very weak, the odds will be <strong>closer and closer to 0</strong>. You can also see that <strong>on the contrary, it is not negative from 0 mathematically</strong>.</p>
+<p>・When 1 win and 8 losses</p>
+<pre><code class="language-math" data-lang="math">
+\frac{\frac{1}{9}}{1-\frac{1}{9}}=0.125
+
+</code></pre><p>・When 1 win and 16 losses</p>
+<pre><code class="language-math" data-lang="math">
+\frac{\frac{1}{17}}{1-\frac{1}{17}}=0.062
+
+</code></pre><h4 id="when-my-team-is-very-strong">When my team is very strong</h4>
+<p>On the contrary, when your team is very strong, you will find that odds increase from 1 to infinity.</p>
+<p>・When 8 wins and 1 loss</p>
+<pre><code class="language-math" data-lang="math">
+\frac{\frac{8}{9}}{1-\frac{8}{9}}=8
+
+</code></pre><p>・16 wins and 1 loss</p>
+<pre><code class="language-math" data-lang="math">
+\frac{\frac{16}{17}}{1-\frac{16}{17}}=16
+
+</code></pre><p>Looking at the above two examples, <strong>The odds when my team is weak are between 0 and 1, whereas the odds when it is strong is 1 to ∞, so the scale is correct and comparison is simple I see that you can&rsquo;t</strong>.
+The odds at 1 win and 8 losses are $0.25$, while the odds at 8 wins and 1 losses are $8$.</p>
+<h3 id="logarithmic-scales">Logarithmic scales</h3>
+<p>In fact, we can solve the above scale problem by taking logarithm.</p>
+<p>・Logarithm for odds at 1 win and 8 losses</p>
+<pre><code class="language-math" data-lang="math">
+\log(0.25)\fallingdotseq-2.079
+
+</code></pre><p>・Logarithm for odds when 8 wins and 1 loss</p>
+<pre><code class="language-math" data-lang="math">
+\log(8)\fallingdotseq2.079
+
+</code></pre><p>It is very important in logistic regression to get the same scale by taking logarithms.</p>
+<h2 id="logit-conversion">Logit conversion</h2>
+<p>Logistic regression computes a weighted sum of explanatory variables (plus a bias term) like a normal linear regression model, but its **output returns the logit transformed version of the result rather than the direct result. .. And the **logit transformation of the objective variable is equal to <strong>logarithm of the odds of the objective variable</strong> explained earlier.</p>
+<pre><code class="language-math" data-lang="math">
+\log(\frac{p}{1-p})
+
+</code></pre><p>Logistic regression is a regression in which the probability is taken as the objective variable, but the probability falls within the range of 0 to 1, so it is inconvenient to apply it to ordinary linear regression. ** By performing logit conversion, it is possible to convert from -∞ to ∞, thus eliminating inconvenience. **</p>
+<p>The logistic regression equation can be expressed as follows.</p>
+<pre><code class="language-math" data-lang="math">
+\log(\frac{p}{1-p})=\beta_{0} + \beta_{1}x_{1} + \beta_{2}x_{2} + ...+ \beta_{n} x_{n}
+
+</code></pre><p>Below is a plot of probability (p) on the y-axis and logit transformed value (logit) on the x-axis.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">logit</span>(x):
+    <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>log(p<span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>p))
+
+x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">0.001</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0.001</span>)
+y <span style="color:#f92672">=</span> logit(x)
+
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;logit&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;p&#34;</span>)
+plt<span style="color:#f92672">.</span>plot(y, p)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/199cacec-cd96-85d5-c4eb-b7149739f589.png" alt="Download (2).png"></p>
+<p>When logit is 0, the probability p is 0.5. The change of p is large around 0 of the logit, and the change of p becomes gentle as the logit moves away from 0. No matter how large the logit is, p will never exceed 1, and no matter how small the logit will be, it will never become smaller than p.</p>
+<h2 id="logit-inverse-conversion">Logit inverse conversion</h2>
+<p>It is also possible to convert the logit-converted value above to a probability value using the following formula.</p>
+<pre><code class="language-math" data-lang="math">
+p = \frac{\exp(logit)}{1+\exp(logit)}
+
+</code></pre><p>The above formula can be derived as follows.</p>
+<pre><code class="language-math" data-lang="math">{\begin{eqnarray*}
+
+logit &amp;=&amp; \log(\frac{p}{1-p})\\
+\exp(logit) &amp;=&amp; \frac{p}{1-p}\\
+p(1+\exp(logit)) &amp;=&amp; \exp(logit)\\
+p &amp;=&amp; \frac{\exp(logit)}{1+\exp(logit)}\\
+
+\end{eqnarray*}}
+
+</code></pre><p>Predicted values obtained by logistic regression can be converted into probability values by using the logit inverse transformation.</p>
+<p>#Next
+This time, I have summarized the knowledge that is a prerequisite for understanding logistic regression. Next, we will summarize how to find the optimum parameters (coefficients) in logistic regression.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Annotate your own data to train Mask R-CNN | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Annotate your own data to train Mask R-CNN</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 6, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch">PyTorch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mask-r-cnn">mask-r-cnn</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/labelme">labelme</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/instancesegmentation">InstanceSegmentation</a></code></small>
+
+</p>
+<pre><code>To do **Instance Segmentation** (object detection + segmentation)
+</code></pre>
+<ul>
+<li>Own data <strong>Annotation</strong></li>
+<li>Learn <strong>Mask R-CNN</strong>
+I did that, but I couldn&rsquo;t find any other useful articles, so I had a hard time
+I will share the steps I took, but only about notes.</li>
+</ul>
+<p>The explanation of Mask R-CNN is omitted.
+Please refer to the following.
+<a href="https://qiita.com/arutema47/items/8ff629a1516f7fd485f9">Introduction to object detection using the latest Region CNN(R-CNN) ~What is object detection? R-CNN, Fast R-CNN, Faster R-CNN, Mask R-CNN~</a></p>
+<p>The implementation of Mask R-CNN uses the following repositories.
+<a href="https://github.com/facebookresearch/maskrcnn-benchmark">https://github.com/facebookresearch/maskrcnn-benchmark</a></p>
+<p>Data creation with # Labelme</p>
+<p><a href="https://github.com/wkentaro/labelme">https://github.com/wkentaro/labelme</a>
+Basically it is as above <code>README.md</code>
+I will summarize it below.</p>
+<h2 id="install">Install</h2>
+<p>I can enter it with <code>$ pip install labelme</code>, but I will use <code>git clone</code> because I will use a script for data conversion later</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.sh" data-lang=".sh">$ git clone https://github.com/wkentaro/labelme.git
+$ cd labelme
+$ pip install -e.
+</code></pre></div><h2 id="start-up">Start-up</h2>
+<p>Create a <code>class.txt</code> that lists the class names with line breaks. An error may occur during data conversion, so add <code>__ignore__</code> to the first line.
+Example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-classes.txt" data-lang="classes.txt">__ignore__
+person
+bicycle
+car
+...
+</code></pre></div><p>Start labelme with the following command</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.sh" data-lang=".sh">$ labelme &lt;data folder path&gt; --labels &lt;classes.txt path&gt; --nodata
+</code></pre></div><h2 id="annotation">Annotation</h2>
+<p>The following sites are helpful. It&rsquo;s very easy to annotate.
+<a href="https://qiita.com/kouki_outstand/items/7b7597f271beca0051e5">Semantic segmentation annotation tool labelme</a></p>
+<h2 id="data-format-conversion">Data format conversion</h2>
+<p>Convert the created annotation data and original image for Mask R-CNN.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.sh" data-lang=".sh">$ cd labelme/examplts/instance_segmentation
+$ ./labelme2coco.py &lt;data folder path&gt; &lt;create directory name&gt; --labels &lt;classes.txt&gt;
+</code></pre></div><p>by this
+<code>&lt;Created directory name&gt;/JPEGImages</code> &mdash; directory containing images
+<code>&lt;Created directory name&gt;/annotations.json</code> ・・・ json file with annotation information
+will be created</p>
+<p>train # maskrcnn</p>
+<h2 id="install-1">Install</h2>
+<p><a href="https://github.com/facebookresearch/maskrcnn-benchmark">https://github.com/facebookresearch/maskrcnn-benchmark</a>
+Install the above according to <code>README.md</code></p>
+<p>The following articles will be helpful.
+<a href="https://qiita.com/kuroyagi/items/e66ca85f8d118c07eb95#7-%E8%A8%93%E7%B7%B4%E3%81%97%E3%81%9F%E7%B5%90%E6%9E%9C%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%E8%87%AA%E5%88%86%E3%81%A7%E6%8E%A8%E8%AB%96">Pytorch 1.1+Mask RCNN own data training (1)</a></p>
+<h2 id="data-placement">Data placement</h2>
+<p>Place the data in a position where maskrcnn can read it</p>
+<p>Created above
+<code>JPEGImages</code>,
+<code>annotations.json</code>
+To
+<code>maskrcnn_benchmark/datasets/&lt;new directory name&gt;/</code>
+set on</p>
+<h2 id="data-registration">Data registration</h2>
+<p>Add the following to <code>DATASETS</code> in <code>maskrcnn_benchmark/config/paths_catalog.py</code></p>
+<p>Please include <strong>COCO</strong> in <strong>&ldquo;new data name&rdquo;</strong> to read that it is in COCO format.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.json" data-lang=".json"><span style="color:#e6db74">&#34;New data name&#34;</span><span style="color:#960050;background-color:#1e0010">:</span> {
+    <span style="color:#f92672">&#34;img_dir&#34;</span>: <span style="color:#e6db74">&#34;&lt;new directory name&gt;&#34;</span>
+    <span style="color:#e6db74">&#34;ann_file&#34;</span>: <span style="color:#e6db74">&#34;&lt;new directory name&gt;/annotations.json&#34;</span>
+}
+</code></pre></div><h2 id="learning-execution">Learning execution</h2>
+<p>With the above processing, please register the data for ** learning **, ** test **.</p>
+<p>You should be able to start learning with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.sh" data-lang=".sh">$ python tools/train_net.py --config-file configs/e2e_mask_rcnn_R_50_FPN_1x.yaml DATASETS.TRAIN <span style="color:#e6db74">&#34;(\&#34;&lt;new data name (for learning)&gt;\&#34;,)&#34;</span> DATASETS.TEST <span style="color:#e6db74">&#34;(\&#34;&lt;new data name( For testing)&gt;\&#34;,)&#34;</span>
+</code></pre></div><p>By specifying <code>--config-file</code> from <code>configs/</code>, you can specify config such as network structure.
+If you want to change the <strong>learning rate</strong> or <strong>batch size</strong>, you can change it by writing it at the time of execution</p>
+<p>Example:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.py" data-lang=".py"><span style="color:#960050;background-color:#1e0010">$</span> python tools<span style="color:#f92672">/</span>train_net<span style="color:#f92672">.</span>py <span style="color:#f92672">--</span>config<span style="color:#f92672">-</span>file configs<span style="color:#f92672">/</span>e2e_mask_rcnn_R_50_FPN_1x<span style="color:#f92672">.</span>yaml DATASETS<span style="color:#f92672">.</span>TRAIN <span style="color:#e6db74">&#34;(</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">&lt;new data name (for learning)&gt;</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">,)&#34;</span> DATASETS<span style="color:#f92672">.</span>TEST <span style="color:#e6db74">&#34;(</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">&lt;new data name( )&gt;</span><span style="color:#ae81ff">\&#34;</span><span style="color:#e6db74">,)&#34;</span> SOLVER<span style="color:#f92672">.</span>BASE_LR <span style="color:#ae81ff">0.0025</span> SOLVER<span style="color:#f92672">.</span>IMS_PER_BATCH <span style="color:#ae81ff">2</span> TEST<span style="color:#f92672">.</span>IMS_PER_BATCH <span style="color:#ae81ff">1</span>
+</code></pre></div><p><code>SOLVER.BASE_LR</code>: Learning rate at the start of learning (decreasing)
+<code>SOLVER.IMS_PER_BATCH</code>: Batch size at learning
+<code>TEST.IMS_PER_BATCH</code>: Batch size at test</p>
+<p>All parameters are
+<a href="https://github.com/facebookresearch/maskrcnn-benchmark/blob/master/maskrcnn_benchmark/config/defaults.py">maskrcnn_benchmark/config/defaults.py</a>
+It is written in.</p>
+<h1 id="important-point">important point</h1>
+<h3 id="another-object-with-the-same-label-is-recognized-as-one-object">Another object with the same label is recognized as one object</h3>
+<p>When converting the data of <code>labelme</code>, it is recognized as a single object by default.
+If you want them to be recognized separately, modify the <code>labelme2coco.py</code> according to the following.
+<a href="https://github.com/wkentaro/labelme/issues/419#issuecomment-511853597">https://github.com/wkentaro/labelme/issues/419#issuecomment-511853597</a></p>
+<h3 id="segmentation-is-only-applied-to-one-object">Segmentation is only applied to one object</h3>
+<p>It seems that labels are created for one object all depending on the version of <code>Pytorch</code> during learning.</p>
+<p><a href="https://github.com/facebookresearch/maskrcnn-benchmark/blob/57eec25b75144d9fb1a6857f32553e1574177daf/maskrcnn_benchmark/data/datasets/coco.py#L94">maskrcnn_benchmark/data/datasets/coco.py#L94</a>
+The behavior of may be unexpected
+<code>target = target.clip_to_image(remove_empty=True)</code>
+<code>target = target.clip_to_image(remove_empty=False)</code>
+Please change to.</p>
+<p>‥
+‥
+That&rsquo;s it.
+Thank you very much!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

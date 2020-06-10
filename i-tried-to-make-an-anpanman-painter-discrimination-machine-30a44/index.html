@@ -1,0 +1,1431 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to make an Anpanman painter discrimination machine | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to make an Anpanman painter discrimination machine</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 12, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning"> DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/anomaly-detection"> Anomaly detection</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow"> TensorFlow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/gan"> GAN</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>I thought about learning AI and making a simple application with the technology I learned,
+I tried to make something like the following.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543987/4adf2f0e-b02b-44e3-3b66-4d6dc22e254e.png" alt="anpanman_anomally_detection_gaiyou.png">
+The reason why I chose Anpanman was because it was a cartoon character that I could easily write.
+I wanted to handle GAN as a model, and that it is possible to detect abnormalities by learning only normal images
+I thought I would make it ANOGAN, but when I looked it up, it was called EfficientGAN in the high-speed version of ANOGAN.
+There seems to be something in it, so I chose it.
+Also, for simplicity, it was created on the premise that only Anpanman&rsquo;s face is identified.</p>
+<h5 id="flow">flow</h5>
+<ol>
+<li>Let AI learn normal images of Anpanman.</li>
+<li>Input normal image group and abnormal image group to AI and set the mean value of the average of each score
+Set as a threshold for distinguishing abnormal images.</li>
+<li>Actually input a handwritten image and let AI determine whether the picture is abnormal.</li>
+</ol>
+<h2 id="what-i-did">What I did</h2>
+<h4 id="create-data-set">Create data set</h4>
+<h6 id="learning-image">・Learning image</h6>
+<p>I collected Anpanman images by scraping from the net, processed the images and cut out only the face.
+Also, as described below, the background of the mobile image was gray, so to learn the background as well
+Extend the data of gray gradation using the following function.</p>
+<pre><code>from PIL import Image, ImageOps
+import numpy as np
+def make_gray_gradation(img, gradation_range=(230, 255)):
+    &quot;&quot;&quot;
+Convert the background of the input image into a gray gradation with a random degree
+    Input: Image file (can be color)
+    Output: Image file (image whose background is converted to gray gradation)
+
+    Pramater
+    img: Input image
+    gradation_range: Range of RGB values for gradation
+    &quot;&quot;&quot;
+    gra_range = np.random.randint(*gradation_range)
+    gray = ImageOps.grayscale(img)
+    output = ImageOps.colorize(gray, black=(0, 0, 0), white=(gra_range, gra_range, gra_range))
+    return output
+</code></pre><h6 id="normal-image-group-and-abnormal-image-group">・Normal image group and abnormal image group</h6>
+<p>The normal image is Anpanman who wrote the illustration image on the drawing paper.
+I used the image of Anpanman, which I and alumni wrote, taken with a mobile phone.</p>
+<p>The abnormal image is an image of an illustration of Baikinman, Dokin, etc. taken with a mobile phone as above
+We used poor Anpanman images scraped online.</p>
+<h4 id="after-learning-input-normal-image-group-and-abnormal-image-group-compare-generated-images-score-distribution">After learning, input normal image group and abnormal image group, compare generated images, score distribution</h4>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543987/09aa886f-b2cd-b886-37c9-e086bb434da9.png" alt="score1_sejou_vs_ijou.png">
+Since the background of the input image taken with a mobile phone was gray, there is also a gray gradation in the learning image
+I put it in, but I could not reproduce it well.
+ㆍScore also depends on whether the background is generated well, rather than whether Anpanman&rsquo;s picture is written well
+It seems to have been decided, but the threshold for distinguishing abnormal images was not well decided.</p>
+<h4 id="countermeasure-binarization">Countermeasure binarization</h4>
+<p>As a countermeasure, all the backgrounds of all images are pure white, and the outline of the picture is similar to Anpanman
+Made it possible to distinguish whether it is an abnormal picture. The following is a function that binarizes the input image.</p>
+<pre><code>import os
+import scipy.stats as stats
+from PIL import Image
+def image_binarization(path_in, path_out, th_zero_num=1400, width=100, height=100):
+    &quot;&quot;&quot;
+    The contour of the input image is binarized in black and white and output. ‥
+    Input: Folder path where image files are saved (/ at the end) (Only images can be placed in the folder)
+    Output: Save the binarized image in the specified folder. Output the number of dots of 0 (outline) after binarization.
+
+    Pramater
+    path_in: Directory path containing the input images
+    path_out: Output directory path
+    th_zero_num: MIN value of the number of dots of 0 (outline) in the image (decrease when the outline is too dark)
+    width: width of the image
+    height: vertical size of the image
+    &quot;&quot;&quot;
+    list_in = os.listdir(path_in)
+    im_np_out = np.empty((0, width*height))
+    for img in list_in:
+        path_name = path_in+img
+        x_img = cv2.imread(path_name)
+        x_img = cv2.resize(x_img, (width, height))
+        x_img= cv2.cvtColor(x_img, cv2.COLOR_BGR2GRAY)
+        x_img = np.array(x_img)
+        x_img = x_img / 255.0
+        x_img = x_img.reshape((1, width, height))
+        x_img = x_img.reshape(1, width*height)
+        m = stats.mode(x_img)
+        max_hindo = m.mode[0][0]
+        for c in reversed(range(50)):
+            th = (c+1)*0.01
+            th_0_1 = max_hindo-th
+            x_img_ = np.where(x_img&gt;th_0_1, 1, 0)
+            if (np.count_nonzero(x_img_ == 0))&gt;th_zero_num:
+                break
+        display(np.count_nonzero(x_img_ == 0))
+        x_img = x_img_.reshape(width, height)
+        x_img = (x_img * 2.0)-1.0
+        
+        img_np_255 = (x_img + 1.0) * 127.5
+        img_np_255_mod1 = np.maximum(img_np_255, 0)
+        img_np_255_mod1 = np.minimum(img_np_255_mod1, 255)
+        img_np_uint8 = img_np_255_mod1.astype(np.uint8)
+        image = Image.fromarray(img_np_uint8)
+        image.save(path_out+img, quality=95)
+</code></pre><h4 id="after-taking-measures-input-normal-image-group-and-abnormal-image-group-compare-generated-images-score-distribution">After taking measures, input normal image group and abnormal image group, compare generated images, score distribution</h4>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543987/3003890c-e3e8-3a28-9c86-fe46477a8a32.png" alt="score2_sejou_vs_ijou.png">
+The score distributions have been divided to some extent between the correct answer image and the abnormal image, so for the time being, roughly
+It seems that you can decide the threshold that separates normal and abnormal. (The threshold was set at 0.40372)</p>
+<h4 id="determine-if-the-input-anpanman-image-is-normal-or-abnormal">Determine if the input Anpanman image is normal or abnormal</h4>
+<h6 id="input-image">Input image</h6>
+<p>Enter the Anpanman image with only 5 illustrations watermarked,
+Others, I entered 14 poor Anpanman scraped online.
+(Input after binarizing using the binarizing function above)</p>
+<h4 id="judgment-result">Judgment result</h4>
+<p>ㆍThe discrimination result is indicated by the color of the background of the score display frame. A blue background is a normal image, and a red background is an abnormal image.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543987/3eebe4fb-78ec-ba52-cedd-71616720fcbf.png" alt="resultImage_anpanman_test.png">
+The result is that Anpanman with the illustration as a watermark is judged as normal on 4/5.
+▽ Other scraped poor Anpanman is abnormal judgment on 8/14
+Correct answer rate 12/19 = 63.15%. I need to improve the accuracy.</p>
+<h4 id="lessons-learned">Lessons learned</h4>
+<ul>
+<li>Although I took a picture drawn on pure white drawing paper, the actual image had a gray background
+By not only feeling the influence of light, but devising a method such as binarization to limit the conditions to easier learning
+I learned that you can improve accuracy.
+・In order to improve the accuracy of GAN, add noise to GrobalAvaragePooling, LeakyReLu and layers, etc.
+I think it was good that I could try various accuracy improvement methods. (Although the result did not improve much)</li>
+</ul>
+<h4 id="from-now-on">from now on</h4>
+<p>I would like to investigate and try various GAN accuracy improvement measures.
+Also, I was using Google Colab and EC2 of AWS, but in the future various things such as AWS SageMaker and GCP
+I would like to study using the cloud.</p>
+<h4 id="code">code</h4>
+<details><summary>train_BiGAN.py</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-train_BiGAN.py" data-lang="train_BiGAN.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">import</span> utility <span style="color:#f92672">as</span> Utility
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">from</span> model_BiGAN <span style="color:#f92672">import</span> BiGAN <span style="color:#66d9ef">as</span> Model
+<span style="color:#f92672">from</span> make_datasets_TRAIN <span style="color:#f92672">import</span> Make_datasets_TRAIN <span style="color:#66d9ef">as</span> Make_datasets
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">parser</span>():
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser(description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;train LSGAN&#39;</span>)parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--batch_size&#39;</span>, <span style="color:#e6db74">&#39;-b&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Number of images in each mini-batch&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--log_file_name&#39;</span>, <span style="color:#e6db74">&#39;-lf&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;anpanman&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;log file name&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--epoch&#39;</span>, <span style="color:#e6db74">&#39;-e&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">1001</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;epoch&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--file_train_data&#39;</span>, <span style="color:#e6db74">&#39;-ftd&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../Train_Data/191103/&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;train data&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--test_true_data&#39;</span>, <span style="color:#e6db74">&#39;-ttd&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../Valid_True_Data/191103/&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;test of true_data&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--test_false_data&#39;</span>, <span style="color:#e6db74">&#39;-tfd&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../Valid_False_Data/191103/&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;test of false_data&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--valid_span&#39;</span>, <span style="color:#e6db74">&#39;-vs&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;validation span&#39;</span>)
+
+    <span style="color:#66d9ef">return</span> parser<span style="color:#f92672">.</span>parse_args()
+
+args <span style="color:#f92672">=</span> parser()
+
+<span style="color:#75715e">#global variants</span>
+BATCH_SIZE <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>batch_size
+LOGFILE_NAME <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>log_file_name
+EPOCH <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>epoch
+FILE_NAME <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>file_train_data
+TRUE_DATA <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>test_true_data
+FALSE_DATA <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>test_false_data
+IMG_WIDTH <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+IMG_HEIGHT <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+IMG_CHANNEL <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+BASE_CHANNEL <span style="color:#f92672">=</span> <span style="color:#ae81ff">32</span>
+NOISE_UNIT_NUM <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span>
+NOISE_MEAN <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+NOISE_STDDEV <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>
+TEST_DATA_SAMPLE <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span>
+L2_NORM <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.001</span>
+KEEP_PROB_RATE <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span>
+SEED <span style="color:#f92672">=</span> <span style="color:#ae81ff">1234</span>
+SCORE_ALPHA <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.9</span> <span style="color:#75715e"># using for cost function</span>
+VALID_SPAN <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>valid_span
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(seed<span style="color:#f92672">=</span>SEED)
+BOARD_DIR_NAME <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./tensorboard/&#39;</span> <span style="color:#f92672">+</span> LOGFILE_NAME
+OUT_IMG_DIR <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./out_images_BiGAN&#39;</span> <span style="color:#75715e">#output image file</span>
+out_model_dir <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./out_models_BiGAN/&#39;</span> <span style="color:#75715e">#output model_ckpt file</span>
+<span style="color:#75715e">#Load_model_dir = &#39;../model_ckpt/&#39; #Load model_ckpt file</span>
+OUT_HIST_DIR <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./out_score_hist_BiGAN&#39;</span> <span style="color:#75715e">#output histogram file</span>
+CYCLE_LAMBDA <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>
+
+<span style="color:#66d9ef">try</span>:
+    os<span style="color:#f92672">.</span>mkdir(<span style="color:#e6db74">&#39;log&#39;</span>)
+    os<span style="color:#f92672">.</span>mkdir(<span style="color:#e6db74">&#39;out_graph&#39;</span>)
+    os<span style="color:#f92672">.</span>mkdir(OUT_IMG_DIR)
+    os<span style="color:#f92672">.</span>mkdir(out_model_dir)
+    os<span style="color:#f92672">.</span>mkdir(OUT_HIST_DIR)
+    os<span style="color:#f92672">.</span>mkdir(<span style="color:#e6db74">&#39;./out_images_Debug&#39;</span>) <span style="color:#75715e">#for debug</span>
+<span style="color:#66d9ef">except</span>:
+    <span style="color:#66d9ef">pass</span>
+
+make_datasets <span style="color:#f92672">=</span> Make_datasets(FILE_NAME, TRUE_DATA, FALSE_DATA, IMG_WIDTH, IMG_HEIGHT, SEED)
+model <span style="color:#f92672">=</span> Model(NOISE_UNIT_NUM, IMG_CHANNEL, SEED, BASE_CHANNEL, KEEP_PROB_RATE)
+
+z_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, NOISE_UNIT_NUM], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;z_&#39;</span>) <span style="color:#75715e">#noise to generator</span>
+x_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNEL], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;x_&#39;</span>) <span style="color:#75715e">#image to classifier</span>
+d_dis_f_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, <span style="color:#ae81ff">1</span>], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;d_dis_g_&#39;</span>) <span style="color:#75715e">#target of discriminator related to generator</span>
+d_dis_r_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, <span style="color:#ae81ff">1</span>], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;d_dis_r_&#39;</span>) <span style="color:#75715e">#target of discriminator related to real image</span>
+is_training_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>bool, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;is_training&#39;</span>)
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;encoder_model&#39;</span>):
+    z_enc <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>encoder(x_, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>is_training_)
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;decoder_model&#39;</span>):
+    x_dec <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>decoder(z_, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>is_training_)
+    x_z_x <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>decoder(z_enc, reuse<span style="color:#f92672">=</span>True, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e"># for cycle consistency</span>
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;discriminator_model&#39;</span>):
+    <span style="color:#75715e">#stream around discriminator</span>
+    drop3_r, logits_r <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>discriminator(x_, z_enc, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e">#real pair</span>
+    drop3_f, logits_f <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>discriminator(x_dec, z_, reuse<span style="color:#f92672">=</span>True, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e">#real pair</span>
+    drop3_re, logits_re <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>discriminator(x_z_x, z_enc, reuse<span style="color:#f92672">=</span>True, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e">#fake pair</span>
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;loss&#34;</span>):
+    loss_dis_f <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>square(logits_f <span style="color:#f92672">-</span> d_dis_f_), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Loss_dis_gen&#39;</span>) <span style="color:#75715e">#loss related to generator</span>
+    loss_dis_r <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>square(logits_r <span style="color:#f92672">-</span> d_dis_r_), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Loss_dis_rea&#39;</span>) <span style="color:#75715e">#loss related to real image</span>
+
+    <span style="color:#75715e">#total loss</span>
+    loss_dis_total <span style="color:#f92672">=</span> loss_dis_f <span style="color:#f92672">+</span> loss_dis_r
+    loss_dec_total <span style="color:#f92672">=</span> loss_dis_f
+    loss_enc_total <span style="color:#f92672">=</span> loss_dis_r
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;score&#34;</span>):
+    l_g <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>abs(x_ <span style="color:#f92672">-</span> x_z_x), axis<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>))
+    l_FM <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>abs(drop3_r <span style="color:#f92672">-</span> drop3_re), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    score_A <span style="color:#f92672">=</span>  SCORE_ALPHA <span style="color:#f92672">*</span> l_g <span style="color:#f92672">+</span> (<span style="color:#ae81ff">1.0</span> <span style="color:#f92672">-</span> SCORE_ALPHA) <span style="color:#f92672">*</span> l_FM
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;optional_loss&#34;</span>):
+    loss_dec_opt <span style="color:#f92672">=</span> loss_dec_total <span style="color:#f92672">+</span> CYCLE_LAMBDA <span style="color:#f92672">*</span> l_g
+    loss_enc_opt <span style="color:#f92672">=</span> loss_enc_total <span style="color:#f92672">+</span> CYCLE_LAMBDA <span style="color:#f92672">*</span> l_g
+
+tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>scalar(<span style="color:#e6db74">&#39;loss_dis_total&#39;</span>, loss_dis_total)
+tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>scalar(<span style="color:#e6db74">&#39;loss_dec_total&#39;</span>, loss_dec_total)
+tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>scalar(<span style="color:#e6db74">&#39;loss_enc_total&#39;</span>, loss_enc_total)
+merged <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>merge_all()
+
+<span style="color:#75715e"># t_vars = tf.trainable_variables()</span>
+dec_vars <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_collection(tf<span style="color:#f92672">.</span>GraphKeys<span style="color:#f92672">.</span>TRAINABLE_VARIABLES, scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;decoder&#34;</span>)
+enc_vars <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_collection(tf<span style="color:#f92672">.</span>GraphKeys<span style="color:#f92672">.</span>TRAINABLE_VARIABLES, scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;encoder&#34;</span>)
+dis_vars <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_collection(tf<span style="color:#f92672">.</span>GraphKeys<span style="color:#f92672">.</span>TRAINABLE_VARIABLES, scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;discriminator&#34;</span>)
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;train&#34;</span>):
+    train_dis <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0001</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_dis_total, var_list<span style="color:#f92672">=</span>dis_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_dis&#39;</span>)
+    train_dec <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.01</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_dec_total, var_list<span style="color:#f92672">=</span>dec_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_dec&#39;</span>)
+    train_enc <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_enc_total, var_list<span style="color:#f92672">=</span>enc_vars, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_enc&#39;</span>)
+    train_dec_opt <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_dec_opt, var_list<span style="color:#f92672">=</span>dec_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_dec&#39;</span>)
+    train_enc_opt <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_enc_opt, var_list<span style="color:#f92672">=</span>enc_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_enc&#39;</span>)
+
+sess <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>Session()
+
+ckpt <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>get_checkpoint_state(out_model_dir)
+saver <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>Saver()
+<span style="color:#66d9ef">if</span> ckpt: <span style="color:#75715e"># if there is a checkpoint</span>
+    last_model <span style="color:#f92672">=</span> ckpt<span style="color:#f92672">.</span>model_checkpoint_path <span style="color:#75715e"># Path to last saved model</span>
+    saver<span style="color:#f92672">.</span>restore(sess, last_model) <span style="color:#75715e"># read variable data</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;load &#34;</span><span style="color:#f92672">+</span> last_model)
+<span style="color:#66d9ef">else</span>: <span style="color:#75715e">#When there is no saved data</span>
+    <span style="color:#75715e">#init = tf.initialize_all_variables()</span>
+    sess<span style="color:#f92672">.</span>run(tf<span style="color:#f92672">.</span>global_variables_initializer())
+
+summary_writer <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>FileWriter(BOARD_DIR_NAME, sess<span style="color:#f92672">.</span>graph)
+
+log_list <span style="color:#f92672">=</span> []
+log_list<span style="color:#f92672">.</span>append([<span style="color:#e6db74">&#39;epoch&#39;</span>,<span style="color:#e6db74">&#39;AUC&#39;</span>])
+<span style="color:#75715e">#training loop</span>
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, EPOCH):
+    sum_loss_dis_f <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float32(<span style="color:#ae81ff">0</span>)
+    sum_loss_dis_r <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float32(<span style="color:#ae81ff">0</span>)
+    sum_loss_dis_total <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float32(<span style="color:#ae81ff">0</span>)
+    sum_loss_dec_total <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float32(<span style="color:#ae81ff">0</span>)
+    sum_loss_enc_total <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float32(<span style="color:#ae81ff">0</span>)
+
+    len_data <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>make_data_for_1_epoch()
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, len_data, BATCH_SIZE):
+        img_batch <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>get_data_for_1_batch(i, BATCH_SIZE)
+        z <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>make_random_z_with_norm(NOISE_MEAN, NOISE_STDDEV, len(img_batch), NOISE_UNIT_NUM)
+        tar_g_1 <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>make_target_1_0(<span style="color:#ae81ff">1.0</span>, len(img_batch)) <span style="color:#75715e">#1 -&gt; real</span>
+        tar_g_0 <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>make_target_1_0(<span style="color:#ae81ff">0.0</span>, len(img_batch)) <span style="color:#75715e">#0 -&gt; fake</span>
+
+        <span style="color:#75715e">#train discriminator</span>
+        sess<span style="color:#f92672">.</span>run(train_dis, feed_dict<span style="color:#f92672">=</span>{z_:z, x_: img_batch, d_dis_f_: tar_g_0, d_dis_r_: tar_g_1, is_training_:True})
+
+        <span style="color:#75715e">#train decoder</span>
+        sess<span style="color:#f92672">.</span>run(train_dec, feed_dict<span style="color:#f92672">=</span>{z_:z, d_dis_f_: tar_g_1, is_training_:True})
+        <span style="color:#75715e"># sess.run(train_dec_opt, feed_dict={z_:z, x_: img_batch, d_dis_f_: tar_g_1, is_training_:True})</span>
+
+
+        <span style="color:#75715e">#train encoder</span>
+        sess<span style="color:#f92672">.</span>run(train_enc, feed_dict<span style="color:#f92672">=</span>{x_:img_batch, d_dis_r_: tar_g_0, is_training_:True})
+        <span style="color:#75715e"># sess.run(train_enc_opt, feed_dict={x_:img_batch, d_dis_r_: tar_g_0, is_training_:True})</span>
+
+
+        <span style="color:#75715e"># loss for discriminator</span>
+        loss_dis_total_, loss_dis_r_, loss_dis_f_ <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run([loss_dis_total, loss_dis_r, loss_dis_f],
+                                                             feed_dict<span style="color:#f92672">=</span>{z_: z, x_: img_batch, d_dis_f_: tar_g_0,
+                                                                        d_dis_r_: tar_g_1, is_training_:False})
+
+        <span style="color:#75715e">#loss for decoder</span>
+        loss_dec_total_ <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(loss_dec_total, feed_dict<span style="color:#f92672">=</span>{z_: z, d_dis_f_: tar_g_1, is_training_:False})
+
+        <span style="color:#75715e">#loss for encoder</span>
+        loss_enc_total_ <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(loss_enc_total, feed_dict<span style="color:#f92672">=</span>{x_: img_batch, d_dis_r_: tar_g_0, is_training_:False})
+
+        <span style="color:#75715e">#for tensorboard</span>
+        merged_ <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(merged, feed_dict<span style="color:#f92672">=</span>{z_:z, x_: img_batch, d_dis_f_: tar_g_0, d_dis_r_: tar_g_1, is_training_:False})
+
+        summary_writer<span style="color:#f92672">.</span>add_summary(merged_, epoch)
+
+        sum_loss_dis_f <span style="color:#f92672">+=</span> loss_dis_f_
+        sum_loss_dis_r <span style="color:#f92672">+=</span> loss_dis_r_
+        sum_loss_dis_total <span style="color:#f92672">+=</span> loss_dis_total_
+        sum_loss_dec_total <span style="color:#f92672">+=</span> loss_dec_total_
+        sum_loss_enc_total <span style="color:#f92672">+=</span> loss_enc_total_
+
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;---------------------------------------------------- -----------------------&#34;</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;epoch = {:}, Encoder Total Loss = {:.4f}, Decoder Total Loss = {:.4f}, Discriminator Total Loss = {:.4f}&#34;</span><span style="color:#f92672">.</span>format(
+        epoch, sum_loss_enc_total <span style="color:#f92672">/</span> len_data, sum_loss_dec_total <span style="color:#f92672">/</span> len_data, sum_loss_dis_total <span style="color:#f92672">/</span> len_data))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Discriminator Real Loss = {:.4f}, Discriminator Generated Loss = {:.4f}&#34;</span><span style="color:#f92672">.</span>format(
+        sum_loss_dis_r <span style="color:#f92672">/</span> len_data, sum_loss_dis_r <span style="color:#f92672">/</span> len_data))
+
+    <span style="color:#66d9ef">if</span> epoch <span style="color:#f92672">%</span>VALID_SPAN <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#75715e"># score_A_list = []</span>
+        score_A_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">2</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+        val_data_num <span style="color:#f92672">=</span> len(make_datasets<span style="color:#f92672">.</span>valid_data)
+        val_true_data_num <span style="color:#f92672">=</span> len(make_datasets<span style="color:#f92672">.</span>valid_true_np)
+        val_false_data_num <span style="color:#f92672">=</span> len(make_datasets<span style="color:#f92672">.</span>valid_false_np)
+
+        img_batch_1, _ <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>get_valid_data_for_1_batch(<span style="color:#ae81ff">0</span>, val_true_data_num)
+        img_batch_0, _ <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>get_valid_data_for_1_batch(val_data_num<span style="color:#f92672">-</span>val_false_data_num, val_true_data_num)
+
+        x_z_x_1 <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(x_z_x, feed_dict<span style="color:#f92672">=</span>{x_:img_batch_1, is_training_:False})
+        x_z_x_0 <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(x_z_x, feed_dict<span style="color:#f92672">=</span>{x_:img_batch_0, is_training_:False})
+        
+        score_A_1 <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(score_A, feed_dict<span style="color:#f92672">=</span>{x_:img_batch_1, is_training_:False})
+        score_A_0 <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(score_A, feed_dict<span style="color:#f92672">=</span>{x_:img_batch_0, is_training_:False})
+        
+        score_A_re_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>reshape(score_A_1, (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))
+        score_A_re_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>reshape(score_A_0, (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))
+        
+        tars_batch_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(val_true_data_num)
+        tars_batch_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(val_false_data_num)
+        tars_batch_re_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>reshape(tars_batch_1, (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))tars_batch_re_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>reshape(tars_batch_0, (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))
+
+        score_A_np_1_tmp <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((score_A_re_1, tars_batch_re_1), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        score_A_np_0_tmp <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((score_A_re_0, tars_batch_re_0), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        score_A_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((score_A_np_1_tmp, score_A_np_0_tmp), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+        <span style="color:#75715e">#print(score_A_np)</span>
+        tp, fp, tn, fn, precision, recall <span style="color:#f92672">=</span> Utility<span style="color:#f92672">.</span>compute_precision_recall(score_A_np)
+        auc <span style="color:#f92672">=</span> Utility<span style="color:#f92672">.</span>make_ROC_graph(score_A_np, <span style="color:#e6db74">&#39;out_graph/&#39;</span> <span style="color:#f92672">+</span> LOGFILE_NAME, epoch)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;tp:{}, fp:{}, tn:{}, fn:{}, precision:{:.4f}, recall:{:.4f}, AUC:{:.4f}&#34;</span><span style="color:#f92672">.</span>format(tp, fp, tn, fn, precision, recall, auc))
+        log_list<span style="color:#f92672">.</span>append([epoch, auc])
+        
+        Utility<span style="color:#f92672">.</span>make_score_hist(score_A_1, score_A_0, epoch, LOGFILE_NAME, OUT_HIST_DIR)
+        Utility<span style="color:#f92672">.</span>make_output_img(img_batch_1, img_batch_0, x_z_x_1, x_z_x_0, score_A_0, score_A_1, epoch, LOGFILE_NAME, OUT_IMG_DIR)
+                
+    <span style="color:#75715e">#after learning</span>
+    Utility<span style="color:#f92672">.</span>save_list_to_csv(log_list, <span style="color:#e6db74">&#39;log/&#39;</span> <span style="color:#f92672">+</span> LOGFILE_NAME <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_auc.csv&#39;</span>)
+
+<span style="color:#75715e">#saver2 = tf.train.Saver()</span>
+save_path <span style="color:#f92672">=</span> saver<span style="color:#f92672">.</span>save(sess, out_model_dir <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;anpanman_weight.ckpt&#39;</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Model saved in file: &#34;</span>, save_path)  
+</code></pre></div></div></details>
+<details><summary>model_BiGAN.py</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-model_BiGAN.py" data-lang="model_BiGAN.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#75715e"># import os</span>
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#75715e"># from PIL import Image</span>
+<span style="color:#75715e"># import utility as Utility</span>
+<span style="color:#75715e"># import argparse</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">BiGAN</span>():
+    <span style="color:#66d9ef">def</span> __init__(self, noise_unit_num, img_channel, seed, base_channel, keep_prob):
+        self<span style="color:#f92672">.</span>NOISE_UNIT_NUM <span style="color:#f92672">=</span> noise_unit_num <span style="color:#75715e"># 200</span>
+        self<span style="color:#f92672">.</span>IMG_CHANNEL <span style="color:#f92672">=</span> img_channel <span style="color:#75715e"># 1</span>
+        self<span style="color:#f92672">.</span>SEED <span style="color:#f92672">=</span> seed
+        np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(seed<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>SEED)
+        self<span style="color:#f92672">.</span>BASE_CHANNEL <span style="color:#f92672">=</span> base_channel <span style="color:#75715e"># 32</span>
+        self<span style="color:#f92672">.</span>KEEP_PROB <span style="color:#f92672">=</span> keep_prob
+
+                                
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">leaky_relu</span>(self, x, alpha):
+        <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu(x) <span style="color:#f92672">-</span> alpha <span style="color:#f92672">*</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu(<span style="color:#f92672">-</span>x)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">gaussian_noise</span>(self, input, std): <span style="color:#75715e">#used at discriminator</span>
+        noise <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>random_normal(shape<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>shape(input), mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span>std, dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32, seed<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>SEED)
+        <span style="color:#66d9ef">return</span> input <span style="color:#f92672">+</span> noise
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">conv2d</span>(self, input, in_channel, out_channel, k_size, stride, seed):
+        w <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;w&#39;</span>, [k_size, k_size, in_channel, out_channel],
+                              initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>random_normal_initializer
+                              (mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.02</span>, seed<span style="color:#f92672">=</span>seed), dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+        b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;b&#39;</span>, [out_channel], initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>constant_initializer(<span style="color:#ae81ff">0.0</span>))
+        conv <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>conv2d(input, w, strides<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>, stride, stride, <span style="color:#ae81ff">1</span>], padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SAME&#34;</span>, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;conv&#39;</span>) <span style="color:#f92672">+</span> b
+        <span style="color:#66d9ef">return</span> conv
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">conv2d_transpose</span>(self, input, in_channel, out_channel, k_size, stride, seed):
+        w <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;w&#39;</span>, [k_size, k_size, out_channel, in_channel],
+                              initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>random_normal_initializer
+                              (mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.02</span>, seed<span style="color:#f92672">=</span>seed), dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+        b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;b&#39;</span>, [out_channel], initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>constant_initializer(<span style="color:#ae81ff">0.0</span>))
+        out_shape <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>stack(
+                        [tf<span style="color:#f92672">.</span>shape(input)[<span style="color:#ae81ff">0</span>], tf<span style="color:#f92672">.</span>shape(input)[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>, tf<span style="color:#f92672">.</span>shape(input)[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>, tf<span style="color:#f92672">.</span>constant(out_channel)])
+        deconv <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>conv2d_transpose(input, w, output_shape<span style="color:#f92672">=</span>out_shape, strides<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>, stride, stride, <span style="color:#ae81ff">1</span>],
+                                                         padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SAME&#34;</span>) <span style="color:#f92672">+</span> b
+        <span style="color:#66d9ef">return</span> deconv
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">batch_norm</span>(self, input):
+        shape <span style="color:#f92672">=</span> input<span style="color:#f92672">.</span>get_shape()<span style="color:#f92672">.</span>as_list()
+        n_out <span style="color:#f92672">=</span> shape[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+        scale <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;scale&#39;</span>, [n_out], initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>constant_initializer(<span style="color:#ae81ff">1.0</span>))
+        beta <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;beta&#39;</span>, [n_out], initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>constant_initializer(<span style="color:#ae81ff">0.0</span>))
+        batch_mean, batch_var <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>moments(input, [<span style="color:#ae81ff">0</span>])
+        bn <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>batch_normalization(input, batch_mean, batch_var, beta, scale, <span style="color:#ae81ff">0.0001</span>, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;batch_norm&#39;</span>)
+        <span style="color:#66d9ef">return</span> bn
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fully_connect</span>(self, input, in_num, out_num, seed):
+        w <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;w&#39;</span>, [in_num, out_num], initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>random_normal_initializer
+        (mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.02</span>, seed<span style="color:#f92672">=</span>seed), dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+        b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;b&#39;</span>, [out_num], initializer<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>constant_initializer(<span style="color:#ae81ff">0.0</span>))
+        fc <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>matmul(input, w, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;fc&#39;</span>) <span style="color:#f92672">+</span> b
+        <span style="color:#66d9ef">return</span> fc
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">encoder</span>(self, x, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>False): <span style="color:#75715e">#x is expected [n, 28, 28, 1]</span>
+        <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;encoder&#39;</span>, reuse<span style="color:#f92672">=</span>reuse):
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer1&#34;</span>):  <span style="color:#75715e"># layer1 conv nx28x28x1 -&gt; nx14x14x32</span>
+                conv1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d(x, self<span style="color:#f92672">.</span>IMG_CHANNEL, self<span style="color:#f92672">.</span>BASE_CHANNEL, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer2&#34;</span>):  <span style="color:#75715e"># layer2 conv nx14x14x32 -&gt; nx7x7x64</span>
+                conv2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d(conv1, self<span style="color:#f92672">.</span>BASE_CHANNEL, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)
+                bn2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>batch_norm(conv2)
+                lr2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>leaky_relu(bn2, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer3&#34;</span>):  <span style="color:#75715e"># layer3 conv nx7x7x64 -&gt; nx4x4x128</span>
+                conv3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d(lr2, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)bn3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>batch_norm(conv3)
+                lr3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>leaky_relu(bn3, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer4&#34;</span>):  <span style="color:#75715e"># layer4 fc nx4x4x128 -&gt; nx200</span>
+                shape <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>shape(lr3)
+                <span style="color:#66d9ef">print</span>(shape[<span style="color:#ae81ff">1</span>])
+                reshape4 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(lr3, [shape[<span style="color:#ae81ff">0</span>], shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">*</span>shape[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">*</span>shape[<span style="color:#ae81ff">3</span>]])
+                fc4 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fully_connect(reshape4, <span style="color:#ae81ff">21632</span>, self<span style="color:#f92672">.</span>NOISE_UNIT_NUM, self<span style="color:#f92672">.</span>SEED)
+
+        <span style="color:#66d9ef">return</span> fc4
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">decoder</span>(self, z, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>False):  <span style="color:#75715e"># z is expected [n, 200]</span>
+        <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;decoder&#39;</span>, reuse<span style="color:#f92672">=</span>reuse):
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer1&#34;</span>):  <span style="color:#75715e"># layer1 fc nx200 -&gt; nx1024</span>
+                fc1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fully_connect(z, self<span style="color:#f92672">.</span>NOISE_UNIT_NUM, <span style="color:#ae81ff">1024</span>, self<span style="color:#f92672">.</span>SEED)
+                bn1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>batch_norm(fc1)
+                rl1 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu(bn1)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer2&#34;</span>):  <span style="color:#75715e"># layer2 fc nx1024 -&gt; nx6272</span>
+                fc2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fully_connect(rl1, <span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">25</span><span style="color:#f92672">*</span><span style="color:#ae81ff">25</span><span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">4</span>, self<span style="color:#f92672">.</span>SEED)
+                bn2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>batch_norm(fc2)
+                rl2 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu(bn2)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer3&#34;</span>):  <span style="color:#75715e"># layer3 deconv nx6272 -&gt; nx7x7x128 -&gt; nx14x14x64</span>
+                shape <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>shape(rl2)
+                reshape3 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(rl2, [shape[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">25</span>, <span style="color:#ae81ff">25</span>, <span style="color:#ae81ff">128</span>])
+                deconv3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d_transpose(reshape3, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">4</span>, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)
+                bn3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>batch_norm(deconv3)
+                rl3 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu(bn3)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;layer4&#34;</span>):  <span style="color:#75715e"># layer3 deconv nx14x14x64 -&gt; nx28x28x1</span>
+                deconv4 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d_transpose(rl3, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>IMG_CHANNEL, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)
+                tanh4 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>tanh(deconv4)
+
+        <span style="color:#66d9ef">return</span> tanh4
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">discriminator</span>(self, x, z, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>True): <span style="color:#75715e">#z[n, 200], x[n, 28, 28, 1]</span>
+        <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;discriminator&#39;</span>, reuse<span style="color:#f92672">=</span>reuse):
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;x_layer1&#34;</span>):  <span style="color:#75715e"># layer x1 conv [n, 28, 28, 1] -&gt; [n, 14, 14, 64]</span>
+                convx1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d(x, self<span style="color:#f92672">.</span>IMG_CHANNEL, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)
+                lrx1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>leaky_relu(convx1, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+                dropx1 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>dropout(lrx1, rate<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span> <span style="color:#f92672">-</span> self<span style="color:#f92672">.</span>KEEP_PROB, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;dropout&#39;</span>, training<span style="color:#f92672">=</span>is_training)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;x_layer2&#34;</span>):  <span style="color:#75715e"># layer x2 conv [n, 14, 14, 64] -&gt; [n, 7, 7, 64] -&gt; [n, 3136]</span>
+                convx2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2d(dropx1, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>BASE_CHANNEL<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">2</span>, self<span style="color:#f92672">.</span>SEED)
+                bnx2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>batch_norm(convx2)
+                lrx2 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>leaky_relu(bnx2, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+                dropx2 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>dropout(lrx2, rate<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span> <span style="color:#f92672">-</span> self<span style="color:#f92672">.</span>KEEP_PROB, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;dropout&#39;</span>, training<span style="color:#f92672">=</span>is_training)
+                shapex2 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>shape(dropx2)
+                reshape3 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(dropx2, [shapex2[<span style="color:#ae81ff">0</span>], shapex2[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">*</span>shapex2[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">*</span>shapex2[<span style="color:#ae81ff">3</span>]])
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;z_layer1&#34;</span>):  <span style="color:#75715e"># layer1 fc [n, 200] -&gt; [n, 512]</span>
+                fcz1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fully_connect(z, self<span style="color:#f92672">.</span>NOISE_UNIT_NUM, <span style="color:#ae81ff">512</span>, self<span style="color:#f92672">.</span>SEED)
+                lrz1 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>leaky_relu(fcz1, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+                dropz1 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>dropout(lrz1, rate<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span> <span style="color:#f92672">-</span> self<span style="color:#f92672">.</span>KEEP_PROB, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;dropout&#39;</span>, training<span style="color:#f92672">=</span>is_training)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;y_layer3&#34;</span>):  <span style="color:#75715e"># layer1 fc [n, 6272], [n, 1024]</span>
+                con3 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>concat([reshape3, dropz1], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+                fc3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fully_connect(con3, <span style="color:#ae81ff">40000</span><span style="color:#f92672">+</span><span style="color:#ae81ff">512</span>, <span style="color:#ae81ff">1024</span>, self<span style="color:#f92672">.</span>SEED)
+                lr3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>leaky_relu(fc3, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)
+                self<span style="color:#f92672">.</span>drop3 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>layers<span style="color:#f92672">.</span>dropout(lr3, rate<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span> <span style="color:#f92672">-</span> self<span style="color:#f92672">.</span>KEEP_PROB, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;dropout&#39;</span>, training<span style="color:#f92672">=</span>is_training)
+
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;y_fc_logits&#34;</span>):
+                self<span style="color:#f92672">.</span>logits <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>fully_connect(self<span style="color:#f92672">.</span>drop3, <span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">1</span>, self<span style="color:#f92672">.</span>SEED)
+
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>drop3, self<span style="color:#f92672">.</span>logits  
+</code></pre></div></div></details>
+<details><summary>make_datasets_TRAIN.py</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-make_datasets_TRAIN.py" data-lang="make_datasets_TRAIN.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> glob 
+<span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> random
+<span style="color:#75715e">#import cv2</span>
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">from</span> keras.preprocessing <span style="color:#f92672">import</span> image
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Make_datasets_TRAIN</span>():
+
+    <span style="color:#66d9ef">def</span> __init__(self, filename, true_data, false_data, img_width, img_height, seed):
+        self<span style="color:#f92672">.</span>filename <span style="color:#f92672">=</span> filename
+        self<span style="color:#f92672">.</span>true_data <span style="color:#f92672">=</span> true_data
+        self<span style="color:#f92672">.</span>false_data <span style="color:#f92672">=</span> false_data
+        self<span style="color:#f92672">.</span>img_width <span style="color:#f92672">=</span> img_width
+        self<span style="color:#f92672">.</span>img_height <span style="color:#f92672">=</span> img_height
+        self<span style="color:#f92672">.</span>seed <span style="color:#f92672">=</span> seed
+        x_train, x_valid_true, x_valid_false, y_train, y_valid_true, y_valid_false <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>read_DATASET(self<span style="color:#f92672">.</span>filename, self<span style="color:#f92672">.</span>true_data, self<span style="color:#f92672">.</span>false_data)
+        self<span style="color:#f92672">.</span>train_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((y_train<span style="color:#f92672">.</span>reshape(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>), x_train), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+        self<span style="color:#f92672">.</span>valid_true_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((y_valid_true<span style="color:#f92672">.</span>reshape(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>), x_valid_true), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+        self<span style="color:#f92672">.</span>valid_false_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((y_valid_false<span style="color:#f92672">.</span>reshape(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>), x_valid_false), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;self.train_np.shape, &#34;</span>, self<span style="color:#f92672">.</span>train_np<span style="color:#f92672">.</span>shape)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;self.valid_true_np.shape, &#34;</span>, self<span style="color:#f92672">.</span>valid_true_np<span style="color:#f92672">.</span>shape)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;self.valid_false_np.shape, &#34;</span>, self<span style="color:#f92672">.</span>valid_false_np<span style="color:#f92672">.</span>shape)<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;np.max(x_train), &#34;</span>, np<span style="color:#f92672">.</span>max(x_train))
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;np.min(x_train), &#34;</span>, np<span style="color:#f92672">.</span>min(x_train))
+        self<span style="color:#f92672">.</span>valid_data <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((self<span style="color:#f92672">.</span>valid_true_np, self<span style="color:#f92672">.</span>valid_false_np))
+
+        random<span style="color:#f92672">.</span>seed(self<span style="color:#f92672">.</span>seed)
+        np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(self<span style="color:#f92672">.</span>seed)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_DATASET</span>(self, train_path, true_path, false_path):
+        train_list <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(train_path)
+        y_train <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(len(train_list))
+        
+        x_train <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>empty((<span style="color:#ae81ff">0</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height))
+        <span style="color:#66d9ef">for</span> img <span style="color:#f92672">in</span> train_list:    
+            path_name <span style="color:#f92672">=</span> train_path<span style="color:#f92672">+</span>img
+            x_img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(path_name)
+            <span style="color:#75715e"># サイズを揃える</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>resize((self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            <span style="color:#75715e"># 3chを1chに変換</span>
+            x_img<span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>convert(<span style="color:#e6db74">&#39;L&#39;</span>)
+            <span style="color:#75715e"># PIL.Image.Imageからnumpy配列へ</span>
+            x_img <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(x_img)
+            <span style="color:#75715e"># 正規化</span>
+            x_img <span style="color:#f92672">=</span> x_img <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>
+            <span style="color:#75715e"># axisの追加</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape((<span style="color:#ae81ff">1</span>,self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            <span style="color:#75715e"># flatten</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height)
+            x_train <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate([x_train, x_img], axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>)
+           
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;x_train.shape, &#34;</span>, x_train<span style="color:#f92672">.</span>shape)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;y_train.shape, &#34;</span>, y_train<span style="color:#f92672">.</span>shape)
+
+        test_true_list <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(true_path)
+        y_test_true <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(len(test_true_list))
+        
+        x_test_true <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>empty((<span style="color:#ae81ff">0</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height))
+        <span style="color:#66d9ef">for</span> img <span style="color:#f92672">in</span> test_true_list:    
+            path_name <span style="color:#f92672">=</span> true_path<span style="color:#f92672">+</span>img
+            x_img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(path_name)
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>resize((self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            x_img<span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>convert(<span style="color:#e6db74">&#39;L&#39;</span>)
+            x_img <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(x_img)
+            x_img <span style="color:#f92672">=</span> x_img <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape((<span style="color:#ae81ff">1</span>,self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height)
+            x_test_true <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate([x_test_true, x_img], axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>)
+        
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;x_test_true.shape, &#34;</span>, x_test_true<span style="color:#f92672">.</span>shape)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;y_test_true.shape, &#34;</span>, y_test_true<span style="color:#f92672">.</span>shape)
+      
+        test_false_list <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(false_path)
+        y_test_false <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(len(test_false_list))
+        
+        x_test_false <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>empty((<span style="color:#ae81ff">0</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height))
+        <span style="color:#66d9ef">for</span> img <span style="color:#f92672">in</span> test_false_list:    
+            path_name <span style="color:#f92672">=</span> false_path<span style="color:#f92672">+</span>img
+            x_img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(path_name)
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>resize((self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            x_img<span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>convert(<span style="color:#e6db74">&#39;L&#39;</span>)
+            x_img <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(x_img)
+            x_img <span style="color:#f92672">=</span> x_img <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape((<span style="color:#ae81ff">1</span>,self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height)
+            x_test_false <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate([x_test_false, x_img], axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>)
+        
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;x_test_false.shape, &#34;</span>, x_test_false<span style="color:#f92672">.</span>shape)        
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;y_test_false.shape, &#34;</span>, y_test_false<span style="color:#f92672">.</span>shape)        
+
+        <span style="color:#66d9ef">return</span> x_train, x_test_true, x_test_false, y_train, y_test_true, y_test_false
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_file_names</span>(self, dir_name):
+        target_files <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> root, dirs, files <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>walk(dir_name):
+            targets <span style="color:#f92672">=</span> [os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(root, f) <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> files]
+            target_files<span style="color:#f92672">.</span>extend(targets)
+
+        <span style="color:#66d9ef">return</span> target_files
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_data</span>(self, d_y_np, width, height):
+        tars <span style="color:#f92672">=</span> []
+        images <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> num, d_y_1 <span style="color:#f92672">in</span> enumerate(d_y_np):
+            image <span style="color:#f92672">=</span> d_y_1[<span style="color:#ae81ff">1</span>:]<span style="color:#f92672">.</span>reshape(width, height, <span style="color:#ae81ff">1</span>)
+            tar <span style="color:#f92672">=</span> d_y_1[<span style="color:#ae81ff">0</span>]
+            images<span style="color:#f92672">.</span>append(image)
+            tars<span style="color:#f92672">.</span>append(tar)
+
+        <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>asarray(images), np<span style="color:#f92672">.</span>asarray(tars)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normalize_data</span>(self, data):
+        <span style="color:#75715e"># data0_2 = data / 127.5</span>
+        <span style="color:#75715e"># data_norm = data0_2 - 1.0</span>
+        data_norm <span style="color:#f92672">=</span> (data <span style="color:#f92672">*</span> <span style="color:#ae81ff">2.0</span>) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#applied for tanh</span>
+        <span style="color:#66d9ef">return</span> data_norm
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_data_for_1_epoch</span>(self):
+        self<span style="color:#f92672">.</span>filename_1_epoch <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>permutation(self<span style="color:#f92672">.</span>train_np)
+        <span style="color:#66d9ef">return</span> len(self<span style="color:#f92672">.</span>filename_1_epoch)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_data_for_1_batch</span>(self, i, batchsize):
+        filename_batch <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>filename_1_epoch[i:i <span style="color:#f92672">+</span> batchsize]
+        images, _ <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>read_data(filename_batch, self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height)
+        images_n <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>normalize_data(images)
+        <span style="color:#66d9ef">return</span> images_n
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_valid_data_for_1_batch</span>(self, i, batchsize):
+        filename_batch <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>valid_data[i:i <span style="color:#f92672">+</span> batchsize]
+        images, tars <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>read_data(filename_batch, self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height)
+        images_n <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>normalize_data(images)
+        <span style="color:#66d9ef">return</span> images_n, tars
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_random_z_with_norm</span>(self, mean, stddev, data_num, unit_num):
+        norms <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(mean, stddev, (data_num, unit_num))
+        <span style="color:#75715e"># tars = np.zeros((data_num, 1), dtype=np.float32)</span>
+        <span style="color:#66d9ef">return</span> norms
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_target_1_0</span>(self, value, data_num):
+        <span style="color:#66d9ef">if</span> value <span style="color:#f92672">==</span> <span style="color:#ae81ff">0.0</span>:
+            target <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((data_num, <span style="color:#ae81ff">1</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+        <span style="color:#66d9ef">elif</span> value <span style="color:#f92672">==</span> <span style="color:#ae81ff">1.0</span>:
+            target <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones((data_num, <span style="color:#ae81ff">1</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;target value error&#34;</span>)
+        <span style="color:#66d9ef">return</span> target
+</code></pre></div></div></details><details><summary>utility.py</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-utility.py" data-lang="utility.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#75715e"># import os</span>
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> sklearn.metrics <span style="color:#f92672">as</span> sm
+<span style="color:#f92672">import</span> csv
+<span style="color:#f92672">import</span> seaborn <span style="color:#f92672">as</span> sns
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">compute_precision_recall</span>(score_A_np, ):
+    array_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">1.0</span>)
+    array_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">0.0</span>)
+
+    mean_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>mean((score_A_np[array_1])[:, <span style="color:#ae81ff">0</span>])
+    mean_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>mean((score_A_np[array_0])[:, <span style="color:#ae81ff">0</span>])
+    medium <span style="color:#f92672">=</span> (mean_1 <span style="color:#f92672">+</span> mean_0) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2.0</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;mean_positive_score, &#34;</span>, mean_1)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;mean_negative_score, &#34;</span>, mean_0)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;score_threshold(pos_neg middle), &#34;</span>, medium)
+    np<span style="color:#f92672">.</span>save(<span style="color:#e6db74">&#39;./score_threshold.npy&#39;</span>, medium)
+        
+    array_upper <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">0</span>] <span style="color:#f92672">&gt;=</span> medium)[<span style="color:#ae81ff">0</span>]
+    array_lower <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">0</span>] <span style="color:#f92672">&lt;</span> medium)[<span style="color:#ae81ff">0</span>]
+    <span style="color:#75715e">#print(array_upper)</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;negative_predict_num, &#34;</span>, array_upper<span style="color:#f92672">.</span>shape)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;positive_predict_num, &#34;</span>, array_lower<span style="color:#f92672">.</span>shape)
+    array_1_tf <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">1.0</span>)[<span style="color:#ae81ff">0</span>]
+    array_0_tf <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">0.0</span>)[<span style="color:#ae81ff">0</span>]
+    <span style="color:#75715e">#print(array_1_tf)</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;negative_fact_num, &#34;</span>, array_0_tf<span style="color:#f92672">.</span>shape)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;positive_fact_num, &#34;</span>, array_1_tf<span style="color:#f92672">.</span>shape)
+
+    tn <span style="color:#f92672">=</span> len(set(array_lower)<span style="color:#f92672">&amp;</span>set(array_1_tf))
+    tp <span style="color:#f92672">=</span> len(set(array_upper)<span style="color:#f92672">&amp;</span>set(array_0_tf))
+    fp <span style="color:#f92672">=</span> len(set(array_lower)<span style="color:#f92672">&amp;</span>set(array_0_tf))
+    fn <span style="color:#f92672">=</span> len(set(array_upper)<span style="color:#f92672">&amp;</span>set(array_1_tf))
+
+    precision <span style="color:#f92672">=</span> tp <span style="color:#f92672">/</span> (tp <span style="color:#f92672">+</span> fp <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.00001</span>)
+    recall <span style="color:#f92672">=</span> tp <span style="color:#f92672">/</span> (tp <span style="color:#f92672">+</span> fn <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.00001</span>)
+
+    <span style="color:#66d9ef">return</span> tp, fp, tn, fn, precision, recall
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">score_divide</span>(score_A_np):
+    array_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">1.0</span>)[<span style="color:#ae81ff">0</span>]
+    array_0 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_np[:, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">0.0</span>)[<span style="color:#ae81ff">0</span>]
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;positive_predict_num, &#34;</span>, array_1<span style="color:#f92672">.</span>shape)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;negative_predict_num, &#34;</span>, array_0<span style="color:#f92672">.</span>shape)
+    array_1_np <span style="color:#f92672">=</span> score_A_np[array_1][:, <span style="color:#ae81ff">0</span>]
+    array_0_np <span style="color:#f92672">=</span> score_A_np[array_0][:, <span style="color:#ae81ff">0</span>]
+    <span style="color:#75715e">#print(array_1_np)</span>
+    <span style="color:#75715e">#print(array_0_np)</span>
+    <span style="color:#66d9ef">return</span> array_1_np, array_0_np
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_graph</span>(x, y, filename, epoch):
+    plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">5</span>))
+    plt<span style="color:#f92672">.</span>plot(x, y)
+    plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#39;ROC curve &#39;</span> <span style="color:#f92672">+</span> filename <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39; epoch:&#39;</span> <span style="color:#f92672">+</span> str(epoch))
+    <span style="color:#75715e"># x axis label</span>
+    plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;FP / (FP + TN)&#34;</span>)
+    <span style="color:#75715e"># y axis label</span>
+    plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;TP / (TP + FN)&#34;</span>)
+    <span style="color:#75715e"># save</span>
+    plt<span style="color:#f92672">.</span>savefig(filename <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_ROC_curve_epoch&#39;</span> <span style="color:#f92672">+</span> str(epoch) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;.png&#39;</span>)
+    plt<span style="color:#f92672">.</span>close()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_ROC_graph</span>(score_A_np, filename, epoch):
+    argsort <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argsort(score_A_np, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)[:, <span style="color:#ae81ff">0</span>]
+    value_1_0 <span style="color:#f92672">=</span> score_A_np[argsort][::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+    <span style="color:#75715e">#value_1_0 = (np.where(score_A_np_sort[:, 1] == 7., 1., 0.)).astype(np.float32)</span>
+    <span style="color:#75715e"># score_A_np_sort_0_1 = np.concatenate((score_A_np_sort, value_1_0), axis=1)</span>
+    sum_1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sum(value_1_0)
+
+    len_s <span style="color:#f92672">=</span> len(score_A_np)
+    sum_0 <span style="color:#f92672">=</span> len_s <span style="color:#f92672">-</span> sum_1
+    tp <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>cumsum(value_1_0[:, <span style="color:#ae81ff">1</span>])<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+    index <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">1</span>, len_s <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+    fp <span style="color:#f92672">=</span> index <span style="color:#f92672">-</span> tp
+    fn <span style="color:#f92672">=</span> sum_1 <span style="color:#f92672">-</span> tp
+    tn <span style="color:#f92672">=</span> sum_0 <span style="color:#f92672">-</span> fp
+    tp_ratio <span style="color:#f92672">=</span> tp <span style="color:#f92672">/</span> (tp <span style="color:#f92672">+</span> fn <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.00001</span>)
+    fp_ratio <span style="color:#f92672">=</span> fp <span style="color:#f92672">/</span> (fp <span style="color:#f92672">+</span> tn <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.00001</span>)
+    save_graph(fp_ratio, tp_ratio, filename, epoch)
+
+    auc <span style="color:#f92672">=</span> sm<span style="color:#f92672">.</span>auc(fp_ratio, tp_ratio)
+    <span style="color:#66d9ef">return</span> auc
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">unnorm_img</span>(img_np):
+    img_np_255 <span style="color:#f92672">=</span> (img_np <span style="color:#f92672">+</span> <span style="color:#ae81ff">1.0</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">127.5</span>
+    img_np_255_mod1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>maximum(img_np_255, <span style="color:#ae81ff">0</span>)
+    img_np_255_mod1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>minimum(img_np_255_mod1, <span style="color:#ae81ff">255</span>)
+    img_np_uint8 <span style="color:#f92672">=</span> img_np_255_mod1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+    <span style="color:#66d9ef">return</span> img_np_uint8
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convert_np2pil</span>(images_255):
+    list_images_PIL <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> num, images_255_1 <span style="color:#f92672">in</span> enumerate(images_255):
+        <span style="color:#75715e"># img_255_tile = np.tile(images_255_1, (1, 1, 3))</span>
+        image_1_PIL <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>fromarray(images_255_1)
+        list_images_PIL<span style="color:#f92672">.</span>append(image_1_PIL)
+    <span style="color:#66d9ef">return</span> list_images_PIL
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_score_hist</span>(score_a_1, score_a_0, epoch, LOGFILE_NAME, OUT_HIST_DIR):
+    list_1 <span style="color:#f92672">=</span> score_a_1<span style="color:#f92672">.</span>tolist()
+    list_0 <span style="color:#f92672">=</span> score_a_0<span style="color:#f92672">.</span>tolist()
+    <span style="color:#75715e">#print(list_1)</span>
+    <span style="color:#75715e">#print(list_0)</span>
+    plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">5</span>))
+    plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#34;Histgram of Score&#34;</span>)
+    plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;Score&#34;</span>)
+    plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;freq&#34;</span>)
+    plt<span style="color:#f92672">.</span>hist(list_1, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>, histtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;stepfilled&#39;</span>, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;1&#34;</span>)
+    plt<span style="color:#f92672">.</span>hist(list_0, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>, histtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;stepfilled&#39;</span>, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;0&#39;</span>)
+    plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    plt<span style="color:#f92672">.</span>savefig(OUT_HIST_DIR <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;/resultScoreHist_&#34;</span><span style="color:#f92672">+</span> LOGFILE_NAME <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_&#39;</span> <span style="color:#f92672">+</span> str(epoch) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;.png&#34;</span>)
+    plt<span style="color:#f92672">.</span>show()    
+    
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_score_hist_test</span>(score_a_1, score_a_0, score_th, LOGFILE_NAME, OUT_HIST_DIR):    
+    list_1 <span style="color:#f92672">=</span> score_a_1<span style="color:#f92672">.</span>tolist()
+    list_0 <span style="color:#f92672">=</span> score_a_0<span style="color:#f92672">.</span>tolist()
+    <span style="color:#75715e">#print(list_1)</span>
+    <span style="color:#75715e">#print(list_0)</span>
+    plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">7</span>, <span style="color:#ae81ff">5</span>))
+    plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#34;Histgram of Score&#34;</span>)
+    plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;Score&#34;</span>)
+    plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;freq&#34;</span>)
+    plt<span style="color:#f92672">.</span>hist(list_1, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>, histtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;stepfilled&#39;</span>, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;1&#34;</span>)
+    plt<span style="color:#f92672">.</span>hist(list_0, bins<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>, histtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;stepfilled&#39;</span>, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;b&#39;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;0&#39;</span>)
+    plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)    
+    plt<span style="color:#f92672">.</span>savefig(OUT_HIST_DIR <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;/resultScoreHist_&#34;</span><span style="color:#f92672">+</span> LOGFILE_NAME <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;_test.png&#34;</span>)
+    plt<span style="color:#f92672">.</span>show()   
+    
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_score_bar</span>(score_a):
+    
+    score_a <span style="color:#f92672">=</span> score_a<span style="color:#f92672">.</span>tolist()
+    list_images_PIL <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> score <span style="color:#f92672">in</span> score_a:
+        x<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;score&#34;</span>
+        plt<span style="color:#f92672">.</span>bar(x,score,label<span style="color:#f92672">=</span>score)
+        fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))ax<span style="color:#f92672">.</span>bar(x,score,label<span style="color:#f92672">=</span>round(score,<span style="color:#ae81ff">3</span>))
+        ax<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;center&#39;</span>, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">12</span>)
+        fig<span style="color:#f92672">.</span>canvas<span style="color:#f92672">.</span>draw()
+        <span style="color:#75715e">#im = np.array(fig.canvas.renderer.buffer_rgba()) # matplotlibが3.1より以降の場合</span>
+        im <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(fig<span style="color:#f92672">.</span>canvas<span style="color:#f92672">.</span>renderer<span style="color:#f92672">.</span>_renderer) 
+        image_1_PIL <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>fromarray(im)
+        list_images_PIL<span style="color:#f92672">.</span>append(image_1_PIL)
+    <span style="color:#66d9ef">return</span> list_images_PIL 
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_score_bar_predict</span>(score_A_np_tmp):
+    score_a <span style="color:#f92672">=</span> score_A_np_tmp<span style="color:#f92672">.</span>tolist()
+    list_images_PIL <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> score <span style="color:#f92672">in</span> score_a:
+        x<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;score&#34;</span>
+        <span style="color:#75715e">#plt.bar(x,score[0],label=score)</span>
+        fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))
+        <span style="color:#66d9ef">if</span> score[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+            ax<span style="color:#f92672">.</span>bar(x,score[<span style="color:#ae81ff">0</span>], color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;red&#39;</span>,label<span style="color:#f92672">=</span>round(score[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">3</span>))
+        <span style="color:#66d9ef">else</span>:
+            ax<span style="color:#f92672">.</span>bar(x,score[<span style="color:#ae81ff">0</span>], color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;blue&#39;</span>,label<span style="color:#f92672">=</span>round(score[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">3</span>))
+        ax<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;center&#39;</span>, fontsize<span style="color:#f92672">=</span><span style="color:#ae81ff">12</span>)
+        fig<span style="color:#f92672">.</span>canvas<span style="color:#f92672">.</span>draw()
+        <span style="color:#75715e">#im = np.array(fig.canvas.renderer.buffer_rgba()) # matplotlibが3.1より以降の場合</span>
+        im <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(fig<span style="color:#f92672">.</span>canvas<span style="color:#f92672">.</span>renderer<span style="color:#f92672">.</span>_renderer) 
+        image_1_PIL <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>fromarray(im)
+        list_images_PIL<span style="color:#f92672">.</span>append(image_1_PIL)
+    <span style="color:#66d9ef">return</span> list_images_PIL 
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_output_img</span>(img_batch_1, img_batch_0, x_z_x_1, x_z_x_0, score_a_0, score_a_1, epoch, log_file_name, out_img_dir):
+    (data_num, img1_h, img1_w, _) <span style="color:#f92672">=</span> img_batch_1<span style="color:#f92672">.</span>shape
+
+    img_batch_1_unn <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tile(unnorm_img(img_batch_1), (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+    img_batch_0_unn <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tile(unnorm_img(img_batch_0), (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+    x_z_x_1_unn <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tile(unnorm_img(x_z_x_1), (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+    x_z_x_0_unn <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tile(unnorm_img(x_z_x_0), (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+        
+    diff_1 <span style="color:#f92672">=</span> img_batch_1 <span style="color:#f92672">-</span> x_z_x_1
+    diff_1_r <span style="color:#f92672">=</span> (<span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>maximum(diff_1, <span style="color:#ae81ff">0.0</span>)) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#(0.0, 1.0) -&gt; (-1.0, 1.0)</span>
+    diff_1_b <span style="color:#f92672">=</span> (<span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>abs(np<span style="color:#f92672">.</span>minimum(diff_1, <span style="color:#ae81ff">0.0</span>))) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#(-1.0, 0.0) -&gt; (1.0, 0.0) -&gt; (1.0, -1.0)</span>
+    diff_1_g <span style="color:#f92672">=</span> diff_1_b <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.0</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span>
+    diff_1_r_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_1_r)
+    diff_1_b_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_1_b)
+    diff_1_g_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_1_g)
+    diff_1_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((diff_1_r_unnorm, diff_1_g_unnorm, diff_1_b_unnorm), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
+    
+    diff_0 <span style="color:#f92672">=</span> img_batch_0 <span style="color:#f92672">-</span> x_z_x_0
+    diff_0_r <span style="color:#f92672">=</span> (<span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>maximum(diff_0, <span style="color:#ae81ff">0.0</span>)) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#(0.0, 1.0) -&gt; (-1.0, 1.0)</span>
+    diff_0_b <span style="color:#f92672">=</span> (<span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>abs(np<span style="color:#f92672">.</span>minimum(diff_0, <span style="color:#ae81ff">0.0</span>))) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#(-1.0, 0.0) -&gt; (1.0, 0.0) -&gt; (1.0, -1.0)</span>
+    diff_0_g <span style="color:#f92672">=</span> diff_0_b <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.0</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span>
+    diff_0_r_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_0_r)
+    diff_0_b_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_0_b)
+    diff_0_g_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_0_g)
+    diff_0_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((diff_0_r_unnorm, diff_0_g_unnorm, diff_0_b_unnorm), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
+
+    img_batch_1_PIL <span style="color:#f92672">=</span> convert_np2pil(img_batch_1_unn)
+    img_batch_0_PIL <span style="color:#f92672">=</span> convert_np2pil(img_batch_0_unn)
+    x_z_x_1_PIL <span style="color:#f92672">=</span> convert_np2pil(x_z_x_1_unn)
+    x_z_x_0_PIL <span style="color:#f92672">=</span> convert_np2pil(x_z_x_0_unn)
+    diff_1_PIL <span style="color:#f92672">=</span> convert_np2pil(diff_1_np)
+    diff_0_PIL <span style="color:#f92672">=</span> convert_np2pil(diff_0_np)
+    score_a_1_PIL <span style="color:#f92672">=</span> make_score_bar(score_a_1)
+    score_a_0_PIL <span style="color:#f92672">=</span> make_score_bar(score_a_0)
+    
+    wide_image_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(((img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> data_num <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>, (img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">8</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>uint8) <span style="color:#f92672">*</span> <span style="color:#ae81ff">255</span>
+    wide_image_PIL <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>fromarray(wide_image_np)
+    
+    <span style="color:#66d9ef">for</span> num, (ori_1, ori_0, xzx1, xzx0, diff1, diff0, score_1, score_0) <span style="color:#f92672">in</span> enumerate(zip(img_batch_1_PIL, img_batch_0_PIL ,x_z_x_1_PIL, x_z_x_0_PIL, diff_1_PIL, diff_0_PIL, score_a_1_PIL, score_a_0_PIL)):
+        wide_image_PIL<span style="color:#f92672">.</span>paste(ori_1,                   (<span style="color:#ae81ff">0</span>,      num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(xzx1,           (img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>,      num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(diff1,         ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(score_1, ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(ori_0,         ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">4</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(xzx0,          ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(diff0,         ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">6</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(score_0, ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">7</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+
+    wide_image_PIL<span style="color:#f92672">.</span>save(out_img_dir <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;/resultImage_&#34;</span><span style="color:#f92672">+</span> log_file_name <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_&#39;</span> <span style="color:#f92672">+</span> str(epoch) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;.png&#34;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_output_img_test</span>(img_batch_test, x_z_x_test, score_A_np_tmp, log_file_name, out_img_dir):
+    (data_num, img1_h, img1_w, _) <span style="color:#f92672">=</span> img_batch_test<span style="color:#f92672">.</span>shape
+
+    img_batch_test_unn <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tile(unnorm_img(img_batch_test), (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+    x_z_x_test_unn <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>tile(unnorm_img(x_z_x_test), (<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>))
+        
+    diff_test <span style="color:#f92672">=</span> img_batch_test <span style="color:#f92672">-</span> x_z_x_test
+    diff_test_r <span style="color:#f92672">=</span> (<span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>maximum(diff_test, <span style="color:#ae81ff">0.0</span>)) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#(0.0, 1.0) -&gt; (-1.0, 1.0)</span>
+    diff_test_b <span style="color:#f92672">=</span> (<span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>abs(np<span style="color:#f92672">.</span>minimum(diff_test, <span style="color:#ae81ff">0.0</span>))) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#(-1.0, 0.0) -&gt; (1.0, 0.0) -&gt; (1.0, -1.0)</span>
+    diff_test_g <span style="color:#f92672">=</span> diff_test_b <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.0</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span>
+    diff_test_r_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_test_r)
+    diff_test_b_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_test_b)
+    diff_test_g_unnorm <span style="color:#f92672">=</span> unnorm_img(diff_test_g)
+    diff_test_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((diff_test_r_unnorm, diff_test_g_unnorm, diff_test_b_unnorm), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
+
+    img_batch_test_PIL <span style="color:#f92672">=</span> convert_np2pil(img_batch_test_unn)
+    x_z_x_test_PIL <span style="color:#f92672">=</span> convert_np2pil(x_z_x_test_unn)diff_test_PIL <span style="color:#f92672">=</span> convert_np2pil(diff_test_np)
+    
+    score_a <span style="color:#f92672">=</span> score_A_np_tmp[:, <span style="color:#ae81ff">1</span>:]
+    <span style="color:#75715e">#tars = score_A_np_tmp[:, 0]</span>
+    score_a_PIL <span style="color:#f92672">=</span> make_score_bar_predict(score_A_np_tmp)
+    
+    wide_image_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(((img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> data_num <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>, (img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">8</span> <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">3</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>uint8) <span style="color:#f92672">*</span> <span style="color:#ae81ff">255</span>
+    wide_image_PIL <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>fromarray(wide_image_np)
+    
+    <span style="color:#66d9ef">for</span> num, (ori_test, xzx_test, diff_test, score_test) <span style="color:#f92672">in</span> enumerate(zip(img_batch_test_PIL, x_z_x_test_PIL, diff_test_PIL, score_a_PIL)):
+        wide_image_PIL<span style="color:#f92672">.</span>paste(ori_test,             (<span style="color:#ae81ff">0</span>,      num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(xzx_test,    (img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>,      num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(diff_test,  ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+        wide_image_PIL<span style="color:#f92672">.</span>paste(score_test, ((img1_w <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span>, num <span style="color:#f92672">*</span> (img1_h <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)))
+
+    wide_image_PIL<span style="color:#f92672">.</span>save(out_img_dir <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;/resultImage_&#34;</span><span style="color:#f92672">+</span> log_file_name <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;_test.png&#34;</span>)
+    
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_list_to_csv</span>(list, filename):
+    f <span style="color:#f92672">=</span> open(filename, <span style="color:#e6db74">&#39;w&#39;</span>)
+    writer <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>writer(f, lineterminator<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+    writer<span style="color:#f92672">.</span>writerows(list)
+    f<span style="color:#f92672">.</span>close()
+</code></pre></div></div></details>
+<details><summary>predict_BiGAN.py</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-predict_BiGAN.py" data-lang="predict_BiGAN.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">import</span> utility <span style="color:#f92672">as</span> Utility
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">from</span> model_BiGAN <span style="color:#f92672">import</span> BiGAN <span style="color:#66d9ef">as</span> Model
+
+<span style="color:#f92672">from</span> make_datasets_predict <span style="color:#f92672">import</span> Make_datasets_predict <span style="color:#66d9ef">as</span> Make_datasets
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">parser</span>():
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser(description<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;train LSGAN&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--batch_size&#39;</span>, <span style="color:#e6db74">&#39;-b&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Number of images in each mini-batch&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--log_file_name&#39;</span>, <span style="color:#e6db74">&#39;-lf&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;anpanman&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;log file name&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--epoch&#39;</span>, <span style="color:#e6db74">&#39;-e&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;epoch&#39;</span>)
+    <span style="color:#75715e">#parser.add_argument(&#39;--file_train_data&#39;, &#39;-ftd&#39;, type=str, default=&#39;./mnist.npz&#39;, help=&#39;train data&#39;)</span>
+    <span style="color:#75715e">#parser.add_argument(&#39;--test_true_data&#39;, &#39;-ttd&#39;, type=str, default=&#39;./mnist.npz&#39;, help=&#39;test of true_data&#39;)</span>
+    <span style="color:#75715e">#parser.add_argument(&#39;--test_false_data&#39;, &#39;-tfd&#39;, type=str, default=&#39;./mnist.npz&#39;, help=&#39;test of false_data&#39;)</span>
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--test_data&#39;</span>, <span style="color:#e6db74">&#39;-td&#39;</span>, type<span style="color:#f92672">=</span>str, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../Test_Data/200112/&#39;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;test of false_data&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--valid_span&#39;</span>, <span style="color:#e6db74">&#39;-vs&#39;</span>, type<span style="color:#f92672">=</span>int, default<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;validation span&#39;</span>)
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#39;--score_th&#39;</span>, <span style="color:#e6db74">&#39;-st&#39;</span>, type<span style="color:#f92672">=</span>float, default<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>load(<span style="color:#e6db74">&#39;./score_threshold.npy&#39;</span>), help<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;validation span&#39;</span>)
+
+    <span style="color:#66d9ef">return</span> parser<span style="color:#f92672">.</span>parse_args()
+
+args <span style="color:#f92672">=</span> parser()
+
+<span style="color:#75715e">#global variants</span>
+BATCH_SIZE <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>batch_size
+LOGFILE_NAME <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>log_file_name
+EPOCH <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>epoch
+<span style="color:#75715e">#FILE_NAME = args.file_train_data</span>
+<span style="color:#75715e">#TRUE_DATA = args.test_true_data</span>
+<span style="color:#75715e">#FALSE_DATA = args.test_false_data</span>
+TEST_DATA <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>test_data
+IMG_WIDTH <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+IMG_HEIGHT <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+IMG_CHANNEL <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+BASE_CHANNEL <span style="color:#f92672">=</span> <span style="color:#ae81ff">32</span>
+NOISE_UNIT_NUM <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span>
+NOISE_MEAN <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+NOISE_STDDEV <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>
+TEST_DATA_SAMPLE <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5</span>
+L2_NORM <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.001</span>
+KEEP_PROB_RATE <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span>
+SEED <span style="color:#f92672">=</span> <span style="color:#ae81ff">1234</span>
+SCORE_ALPHA <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.9</span> <span style="color:#75715e"># using for cost function</span>
+VALID_SPAN <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>valid_span
+np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(seed<span style="color:#f92672">=</span>SEED)
+BOARD_DIR_NAME <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./tensorboard/&#39;</span> <span style="color:#f92672">+</span> LOGFILE_NAME
+OUT_IMG_DIR <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./out_images_BiGAN&#39;</span> <span style="color:#75715e">#output image file</span>
+out_model_dir <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./out_models_BiGAN/&#39;</span> <span style="color:#75715e">#output model_ckpt file</span>
+<span style="color:#75715e">#Load_model_dir = &#39;../model_ckpt/&#39; #Load model_ckpt file</span>
+OUT_HIST_DIR <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./out_score_hist_BiGAN&#39;</span> <span style="color:#75715e">#output histogram file</span>
+CYCLE_LAMBDA <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>
+SCORE_TH <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>score_th
+
+make_datasets <span style="color:#f92672">=</span> Make_datasets(TEST_DATA, IMG_WIDTH, IMG_HEIGHT, SEED)
+model <span style="color:#f92672">=</span> Model(NOISE_UNIT_NUM, IMG_CHANNEL, SEED, BASE_CHANNEL, KEEP_PROB_RATE)
+
+z_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, NOISE_UNIT_NUM], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;z_&#39;</span>) <span style="color:#75715e">#noise to generator</span>
+x_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNEL], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;x_&#39;</span>) <span style="color:#75715e">#image to classifier</span>
+d_dis_f_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, <span style="color:#ae81ff">1</span>], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;d_dis_g_&#39;</span>) <span style="color:#75715e">#target of discriminator related to generator</span>
+d_dis_r_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>float32, [None, <span style="color:#ae81ff">1</span>], name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;d_dis_r_&#39;</span>) <span style="color:#75715e">#target of discriminator related to real image</span>
+is_training_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>placeholder(tf<span style="color:#f92672">.</span>bool, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;is_training&#39;</span>)
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;encoder_model&#39;</span>):
+    z_enc <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>encoder(x_, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>is_training_)
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;decoder_model&#39;</span>):
+    x_dec <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>decoder(z_, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>is_training_)
+    x_z_x <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>decoder(z_enc, reuse<span style="color:#f92672">=</span>True, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e"># for cycle consistency</span>
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;discriminator_model&#39;</span>):
+    <span style="color:#75715e">#stream around discriminator</span>
+    drop3_r, logits_r <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>discriminator(x_, z_enc, reuse<span style="color:#f92672">=</span>False, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e">#real pair</span>
+    drop3_f, logits_f <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>discriminator(x_dec, z_, reuse<span style="color:#f92672">=</span>True, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e">#real pair</span>
+    drop3_re, logits_re <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>discriminator(x_z_x, z_enc, reuse<span style="color:#f92672">=</span>True, is_training<span style="color:#f92672">=</span>is_training_) <span style="color:#75715e">#fake pair</span>
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;loss&#34;</span>):
+    loss_dis_f <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>square(logits_f <span style="color:#f92672">-</span> d_dis_f_), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Loss_dis_gen&#39;</span>) <span style="color:#75715e">#loss related to generator</span>
+    loss_dis_r <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>square(logits_r <span style="color:#f92672">-</span> d_dis_r_), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Loss_dis_rea&#39;</span>) <span style="color:#75715e">#loss related to real image</span>
+
+    <span style="color:#75715e">#total loss</span>
+    loss_dis_total <span style="color:#f92672">=</span> loss_dis_f <span style="color:#f92672">+</span> loss_dis_rloss_dec_total <span style="color:#f92672">=</span> loss_dis_f
+    loss_enc_total <span style="color:#f92672">=</span> loss_dis_r
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;score&#34;</span>):
+    l_g <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>abs(x_ <span style="color:#f92672">-</span> x_z_x), axis<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>))
+    l_FM <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>abs(drop3_r <span style="color:#f92672">-</span> drop3_re), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    score_A <span style="color:#f92672">=</span>  SCORE_ALPHA <span style="color:#f92672">*</span> l_g <span style="color:#f92672">+</span> (<span style="color:#ae81ff">1.0</span> <span style="color:#f92672">-</span> SCORE_ALPHA) <span style="color:#f92672">*</span> l_FM
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;optional_loss&#34;</span>):
+    loss_dec_opt <span style="color:#f92672">=</span> loss_dec_total <span style="color:#f92672">+</span> CYCLE_LAMBDA <span style="color:#f92672">*</span> l_g
+    loss_enc_opt <span style="color:#f92672">=</span> loss_enc_total <span style="color:#f92672">+</span> CYCLE_LAMBDA <span style="color:#f92672">*</span> l_g
+
+tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>scalar(<span style="color:#e6db74">&#39;loss_dis_total&#39;</span>, loss_dis_total)
+tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>scalar(<span style="color:#e6db74">&#39;loss_dec_total&#39;</span>, loss_dec_total)
+tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>scalar(<span style="color:#e6db74">&#39;loss_enc_total&#39;</span>, loss_enc_total)
+merged <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>merge_all()
+
+<span style="color:#75715e"># t_vars = tf.trainable_variables()</span>
+dec_vars <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_collection(tf<span style="color:#f92672">.</span>GraphKeys<span style="color:#f92672">.</span>TRAINABLE_VARIABLES, scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;decoder&#34;</span>)
+enc_vars <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_collection(tf<span style="color:#f92672">.</span>GraphKeys<span style="color:#f92672">.</span>TRAINABLE_VARIABLES, scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;encoder&#34;</span>)
+dis_vars <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_collection(tf<span style="color:#f92672">.</span>GraphKeys<span style="color:#f92672">.</span>TRAINABLE_VARIABLES, scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;discriminator&#34;</span>)
+
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;train&#34;</span>):
+    train_dis <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.00005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_dis_total, var_list<span style="color:#f92672">=</span>dis_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_dis&#39;</span>)
+    train_dec <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_dec_total, var_list<span style="color:#f92672">=</span>dec_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_dec&#39;</span>)
+    train_enc <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_enc_total, var_list<span style="color:#f92672">=</span>enc_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_enc&#39;</span>)
+    train_dec_opt <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_dec_opt, var_list<span style="color:#f92672">=</span>dec_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_dec&#39;</span>)
+    train_enc_opt <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>AdamOptimizer(learning_rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.005</span>, beta1<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">.</span>minimize(loss_enc_opt, var_list<span style="color:#f92672">=</span>enc_vars
+                                                                                , name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Adam_enc&#39;</span>)
+
+sess <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>Session()
+
+ckpt <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>get_checkpoint_state(out_model_dir)
+saver <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>Saver()
+<span style="color:#66d9ef">if</span> ckpt: <span style="color:#75715e"># checkpointがある場合</span>
+    last_model <span style="color:#f92672">=</span> ckpt<span style="color:#f92672">.</span>model_checkpoint_path <span style="color:#75715e"># 最後に保存したmodelへのパス</span>
+    saver<span style="color:#f92672">.</span>restore(sess, last_model) <span style="color:#75715e"># 変数データの読み込み</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;load &#34;</span> <span style="color:#f92672">+</span> last_model)
+<span style="color:#66d9ef">else</span>: <span style="color:#75715e"># 保存データがない場合</span>
+    <span style="color:#75715e">#init = tf.initialize_all_variables()    </span>
+    sess<span style="color:#f92672">.</span>run(tf<span style="color:#f92672">.</span>global_variables_initializer())
+
+summary_writer <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>summary<span style="color:#f92672">.</span>FileWriter(BOARD_DIR_NAME, sess<span style="color:#f92672">.</span>graph)
+
+log_list <span style="color:#f92672">=</span> []
+log_list<span style="color:#f92672">.</span>append([<span style="color:#e6db74">&#39;epoch&#39;</span>, <span style="color:#e6db74">&#39;AUC&#39;</span>])
+<span style="color:#75715e">#training loop</span>
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>):
+    <span style="color:#66d9ef">if</span> epoch <span style="color:#f92672">%</span> VALID_SPAN <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        score_A_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">2</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+        val_data_num <span style="color:#f92672">=</span> len(make_datasets<span style="color:#f92672">.</span>valid_data)
+
+        img_batch_test <span style="color:#f92672">=</span> make_datasets<span style="color:#f92672">.</span>get_valid_data_for_1_batch(<span style="color:#ae81ff">0</span>, val_data_num)
+        score_A_ <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(score_A, feed_dict<span style="color:#f92672">=</span>{x_:img_batch_test, is_training_:False})
+        score_A_re <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>reshape(score_A_, (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))
+        tars_batch_re <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(score_A_re <span style="color:#f92672">&lt;</span> SCORE_TH, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>) <span style="color:#75715e">#np.reshape(tars_batch, (-1, 1))</span>
+
+        score_A_np_tmp <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((score_A_re, tars_batch_re), axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+
+        x_z_x_test <span style="color:#f92672">=</span> sess<span style="color:#f92672">.</span>run(x_z_x, feed_dict<span style="color:#f92672">=</span>{x_:img_batch_test, is_training_:False})
+        <span style="color:#75715e">#print(score_A_np_tmp)</span>
+        array_1_np, array_0_np <span style="color:#f92672">=</span> Utility<span style="color:#f92672">.</span>score_divide(score_A_np_tmp)
+        
+        Utility<span style="color:#f92672">.</span>make_score_hist_test(array_1_np, array_0_np, SCORE_TH, LOGFILE_NAME, OUT_HIST_DIR)
+        Utility<span style="color:#f92672">.</span>make_output_img_test(img_batch_test, x_z_x_test, score_A_np_tmp, LOGFILE_NAME, OUT_IMG_DIR)    
+</code></pre></div></div></details>
+<details><summary>make_datasets_predict.py</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-make_datasets_predict.py" data-lang="make_datasets_predict.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> glob 
+<span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> random
+<span style="color:#75715e">#import cv2</span>
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">from</span> keras.preprocessing <span style="color:#f92672">import</span> image
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Make_datasets_predict</span>():
+
+    <span style="color:#66d9ef">def</span> __init__(self, test_data, img_width, img_height, seed):
+        self<span style="color:#f92672">.</span>filename <span style="color:#f92672">=</span> test_data
+        self<span style="color:#f92672">.</span>img_width <span style="color:#f92672">=</span> img_width
+        self<span style="color:#f92672">.</span>img_height <span style="color:#f92672">=</span> img_height
+        self<span style="color:#f92672">.</span>seed <span style="color:#f92672">=</span> seed
+        x_test <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>read_DATASET(self<span style="color:#f92672">.</span>filename)
+
+        self<span style="color:#f92672">.</span>valid_data <span style="color:#f92672">=</span> x_test
+        
+        random<span style="color:#f92672">.</span>seed(self<span style="color:#f92672">.</span>seed)
+        np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>seed(self<span style="color:#f92672">.</span>seed)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_DATASET</span>(self, test_path):
+        test_list <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>listdir(test_path)
+        
+        x_test <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>empty((<span style="color:#ae81ff">0</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height))
+        <span style="color:#66d9ef">for</span> img <span style="color:#f92672">in</span> test_list:    
+            path_name <span style="color:#f92672">=</span> test_path<span style="color:#f92672">+</span>img
+            x_img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(path_name)
+            <span style="color:#75715e"># サイズを揃える</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>resize((self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            <span style="color:#75715e"># 3chを1chに変換</span>
+            x_img<span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>convert(<span style="color:#e6db74">&#39;L&#39;</span>)
+            <span style="color:#75715e"># PIL.Image.Imageからnumpy配列へ</span>
+            x_img <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(x_img)
+            <span style="color:#75715e"># 正規化</span>
+            x_img <span style="color:#f92672">=</span> x_img <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>
+            <span style="color:#75715e"># axisの追加</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape((<span style="color:#ae81ff">1</span>,self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height))
+            <span style="color:#75715e"># flatten</span>
+            x_img <span style="color:#f92672">=</span> x_img<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>, self<span style="color:#f92672">.</span>img_width<span style="color:#f92672">*</span>self<span style="color:#f92672">.</span>img_height)
+            x_test <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate([x_test, x_img], axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>)
+           
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;x_test.shape, &#34;</span>, x_test<span style="color:#f92672">.</span>shape)
+
+        <span style="color:#66d9ef">return</span> x_testdef get_file_names(self, dir_name):
+        target_files <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> root, dirs, files <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>walk(dir_name):
+            targets <span style="color:#f92672">=</span> [os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(root, f) <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> files]
+            target_files<span style="color:#f92672">.</span>extend(targets)
+
+        <span style="color:#66d9ef">return</span> target_files
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">divide_MNIST_by_digit</span>(self, train_np, data1_num, data2_num):
+        data_1 <span style="color:#f92672">=</span> train_np[train_np[:,<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> data1_num]
+        data_2 <span style="color:#f92672">=</span> train_np[train_np[:,<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> data2_num]
+
+        <span style="color:#66d9ef">return</span> data_1, data_2
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_data</span>(self, d_y_np, width, height):
+        <span style="color:#75715e">#tars = []</span>
+        images <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> num, d_y_1 <span style="color:#f92672">in</span> enumerate(d_y_np):
+            image <span style="color:#f92672">=</span> d_y_1<span style="color:#f92672">.</span>reshape(width, height, <span style="color:#ae81ff">1</span>)
+            <span style="color:#75715e">#tar = d_y_1[0]</span>
+            images<span style="color:#f92672">.</span>append(image)
+            <span style="color:#75715e">#tars.append(tar)</span>
+
+        <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>asarray(images)<span style="color:#75715e">#, np.asarray(tars)</span>
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normalize_data</span>(self, data):
+        <span style="color:#75715e"># data0_2 = data / 127.5</span>
+        <span style="color:#75715e"># data_norm = data0_2 - 1.0</span>
+        data_norm <span style="color:#f92672">=</span> (data <span style="color:#f92672">*</span> <span style="color:#ae81ff">2.0</span>) <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e">#applied for tanh</span>
+
+        <span style="color:#66d9ef">return</span> data_norm
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_data_for_1_epoch</span>(self):
+        self<span style="color:#f92672">.</span>filename_1_epoch <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>permutation(self<span style="color:#f92672">.</span>train_np)
+
+        <span style="color:#66d9ef">return</span> len(self<span style="color:#f92672">.</span>filename_1_epoch)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_data_for_1_batch</span>(self, i, batchsize):
+        filename_batch <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>filename_1_epoch[i:i <span style="color:#f92672">+</span> batchsize]
+        images, _ <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>read_data(filename_batch, self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height)
+        images_n <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>normalize_data(images)
+        <span style="color:#66d9ef">return</span> images_n
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_valid_data_for_1_batch</span>(self, i, batchsize):
+        filename_batch <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>valid_data[i:i <span style="color:#f92672">+</span> batchsize]
+        images <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>read_data(filename_batch, self<span style="color:#f92672">.</span>img_width, self<span style="color:#f92672">.</span>img_height)
+        images_n <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>normalize_data(images)
+        <span style="color:#66d9ef">return</span> images_n<span style="color:#75715e">#, tars</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_random_z_with_norm</span>(self, mean, stddev, data_num, unit_num):
+        norms <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(mean, stddev, (data_num, unit_num))
+        <span style="color:#75715e"># tars = np.zeros((data_num, 1), dtype=np.float32)</span>
+        <span style="color:#66d9ef">return</span> norms
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_target_1_0</span>(self, value, data_num):
+        <span style="color:#66d9ef">if</span> value <span style="color:#f92672">==</span> <span style="color:#ae81ff">0.0</span>:
+            target <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((data_num, <span style="color:#ae81ff">1</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+        <span style="color:#66d9ef">elif</span> value <span style="color:#f92672">==</span> <span style="color:#ae81ff">1.0</span>:
+            target <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones((data_num, <span style="color:#ae81ff">1</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;target value error&#34;</span>)
+        <span style="color:#66d9ef">return</span> target
+</code></pre></div></div></details>
+<h4 id="githubのリンク">GitHubのリンク</h4>
+<p><a href="https://github.com/YousukeAnai/Dic_Graduation_Assignment">https://github.com/YousukeAnai/Dic_Graduation_Assignment</a></p>
+<h4 id="参考にした記事">参考にした記事</h4>
+<p><a href="https://qiita.com/masataka46/items/49dba2790fa59c29126b">https://qiita.com/masataka46/items/49dba2790fa59c29126b</a>
+<a href="https://qiita.com/underfitting/items/a0cbb035568dea33b2d7">https://qiita.com/underfitting/items/a0cbb035568dea33b2d7</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

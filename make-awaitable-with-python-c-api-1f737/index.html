@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Make Awaitable with Python/C API | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Make Awaitable with Python/C API</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 1, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/c">C</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cpython">CPython</a></code></small>
+
+</p>
+<pre><code>Introduction
+</code></pre>
+<p>========</p>
+<p>This year is nearing the end of the year, so I will wastefully use <a href="https://docs.python.org/ja/3.8/c-api/index.html">Python C/API</a>. Reversal of purpose and means. This time, we aim to use Awaitable as something like Coroutine obtained by executing the following coroutine function spam.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> asyncio
+<span style="color:#f92672">import</span> sys
+
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">spam</span>():
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;do something&#39;</span>)
+    ret <span style="color:#f92672">=</span> await asyncio<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;RETURN VALUE&#39;</span>)
+    <span style="color:#66d9ef">return</span> ret<span style="color:#f92672">.</span>lower()
+
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+     ret <span style="color:#f92672">=</span> await spam()
+     <span style="color:#66d9ef">print</span>(ret)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    <span style="color:#66d9ef">if</span> sys<span style="color:#f92672">.</span>version_info <span style="color:#f92672">&lt;</span>(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">7</span>):
+        loop <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>get_event_loop()
+        loop<span style="color:#f92672">.</span>run_until_complete(main())
+        loop<span style="color:#f92672">.</span>close()
+    <span style="color:#66d9ef">else</span>:
+        asyncio<span style="color:#f92672">.</span>run(main())
+</code></pre></div><p>Print something, do await sleep, get the result, call its lower method and return the result. 3 movements. We do not reproduce the send, throw, close methods that Coroutine and Generator have, but we do not have Awaitable.</p>
+<h1 id="await-and-yield-from">await and yield from</h1>
+<p>Before mimicking the code written async def, await. I will review what this is in the first place. The text when these language features were proposed for addition to Python is <a href="https://www.python.org/dev/peps/pep-0492/">PEP 492</a>.
+After reading this, I roughly remembered that await was actually a yield from. I suppose the reason why this was prepared was as follows. &ldquo;The Generator specification was originally designed with a view to being used as a Coroutine. The characteristic that it can be paused and resumed was Iterator itself, and the characteristic that it can send a value <a href="https://www.python.org/dev/peps/pep-0342/">PEP 342</a>. , And it has been doing well until Python 3.4 and before, but since the problem due to the indistinguishability between Generator and Iterator and Coroutine began to be reported, the Python 3.5 language specification can be distinguished. Add another method called __await__ instead of __iter__. Do not divert the yield from statement for the Generator Function, and use the Coroutine Function&rsquo;s Another statement for use in anew await statement is added to distinguish it.&rdquo; There are different names, __await__ and __iter__, but the behavior is not different. On the CPython PyTypeObject structure, <a href="https://docs.python.org/ja/3/c-api/typeobj.html#c.PyTypeObject.tp_iter">tp_iter</a> and tp_as_sync.<a href="https://docs.python.org/ja/3/c-api/typeobj.html#c.PyAsyncMethods.am_await">am_await</a> are provided and treated as different members.</p>
+<h1 id="__await__">__await__</h1>
+<p>I&rsquo;ve got a better understanding of Awaitable. I will write down coroutine function spam with a class statement. The difference from Iteratable is that it has __await__ instead of __iter__. However, the only difference is that the Iterator is returned from here.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Spam</span>:
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__await__</span>(self):
+        <span style="color:#f92672">...</span> <span style="color:#75715e"># TODO: What Itarator can I return to mimic a spam coroutine?</span>
+</code></pre></div><h1 id="__iter__-and-__next__">__iter__ and __next__</h1>
+<p>Continue disassembly. Iterator returns itself with __iter__, restarts the process with __next__, creates the next value, and interrupts the process and returns the value.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">_Spam</span>:
+    <span style="color:#66d9ef">def</span> __iter__(self):
+        <span style="color:#66d9ef">return</span> self
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__next__</span>(self):
+        <span style="color:#f92672">...</span> <span style="color:#75715e"># TODO: How can I mimic the spam coroutine?</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Spam</span>:
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__await__</span>(self):
+        <span style="color:#66d9ef">return</span> _Spam()
+</code></pre></div><p>What do we need to implement &ldquo;Awaitable similar to Coroutine obtained by running coroutine function spam&rdquo;? It holds the state of how much of the three operations of &ldquo;print something, await sleep, get the result, call the lower method of it and return the result&rdquo;. Make sure the object has a _state attribute. This time, I used 0, 1, 2 int for the time being, but if you want to write it neatly, you should use Enum.
+And implement __next__ that processes according to the state. The problem here is await or yield from. Yield from is to transfer the processing to another Iterator. Iterate until another Iterator stops, and continue to return the value obtained. You need to keep another Iterator running to implement the equivalent. For this reason, I added the _it attribute. If this Iterator is stopped, a StopIteration exception will be sent, so check the value attribute. This corresponds to the return statement of coroutine function and generator function, and the value of await, yield from expression. Pay attention to the position of the lower method.
+On the contrary, when returning a value, the StopIteration exception has a value.
+Iterator once stopped has <a href="https://docs.python.org/ja/3/library/stdtypes.html#iterator-types">Restriction that it must continue to return StopIteration exception</a>, so take measures against it. .. The end of __next__ should be raise StopIteration. We&rsquo;ll start the name with _ to indicate that we don&rsquo;t want the state-keeping attributes to be modified externally. This _state initialization is done with __new__ to make it resistant to multiple calls to __init__.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">_Spam</span>:
+    <span style="color:#66d9ef">def</span> __new__(cls):
+        obj <span style="color:#f92672">=</span> super()<span style="color:#f92672">.</span>__new__(cls)
+        obj<span style="color:#f92672">.</span>_state <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        obj<span style="color:#f92672">.</span>_it <span style="color:#f92672">=</span> None
+        <span style="color:#66d9ef">return</span> obj
+
+    <span style="color:#66d9ef">def</span> __iter__(self):
+        <span style="color:#66d9ef">return</span> self
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__next__</span>(self):
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>_state <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;do something&#39;</span>)
+            self<span style="color:#f92672">.</span>_it <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#39;RETURN VALUE&#39;</span>)<span style="color:#f92672">.</span>__await__()
+            self<span style="color:#f92672">.</span>_state <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>_state <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            <span style="color:#66d9ef">try</span>:
+                v <span style="color:#f92672">=</span> next(self<span style="color:#f92672">.</span>_it)
+            <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">StopIteration</span> <span style="color:#66d9ef">as</span> e:
+                ret <span style="color:#f92672">=</span> e<span style="color:#f92672">.</span>value
+                self<span style="color:#f92672">.</span>_it <span style="color:#f92672">=</span> None
+                self<span style="color:#f92672">.</span>_state <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+                <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">StopIteration</span>(ret<span style="color:#f92672">.</span>lower())
+            <span style="color:#66d9ef">else</span>:
+                <span style="color:#66d9ef">return</span> v
+        <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">StopIteration</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Spam</span>:
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__await__</span>(self):
+        <span style="color:#66d9ef">return</span> _Spam()
+</code></pre></div><h1 id="write-a-class-with-python-capi">Write a class with Python C/API</h1>
+<p>Because the disassembly is over. You can do this with Python C/API. C language from here. To create a class, write <a href="https://docs.python.org/ja/3/extending/newtypes_tutorial.html">PyTypeObject structure directly</a> or define <a href="https://docs.python.org/ja/3/c-api/type.html#c.PyType_Spec">PyType_Spec</a> and call <a href="https://docs.python.org/ja/3/c-api/type.html#c.PyType_FromSpec">PyType_FromSpec</a>. This time, in the direction of using <a href="https://docs.python.org/ja/3/c-api/type.html#c.PyType_FromSpec">PyType_FromSpec</a>.
+Start with Spam, which is easier than _Spam. To create __await__, register the function in tp_as_sync.<a href="https://docs.python.org/ja/3/c-api/typeobj.html#c.PyAsyncMethods.am_await">am_await</a>. Since we need to return an instance of _Spam from this method, we will make the attribute of Spam class have _Spam class. The class attribute addition process is performed after the class is created with <a href="https://docs.python.org/ja/3/c-api/type.html#c.PyType_FromSpec">PyType_FromSpec</a> in the initialization process of the module registered as Py_mod_exec.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    PyObject_HEAD
+} SpamObject;
+
+
+<span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019_Spam_await</span>(SpamObject <span style="color:#f92672">*</span>self)
+{PyObject <span style="color:#f92672">*</span>_Spam_Type <span style="color:#f92672">=</span> PyObject_GetAttrString((PyObject <span style="color:#f92672">*</span>)Py_TYPE(self), <span style="color:#e6db74">&#34;_Spam&#34;</span>);
+    <span style="color:#66d9ef">if</span> (_Spam_Type <span style="color:#f92672">==</span> NULL) { <span style="color:#66d9ef">return</span> NULL; }
+    PyObject <span style="color:#f92672">*</span>it <span style="color:#f92672">=</span> PyObject_CallFunction(_Spam_Type, <span style="color:#e6db74">&#34;&#34;</span>);
+    Py_DECREF(_Spam_Type);
+
+    <span style="color:#66d9ef">return</span> it;
+}
+
+
+<span style="color:#66d9ef">static</span> PyType_Slot advent2019_Spam_slots[] <span style="color:#f92672">=</span> {
+    {Py_am_await, (unaryfunc)advent2019_Spam_await},
+    {<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>},
+};
+
+
+<span style="color:#66d9ef">static</span> PyType_Spec advent2019_Spam_spec <span style="color:#f92672">=</span> {
+    .name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;advent2019.Spam&#34;</span>,
+    .basicsize <span style="color:#f92672">=</span> <span style="color:#66d9ef">sizeof</span>(SpamObject),
+    .flags <span style="color:#f92672">=</span> Py_TPFLAGS_DEFAULT <span style="color:#f92672">|</span> Py_TPFLAGS_BASETYPE,
+    .slots <span style="color:#f92672">=</span> advent2019_Spam_slots,
+};
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">advent2019_exec</span>(PyObject <span style="color:#f92672">*</span>module) {
+    <span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>;
+    PyObject <span style="color:#f92672">*</span>_Spam_Type <span style="color:#f92672">=</span> NULL;  <span style="color:#75715e">// TODO
+</span><span style="color:#75715e"></span>    PyObject <span style="color:#f92672">*</span>Spam_Type <span style="color:#f92672">=</span> NULL;
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(Spam_Type <span style="color:#f92672">=</span> PyType_FromSpec(<span style="color:#f92672">&amp;</span>advent2019_Spam_spec))) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#75715e">// Spam._Spam = _Spam
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(Spam_Type, <span style="color:#e6db74">&#34;_Spam&#34;</span>, _Spam_Type)) { <span style="color:#66d9ef">goto</span> cleanup; }
+
+    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(module, <span style="color:#e6db74">&#34;Spam&#34;</span>, Spam_Type)) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(module, <span style="color:#e6db74">&#34;_Spam&#34;</span>, _Spam_Type)) { <span style="color:#66d9ef">goto</span> cleanup; }
+
+    ret <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+cleanup:
+    Py_XDECREF(_Spam_Type);
+    Py_XDECREF(Spam_Type);
+
+    <span style="color:#66d9ef">if</span> (ret) { Py_XDECREF(module); }
+    <span style="color:#66d9ef">return</span> ret;
+}
+</code></pre></div><h1 id="capi-で書く-iterator">C/API で書く Iterator</h1>
+<p>さて、後回しにした Iterator _Spam の実装ですね。まずは _SpamObject 構造体と __new__ から。状態を保持するための何らかの値 state と asyncio.sleep().__await__ イテレータを保持する it を用意。他の PyObject* を保持することになるのでガベージコレクション機構に対応する <a href="https://docs.python.org/ja/3/c-api/gcsupport.html#c.PyObject_GC_New">PyObject_GC_New</a> でメモリを確保するようにします。また、初期化が終わったら <a href="https://docs.python.org/ja/3/c-api/gcsupport.html#c.PyObject_GC_Track">PyObject_GC_Track</a> を呼び、ガベージコレクタに自身を登録します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    PyObject_HEAD
+    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">char</span> state;
+    PyObject <span style="color:#f92672">*</span>it;
+} _SpamObject;
+
+
+<span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019__Spam_new</span>(PyTypeObject <span style="color:#f92672">*</span>type, PyObject <span style="color:#f92672">*</span>args, PyObject <span style="color:#f92672">*</span>kwargs)
+{
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>kwlist[] <span style="color:#f92672">=</span> {NULL};
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>PyArg_ParseTupleAndKeywords(args, kwargs, <span style="color:#e6db74">&#34;&#34;</span>, kwlist)) {
+        <span style="color:#66d9ef">return</span> NULL;
+    }
+
+    _SpamObject <span style="color:#f92672">*</span>obj <span style="color:#f92672">=</span> PyObject_GC_New(_SpamObject, type);
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>obj) { <span style="color:#66d9ef">return</span> NULL; }
+    obj<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    obj<span style="color:#f92672">-&gt;</span>it <span style="color:#f92672">=</span> NULL;
+
+    PyObject_GC_Track(obj);
+
+    <span style="color:#66d9ef">return</span> (PyObject <span style="color:#f92672">*</span>)obj;
+}
+</code></pre></div><p>ガベージコレクションが動いた時用の関数が必要になります。抱えているオブジェクトを手繰れるようにする traverse と、参照を破棄する clear 、自身を破棄する dealloc の 3 つです。 <a href="https://docs.python.org/ja/3/c-api/gcsupport.html#c.Py_VISIT">Py_VISIT マクロ</a> は traverse を書くのに便利。 <a href="https://docs.python.org/ja/3/c-api/gcsupport.html#c.PyObject_GC_Track">PyObject_GC_Track</a> と対になる <a href="https://docs.python.org/ja/3/c-api/gcsupport.html#c.PyObject_GC_UnTrack">PyObject_GC_UnTrack</a> は dealloc の開始時に呼び出すようにします。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span>
+<span style="color:#a6e22e">advent2019__Spam_traverse</span>(_SpamObject <span style="color:#f92672">*</span>self, visitproc visit, <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>arg)
+{
+    Py_VISIT(self<span style="color:#f92672">-&gt;</span>it);
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+}
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span>
+<span style="color:#a6e22e">advent2019__Spam_clear</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    Py_CLEAR(self<span style="color:#f92672">-&gt;</span>it);
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+}
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span>
+<span style="color:#a6e22e">advent2019__Spam_dealloc</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    PyObject_GC_UnTrack(self);
+    advent2019__Spam_clear(self);
+    PyObject_GC_Del(self);
+}
+</code></pre></div><p>__iter__ は自身を返すだけなので簡単ですね。参照カウントの操作を忘れないようにしつつ。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019__Spam_iter</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    Py_INCREF(self);
+    <span style="color:#66d9ef">return</span> (PyObject <span style="color:#f92672">*</span>)self;
+}
+</code></pre></div><p>最後に __next__ 。 Python C/API 上では iternext という名前になります。組み込み関数 print と asyncio モジュールの sleep はクラス作成時に _print と _sleep という名前でクラス属性に持たせるようにしておきます、 Spam._Spam と同じ要領で。
+あとは Python で書いたコードを <a href="https://docs.python.org/ja/3/c-api/object.html#c.PyObject_GetAttrString">PyObject_GetAttrString</a>,<a href="https://docs.python.org/ja/3/c-api/object.html#c.PyObject_CallFunction">PyObject_CallFunction</a> らを用いて地道に移植していく作業です。呼ぶたびに戻り値が NULL になっていないかを確認します。不必要となったオブジェクトの参照カウントを減らす処理がしんどい。
+try 文の移植には <a href="https://docs.python.org/ja/3/c-api/exceptions.html#c.PyErr_Fetch">PyErr_Fetch</a>,<a href="https://docs.python.org/ja/3/c-api/exceptions.html#c.PyErr_GivenExceptionMatches">PyErr_GivenExceptionMatches</a>,<a href="https://docs.python.org/ja/3/c-api/exceptions.html#c.PyErr_Restore">PyErr_Restore</a> を使います。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019__Spam_iternext</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+        <span style="color:#75715e">// print(&#39;do something&#39;)
+</span><span style="color:#75715e"></span>        PyObject <span style="color:#f92672">*</span>printfunc <span style="color:#f92672">=</span> PyObject_GetAttrString((PyObject <span style="color:#f92672">*</span>)Py_TYPE(self), <span style="color:#e6db74">&#34;_print&#34;</span>);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>printfunc) { <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>ret <span style="color:#f92672">=</span> PyObject_CallFunction(printfunc, <span style="color:#e6db74">&#34;s&#34;</span>, <span style="color:#e6db74">&#34;do something&#34;</span>);
+        Py_DECREF(printfunc);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>ret) { <span style="color:#66d9ef">return</span> NULL; }
+        Py_DECREF(ret);
+
+        <span style="color:#75715e">// self._it = asyncio.sleep(1, &#39;RETURN VALUE&#39;).__await__()
+</span><span style="color:#75715e"></span>        PyObject <span style="color:#f92672">*</span>sleep_cofunc <span style="color:#f92672">=</span> PyObject_GetAttrString((PyObject <span style="color:#f92672">*</span>)Py_TYPE(self), <span style="color:#e6db74">&#34;_sleep&#34;</span>);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>sleep_cofunc) { <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>sleep_co <span style="color:#f92672">=</span> PyObject_CallFunction(sleep_cofunc, <span style="color:#e6db74">&#34;is&#34;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#34;RETURN VALUE&#34;</span>);
+        Py_DECREF(sleep_cofunc);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>sleep_co) { <span style="color:#66d9ef">return</span> NULL; }
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(Py_TYPE(sleep_co)<span style="color:#f92672">-&gt;</span>tp_as_async)) { Py_DECREF(sleep_co);  <span style="color:#66d9ef">return</span> NULL; }
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(Py_TYPE(sleep_co)<span style="color:#f92672">-&gt;</span>tp_as_async<span style="color:#f92672">-&gt;</span>am_await)) { Py_DECREF(sleep_co);  <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>temp <span style="color:#f92672">=</span> self<span style="color:#f92672">-&gt;</span>it;
+        self<span style="color:#f92672">-&gt;</span>it <span style="color:#f92672">=</span> Py_TYPE(sleep_co)<span style="color:#f92672">-&gt;</span>tp_as_async<span style="color:#f92672">-&gt;</span>am_await(sleep_co);
+        Py_DECREF(sleep_co);Py_XDECREF(temp);
+        <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">-&gt;</span>it <span style="color:#f92672">==</span> NULL) { <span style="color:#66d9ef">return</span> NULL; }
+
+        self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+    }
+    <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) {
+        <span style="color:#75715e">// next(self.it)
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (Py_TYPE(self<span style="color:#f92672">-&gt;</span>it)<span style="color:#f92672">-&gt;</span>tp_iternext <span style="color:#f92672">==</span> NULL) { PyErr_SetString(PyExc_TypeError, <span style="color:#e6db74">&#34;no iternext&#34;</span>); <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>ret <span style="color:#f92672">=</span> Py_TYPE(self<span style="color:#f92672">-&gt;</span>it)<span style="color:#f92672">-&gt;</span>tp_iternext(self<span style="color:#f92672">-&gt;</span>it);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>ret) {
+            <span style="color:#75715e">// except StopIteration as e
+</span><span style="color:#75715e"></span>            PyObject <span style="color:#f92672">*</span>type, <span style="color:#f92672">*</span>value, <span style="color:#f92672">*</span>traceback;
+            PyErr_Fetch(<span style="color:#f92672">&amp;</span>type, <span style="color:#f92672">&amp;</span>value, <span style="color:#f92672">&amp;</span>traceback);
+            <span style="color:#66d9ef">if</span> (PyErr_GivenExceptionMatches(type, PyExc_StopIteration)) {
+                Py_XDECREF(type);
+                Py_XDECREF(traceback);
+                <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>value) { PyErr_SetString(PyExc_ValueError, <span style="color:#e6db74">&#34;no StopIteration value&#34;</span>); <span style="color:#66d9ef">return</span> NULL; }
+                <span style="color:#75715e">// ret = e.value.lower()
+</span><span style="color:#75715e"></span>                PyObject <span style="color:#f92672">*</span>value2 <span style="color:#f92672">=</span> PyObject_CallMethod(value, <span style="color:#e6db74">&#34;lower&#34;</span>, NULL);
+                Py_DECREF(value);
+                <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>value2) { <span style="color:#66d9ef">return</span> NULL; }
+                <span style="color:#75715e">// raise StopIteration(ret)
+</span><span style="color:#75715e"></span>                PyErr_SetObject(PyExc_StopIteration, value2);
+                Py_DECREF(value2);
+
+                Py_CLEAR(self<span style="color:#f92672">-&gt;</span>it);
+                self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;
+            } <span style="color:#66d9ef">else</span> {
+                <span style="color:#75715e">// except:
+</span><span style="color:#75715e"></span>                <span style="color:#75715e">//     raise
+</span><span style="color:#75715e"></span>                PyErr_Restore(type, value, traceback);
+            }
+        }
+        <span style="color:#66d9ef">return</span> ret;
+    }
+
+    <span style="color:#75715e">// raise StopIteration(None)
+</span><span style="color:#75715e"></span>    PyErr_SetNone(PyExc_StopIteration);
+    <span style="color:#66d9ef">return</span> NULL;
+}
+</code></pre></div><p>これで _Spam クラスのメソッドがそろったので <a href="https://docs.python.org/ja/3/c-api/type.html#c.PyType_Spec">PyType_Spec</a> を定義します。ガベージコレクションで管理されるべきクラスであることををしめすフラグ <a href="https://docs.python.org/ja/3/c-api/typeobj.html#Py_TPFLAGS_HAVE_GC">Py_TPFLAGS_HAVE_GC</a> を設定するようにします。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">static</span> PyType_Slot advent2019__Spam_slots[] <span style="color:#f92672">=</span> {
+    {Py_tp_new, advent2019__Spam_new},
+    {Py_tp_iter, advent2019__Spam_iter},
+    {Py_tp_iternext, advent2019__Spam_iternext},
+    {Py_tp_traverse, advent2019__Spam_traverse},
+    {Py_tp_clear, advent2019__Spam_clear},
+    {Py_tp_dealloc, advent2019__Spam_dealloc},
+    {<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>},
+};
+
+
+<span style="color:#66d9ef">static</span> PyType_Spec advent2019__Spam_spec <span style="color:#f92672">=</span> {
+    .name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;advent2019._Spam&#34;</span>,
+    .basicsize <span style="color:#f92672">=</span> <span style="color:#66d9ef">sizeof</span>(_SpamObject),
+    .flags <span style="color:#f92672">=</span> Py_TPFLAGS_DEFAULT <span style="color:#f92672">|</span> Py_TPFLAGS_BASETYPE <span style="color:#f92672">|</span> Py_TPFLAGS_HAVE_GC,
+    .slots <span style="color:#f92672">=</span> advent2019__Spam_slots,
+};
+</code></pre></div><h1 id="おわりに">おわりに</h1>
+<p>Python C/API で Awaitable を実装してみました。また、これをおこなうにあたって必要な情報がまとまっている公式ドキュメントへのリンクを集めることができました。
+ところで。これは役に立つのでしょうか？ たったこれだけのことのためのコードがずいぶんと長く、 async def, await 構文の便利さを思い知っただけのような、いや CPython への理解を深めるのには役立つかもしれない………。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-conf:setup.cfg" data-lang="conf:setup.cfg"><span style="color:#66d9ef">[metadata]</span>
+<span style="color:#a6e22e">name</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">advent2019</span>
+<span style="color:#a6e22e">version</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">0.0.0</span>
+
+<span style="color:#66d9ef">[options]</span>
+<span style="color:#a6e22e">python_requires</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&gt;=3.5.0</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:setup.py" data-lang="python:setup.py"><span style="color:#f92672">from</span> setuptools <span style="color:#f92672">import</span> Extension, setup
+
+extensions <span style="color:#f92672">=</span> [Extension(<span style="color:#e6db74">&#39;advent2019&#39;</span>, sources<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;advent2019.c&#39;</span>])]
+
+setup(ext_modules<span style="color:#f92672">=</span>extensions)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c:advent2019.c" data-lang="c:advent2019.c"><span style="color:#75715e">#define PY_SSIZE_T_CLEAN
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;Python.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+
+<span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    PyObject_HEAD
+    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">char</span> state;
+    PyObject <span style="color:#f92672">*</span>it;
+} _SpamObject;
+
+
+<span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019__Spam_new</span>(PyTypeObject <span style="color:#f92672">*</span>type, PyObject <span style="color:#f92672">*</span>args, PyObject <span style="color:#f92672">*</span>kwargs)
+{
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>kwlist[] <span style="color:#f92672">=</span> {NULL};
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>PyArg_ParseTupleAndKeywords(args, kwargs, <span style="color:#e6db74">&#34;&#34;</span>, kwlist)) {
+        <span style="color:#66d9ef">return</span> NULL;
+    }
+
+    _SpamObject <span style="color:#f92672">*</span>obj <span style="color:#f92672">=</span> PyObject_GC_New(_SpamObject, type);
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>obj) { <span style="color:#66d9ef">return</span> NULL; }
+    obj<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    obj<span style="color:#f92672">-&gt;</span>it <span style="color:#f92672">=</span> NULL;
+
+    PyObject_GC_Track(obj);
+
+    <span style="color:#66d9ef">return</span> (PyObject <span style="color:#f92672">*</span>)obj;
+}
+
+
+<span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019__Spam_iter</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    Py_INCREF(self);
+    <span style="color:#66d9ef">return</span> (PyObject <span style="color:#f92672">*</span>)self;
+}
+
+
+<span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019__Spam_iternext</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+        <span style="color:#75715e">// print(&#39;do something&#39;)
+</span><span style="color:#75715e"></span>        PyObject <span style="color:#f92672">*</span>printfunc <span style="color:#f92672">=</span> PyObject_GetAttrString((PyObject <span style="color:#f92672">*</span>)Py_TYPE(self), <span style="color:#e6db74">&#34;_print&#34;</span>);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>printfunc) { <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>ret <span style="color:#f92672">=</span> PyObject_CallFunction(printfunc, <span style="color:#e6db74">&#34;s&#34;</span>, <span style="color:#e6db74">&#34;do something&#34;</span>);
+        Py_DECREF(printfunc);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>ret) { <span style="color:#66d9ef">return</span> NULL; }
+        Py_DECREF(ret);
+
+        <span style="color:#75715e">// self._it = asyncio.sleep(1, &#39;RETURN VALUE&#39;).__await__()
+</span><span style="color:#75715e"></span>        PyObject <span style="color:#f92672">*</span>sleep_cofunc <span style="color:#f92672">=</span> PyObject_GetAttrString((PyObject <span style="color:#f92672">*</span>)Py_TYPE(self), <span style="color:#e6db74">&#34;_sleep&#34;</span>);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>sleep_cofunc) { <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>sleep_co <span style="color:#f92672">=</span> PyObject_CallFunction(sleep_cofunc, <span style="color:#e6db74">&#34;is&#34;</span>, <span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#34;RETURN VALUE&#34;</span>);
+        Py_DECREF(sleep_cofunc);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>sleep_co) { <span style="color:#66d9ef">return</span> NULL; }
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(Py_TYPE(sleep_co)<span style="color:#f92672">-&gt;</span>tp_as_async)) { Py_DECREF(sleep_co);  <span style="color:#66d9ef">return</span> NULL; }
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(Py_TYPE(sleep_co)<span style="color:#f92672">-&gt;</span>tp_as_async<span style="color:#f92672">-&gt;</span>am_await)) { Py_DECREF(sleep_co);  <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>temp <span style="color:#f92672">=</span> self<span style="color:#f92672">-&gt;</span>it;
+        self<span style="color:#f92672">-&gt;</span>it <span style="color:#f92672">=</span> Py_TYPE(sleep_co)<span style="color:#f92672">-&gt;</span>tp_as_async<span style="color:#f92672">-&gt;</span>am_await(sleep_co);
+        Py_DECREF(sleep_co);
+        Py_XDECREF(temp);
+        <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">-&gt;</span>it <span style="color:#f92672">==</span> NULL) { <span style="color:#66d9ef">return</span> NULL; }
+
+        self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+    }
+    <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) {
+        <span style="color:#75715e">// next(self.it)
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (Py_TYPE(self<span style="color:#f92672">-&gt;</span>it)<span style="color:#f92672">-&gt;</span>tp_iternext <span style="color:#f92672">==</span> NULL) { PyErr_SetString(PyExc_TypeError, <span style="color:#e6db74">&#34;no iternext&#34;</span>); <span style="color:#66d9ef">return</span> NULL; }
+        PyObject <span style="color:#f92672">*</span>ret <span style="color:#f92672">=</span> Py_TYPE(self<span style="color:#f92672">-&gt;</span>it)<span style="color:#f92672">-&gt;</span>tp_iternext(self<span style="color:#f92672">-&gt;</span>it);
+        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>ret) {
+            <span style="color:#75715e">// except StopIteration as e
+</span><span style="color:#75715e"></span>            PyObject <span style="color:#f92672">*</span>type, <span style="color:#f92672">*</span>value, <span style="color:#f92672">*</span>traceback;PyErr_Fetch(<span style="color:#f92672">&amp;</span>type, <span style="color:#f92672">&amp;</span>value, <span style="color:#f92672">&amp;</span>traceback);
+            <span style="color:#66d9ef">if</span> (PyErr_GivenExceptionMatches(type, PyExc_StopIteration)) {
+                Py_XDECREF(type);
+                Py_XDECREF(traceback);
+                <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>value) { PyErr_SetString(PyExc_ValueError, <span style="color:#e6db74">&#34;no StopIteration value&#34;</span>); <span style="color:#66d9ef">return</span> NULL; }
+                <span style="color:#75715e">// ret = e.value.lower()
+</span><span style="color:#75715e"></span>                PyObject <span style="color:#f92672">*</span>value2 <span style="color:#f92672">=</span> PyObject_CallMethod(value, <span style="color:#e6db74">&#34;lower&#34;</span>, NULL);
+                Py_DECREF(value);
+                <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>value2) { <span style="color:#66d9ef">return</span> NULL; }
+                <span style="color:#75715e">// raise StopIteration(ret)
+</span><span style="color:#75715e"></span>                PyErr_SetObject(PyExc_StopIteration, value2);
+                Py_DECREF(value2);
+
+                Py_CLEAR(self<span style="color:#f92672">-&gt;</span>it);
+                self<span style="color:#f92672">-&gt;</span>state <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;
+            } <span style="color:#66d9ef">else</span> {
+                <span style="color:#75715e">// except:
+</span><span style="color:#75715e"></span>                <span style="color:#75715e">//     raise
+</span><span style="color:#75715e"></span>                PyErr_Restore(type, value, traceback);
+            }
+        }
+        <span style="color:#66d9ef">return</span> ret;
+    }
+
+    <span style="color:#75715e">// raise StopIteration(None)
+</span><span style="color:#75715e"></span>    PyErr_SetNone(PyExc_StopIteration);
+    <span style="color:#66d9ef">return</span> NULL;
+}
+
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span>
+<span style="color:#a6e22e">advent2019__Spam_traverse</span>(_SpamObject <span style="color:#f92672">*</span>self, visitproc visit, <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>arg)
+{
+    Py_VISIT(self<span style="color:#f92672">-&gt;</span>it);
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+}
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span>
+<span style="color:#a6e22e">advent2019__Spam_clear</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    Py_CLEAR(self<span style="color:#f92672">-&gt;</span>it);
+    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+}
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">void</span>
+<span style="color:#a6e22e">advent2019__Spam_dealloc</span>(_SpamObject <span style="color:#f92672">*</span>self)
+{
+    PyObject_GC_UnTrack(self);
+    advent2019__Spam_clear(self);
+    PyObject_GC_Del(self);
+}
+
+
+<span style="color:#66d9ef">static</span> PyType_Slot advent2019__Spam_slots[] <span style="color:#f92672">=</span> {
+    {Py_tp_new, advent2019__Spam_new},
+    {Py_tp_iter, advent2019__Spam_iter},
+    {Py_tp_iternext, advent2019__Spam_iternext},
+    {Py_tp_traverse, advent2019__Spam_traverse},
+    {Py_tp_clear, advent2019__Spam_clear},
+    {Py_tp_dealloc, advent2019__Spam_dealloc},
+    {<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>},
+};
+
+
+<span style="color:#66d9ef">static</span> PyType_Spec advent2019__Spam_spec <span style="color:#f92672">=</span> {
+    .name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;advent2019._Spam&#34;</span>,
+    .basicsize <span style="color:#f92672">=</span> <span style="color:#66d9ef">sizeof</span>(_SpamObject),
+    .flags <span style="color:#f92672">=</span> Py_TPFLAGS_DEFAULT <span style="color:#f92672">|</span> Py_TPFLAGS_BASETYPE <span style="color:#f92672">|</span> Py_TPFLAGS_HAVE_GC,
+    .slots <span style="color:#f92672">=</span> advent2019__Spam_slots,
+};
+
+
+<span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    PyObject_HEAD
+} SpamObject;
+
+
+<span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span>
+<span style="color:#a6e22e">advent2019_Spam_await</span>(SpamObject <span style="color:#f92672">*</span>self)
+{
+    PyObject <span style="color:#f92672">*</span>_Spam_Type <span style="color:#f92672">=</span> PyObject_GetAttrString((PyObject <span style="color:#f92672">*</span>)Py_TYPE(self), <span style="color:#e6db74">&#34;_Spam&#34;</span>);
+    <span style="color:#66d9ef">if</span> (_Spam_Type <span style="color:#f92672">==</span> NULL) { <span style="color:#66d9ef">return</span> NULL; }
+    PyObject <span style="color:#f92672">*</span>it <span style="color:#f92672">=</span> PyObject_CallFunction(_Spam_Type, <span style="color:#e6db74">&#34;&#34;</span>);
+    Py_DECREF(_Spam_Type);
+
+    <span style="color:#66d9ef">return</span> it;
+}
+
+
+<span style="color:#66d9ef">static</span> PyType_Slot advent2019_Spam_slots[] <span style="color:#f92672">=</span> {
+    {Py_am_await, (unaryfunc)advent2019_Spam_await},
+    {<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>},
+};
+
+
+<span style="color:#66d9ef">static</span> PyType_Spec advent2019_Spam_spec <span style="color:#f92672">=</span> {
+    .name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;advent2019.Spam&#34;</span>,
+    .basicsize <span style="color:#f92672">=</span> <span style="color:#66d9ef">sizeof</span>(SpamObject),
+    .flags <span style="color:#f92672">=</span> Py_TPFLAGS_DEFAULT <span style="color:#f92672">|</span> Py_TPFLAGS_BASETYPE,
+    .slots <span style="color:#f92672">=</span> advent2019_Spam_slots,
+};
+
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">advent2019_exec</span>(PyObject <span style="color:#f92672">*</span>module) {
+    <span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>;
+    PyObject <span style="color:#f92672">*</span>builtins <span style="color:#f92672">=</span> NULL;
+    PyObject <span style="color:#f92672">*</span>printfunc <span style="color:#f92672">=</span> NULL;
+    PyObject <span style="color:#f92672">*</span>asyncio_module <span style="color:#f92672">=</span> NULL;
+    PyObject <span style="color:#f92672">*</span>sleep <span style="color:#f92672">=</span> NULL;
+    PyObject <span style="color:#f92672">*</span>_Spam_Type <span style="color:#f92672">=</span> NULL;
+    PyObject <span style="color:#f92672">*</span>Spam_Type <span style="color:#f92672">=</span> NULL;
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(builtins <span style="color:#f92672">=</span> PyEval_GetBuiltins())) { <span style="color:#66d9ef">goto</span> cleanup; }  <span style="color:#75715e">/* borrowed */</span>
+    <span style="color:#75715e">// fetch the builtin function print
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(printfunc <span style="color:#f92672">=</span> PyMapping_GetItemString(builtins, <span style="color:#e6db74">&#34;print&#34;</span>))) { <span style="color:#66d9ef">goto</span> cleanup; }
+
+    <span style="color:#75715e">// import asyncio
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(asyncio_module <span style="color:#f92672">=</span> PyImport_ImportModule(<span style="color:#e6db74">&#34;asyncio&#34;</span>))) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(sleep <span style="color:#f92672">=</span> PyObject_GetAttrString(asyncio_module, <span style="color:#e6db74">&#34;sleep&#34;</span>))) { <span style="color:#66d9ef">goto</span> cleanup; };
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(_Spam_Type <span style="color:#f92672">=</span> PyType_FromSpec(<span style="color:#f92672">&amp;</span>advent2019__Spam_spec))) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#75715e">// _Spam._print = print
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(_Spam_Type, <span style="color:#e6db74">&#34;_print&#34;</span>, printfunc)) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#75715e">// _Spam._sleep = asyncio.sleep
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(_Spam_Type, <span style="color:#e6db74">&#34;_sleep&#34;</span>, sleep)) { <span style="color:#66d9ef">goto</span> cleanup; }
+
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(Spam_Type <span style="color:#f92672">=</span> PyType_FromSpec(<span style="color:#f92672">&amp;</span>advent2019_Spam_spec))) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#75715e">// Spam._Spam = _Spam
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(Spam_Type, <span style="color:#e6db74">&#34;_Spam&#34;</span>, _Spam_Type)) { <span style="color:#66d9ef">goto</span> cleanup; }
+
+    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(module, <span style="color:#e6db74">&#34;Spam&#34;</span>, Spam_Type)) { <span style="color:#66d9ef">goto</span> cleanup; }
+    <span style="color:#66d9ef">if</span> (PyObject_SetAttrString(module, <span style="color:#e6db74">&#34;_Spam&#34;</span>, _Spam_Type)) { <span style="color:#66d9ef">goto</span> cleanup; }
+
+    ret <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+cleanup:
+    Py_XDECREF(printfunc);
+    Py_XDECREF(asyncio_module);
+    Py_XDECREF(sleep);
+    Py_XDECREF(_Spam_Type);
+    Py_XDECREF(Spam_Type);
+
+    <span style="color:#66d9ef">if</span> (ret) { Py_XDECREF(module); }
+    <span style="color:#66d9ef">return</span> ret;
+}
+
+
+<span style="color:#66d9ef">static</span> PyModuleDef_Slot advent2019_slots[] <span style="color:#f92672">=</span> {
+    {Py_mod_exec, advent2019_exec},
+    {<span style="color:#ae81ff">0</span>, NULL}
+};
+
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">struct</span> PyModuleDef advent2019_moduledef <span style="color:#f92672">=</span> {
+    PyModuleDef_HEAD_INIT,
+    .m_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;advent2019&#34;</span>,
+    .m_slots <span style="color:#f92672">=</span> advent2019_slots,
+};
+
+
+PyMODINIT_FUNC <span style="color:#a6e22e">PyInit_advent2019</span>(<span style="color:#66d9ef">void</span>) {
+    <span style="color:#66d9ef">return</span> PyModuleDef_Init(<span style="color:#f92672">&amp;</span>advent2019_moduledef);
+}
+</code></pre></div><p>これをつかってみるコードの例</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> asyncio
+
+<span style="color:#f92672">import</span> advent2019
+
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    v <span style="color:#f92672">=</span> await advent2019<span style="color:#f92672">.</span>Spam()
+    <span style="color:#66d9ef">print</span>(v)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+    <span style="color:#66d9ef">if</span> sys<span style="color:#f92672">.</span>version_info <span style="color:#f92672">&lt;</span> (<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">7</span>):
+        loop <span style="color:#f92672">=</span> asyncio<span style="color:#f92672">.</span>get_event_loop()
+        loop<span style="color:#f92672">.</span>run_until_complete(main())
+        loop<span style="color:#f92672">.</span>close()
+    <span style="color:#66d9ef">else</span>:
+        asyncio<span style="color:#f92672">.</span>run(main())
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Automation] Detect changes in website and notify LINE | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Automation] Detect changes in website and notify LINE</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 7, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/html">HTML</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/line">Line</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/linenotify">LineNotify</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I am a high school student.
+Due to the influence of this corona, I could not go to school, and I was told to regularly visit the website prepared by the school and study at home according to the instructions written on that site, but the website is heavy and every day Checking for updates is a hassle. But I want to get the information as soon as possible. Therefore, I decided to write a Python program that detects WEB site updates and notifies LINE.</p>
+<h1 id="overall-flow">Overall flow</h1>
+<ol>
+<li>Get the website HTML using urllib, the standard Python library.</li>
+<li>Analyze it using a library called BeautifulSoup and extract only the necessary parts.</li>
+<li>(From the 2nd loop) Compare the one extracted this time with the one extracted last time and saved in the file.</li>
+<li>Save the new extract to a file in CSV format.
+LINE Notify will notify you of the result of comparison made in 4.3.</li>
+</ol>
+<p>Repeat this.
+Each time you run it, compare it with the one you got the last time you ran it. (This program starts and ends every time)
+This program itself does not have a function to be executed periodically, so this program is set on the server side on the server to be executed periodically.</p>
+<p>#Explanation of the whole flow
+When it is acquired by urllib, HTML is acquired as a string. This can be easily processed for each tag using the library called Beautiful Soup.
+csv is a file format in which elements are separated by commas. It&rsquo;s like a list in Python.
+I chose csv because it is easy to handle. It can be saved and read in the standard library.
+LINE Notify wants you to follow the account called LINE Notify and notify the management screen When you log in with your LINE account and specify the group or talk you want to notify, an access token is issued, and when you use it to access the specified URL, LINENotify A message will be sent from your account. (I think it is different from the so-called Bot)</p>
+<p>LINE Notify referred to <a href="https://qiita.com/moriita/items/5b199ac6b14ceaa4f7c9">https://qiita.com/moriita/items/5b199ac6b14ceaa4f7c9</a>. Please see here for details.</p>
+<p>#Code
+In the article that referred to LINENotify, it was divided by class, so I tried dividing it into two files in the same way.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:notify.py" data-lang="python:notify.py"><span style="color:#f92672">import</span> requests
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LINENotifyBot</span>:
+    API_URL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://notify-api.line.me/api/notify&#34;</span>
+    <span style="color:#66d9ef">def</span> __init__(self, access_token):
+        self<span style="color:#f92672">.</span>headers <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;Authorization&#39;</span>:<span style="color:#e6db74">&#39;Bearer&#39;</span> <span style="color:#f92672">+</span> access_token}
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">send</span>(self, message, image<span style="color:#f92672">=</span>None, sticker_package_id<span style="color:#f92672">=</span>None, sticker_id<span style="color:#f92672">=</span>None):
+        message <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span> <span style="color:#f92672">+</span> message
+        payload <span style="color:#f92672">=</span> {
+                <span style="color:#e6db74">&#39;message&#39;</span>: message,
+                <span style="color:#e6db74">&#39;stickerPackageId&#39;</span>: sticker_package_id,
+                <span style="color:#e6db74">&#39;stickerId&#39;</span>: sticker_id
+            }
+        files <span style="color:#f92672">=</span> {}
+        <span style="color:#66d9ef">if</span> image <span style="color:#f92672">!=</span> None:
+            files <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;imageFile&#39;</span>: open(image,<span style="color:#e6db74">&#39;rb&#39;</span>)}
+        r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(self<span style="color:#f92672">.</span>API_URL, headers<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>headers, data<span style="color:#f92672">=</span>payload, files<span style="color:#f92672">=</span>files)
+
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> csv
+<span style="color:#f92672">import</span> urllib.request<span style="color:#f92672">,</span> urllib.error
+<span style="color:#f92672">from</span> bs4 <span style="color:#f92672">import</span> BeautifulSoup
+<span style="color:#f92672">from</span> notify <span style="color:#f92672">import</span> LINENotifyBot
+<span style="color:#f92672">import</span> logging
+
+<span style="color:#75715e"># Decide the format to record the log</span>
+log_format <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%(levelname)s</span><span style="color:#e6db74">: </span><span style="color:#e6db74">%(asctime)s</span><span style="color:#e6db74"> :</span><span style="color:#e6db74">%(message)s</span><span style="color:#e6db74">&#39;</span>
+logging<span style="color:#f92672">.</span>basicConfig(filename<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;path/log.log&#39;</span>, level<span style="color:#f92672">=</span>logging<span style="color:#f92672">.</span>INFO, format<span style="color:#f92672">=</span>log_format)
+logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;START&#39;</span>)
+url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;URL of the site you want to detect changes&#34;</span>
+bot <span style="color:#f92672">=</span> LINENotifyBot (<span style="color:#e6db74">&#39;access token&#39;</span>)
+<span style="color:#66d9ef">try</span>:
+    <span style="color:#75715e">#Get HTML</span>
+    html <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(url)
+    Record the <span style="color:#75715e">#HTML status code (whether it was successfully acquired)</span>
+    logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;HTTP STATUS CODE:&#39;</span><span style="color:#f92672">+</span> str(html<span style="color:#f92672">.</span>getcode()))
+<span style="color:#66d9ef">except</span>:
+    <span style="color:#75715e"># Even if acquisition fails, notify LINE and log</span>
+    bot<span style="color:#f92672">.</span>send(<span style="color:#e6db74">&#39;URL acquisition failed&#39;</span>)
+    <span style="color:#75715e"># Killed just in case</span>
+    sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+soup <span style="color:#f92672">=</span> BeautifulSoup(html, <span style="color:#e6db74">&#34;html.parser&#34;</span>)
+Extract only a tag <span style="color:#f92672">from</span> <span style="color:#75715e">#HTML</span>
+tags <span style="color:#f92672">=</span> soup<span style="color:#f92672">.</span>find_all(<span style="color:#e6db74">&#34;a&#34;</span>)
+links <span style="color:#f92672">=</span> list()
+<span style="color:#75715e"># The link I took last time</span>
+oldlinks <span style="color:#f92672">=</span> set()
+<span style="color:#75715e"># Link taken this time</span>
+newlinks <span style="color:#f92672">=</span> set()
+<span style="color:#66d9ef">for</span> tag <span style="color:#f92672">in</span> tags:
+    Extract only the URL of the link <span style="color:#f92672">from</span> the <span style="color:#75715e">#a tag.</span>
+    links<span style="color:#f92672">.</span>append(tag<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;href&#39;</span>))
+<span style="color:#66d9ef">try</span>:
+    <span style="color:#75715e"># Load previously retrieved link from file</span>
+    <span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#39;path/links.csv&#39;</span>,<span style="color:#e6db74">&#39;r&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        reader <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>reader(f)
+        <span style="color:#66d9ef">for</span> row <span style="color:#f92672">in</span> reader:
+            oldlinks <span style="color:#f92672">=</span> set(row)
+        logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;Opened csv file&#34;&#39;</span>)
+<span style="color:#66d9ef">except</span>:
+    <span style="color:#75715e"># If something fails, notify LINE and log</span>
+    bot<span style="color:#f92672">.</span>send(<span style="color:#e6db74">&#39;File acquisition failed&#39;</span>)
+    logging<span style="color:#f92672">.</span>error(<span style="color:#e6db74">&#39;Failed to get csv file&#39;</span>)
+
+<span style="color:#66d9ef">try</span>:
+    <span style="color:#75715e">#Record the link acquired this time (overwrite)</span>
+    <span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#39;path/links.csv&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        writer <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>writer(f, lineterminator<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+        writer<span style="color:#f92672">.</span>writerow(links)
+    logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;Writed csv file&#39;</span>)
+<span style="color:#66d9ef">except</span>:
+    <span style="color:#75715e">#Notification, log if failed</span>
+    bot<span style="color:#f92672">.</span>send(<span style="color:#e6db74">&#39;File write failed&#39;</span>)
+    logging<span style="color:#f92672">.</span>error(<span style="color:#e6db74">&#39;Failed to write csv file&#39;</span>)
+    sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+
+<span style="color:#66d9ef">try</span>:
+    newlinks <span style="color:#f92672">=</span> set(links)
+    You can see the difference by subtracting <span style="color:#66d9ef">with</span> <span style="color:#75715e"># set</span>
+    <span style="color:#75715e"># Newly discovered link this time</span>
+    added <span style="color:#f92672">=</span> newlinks<span style="color:#f92672">-</span>oldlinks
+    <span style="color:#75715e"># The link that was there last time but this time is gone</span>
+    removed <span style="color:#f92672">=</span> oldlinks<span style="color:#f92672">-</span>newlinks
+    <span style="color:#66d9ef">for</span> link <span style="color:#f92672">in</span> added:
+        <span style="color:#75715e">#Notify when added</span>
+        <span style="color:#75715e"># When I tried to notify the added URL itself, it said that I should not put the link unnecessarily, so I decided to stop it for the time being</span>
+        bot<span style="color:#f92672">.</span>send(<span style="color:#e6db74">&#39;Link added&#39;</span>)
+
+    <span style="color:#66d9ef">for</span> link <span style="color:#f92672">in</span> removed:
+        <span style="color:#75715e"># Similar to adding</span>
+        bot<span style="color:#f92672">.</span>send(<span style="color:#e6db74">&#39;link has been deleted&#39;</span>)
+
+    logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;Compared links&#39;</span>)
+
+<span style="color:#66d9ef">except</span>:
+    <span style="color:#75715e"># If you make a mistake...</span>
+    bot<span style="color:#f92672">.</span>send(<span style="color:#e6db74">&#39;Compare failed&#39;</span>)
+    logging<span style="color:#f92672">.</span>error(<span style="color:#e6db74">&#39;Failed to compare&#39;</span>)
+    sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+
+logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;DONE&#39;</span>)
+</code></pre></div><p>The <code>path</code> is the location where these programs, logs and recorded files are stored.
+You probably don&rsquo;t need <code>path/</code> if everything is in the same folder.</p>
+<p>The <code>URL of the site you want to detect changes</code> is the URL of the site you want to see regularly, as is.</p>
+<p>The <code>access token</code> is the access token of LINE Notify. For more details, please see <a href="https://qiita.com/moriita/items/5b199ac6b14ceaa4f7c9">https://qiita.com/moriita/items/5b199ac6b14ceaa4f7c9</a>.</p>
+<p>I am also logging using the logging library.
+This is to check if the website has been successfully acquired occasionally.
+Regarding logging, <a href="https://qiita.com/__init__/items/91e5841ed53d55a7895e">https://qiita.com/<strong>init</strong>/items/91e5841ed53d55a7895e</a> Please refer to this site for details.</p>
+<h1 id="how-to-execute">How to execute</h1>
+<p>I borrowed VPS and put these files in and run them on a regular basis with cron.
+All that is written in <a href="https://qiita.com/msrks/items/6a180e03d7af622f2101">https://qiita.com/msrks/items/6a180e03d7af622f2101</a> is replaced with this Python file.
+I think you can probably do it with Lamda on AWS (<a href="https://qiita.com/Toshinori_Hayashi/items/5b0a72dc64ced91717c0">https://qiita.com/Toshinori_Hayashi/items/5b0a72dc64ced91717c0</a>) I don&rsquo;t know because I haven&rsquo;t used it.
+Raspai may be the easiest.</p>
+<h1 id="finally">Finally</h1>
+<p>Thank you for reading.
+If you find any mistakes, questions, or improvements, please leave a comment or edit request.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Deeper about subprocess (3 series, updated version) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Deeper about subprocess (3 series, updated version)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 5, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/subprocess">subprocess</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p><a href="https://qiita.com/HidKamiya/items/b2244fb01715eca33965">Article I wrote in 2017</a>Thecontentsarebasedon2series,andIthoughtthatitwouldbebettertoupdatetheinformation,andasaresultofstartingediting,Thisarticlewasnewlycreatedbecauseitbecamenecessarytoaddalargeamountofpostscript,including<code>subprocess.run()</code>.</p>
+<p>As a goal, while explaining the subprocess function from before (support is not finished), we will make synonymous descriptions with <code>subprocess.run()</code> and <code>subprocess.Popen()</code>. Furthermore, we will discuss more diverse descriptions using these.</p>
+<p>If you are in a hurry, you can read the common rules of cmd description and run() and later, and there will be no problem.</p>
+<p>The story of what the module does in the first place is <a href="https://docs.python.org/ja/3/library/subprocess.html">official</a>or<a href="https://qiita.com/Seecaprest/items/0245a16825789b0263ad">thisarticle</a>.</p>
+<p>If you are asked what the conclusion is, **I will leave it to <code>subprocess.run()</code> as far as I can. If you need more complicated processing, use <code>subprocess.Popen()</code> which is the base of <code>subprocess.run()</code>. **As far as I have investigated, it means that the functions introduced in this article are unnecessary (all can be replaced).</p>
+<pre><code class="language-py:" data-lang="py:">import io
+import os
+import time
+import subprocess
+</code></pre><p>Experimental file</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:hello.py" data-lang="py:hello.py"><span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Hello world!&#39;</span>)
+</code></pre></div><h1 id="old-shell-command-execution-method">Old shell command execution method</h1>
+<p>I have no chance to use it anymore, but it will be useful for finding old code, so I will summarize it.</p>
+<h4 id="ossystem"><code>os.system()</code></h4>
+<blockquote>
+<p><code>os.system(command)</code> (<a href="https://docs.python.org/ja/3/library/os.html#os.system">formal</a>)
+Executes a command (string) within a subshell. This function is implemented using the standard C function system() and has the same restrictions as system(). Changes to sys.stdin etc. will not be reflected in the environment of the executed command.
+(Omitted)
+The subprocess module provides more powerful functionality for executing new processes and getting the results. It is recommended to use the subprocess module instead of this function.</p>
+</blockquote>
+<pre><code class="language-py:os.system()" data-lang="py:os.system()"># The result is output on the terminal
+print(os.system('ls')) # 0
+
+# On Terminal → sh: 1: tekito: not found
+print(os.system('tekito')) # 32512 (← environment-dependent? A number other than 0 is returned)
+</code></pre><p><code>os.spawn</code> functions (<code>os.spawnl(mode, path, ...)</code>, <code>os.spawnle(mode, path, ..., env)</code>, <code>os.spawnlp(mode, file, .. ..)</code>, <code>os.spawnlpe(mode, file, ..., env)</code>, <code>os.spawnv(mode, path, args)</code>, <code>os.spawnve(mode, path, args, env)</code>, <code>os.spawnvp(mode, file, args)</code>, <code>os.spawnvpe(mode, file, args, env)</code>) ~~ I don&rsquo;t know well ~~ It seems to be troublesome to do it in detail, so the split verb itself is &quot; It seems to be a nuance, such as &ldquo;(creating a process)&rdquo;.</p>
+<h4 id="ospopen"><code>os.popen()</code></h4>
+<blockquote>
+<p><code>os.popen(cmd, mode='r', buffering=-1)</code> (<a href="https://docs.python.org/ja/3/library/os.html#os.popen">formal</a>)
+Opens a pipe I/O to/from the command cmd. The return value is an open file object connected to the pipe and can be read or written depending on whether mode is&rsquo;r&rsquo; (default) or&rsquo;w&rsquo;.
+(Omitted)
+It is implemented using subprocess.Popen. See the class documentation for a more powerful way to manage and communicate with subprocesses.</p>
+</blockquote>
+<pre><code class="language-py:os.popen()" data-lang="py:os.popen()"># Read the output result
+print(os.popen('ls h*.py','r').readlines())
+'''
+['hello.py\n','hello2.py\n']
+'''
+</code></pre><p>Common rules for cmd description in # subprocess
+Give as a string →<code>shell=True</code>
+・Malfunction risk due to the inclusion of quotes
+Give as a list of strings → <code>shell=False (default)</code>
+・Low degrees of freedom because wild cards cannot be used</p>
+<blockquote>
+<p>(<a href="https://docs.python.org/ja/3/library/subprocess.html#frequently-used-arguments">Official</a>)
+If shell is True, the specified command will be executed by the shell. You are using Python primarily for enhanced control flow (over most system shells), and also for shell pipes, filename wildcards, environment variable expansion, expansion of ~ into your home directory, etc. This may be useful if you want easy access to other shell features.
+(<a href="https://docs.python.org/ja/3/library/subprocess.html#security-considerations">Official</a>)
+If you explicitly call the shell with <code>shell=True</code>, it is your responsibility to ensure proper quoting of all whitespace and metacharacters to address a shell injection vulnerability.</p>
+</blockquote>
+<p>Command that can be realized only with ```py:shell=True</p>
+<h1 id="method-of-giving-as-a-character-string-list-the-following-5-are-not-possible-with-this-notation">Method of giving as a character string list (the following 5 are not possible with this notation)</h1>
+<p>print(subprocess.call([&lsquo;ls&rsquo;,'-l&rsquo;], shell=False)) # 0</p>
+<p>#Shell pipeline
+print(subprocess.call(&lsquo;echo -e &ldquo;a\nb\nc&rdquo; | wc -l&rsquo;, shell=True)) # 0
+#Semicolon
+print(subprocess.call(&lsquo;echo Failed.; exit 1&rsquo;, shell=True)) # 1</p>
+<h1 id="wildcard">Wildcard</h1>
+<p>print(subprocess.call(&lsquo;ls -l *.py&rsquo;, shell=True)) # 0</p>
+<h1 id="environment-variable">Environment variable</h1>
+<p>print(subprocess.call(&lsquo;echo $HOME&rsquo;, shell=True)) # 0</p>
+<h1 id="tilde-symbol-for-home">Tilde symbol for HOME</h1>
+<p>print(subprocess.call(&lsquo;ls -l ~&rsquo;, shell=True)) # 0</p>
+<pre><code>
+Functions before integration by #subprocess.run()
+
+There are three types shown below. They are roughly divided into three elements in the table below. Both can be turned on/off in `subprocess.run()`, so it is no longer necessary.
+
+| Function name | Exit status | Output result | CalledProcessError |
+| :-: | :-: | :-: | :-: |
+| (Argument/attribute in .run()) | .returncode | .stdout | check |
+| subprocess.call() | 〇 | | |
+| subprocess.check_call() | 〇 | | 〇 |
+| subprocess.check_output() | | 〇 | 〇 |
+
+#### `subprocess.call()`
+
+`subprocess.call(args, *, stdin=None, stdout=None, stderr=None, shell=False, cwd=None, timeout=None)`
+Command execution. The return value is the end status (0 means normal end).
+
+##### Main options ① (standard input/output, timeout)
+
+** (common to other subprocess functions) **
+
+When specifying a file for standard input/output, put it in `open()`.
+It's close to a digression, but in Python3, there is no problem if you choose bytes type (`mode='rb'/'wb'`) rather than str type (`mode='r'/'w'`) ( It is a story to understand if you look it up, but in many cases they either support it or only support the bytes type).
+
+```py: Main option usage example
+print(subprocess.call(['cat','hello.py']))) # 0
+# Specify standard input and standard output (the second is hello2.py created)
+print(subprocess.call(['cat'], stdin=open('hello.py','rb')))) # 0
+print(subprocess.call(['cat','hello.py'], stdout=open('hello2.py','wb'))) # 0
+
+# specify timeout
+print(subprocess.call(['sleep', '3'], timeout=1)) # TimeoutExpired
+
+# (Supplement) Even with the cwd option for specifying the execution directory, ~ is not supported.
+print(subprocess.call(['ls','-l'], shell=False, cwd = &quot;~&quot;)) # FileNotFoundError
+</code></pre><h4 id="subprocesscheck_call"><code>subprocess.check_call()</code></h4>
+<p><code>subprocess.check_call(args, *, stdin=None, stdout=None, stderr=None, shell=False, cwd=None, timeout=None)</code>
+Command execution. The return value is the end status (0 means normal end). Returns <code>CalledProcessError</code> at abnormal termination.</p>
+<pre><code class="language-py:check_call()" data-lang="py:check_call()"># Successful completion
+print(subprocess.call(['cat','hello.py']))) # 0
+print(subprocess.check_call(['cat','hello.py']))) # 0
+
+#Abend: return exception error instead of error status
+print(subprocess.call(['cat','undefined.py'])) # 1
+print(subprocess.check_call(['cat','undefined.py'])) # CalledProcessError
+</code></pre><h4 id="subprocesscheck_outputsubprocesscheck_outputargs--stdinnone-stderrnone-shellfalse-cwdnone-encodingnone-errorsnone-universal_newlinesnone-timeoutnone-textnone"><code>subprocess.check_output()``subprocess.check_output(args, *, stdin=None, stderr=None, shell=False, cwd=None, encoding=None, errors=None, universal_newlines=None, timeout=None, text=None)</code></h4>
+<p>Command execution. The return value is standard output.</p>
+<blockquote>
+<p>(<a href="https://docs.python.org/ja/3/library/subprocess.html#subprocess.check_output">Official</a>)
+By default, this function returns the data as encoded bytes.</p>
+</blockquote>
+<p>Therefore, if it is a character string, etc., it is decoded and then processed.</p>
+<pre><code class="language-py:check_output()" data-lang="py:check_output()">o = subprocess.check_output('ls h*.py', shell=True)
+print(o) # b'hello.py\nhello2.py\n'
+print(o.decode().strip().split('\n')) # ['hello.py','hello2.py']
+</code></pre><h5 id="main-options--standard-error-output-special-value">Main options ② (standard error output, special value)</h5>
+<p>** (common to other subprocess functions) **</p>
+<p>You can change the output destination depending on what you give to <code>stderr</code>.</p>
+<ul>
+<li>subprocess.DEVNULL: Standard input/output destination is specified to os.devnull (bit bucket, black hole)</li>
+<li>subprocess.PIPE: Pipe specification to standard input/output destination</li>
+<li>subprocess.STDOUT: Specifies that standard error output is output to the same handle as standard output (only for 2&gt;1&amp;.stderr)</li>
+</ul>
+<pre><code class="language-py:" data-lang="py:"># Discard all output
+o = subprocess.call(['cat','undefined.py'], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+# Get standard output
+try:
+    o = subprocess.check_output(['cat','hello.py'])
+    print(o) # b &quot;print('Hello world!')&quot;
+except subprocess.CalledProcessError as e:
+    print('ERROR:', e.output)
+
+# Get standard error output
+try:
+    o = subprocess.check_output(['cat','undefined.py'], stderr=subprocess.PIPE)
+    print(o)
+except subprocess.CalledProcessError as e:
+    print('ERROR:', e.stderr) # ERROR: b'cat: undefined.py: No such file or directory\n'
+
+# Get standard error integrated on standard output
+try:
+    o = subprocess.check_output(['cat','undefined.py'], stderr=subprocess.STDOUT)
+    print(o)
+except subprocess.CalledProcessError as e:
+    Note that it is e.stdout, not #e.stderr. You can also use e.output.
+    print('ERROR:', e.stdout) # ERROR: b'cat: undefined.py: No such file or directory\n'
+</code></pre><p>Replaced by #subprocess.run()</p>
+<blockquote>
+<p>(<a href="https://docs.python.org/ja/3/library/subprocess.html#using-the-subprocess-module">Official</a>)
+The recommended way to launch a subprocess is to use the run() function, which handles all usages. For more advanced usage you can also use the underlying Popen interface directly.</p>
+</blockquote>
+<p>So, replace the above code with <code>run()</code>. See the table above for the specified options.</p>
+<h4 id="subprocessrun"><code>subprocess.run()</code></h4>
+<p><code>subprocess.run(args, *, stdin=None, input=None, stdout=None, stderr=None, capture_output=False, shell=False, cwd=None, timeout=None, check=False, encoding=None, errors =None, text=None, env=None, universal_newlines=None)</code></p>
+<h5 id="subprocesscall-replacement">Subprocess.call() replacement</h5>
+<p>Add <code>.returncode</code>.
+In addition to <code>stdin</code> used when introducing <code>subprocess.call()</code>, there is an option called <code>input</code>. This is the standard input specification using <code>subprocess.Popen().communicate()</code> described later, and specifies the character string.</p>
+<pre><code class="language-py:run()" data-lang="py:run()">print(subprocess.run('ls -l h*.py', shell=True).returncode) # 0
+#Specify standard input/standard output (hello2.py is created)
+print(subprocess.run(['cat'], stdin=open('hello.py','rb'), stdout=open('hello2.py','wb')).returncode) # 0
+# (use input, almost the same as above)
+print(subprocess.run(['cat'], input=open('hello.py','rb').read(), stdout=open('hello2.py','wb')).returncode) # 0
+
+# specify timeout
+print(subprocess.run(['sleep', '3'], timeout=1).returncode) # TimeoutExpired
+</code></pre><h5 id="subprocesscheck_call-replacement">Subprocess.check_call() replacement</h5>
+<p>Add <code>check=True</code>. There is also a later method called <code>.check_returncode()</code>.</p>
+<pre><code class="language-py:run()" data-lang="py:run()"># Success status
+print(subprocess.run(['cat','hello.py']).returncode) # 0
+print(subprocess.run(['cat','hello.py'], check=True).returncode) # 0
+
+#Return exception error instead of error status
+print(subprocess.run(['cat','undefined.py']).returncode) # 1
+print(subprocess.run(['cat','undefined.py'], check=True).returncode) # CalledProcessError
+
+# (Supplement) Post-output error output using check_returncode()
+p = subprocess.run(['cat','undefined.py'], check=False)
+print(p.returncode) #1
+print(p.check_returncode()) # CalledProcessError
+</code></pre><h5 id="subprocesscheck_output-replacement">Subprocess.check_output() replacement</h5>
+<p>Use the <code>stdout</code> option and <code>.stdout</code>.</p>
+<pre><code class="language-py:run()" data-lang="py:run()">o = subprocess.run('ls h*.py', shell=True, stdout=subprocess.PIPE, check=True).stdout
+print(o) # b'hello.py\nhello2.py\n'
+print(o.decode().strip().split('\n')) # ['hello.py','hello2.py']
+</code></pre><p>The standard error output related operations have a new optional function, which allows more freedom when using <code>run()</code> than when using <code>check_output()</code>.</p>
+<pre><code class="language-py:" data-lang="py:"># check=False (default) allows you to peek at strerr without stopping with an error
+o = subprocess.run(['cat','undefined.py'], check=False, capture_output=True)
+print((o.stdout, o.stderr)) # (b'', b'cat: undefined.py: No such file or directory\n')
+
+# Integrate standard error output to standard output.
+o = subprocess.run(['cat','undefined.py'], check=False, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+print(o.stdout) # b'cat: undefined.py: No such file or directory\n'
+
+PIPE is specified for both standard output and standard error output when # capture_output=True.
+try:
+    o = subprocess.run(['cat','undefined.py'], check=True, capture_output=True)
+    print(o.stdout)
+except subprocess.CalledProcessError as e:
+    print('ERROR:',e.stderr) # ERROR: b'cat: undefined.py: No such file or directory\n'
+</code></pre><p>Highly flexible processing by #subprocess.Popen()</p>
+<blockquote>
+<p><a href="https://docs.python.org/ja/3/library/subprocess.html#popen-constructor">Official</a>
+Within this module, the underlying process creation and management is handled by the Popen class. The Popen class offers a lot of flexibility to allow developers to handle less common cases not covered by convenience functions.</p>
+</blockquote>
+<p>So, introduce flexibility. In particular, we will focus on those that cannot be reproduced with <code>run()</code>.
+The main feature is that <code>subprocess.Popen()</code> only creates a process and does not wait for it to finish**. Use <code>.poll()</code> to check if it has finished, and to check if it has finished before proceeding. Execute <code>.wait()</code>.</p>
+<h4 id="replacement-example-call">Replacement example (<code>call()</code>)</h4>
+<p>**Many arguments and attributes of <code>Popen()</code> are common with <code>run()</code>. **To reproduce <code>subprocess.call()</code>, use <code>.returncode</code> that was also used in <code>subprocess.run()</code>. When reproducing other code, you can do the same as for <code>run()</code>.</p>
+<pre><code class="language-py:Popen()" data-lang="py:Popen()"># Specify standard input and standard output (the second is hello2.py created)
+p = subprocess.Popen('ls -l h*.py', shell=True)
+p.wait()
+print(p.returncode) # 0
+
+#Specify standard input/standard output (hello2.py is created)
+p = subprocess.Popen(['cat'], stdin=open('hello.py','rb'), stdout=open('hello2.py','wb'))
+p.wait()
+print(p.returncode) # 0
+
+# specify timeout
+p = subprocess.Popen(['sleep', '3'])
+p.wait(timeout=1) # TimeoutExpired
+</code></pre><h4 id="deadlock-and-popencommunicate">Deadlock and <code>Popen.communicate()</code></h4>
+<p><code>Popen.communicate()</code> is a method that returns a tuple in the form of <code>(standard output, standard error output)</code> (given a string input if necessary).</p>
+<blockquote>
+<p>(<a href="https://docs.python.org/ja/3/library/subprocess.html#subprocess.Popen.communicate">Official</a>)
+Communicate with process: Send data to standard input. Read data from stdout and stderr until end of file is reached. Wait for the process to finish. (Omitted) communicate() returns a tuple (stdout_data, stderr_data).
+(<a href="https://docs.python.org/ja/3/library/subprocess.html#subprocess.Popen.stderr">Official</a>)
+WARNING Using .stdin.write, .stdout.read, .stderr.read may cause another pipe to fill the OS pipe buffer and deadlock. Use communicate() to avoid this.</p>
+</blockquote>
+<p><a href="https://qiita.com/caprest/items/0245a16825789b0263ad#%E3%83%91%E3%82%A4%E3%83%97%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6">This article</a> also gives a detailed explanation.
+If there is a risk that there will be too much input/output data in the buffer, use <code>communicate()</code> that manages it all at once.
+There is also a person (<a href="https://kae315.hatenablog.com/entry/20110519/1305807239">Article</a>)whoactuallycopeswithdeadlockusing<code>communicate()</code>.</p>
+<p>The disadvantage is that <strong>input/output cannot be exchanged multiple times in one process</strong>. It cannot be used with <code>communicate()</code> for real-time output management or interactive processing, which is introduced below.</p>
+<p>There is also a difference that the option <code>timeout</code> necessary for timeout processing is present in <code>communicate()</code> instead of <code>Popen().strout</code>. For this, there is a solution as introduced in this article (<a href="https://qiita.com/toshitanian/items/133b42355b7867f5c458)">https://qiita.com/toshitanian/items/133b42355b7867f5c458)</a>.</p>
+<h4 id="reproduction-of-shell-pipeline">Reproduction of shell pipeline</h4>
+<p>It is also introduced in <a href="https://docs.python.org/ja/3/library/subprocess.html#replacing-shell-pipeline">Official</a>. You can give as a string with <code>shell=True</code>, but you can reproduce it with the grammar avoiding it as follows.
+For details about SIGPIPE on the way, see <a href="https://stackoverflow.com/questions/48001819/python-subprocess-popen-pipe-and-sigpipe">here</a>or<a href="https://stackoverflow.com/questions/39190250/under-what-condition-does-a-python-subprocess-get-a-sigpipe">here</a>.</p>
+<pre><code class="language-py:Popen()" data-lang="py:Popen()">p1 = subprocess.Popen(['ps','aux'], stdout=subprocess.PIPE) # pipe to output
+p2 = subprocess.Popen(['grep','python'], stdin=p1.stdout, stdout=subprocess.PIPE) # Receive p1 on input
+p1.stdout.close() # Allow p1 to receive a SIGPIPE if p2 exits.
+print(p2.communicate()[0].decode().strip().split('\n')) # stdout acquisition
+</code></pre><h4 id="status-confirmation-and-real-time-output-management-by-poll">Status confirmation and real-time output management by <code>.poll()</code></h4>
+<p>I told you that <code>Popen()</code> does not wait for the end, but you can check whether it is in the end state by <code>.poll()</code>. Returns None if it has not finished, and its status if it has finished.
+You can get the output line by line with <code>.stdout.readline()</code>. This can be obtained <strong>each time the output is broken in real time</strong>. On the other hand, if you use a method such as <code>.stdout.read()</code> that gets all the outputs at once, it will automatically go to the waiting state for completion**.</p>
+<pre><code class="language-py:Popen()" data-lang="py:Popen()">cmd ='echo Start;sleep 0.5;echo 1;sleep 0.5;echo 2;sleep 0.5;echo 3;sleep 0.5;echo Finished'
+p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+# Get in real time
+while p.poll() is None:
+    print('status:',p.poll(), p.stdout.readline().decode().strip())
+print('status:',p.poll())
+print()
+
+p = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+# It will not be output until 2 seconds have passed
+print('status:',p.poll(), p.stdout.read().decode().strip())
+'''
+status: None Start
+status: None 1
+status: None 2
+status: None 3
+status: None Finished
+status: 0
+
+status: None Start
+1
+2
+3
+Finished
+'''
+</code></pre><p>A more proper model of real-time output management code is introduced in <a href="https://qiita.com/megmogmog1965/items/5f95b35539ed6b3cfa17">this article</a>.</p>
+<h4 id="interactive-inputoutput">Interactive input/output</h4>
+<p>The communication of sending input in several times and obtaining output each time is realized as follows. I referred to this article (<a href="https://kae315.hatenablog.com/entry/20110519/1305807239)">https://kae315.hatenablog.com/entry/20110519/1305807239)</a>.
+Since it cannot be reproduced by <code>communicate()</code> that finishes inputting/outputting data at once, there is a risk of deadlock when large data needs to be exchanged.</p>
+<p>First, as a preparation, create a python code that requires multiple inputs and generates an output each time.</p>
+<pre><code class="language-py:" data-lang="py:">a = int(input())
+print('n =', a)
+b = int(input())
+print(' + {} ='.format(b), a+b)
+c = int(input())
+print('-{} ='.format(c), a-c)
+d = int(input())
+print(' * {} ='.format(d), a*d)
+e = int(input())
+print(' / {} ='.format(e), a/e)
+</code></pre><p>Do this as follows: Note that if you do not flush, it will remain in the buffer without being input.</p>
+<pre><code class="language-py:Popen()" data-lang="py:Popen()">numbers = range(1, 6)
+
+# Non-interactive (send all at once using communicate())
+p = subprocess.Popen(['python','calc.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+# Concatenate with line feed code
+str_nums ='\n'.join(map(str, numbers))
+o, e = p.communicate(input=str_nums.encode())
+print(o.decode())
+
+'''
+n = 1
+ + 2 = 3
+ -3 = -2
+ * 4 = 4
+ / 5 = 0.2
+'''
+
+# Interactive (using .stdin.write() to send line by line)
+p = subprocess.Popen(['python','calc.py'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+for n in numbers:
+    # Send numbers
+    p.stdin.write(str(n).encode())
+    # Send a line feed (required because it is an input to input())
+    p.stdin.write('\n'.encode())
+    # Release buffer (important)
+    p.stdin.flush()
+    # Read one line of result (use a while statement if there are multiple lines)
+    print(p.stdout.readline().decode().strip())
+
+'''
+n = 1
+ + 2 = 3
+ -3 = -2
+ * 4 = 4
+ / 5 = 0.2
+'''
+</code></pre><h4 id="parallel-execution-insufficient-informationsince-popen-does-not-wait-for-completion-it-is-possible-to-run-multiple-processes-at-the-same-time-speaking-of-asynchronous-processing-it-is-managed-by-the-asyncio-module-but-there-is-also-one-that-corresponds-to-subprocess-officialhttpsdocspythonorgja3libraryasyncio-subprocesshtmlasyncio-subprocessinadditiontherearevariousasynchronousprocessingsuchasthisarticlehttpsqiitacomcastaneaiitems9cc33817419896667f34andthisarticlehttpsqiitacomicoxfog417items07cbf5110ca82629aca0-there-is-an-article-i-think-it-is-necessary-to-understand--what-is-the-lowest-delay-and-least-risk--at-the-time-of-selection-among-various-methods-but-since-there-is-no-current-knowledge-so-far-this-is-here-the-above-discussion-is-omitted">Parallel execution (insufficient information)Since <code>Popen()</code> does not wait for completion, it is possible to run multiple processes at the same time. Speaking of asynchronous processing, it is managed by the <code>asyncio</code> module, but there is also one that corresponds to <code>subprocess</code> (<a href="https://docs.python.org/ja/3/library/asyncio-subprocess.html#asyncio-subprocess">Official</a>).Inaddition,therearevariousasynchronousprocessingsuchas<a href="https://qiita.com/castaneai/items/9cc33817419896667f34">thisarticle</a>and<a href="https://qiita.com/icoxfog417/items/07cbf5110ca82629aca0">thisarticle</a>. There is an article. I think it is necessary to understand &ldquo;** what is the lowest delay and least risk **&rdquo; at the time of selection among various methods, but since there is no current knowledge so far, this is here. The above discussion is omitted.</h4>
+<p>The following is a simplified version for the time being.</p>
+<pre><code class="language-py:" data-lang="py:"># Permutation
+print('start')
+s = time.time()
+running_procs = [
+    subprocess.run(['sleep', '3']),
+    subprocess.run(['sleep', '2']),
+    subprocess.run(['sleep', '1']),
+    ]
+# run() waits for execution in order and takes about 6 seconds in total
+print('finish [run()]', time.time()-s)
+# ----------------------------
+# Parallel
+print('start')
+s = time.time()
+procs = [
+    subprocess.Popen(['sleep', '3']),
+    subprocess.Popen(['sleep', '2']),
+    subprocess.Popen(['sleep', '1']),
+    ]
+With #Popen(), if it is just a start, it will end immediately
+print('finish [run Popen()]', time.time()-s)
+
+# Wait for each process to finish
+[p.wait() for p in procs]
+# Processing takes about 3 seconds, which is equivalent to the longest process
+print('finish [wait Popen()]', time.time()-s)
+</code></pre><h1 id="at-the-end">At the end</h1>
+<p>You can see that <code>run()</code> can be used to perform most kinds of processing immediately, and <code>Popen()</code> can be used for asynchronous and interactive application with much more flexibility.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

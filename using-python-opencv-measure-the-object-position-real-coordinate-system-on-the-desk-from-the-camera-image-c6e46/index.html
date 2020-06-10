@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Using Python&#43;OpenCV, measure the object position (real coordinate system) on the desk from the camera image | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Using Python+OpenCV, measure the object position (real coordinate system) on the desk from the camera image</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 1, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-processing"> image processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aruco"> ArUco</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-measurement"> image measurement</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>The goal is to <strong>determine the position of an arbitrary object placed on a plane (desk) with a reference marker in the real coordinate system</strong> as follows.
+The implementation is done in Python and uses the OpenCV module <strong>ArUco</strong>.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/4108f383-60b4-e685-5619-3b4238731dfe.png" alt="Overview.png"></p>
+<ul>
+<li><a href="https://inody1991.tumblr.com/post/172449790255/opencvaruco%E3%83%A9%E3%82%A4%E3%83%95-%E3%83%A9%E3%83%AA%E3%81%A6-%E7%89%A9%E4%BD%93%E4%BD%8D%E7%BD%AE%E8%A8%88%E6%B8%25IreferredtoAC">OpenCV/ArUco library object position measurement</a> @ inoblog.</li>
+</ul>
+<h2 id="execution-environment">Execution environment</h2>
+<p>It uses GoogleColab. (Python 3.6.9). The module version used is:</p>
+<pre><code class="language-py:" data-lang="py:">%pip list | grep -e opencv -e numpy
+numpy 1.17.5
+opencv-contrib-python 4.1.2.30
+opencv-python 4.1.2.30
+</code></pre><p>Creating a marker with #ArUco</p>
+<p>First, load the modules required for processing.</p>
+<p>In the GoogleColab. environment, <code>cv2.imshow(...)</code> cannot be used, but by doing the following, the image (np.ndarray) is put into the execution result cell with <code>cv2_imshow(...)</code>. You can output.</p>
+<pre><code class="language-py:" data-lang="py:">import cv2
+import numpy as np
+from google.colab.patches import cv2_imshow
+</code></pre><p>ArUco has a set of predefined markers**. This time, we will use it. By <code>aruco.getPredefinedDictionary(...)</code>, get the dictionary where the predefined markers are stored. The argument <code>aruco.DICT_4X4_50</code> selects a dictionary that can use up to $50$ markers with a filling pattern of $4\times 4$ inside a square.</p>
+<pre><code class="language-py:" data-lang="py:">aruco = cv2.aruco
+p_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
+marker = [0] * 4 # initialization
+for i in range(len(marker)):
+  marker[i] = aruco.drawMarker(p_dict, i, 75) # 75x75 px
+  cv2.imwrite(f'marker{i}.png', marker[i])
+</code></pre><p>If you execute the above, $4$ files ($75\times 75$ pixel size) from &ldquo;marker0.png&rdquo; to &ldquo;marker3.png&rdquo; will be output.</p>
+<p>In the GoogleColab. environment, the created marker can be displayed in the output cell with <code>cv2_imshow(...)</code> and checked. You can see that the marker with the fill pattern of $4\times 4$ is created in the square.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/7eedd612-f2b9-3def-8963-644fd708019a.png" alt="cv2_show_marker.png">
+If you give <code>DICT_5X5_100</code> to the argument of <code>aruco.getPredefinedDictionary(...)</code>, you can get a dictionary with up to $100$ markers defined in the pattern of $5\times 5$.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/86e965ed-c3e5-a8e6-91f4-e2240faa8c75.png" alt="cv2_show_marker_5x5.png"></p>
+<p>#ArUco marker detection</p>
+<p>Print &ldquo;marker0.png&rdquo;, that is, the one that outputs the 0th marker of <code>aruco.DICT_4X4_50</code> on paper. And let&rsquo;s take it as &ldquo;m0-photo.jpg&rdquo;. Markers are detected for this, and the image <code>img_marked</code> with the detection results overlaid is output.</p>
+<pre><code class="language-py:" data-lang="py:">img = cv2.imread('m0-photo.jpg')
+corners, ids, rejectedImgPoints = aruco.detectMarkers(img, p_dict) # detected
+img_marked = aruco.drawDetectedMarkers(img.copy(), corners, ids) # overlay the detected results
+cv2_imshow(img_marked) # Show
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/bdeced08-77a8-758e-a268-a5f6b15f5401.png" alt="m0_photo_marked.png"></p>
+<p>The entire marker is <strong><font color='green'>green rectangle</strong></font>, the upper left marker is <strong><font color='red'>red rectangle</strong></font>, the marker ID (number ) Is drawn with <strong><font color='blue'>blue characters</font></strong> over the original image. From this, it can be seen that the marker detection is properly performed.</p>
+<p>Let&rsquo;s take a closer look at the <strong>return value</strong> of <code>aruco.detectMarkers(...)</code>.</p>
+<p><code>corners</code> stores the <strong>corner image coordinates</strong> of each marker detected from the image in the list of np.ndarray.</p>
+<pre><code class="language-py:aruco.detectMarkers(...)" data-lang="py:aruco.detectMarkers(...)"># Return value corners
+# print(type(corners)) # -&gt; &lt;class'list'&gt;
+# print(len(corners)) # -&gt; 1
+# print(type(corners[0])) # -&gt; &lt;class'numpy.ndarray'&gt;
+# print(corners[0].shape) # -&gt; (1, 4, 2)
+print(corners)
+</code></pre><pre><code class="language-:" data-lang=":">[array([[[265., 258.],
+        [348., 231.],
+        [383., 308.],
+        [297., 339.]]], dtype=float32)]
+</code></pre><p>The corner coordinates are stored counterclockwise in the order of top left, top right, bottom right, bottom left of the marker. In other words,
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/1390db10-c00f-1365-9e29-0b0316289b26.png" alt="m0-photo1_.png"></p>
+<p><code>ids</code> stores <strong>marker IDs</strong> detected in the image in numpy.ndarray format.</p>
+<pre><code class="language-Return" data-lang="Return"># Return value ids
+# print(type(ids)) # -&gt; &lt;class'numpy.ndarray'&gt;
+# print(ids.shape) # -&gt; (1, 1)
+print(ids)
+</code></pre><p>The result will look like <code>[[0]]</code> (note that it is not <code>[0]</code>).</p>
+<p><code>rejectedImgPoints</code> contains the coordinates of the squares found in the image that do not contain the proper pattern inside (<a href="https://docs.opencv.org/4.1.2/d9/d6a/group__aruco.html#gab9159aa69250d8d3642593e508cb6baa">original</a>containstheimgPointsofthosesquareswhoseinnercodehasnotacorrectcodification.Usefulfordebuggingpurposes.).</p>
+<p>Regarding this, I think it is easier to understand if you see a concrete example. <code>rejectedImgPoints</code> contains the coordinates of the square as pointed by the arrow in the figure.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/6eb1ac13-c5e2-cbbf-d8bf-c523795ed05b.png" alt="rejectedImgPoints.png"></p>
+<p>#ArUco marker detection (when there are multiple markers)</p>
+<p>Check the results when there are multiple markers in the image (including the case where two or more markers are the same) as shown below.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/87dea3f3-639e-ff36-6017-38a821563e3d.jpeg" alt="ms-photo.jpg">
+The code for detection is the same as before. The overlay of the detection result is as follows. It does not matter if there are two or more same markers.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/27808211-d1e7-130a-387d-ec4716d19d76.png" alt="ms_photo_marked.png"></p>
+<p>The return values of <code>aruco.detectMarkers(...)</code> <code>ids</code> and <code>corners</code> are as follows. Note that it is not sorted by ID.</p>
+<p>Result of ```:print(ids)
+[[1]
+[1]
+[0]
+[2]]</p>
+<pre><code>Result of ```:print(corners)
+[array([[[443., 288.],
+        [520., 270.],
+        [542., 345.],
+        [464., 363.]]], dtype=float32), array([[[237., 272.],
+        [313., 255.],
+        [331., 328.],[254., 346.]]], dtype=float32), array([[ 64., 235.],
+        [140., 218.],
+        [154., 290.],
+        [75., 307.]]], dtype=float32), array([[[333., 113.],
+        [404., 98.],
+        [424., 163.],
+        [351., 180.]]], dtype=float32)]
+</code></pre><h1 id="position-measurement-in-real-coordinate-system">Position measurement in real coordinate system</h1>
+<p>Prepare the paper in which the four markers &ldquo;marker0.png&rdquo; to &ldquo;marker3.png&rdquo; created at the beginning are arranged clockwise as follows. Here, the distance between the markers is set to $150\mathrm{mm}$ (this paper will be inaccurate if not done strictly).
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/8a762359-fe5f-51e6-5ce5-9ca5ddb7a671.png" alt="table.png"></p>
+<p>Place the object &ldquo;dog&rdquo; whose position you want to detect on this paper and shoot from the <strong>appropriate position</strong> (the shooting position and angle at this time need not be exact). The purpose is to find the position of this &ldquo;dog&rdquo; in the <strong>real coordinate system</strong> based on the marker.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/7d8b4c7a-961a-d996-4de8-afee52b20264.png" alt="inu.png"></p>
+<h2 id="convert-to-the-image-seen-from-directly-above">Convert to the image seen from directly above</h2>
+<p>The camera image taken from an appropriate position and angle above will be converted into a <strong>image seen from directly above</strong>. Here, the converted image is set to $500\times 500, \mathrm{px}$.</p>
+<pre><code class="language-python:" data-lang="python:">aruco = cv2.aruco
+p_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
+img = cv2.imread('inu.jpg')
+corners, ids, rejectedImgPoints = aruco.detectMarkers(img, p_dict) # detected
+
+# Store the &quot;center coordinate&quot; of the marker in m in clockwise order from the upper left
+m = np.empty((4,2))
+for i,c in zip(ids.ravel(), corners):
+  m[i] = c[0].mean(axis=0)
+
+width, height = (500,500) # image size after transformation
+
+marker_coordinates = np.float32(m)
+true_coordinates = np.float32([[0,0],[width,0],[width,height],[0,height]])
+trans_mat = cv2.getPerspectiveTransform(marker_coordinates,true_coordinates)
+img_trans = cv2.warpPerspective(img,trans_mat,(width, height))
+cv2_imshow(img_trans)
+</code></pre><p>The execution result will be as follows. You can see that the <strong>center</strong> of each marker is transformed so as to be at the four corners of the image.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/1c72f325-ea23-5c3f-e9bd-808494f8244a.png" alt="inu_trans.png">
+Even if you use an image taken from a more oblique position, you can convert it to the image seen from directly above as follows.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/81ef741a-6512-ee62-e7fa-65ef5bae3a85.png" alt="coin.png"></p>
+<p>For the sake of clarity, the <strong>center</strong> of each marker is set to the four corners of the converted image. However, it is inconvenient to calculate the position of the &ldquo;dog&rdquo; (there are also marker fragments in the four corners&hellip;).</p>
+<p>So, modify the program so that the corners of each marker that touches the $150\times 150\mathrm{mm}$ rectangle on the paper become the four corners of the converted image.</p>
+<pre><code class="language-python:" data-lang="python:">aruco = cv2.aruco
+p_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
+img = cv2.imread('inu.jpg')
+corners, ids, rejectedImgPoints = aruco.detectMarkers(img, p_dict) # detected
+
+# Change here
+corners2 = [np.empty((1,4,2))]*4
+for i,c in zip(ids.ravel(), corners):
+  corners2[i] = c.copy()
+m[0] = corners2[0][0][2]
+m[1] = corners2[1][0][3]
+m[2] = corners2[2][0][0]
+m[3] = corners2[3][0][1]
+
+width, height = (500,500) # image size after transformation
+marker_coordinates = np.float32(m)
+true_coordinates = np.float32([[0,0],[width,0],[width,height],[0,height]])
+trans_mat = cv2.getPerspectiveTransform(marker_coordinates,true_coordinates)
+img_trans = cv2.warpPerspective(img,trans_mat,(width, height))
+cv2_imshow(img_trans)
+</code></pre><p>The execution result will be as follows.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/590315c6-34de-112e-55b0-1411f9142ae7.png" alt="inu_trans2.png">
+The size of this image is $500\times 500, \mathrm{px}$ and the corresponding size on paper is $150\times 150, \mathrm{mm}$. Therefore, if the coordinates on the image are $(160\mathrm{px},,200\mathrm{px})$, the corresponding real coordinates are $(160\times\frac{150}{500}=48 \mathrm{mm} ,, 200\times\frac{150}{500}=60\mathrm{mm})$ can be obtained.</p>
+<h2 id="object-detection-from-images">Object detection from images</h2>
+<p>Using various functions provided by OpenCV, we will find the position of the dog from the above image. Especially the point is <code>cv2.connectedComponentsWithStats(...)</code>.</p>
+<pre><code class="language-py:" data-lang="py:">tmp = img_trans.copy()
+
+# (1) Grayscale conversion
+tmp = cv2.cvtColor(tmp, cv2.COLOR_BGR2GRAY)
+#cv2_imshow(tmp)
+
+# (2) Blur processing
+tmp = cv2.GaussianBlur(tmp, (11, 11), 0)
+#cv2_imshow(tmp)
+
+# (3) Binarization process
+th = 130 # Threshold for binarization (needs adjustment)
+_,tmp = cv2.threshold(tmp,th,255,cv2.THRESH_BINARY_INV)
+#cv2_imshow(tmp)
+
+# (4) Blob detection
+n, img_label, data, center = cv2.connectedComponentsWithStats(tmp)
+
+# (5) Arrangement of detection results
+detected_obj = list() # Storage location of detection result
+tr_x = lambda x: x * 150/500 # X-axis image coordinates → real coordinates
+tr_y = lambda y: y * 150/500 # Y axis 〃
+img_trans_marked = img_trans.copy()
+for i in range(1,n):
+  x, y, w, h, size = data[i]
+  if size &lt;300: # Ignore area less than 300px
+    continue
+  detected_obj.append( dict( x = tr_x(x),
+                              y = tr_y(y),
+                              w = tr_x(w),
+                              h = tr_y(h),
+                              cx = tr_x(center[i][0]),
+                              cy = tr_y(center[i][1])))
+  # Confirmation
+  cv2.rectangle(img_trans_marked, (x,y), (x+w,y+h),(0,255,0),2)
+  cv2.circle(img_trans_marked, (int(center[i][0]),int(center[i][1])),5,(0,0,255),-1
+
+# (6) Display result
+cv2_imshow(img_trans_marked)
+for i, obj in enumerate(detected_obj,1):
+  print(f' ■ Center position of detected object {i} X={obj[&quot;cx&quot;]:&gt;3.0f}mm Y={obj[&quot;cy&quot;]:&gt;3.0f}mm')
+</code></pre><p>The execution result will be as follows.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/0118a2bf-0551-c57d-9a53-cb8a34f653ba.png" alt="inu_trans_marked.png"></p>
+<pre><code class="language-:" data-lang=":">■ Center position of sensing object 1 X=121mm Y=34mm
+</code></pre><p>Put a ruler and check if the above result is appropriate. It seems that they are looking for it.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/3c54653e-8541-c279-1c1a-23a6cda1cbf3.png" alt="inu_pos.png"></p>
+<h2 id="additional-experiment">Additional experiment</h2>
+<p>I will put more objects and check.<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/df7d92cc-9bce-0bce-4450-e6f7b9b964d5.jpeg" alt="m4-photo2.jpg">
+I had to &ldquo;adjust the threshold&rdquo; when binarizing, but it worked.
+Detection object 1 is &ldquo;dog (brown)&rdquo;, detection object 2 is &ldquo;dog (gray)&rdquo;, detection object 3 is &ldquo;rabbit&rdquo;, and detection object 4 is &ldquo;bear&rdquo;.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/dde13d32-8827-c84c-b38e-61dc5cb799d9.png" alt="m4-result.png"></p>
+<p>#Next step</p>
+<ul>
+<li>Try to combine with machine learning (image classification) (classify each object in the image into &ldquo;dog&rdquo;, &ldquo;rabbit&rdquo; and &ldquo;bear&rdquo;).</li>
+<li>Try to create a demo combined with a robot arm.</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/152805/17318f24-0ad3-a465-4025-708ae81b81a4.jpeg" alt="robot_arm.jpg"></p>
+<h3 id="related-entries">Related entries</h3>
+<ul>
+<li><a href="https://qiita.com/code0327/items/7d3c7bd3327ff049243a">Challenge image classification with TensorFlow2 + Keras</a></li>
+<li><a href="https://qiita.com/code0327/items/3b23fd5002b373dc8ae8">General object detection using Google pre-trained model (via TensorFlow Hub)</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

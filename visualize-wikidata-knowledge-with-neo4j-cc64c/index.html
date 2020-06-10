@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>Visualize Wikidata knowledge with Neo4j | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>Visualize Wikidata knowledge with Neo4j</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 28, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/neo4j"> neo4j</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/graph-db"> graph DB</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/wikidata"> wikidata</a></code></small>
+
+</p>
+<pre><code>This is the 8th day of NTT Docomo Service Innovation Department Advent Calendar 2019.
+</code></pre>
+<p>This time, I will visualize the data of <strong>Wikidata</strong>, which is one of the structured knowledge bases, using <strong>Neo4j</strong>, which is one of the graph DBs.</p>
+<p>#What is Graph DB
+Simply put, it is a database that can handle graph structures. Compared to the popular RDB, it is a database designed to handle <strong>relationships</strong> between data <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>. By the way, a graph is not a line graph or bar graph, but a data structure represented by a set of nodes (contacts) and edges (branches) as shown in the figure below (quoted from Wikipedia).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/319673/6d323a26-a8dc-433e-ede4-4dcbc661b8b0.png" alt="6n-graf.png"></p>
+<p>I don&rsquo;t know what it is useful to look at only this figure, but the graph structure is very useful for expressing various things in the real world. For example, if you think of stations as nodes and tracks as edges, you can express a route map in a graph, and if you think of cities as nodes and roads as edges, you can also express transportation problems. Also, if you consider the accounts as nodes and the relationships between the accounts as edges, you can also represent SNS in a graph. In a practical application, it seems that the purchase history can be expressed in a graph structure and used for product recommendation <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Expressible Monogoto</th>
+<th align="left">Node</th>
+<th align="left">Edge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Route map</td>
+<td align="left">Station</td>
+<td align="left">Tracks</td>
+</tr>
+<tr>
+<td align="left">Logistics</td>
+<td align="left">Cities</td>
+<td align="left">Roads</td>
+</tr>
+<tr>
+<td align="left">SNS</td>
+<td align="left">Accounts</td>
+<td align="left">Relationships between accounts</td>
+</tr>
+<tr>
+<td align="left">Internal HR</td>
+<td align="left">Employees</td>
+<td align="left">Relationship between Employees</td>
+</tr>
+<tr>
+<td align="left">Wikipedia</td>
+<td align="left">Pages</td>
+<td align="left">Links between pages</td>
+</tr>
+</tbody>
+</table>
+<p>Recently, it seems that the graph structure is attracting attention even in the language processing area. This year, the number has increased to 11 cases.</p>
+<p>Let&rsquo;s use this graph DB to visualize the relationship between certain facts.</p>
+<h1 id="extracting-information-from-wikidata">Extracting information from Wikidata</h1>
+<p>In order to visualize, it is necessary to have data to be visualized, but it is difficult to create data manually from here.
+Therefore, this time, using the dump of <strong>Wikidata</strong><sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>, which is a pre-structured knowledge base, create the data to be imported into the graph DB. &ldquo;Structured&rdquo; is about &ldquo;easy to handle on a computer&rdquo;.</p>
+<p>Wikidata is a collaborative knowledge base and one of the same Wikimedia projects as Wikipedia.
+In Wikidata, for example, &ldquo;knowledge&rdquo; that &ldquo;John Lennon&rsquo;s nationality is British&rdquo; is expressed as a triple such as (John Lennon, nationality, United Kingdom). This type of (entity1, property, entity2) is called a <strong>relational triple</strong>. You can think of the entity as the title of the page on Wikipedia. Each entity has a Wikidata unique identifier that begins with &ldquo;Q&rdquo; (eg Q5 refers to &ldquo;human&rdquo;). Similarly, properties have Wikidata unique identifiers that start with &ldquo;P&rdquo;.</p>
+<p>All Wikidata data is dumped in JSON format every Wednesday, so let&rsquo;s use this as data to import into the graph DB. From <a href="https://dumps.wikimedia.org/wikidatawiki/entities/">here</a>, download either <code>latest-all.json.bz2</code> or <code>latest-all.json.gz</code>.
+For details on the structure of the JSON content, see <a href="https://www.mediawiki.org/wiki/Wikibase/DataModel/JSON">here</a>.</p>
+<p>For now, you can run the <code>Python</code> script shown below to extract entity and property information, or relation triples from the dump (note that it feels like it&rsquo;s going to take some time and memory).</p>
+<details>
+<summary>Sample script</summary>
+<div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#!/usr/bin/env python</span>
+<span style="color:#75715e"># coding: utf-8</span>
+
+<span style="color:#f92672">import</span> bz2
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> codecs
+
+triples <span style="color:#f92672">=</span> []
+qs <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">with</span> bz2<span style="color:#f92672">.</span>BZ2File(<span style="color:#e6db74">&#39;latest-all.json.bz2&#39;</span>,<span style="color:#e6db74">&#39;r&#39;</span>) <span style="color:#66d9ef">as</span> rf, \
+     codecs<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#39;rdf.tsv&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>,<span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> rdff, \
+     codecs<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#39;q_id.tsv&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>,<span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> qf:
+    next(rf) <span style="color:#75715e"># skip the first line</span>
+    <span style="color:#66d9ef">for</span> i, line <span style="color:#f92672">in</span> enumerate(rf, <span style="color:#ae81ff">1</span>):
+        <span style="color:#66d9ef">try</span>:
+            line <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(line[:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>])
+        <span style="color:#66d9ef">except</span> json<span style="color:#f92672">.</span>decoder<span style="color:#f92672">.</span>JSONDecodeError:
+            <span style="color:#66d9ef">print</span>(i)
+            rdff<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join([<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> triples]) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+            qf<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join([<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> qs]) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+            triples <span style="color:#f92672">=</span> []
+            qs <span style="color:#f92672">=</span> []
+            <span style="color:#66d9ef">continue</span>
+
+        <span style="color:#66d9ef">try</span>:
+            ett_id <span style="color:#f92672">=</span> line[<span style="color:#e6db74">&#39;id&#39;</span>]
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyError</span>:
+            ett_id <span style="color:#f92672">=</span> None
+        <span style="color:#66d9ef">try</span>:
+            ett_name <span style="color:#f92672">=</span> line[<span style="color:#e6db74">&#39;labels&#39;</span>][<span style="color:#e6db74">&#39;ja&#39;</span>][<span style="color:#e6db74">&#39;value&#39;</span>]
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyError</span>:
+            ett_name <span style="color:#f92672">=</span> None
+
+        <span style="color:#66d9ef">if</span> ett_id <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None <span style="color:#f92672">and</span> ett_name <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+            qs<span style="color:#f92672">.</span>append((ett_id, ett_name))
+            triple <span style="color:#f92672">=</span> []
+            <span style="color:#66d9ef">for</span> _, props <span style="color:#f92672">in</span> line[<span style="color:#e6db74">&#39;claims&#39;</span>]<span style="color:#f92672">.</span>items():
+                <span style="color:#66d9ef">for</span> prop <span style="color:#f92672">in</span> props:
+                    p_id <span style="color:#f92672">=</span> prop[<span style="color:#e6db74">&#39;mainsnak&#39;</span>][<span style="color:#e6db74">&#39;property&#39;</span>]
+                    <span style="color:#66d9ef">try</span>:
+                        id_ <span style="color:#f92672">=</span> prop[<span style="color:#e6db74">&#39;mainsnak&#39;</span>][<span style="color:#e6db74">&#39;datavalue&#39;</span>][<span style="color:#e6db74">&#39;value&#39;</span>][<span style="color:#e6db74">&#39;id&#39;</span>]
+                    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+                        <span style="color:#75715e"># print(ett_id, p_id, e)</span>
+                        <span style="color:#66d9ef">continue</span>
+                    triple<span style="color:#f92672">.</span>append((ett_id, p_id, id_))
+            triples<span style="color:#f92672">.</span>extend(triple)
+            triple <span style="color:#f92672">=</span> []
+
+        <span style="color:#66d9ef">if</span> i <span style="color:#f92672">%</span><span style="color:#ae81ff">10000000</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            <span style="color:#66d9ef">print</span>(i)
+            rdff<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join([<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> triples]) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+            qf<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join([<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> qs]) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+    rdff<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join([<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> triples]) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+    qf<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join([<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> qs]) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+</code></pre></div></div>
+</details>
+<p><code>q_id.tsv</code> is a tab-delimited file as shown in the table below (this file contains P ID as well as Q ID).</p>
+<table>
+<thead>
+<tr>
+<th align="left">Q ID</th>
+<th align="left">Entity name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Q31</td>
+<td align="left">Belgium</td>
+</tr>
+<tr>
+<td align="left">Q8</td>
+<td align="left">Happiness</td>
+</tr>
+<tr>
+<td align="left">Q23</td>
+<td align="left">George Washington</td>
+</tr>
+<tr>
+<td align="left">Q24</td>
+<td align="left">Jack Bauer</td>
+</tr>
+<tr>
+<td align="left">Q42</td>
+<td align="left">Douglas Adams</td>
+</tr>
+</tbody>
+</table>
+<p>Also, <code>rdf.tsv</code> is tab delimited data as shown in the table below.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Entity 1</th>
+<th align="left">Property</th>
+<th align="left">Entity 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Q31</td>
+<td align="left">P1344</td>
+<td align="left">Q1088364</td>
+</tr>
+<tr>
+<td align="left">Q31</td>
+<td align="left">P1151</td>
+<td align="left">Q3247091</td>
+</tr>
+<tr>
+<td align="left">Q31</td>
+<td align="left">P1546</td>
+<td align="left">Q1308013</td>
+</tr>
+<tr>
+<td align="left">Q31</td>
+<td align="left">P5125</td>
+<td align="left">Q7112200</td>
+</tr>
+<tr>
+<td align="left">Q31</td>
+<td align="left">P38</td>
+<td align="left">Q4916</td>
+</tr>
+</tbody>
+</table>
+<p>Create two types of files by combining the above two files.
+First, add a header to <code>q_id.tsv</code>, and create tab-delimited data <code>nodes.tsv</code> as shown in the table below and save it (with or without the third column <code>:LABEL</code>). Since it doesn&rsquo;t exist, it&rsquo;s OK to just rename the file.)</p>
+<table>
+<thead>
+<tr>
+<th align="left">id:ID</th>
+<th align="left">name</th>
+<th align="left">:LABEL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Q31</td>
+<td align="left">Belgium</td>
+<td align="left">Entity</td>
+</tr>
+<tr>
+<td align="left">Q8</td>
+<td align="left">Happiness</td>
+<td align="left">Entity</td>
+</tr>
+<tr>
+<td align="left">Q23</td>
+<td align="left">George Washington</td>
+<td align="left">Entity</td>
+</tr>
+<tr>
+<td align="left">Q24</td>
+<td align="left">Jack Bauer</td>
+<td align="left">Entity</td>
+</tr>
+<tr>
+<td align="left">Q42</td>
+<td align="left">Douglas Adams</td>
+<td align="left">Entity</td>
+</tr>
+</tbody>
+</table>
+<p>At the same time, properties between entities are also saved as tab-separated data <code>relationships.tsv</code> as shown in the table below. Just add a header to <code>rdf.tsv</code>, and replace <code>:TYPE</code> in the second column with a string from &ldquo;P000&rdquo; with reference to <code>q_id.tsv</code> (actually, it is also necessary to replace it. Since it doesn&rsquo;t exist, just rename the file.</p>
+<table>
+<thead>
+<tr>
+<th align="left">:START_ID</th>
+<th align="left">:TYPE</th>
+<th align="left">:END_ID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Q23</td>
+<td align="left">Spouse</td>
+<td align="left">Q191789</td>
+</tr>
+<tr>
+<td align="left">Q23</td>
+<td align="left">Father</td>
+<td align="left">Q768342</td>
+</tr>
+<tr>
+<td align="left">Q23</td>
+<td align="left">Mother</td>
+<td align="left">Q458119</td>
+</tr>
+<tr>
+<td align="left">Q23</td>
+<td align="left">Brothers and sisters</td>
+<td align="left">Q850421</td>
+</tr>
+<tr>
+<td align="left">Q23</td>
+<td align="left">Siblings</td>
+<td align="left">Q7412891</td>
+</tr>
+</tbody>
+</table>
+<p>There are various types of properties such as &ldquo;nationality&rdquo;, &ldquo;spouse&rdquo;, &ldquo;place of birth&rdquo;, &ldquo;birthday&rdquo;, etc., but there are too many as they are, so in this visualization, between people Focused on the properties that can be defined. For example, &ldquo;Relatives&rdquo;, &ldquo;Father&rdquo;, &ldquo;Mother&rdquo;, &ldquo;Master&rdquo;, &ldquo;Disciple&rdquo; etc. Also, the entities are limited to those with Japanese names.</p>
+<h2 id="try-neo4j">Try Neo4j</h2>
+<p>There are various types of graph DB, but here I will introduce Neo4j<sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup>, which is relatively popular.
+Besides Neo4j, I think Amazon Neptune is famous (the name is cool) <sup id="fnref:5"><a href="#fn:5" class="footnote-ref" role="doc-noteref">5</a></sup>.</p>
+<h3 id="install">install</h3>
+<p>Homebrew is recommended for macOS.</p>
+<pre><code class="language-$" data-lang="$">$ brew install neo4j
+</code></pre><p>If the version of <code>Java</code> is different</p>
+<pre><code>neo4j: Java 1.8 is required to install this formula.
+Install AdoptOpenJDK 8 with Homebrew Cask:
+  brew cask install homebrew/cask-versions/adoptopenjdk8
+Error: An unsatisfied requirement failed this build.
+</code></pre><p>Please be careful as you will be angry.</p>
+<p>If you enter <code>$ which neo4j</code> and it is displayed as <code>/usr/local/bin/neo4j</code>, the installation is completed.</p>
+<h3 id="import-data">Import data</h3>
+<p>Import the <code>nodes.tsv</code> and <code>relationships.tsv</code> created earlier into Neo4j. To import the data, hit the following command.</p>
+<pre><code>$ neo4j-admin import --nodes ./Downloads/nodes.tsv --relationships ./Downloads/relationships.tsv --delimiter=&quot;\t&quot;
+</code></pre><p>If the import is successful,</p>
+<pre><code>IMPORT DONE in 9s 735ms.
+Imported:
+  2269484 nodes
+  201763 relationships
+  6808452 properties
+Peak memory usage: 1.05 GB
+</code></pre><p>Is displayed.</p>
+<p>Use the following command to start or stop the Neo4j server.</p>
+<pre><code>$ neo4j start # When starting the server
+$ neo4j stop # When stopping the server
+</code></pre><p>After starting the server, try accessing <code>http://localhost:7474</code>. You will be asked to log in the first time you access it, so enter &ldquo;neo4j&rdquo; for the user name and password respectively. After that, you will be asked to change the password, so change it to any password.</p>
+<h2 id="processing-data-with-cypher">Processing data with Cypher</h2>
+<p>Now you are ready. Let&rsquo;s use Neo4j immediately. Neo4j uses a SQL-like language called <strong>Cypher</strong> as a query (hereinafter, Cypher is referred to as CQL). Please note that this article does not explain CQL in detail.</p>
+<p>December 8th, when this article is posted, is the death day of John Lennon, so let&rsquo;s take John Lennon as the subject. As an aside, I like &ldquo;Jealous Guy&rdquo; the most.</p>
+<h3 id="n-hop-exploration">n-hop exploration</h3>
+<p>For example, if you want to see the entity associated with &ldquo;John Lennon&rdquo;, issue the following CQL. This CQL returns all Entity nodes that are 3 hops away from the &ldquo;John Lennon&rdquo; node.</p>
+<pre><code>match p=((:Entity{name:&quot;John Lennon&quot;})-[*1..3]-()) return p
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/319673/2c9a0fb5-8a0c-f845-93ff-9f548fbe6baf.png" alt="graph-6.png"></p>
+<p>It&rsquo;s a bit difficult to understand, but &ldquo;John&hellip;&rdquo; at the bottom left of the center is the &ldquo;John Lennon&rdquo; node. For example, from &ldquo;John Lennon&rdquo; upwards, &ldquo;Yoko Ono&rdquo; (1) → &ldquo;Zenzaburo Yasuda&rdquo; (2) → &ldquo;Nizaemon Kataoka&rdquo; (3) and the relationship is growing up to the 3-hop destination. I will. The mass in the bottom right is familiar Paul McCartney and his family.</p>
+<p>Unfortunately, there are no Ringo Starr or George Harrison names in the graph who were members of The Beatles.</p>
+<h3 id="shortest-path-search">Shortest path search</h3>
+<p>Neo4j can search the shortest route, which seems to be one of the main features.</p>
+<p>In an attempt, let&rsquo;s search for the shortest route between &ldquo;Natsume Soseki&rdquo; and &ldquo;Mori Ogai&rdquo;, who are representatives of the Meiji era. December 8 has nothing to do with it. As an aside, I like Gokujinso most.</p>
+<p>Issue the following CQL. All you have to do is to enclose the CQL &ldquo;return all the nodes between &ldquo;Natsume Soseki&rdquo; and &ldquo;Mori Ogai&rdquo;&rdquo; with <code>shortestpath</code>.</p>
+<pre><code>match p=shortestpath((:Entity{name:&quot;Natsume Soseki&quot;})-[*]-(:Entity{name:&quot;Mori Ogai&quot;})) return p
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/319673/307da41d-69e5-d65c-666d-9e38608952a2.png" alt="graph-5.png"></p>
+<p>The &ldquo;John&hellip;&rdquo; in the upper line is not John Lennon, but &ldquo;John Manjiro.&rdquo;</p>
+<p>The two are living in the same era, but based on the knowledge of Wikidata, the relationship is surprisingly distant. According to historical facts, it seems that there was no mutual exchange of mutual acquaintances.</p>
+<p>So what is the shortest route between seemingly unrelated &ldquo;John Lennon&rdquo; and &ldquo;Natsume Soseki&rdquo;?</p>
+<pre><code>match p=shortestpath((:Entity{name:&quot;Natsume Soseki&quot;})-[*]-(:Entity{name:&quot;John Lennon&quot;})) return p
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/319673/85ea7a8d-9607-721e-a140-ed9081872d63.png" alt="graph-4.png"></p>
+<p>After &ldquo;Satsuseki Natsume&rdquo;, &ldquo;Ryunosuke Akutagawa&rdquo;, &ldquo;Samuel Beckett&rdquo; (author of the drama &ldquo;Waiting for Godot&rdquo;), etc., &ldquo;Bob Dylan&rdquo; (famous for &ldquo;Like a Rolling Stone&rdquo;, winner of the Nobel Prize for Literature) After passing the bridge between literature and music in ), it seems that they will reach &ldquo;Jimi Hendrix&rdquo;, &ldquo;Prince&rdquo;, &ldquo;Shakira&rdquo;, and &ldquo;John Lennon&rdquo;. To be honest, I can&rsquo;t deny that it&rsquo;s a little abrupt and roundabout <sup id="fnref:6"><a href="#fn:6" class="footnote-ref" role="doc-noteref">6</a></sup>.</p>
+<p>Wikidata is reasonably large structured data, but it seems to be somewhat insufficient for immediate use as a knowledge base. For example you will need to expand your knowledge base using <strong>relationship extraction</strong>. Relationship extraction is, for example, a technique that extracts the relation triple (Natsume Soseki, author, &ldquo;Botsuchiyan&rdquo;) from the sentence &ldquo;The author of &ldquo;Botsuchiyan&rdquo; is Soseki Natsume.&rdquo;</p>
+<h2 id="summary">Summary</h2>
+<p>I tried to visualize the knowledge of Wikidata using Neo4j.
+The graphs drawn with Neo4j can be undulating on the browser and it is fun, so please try it by yourself.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p><a href="https://neo4j.com/developer/graph-database/">https://neo4j.com/developer/graph-database/</a> <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p><a href="https://ja.wikipedia.org/wiki/">https://ja.wikipedia.org/wiki/</a> Detailed in graph theory <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p><a href="http://wikidata.org">http://wikidata.org</a> <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p><a href="http://neo4j.com/">http://neo4j.com/</a> <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:5" role="doc-endnote">
+<p>Hayashi-san wrote an article on our Advent calendar last year → <a href="https://qiita.com/dcm_hayashi/items/9b2536b6fbffa0118fad">https://qiita.com/dcm_hayashi/items/9b2536b6fbffa0118fad</a> <a href="#fnref:5" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:6" role="doc-endnote">
+<p>Soseki Natsume&rsquo;s best friend from the high school, &ldquo;Keiko Nakamura,&rdquo; is known as one of the hearts of Shinpei Goto, who has served as President of Mitsutetsu and Mayor of Tokyo. Later, it was Zenjiro Yasuda who agreed with the city plan advocated by Fuji (By the way, the Hibiya Public Hall was built at this time). And it&rsquo;s much shorter than Wikidata&rsquo;s results that Yasuda&rsquo;s great-grandson is &ldquo;Yoko Ono&rdquo; and her spouse is &ldquo;John Lennon&rdquo;. <a href="#fnref:6" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

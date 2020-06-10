@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>I tried to detect face landmarks easily with python and dlib | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>I tried to detect face landmarks easily with python and dlib</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 3, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/dedicated"> Dedicated</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>When I was a student, I was doing research on facial landmark detection while talking about it.
+I was amazed at how incredibly easy it is now.</p>
+<p>So I would like to actually try it.
+If you would like to implement it for the time being, please read from &ldquo;<a href="#Easyfacelandmarkdetection">Easy face landmark detection</a>&rdquo;.</p>
+<h1 id="about-face-landmark-detection-method">About face landmark detection method</h1>
+<p>It seems that there are three main methods for detecting face landmarks.
+For details of each, refer to the papers listed in <a href="#Facelandmarkdetection">Reference link</a>.</p>
+<h2 id="1-method-using-ensemble-of-regression-trees">(1) Method using Ensemble of regression trees</h2>
+<p>Realizing highly accurate landmark detection in real time using regression tree analysis.
+Both dlib and OpenCV (Facemark Kazemi) are implemented.
+However, the learning model is provided by default only for dlib.</p>
+<h2 id="2-method-using-active-appearance-model">(2) Method using Active appearance model</h2>
+<p>Object detection is performed based on the statistical model learned from the shape and appearance of the object.
+This method has been used for a long time not only for faces but also for advanced object tracking.
+(It was this AAM that I was studying when I was a student)
+It is implemented in OpenCV (Facemark AAM), but you need to create your own learning model.
+However, I think that the threshold is low because I can find tools for learning model generation and learning models created by someone by searching.</p>
+<h2 id="3-method-using-local-binary-features">(3) Method using Local Binary Features</h2>
+<p>Regression learning enables very fast landmark detection.
+It seems to be a method similar to &ldquo;Ensemble of regression trees&rdquo;, but I do not understand the minute difference.
+It is implemented in OpenCV (Facemark LBF) and has a learning model.</p>
+<h1 id="i-tried-to-detect-face-landmarks-easily">I tried to detect face landmarks easily</h1>
+<p>Since I want to implement it easily in python this time, I will use &ldquo;<a href="Methodusing#1ensemble-of-regression-trees">(1) Method using Ensemble of regression trees</a>&rdquo; in dlib.</p>
+<h2 id="advance-preparation">Advance preparation</h2>
+<h3 id="getting-the-python-module">Getting the python module</h3>
+<p>As a module, we will add dlib and imutils for face landmark detection and OpenCV for image related.
+Note that you need python in Anaconda environment to add dlib.</p>
+<pre><code class="language-bash:install" data-lang="bash:install">pip install dlib
+pip install imutils
+pip install opencv
+pip install libopencv
+pip install py-opencv
+</code></pre><h3 id="get-a-trained-model">Get a trained model</h3>
+<p>The trained model is available on the official dlib website at</p>
+<ul>
+<li><strong>dlib ～Index of /files～</strong><br>
+<a href="http://dlib.net/files/">http://dlib.net/files/</a>
+<br> → select &ldquo;shape_predictor_68_face_landmarks.dat.bz2&rdquo;</li>
+</ul>
+<p>As an aside, the trained model above is generated based on the data of the following sites.</p>
+<ul>
+<li><strong>i・bug ～Facial point annotations～</strong><br>
+<a href="https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/">https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/</a></li>
+</ul>
+<h3 id="get-face-image">Get face image</h3>
+<p>I used &ldquo;Girl.bmp&rdquo; for the face image from the following.</p>
+<ul>
+<li>** Kanagawa Institute of Technology Faculty of Informatics Department of Information Engineering-Standard Image/Sample Data-**<br>
+<a href="http://www.ess.ic.kanagawa-it.ac.jp/app_images_j.html">http://www.ess.ic.kanagawa-it.ac.jp/app_images_j.html</a></li>
+</ul>
+<p>Isn&rsquo;t it a standard &ldquo;Lenna&rdquo; for image processing? You might think that.
+However, &ldquo;Lenna&rdquo; was turned off, so I didn&rsquo;t get a better result than I expected, so I removed it.
+If you are interested, please try it.</p>
+<h2 id="face-landmark-detection-in-still-images">Face landmark detection in still images</h2>
+<p>This is a sample that performs face landmark detection from still images.
+Since the trained model (shape_predictor_68_face_landmarks.dat) and face image (Girl.bmp) are troublesome, they are placed in the same hierarchy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:face_landmark_sample.py" data-lang="python:face_landmark_sample.py"><span style="color:#75715e"># coding:utf-8</span>
+
+<span style="color:#f92672">import</span> dlib
+<span style="color:#f92672">from</span> imutils <span style="color:#f92672">import</span> face_utils
+<span style="color:#f92672">import</span> cv2
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 1. Preparation for face landmark detection</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># Call face detection tool</span>
+face_detector <span style="color:#f92672">=</span> dlib<span style="color:#f92672">.</span>get_frontal_face_detector()
+
+<span style="color:#75715e">#Calling Face Landmark Detection Tool</span>
+predictor_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;shape_predictor_68_face_landmarks.dat&#39;</span>
+face_predictor <span style="color:#f92672">=</span> dlib<span style="color:#f92672">.</span>shape_predictor(predictor_path)
+
+<span style="color:#75715e"># Invoke the image to be detected</span>
+img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#39;Girl.bmp&#39;</span>)
+<span style="color:#75715e"># Grayscale to speed up processing (optional)</span>
+img_gry <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 2. Face landmark detection</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># Face detection</span>
+<span style="color:#75715e"># The second argument is the number of upsamples. Basically one time is enough.</span>
+faces <span style="color:#f92672">=</span> face_detector(img_gry, <span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e"># Process all detected faces</span>
+<span style="color:#66d9ef">for</span> face <span style="color:#f92672">in</span> faces:
+    <span style="color:#75715e"># Face landmark detection</span>
+    landmark <span style="color:#f92672">=</span> face_predictor(img_gry, face)
+    <span style="color:#75715e">#Convert landmarks to NumPy array for faster processing (required)</span>
+    landmark <span style="color:#f92672">=</span> face_utils<span style="color:#f92672">.</span>shape_to_np(landmark)
+
+    <span style="color:#75715e">#Landmark drawing</span>
+    <span style="color:#66d9ef">for</span> (i, (x, y)) <span style="color:#f92672">in</span> enumerate(landmark):
+        cv2<span style="color:#f92672">.</span>circle(img, (x, y), <span style="color:#ae81ff">1</span>, (<span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 3. Result display</span>
+<span style="color:#75715e"># --------------------------------</span>
+cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#39;sample&#39;</span>, img)
+cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">0</span>)
+cv2<span style="color:#f92672">.</span>destroyAllWindows()
+
+</code></pre></div><p>The results are as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/d46e3e58-7e54-0801-e8b6-620b64bd94b6.png" alt="face_landmark_result.png"></p>
+<p>As you can see in the figure above, the landmarks on the face are clearly detected.
+Next, I will explain what each code does before detecting a landmark.</p>
+<h3 id="face-landmark-number">Face landmark number</h3>
+<p>After detecting the landmarks on the face, naturally I would like to perform various processing.
+At that time, the question is how to call each landmark.</p>
+<p>The facial landmarks are learned from the data on the <a href="#Gettingtrainedmodels">sites mentioned above</a>.
+Therefore, the landmark numbers are also the same as the numbers listed on the study site.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/7fab5744-b798-bd25-bc6b-974c429a47a0.jpeg" alt="figure_68_markup.jpg"></p>
+<p>Landmark Number: <a href="https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/">https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/</a></p>
+<p>As you can see from the figure above, the numbers are assigned from 1 to 68.
+However, when you actually refer to it, the array starts from number 0, so it is 0 to 67 and the numbers are shifted by one.</p>
+<p>It&rsquo;s hard to understand, so let&rsquo;s actually cut out a part with a diagram and code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:face_landmark_sample2.py" data-lang="python:face_landmark_sample2.py"><span style="color:#75715e"># coding:utf-8</span>
+
+<span style="color:#f92672">import</span> dlib
+<span style="color:#f92672">from</span> imutils <span style="color:#f92672">import</span> face_utils
+<span style="color:#f92672">import</span> cv2
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 1. Preparation for face landmark detection</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># Call face detection tool</span>
+face_detector <span style="color:#f92672">=</span> dlib<span style="color:#f92672">.</span>get_frontal_face_detector()
+<span style="color:#75715e">#Calling Face Landmark Detection Tool</span>
+predictor_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;shape_predictor_68_face_landmarks.dat&#39;</span>
+face_predictor <span style="color:#f92672">=</span> dlib<span style="color:#f92672">.</span>shape_predictor(predictor_path)
+
+<span style="color:#75715e"># Invoke the image to be detected</span>
+img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(<span style="color:#e6db74">&#39;Girl.bmp&#39;</span>)
+<span style="color:#75715e"># Grayscale to speed up processing (optional)</span>
+img_gry <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 2. Face landmark detection</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># Face detection</span>
+<span style="color:#75715e"># The second argument is the number of upsamples</span>
+faces <span style="color:#f92672">=</span> face_detector(img_gry, <span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e"># Process all detected faces</span>
+<span style="color:#66d9ef">for</span> face <span style="color:#f92672">in</span> faces:
+    <span style="color:#75715e"># Face landmark detection</span>
+    landmark <span style="color:#f92672">=</span> face_predictor(img_gry, face)
+    <span style="color:#75715e">#Convert landmarks to NumPy array for faster processing (required)</span>
+    landmark <span style="color:#f92672">=</span> face_utils<span style="color:#f92672">.</span>shape_to_np(landmark)
+
+    <span style="color:#75715e"># --------------------------------</span>
+    <span style="color:#75715e"># 3. Cut image from landmark</span>
+    <span style="color:#75715e"># --------------------------------</span>
+    <span style="color:#75715e"># Get X coordinate of landmark No. 1</span>
+    landmark_n1_x <span style="color:#f92672">=</span> landmark[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>]
+
+    <span style="color:#75715e"># Get X coordinate of landmark No. 17</span>
+    landmark_n17_x <span style="color:#f92672">=</span> landmark[<span style="color:#ae81ff">16</span>][<span style="color:#ae81ff">0</span>]
+
+    <span style="color:#75715e"># Get Y coordinate of landmark No. 9</span>
+    landmark_n9_y <span style="color:#f92672">=</span> landmark[<span style="color:#ae81ff">8</span>][<span style="color:#ae81ff">1</span>]
+
+    <span style="color:#75715e"># Get Y coordinate of landmark number 28</span>
+    landmark_n28_y <span style="color:#f92672">=</span> landmark[<span style="color:#ae81ff">27</span>][<span style="color:#ae81ff">1</span>]
+
+    <span style="color:#75715e"># Image croppingimg2 = img[landmark_n28_y:landmark_n9_y, landmark_n1_x:landmark_n17_x]</span>
+
+    <span style="color:#75715e">#Result display</span>
+    cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#39;sample&#39;</span>, img2)
+    cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">0</span>)
+    cv2<span style="color:#f92672">.</span>destroyAllWindows()
+
+</code></pre></div><p>The results are as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/5343ec63-bf6c-d3d2-803a-f286e7b16199.png" alt="face_landmark_result2.png"></p>
+<p>The reason for this is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/ef9dfb3a-891f-1c00-a914-79bf798b302c.png" alt="face_landmark_how.png"></p>
+<p>The landmark starts from number 1, but the array that stores it starts from number 0.
+Therefore, such a deviation occurs.</p>
+<h2 id="real-time-face-landmark-detection">Real-time face landmark detection</h2>
+<p>In addition, a sample that detects face landmarks from the camera image is added.
+There is no execution result because I do not have the courage to expose my face on the net.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:face_landmark_sample.py" data-lang="python:face_landmark_sample.py"><span style="color:#75715e"># coding:utf-8</span>
+
+<span style="color:#f92672">import</span> dlib
+<span style="color:#f92672">from</span> imutils <span style="color:#f92672">import</span> face_utils
+<span style="color:#f92672">import</span> cv2
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 1. Preparation for face landmark detection</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e">#Call face landmark detection tool</span>
+face_detector <span style="color:#f92672">=</span> dlib<span style="color:#f92672">.</span>get_frontal_face_detector()
+predictor_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;shape_predictor_68_face_landmarks.dat&#39;</span>
+face_predictor <span style="color:#f92672">=</span> dlib<span style="color:#f92672">.</span>shape_predictor(predictor_path)
+
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 2. Function to detect face landmarks from images</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">face_landmark_find</span>(img):
+    <span style="color:#75715e"># Face detection</span>
+    img_gry <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(img, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+    faces <span style="color:#f92672">=</span> face_detector(img_gry, <span style="color:#ae81ff">1</span>)
+
+    <span style="color:#75715e"># Process all detected faces</span>
+    <span style="color:#66d9ef">for</span> face <span style="color:#f92672">in</span> faces:
+        <span style="color:#75715e"># Face landmark detection</span>
+        landmark <span style="color:#f92672">=</span> face_predictor(img_gry, face)
+        <span style="color:#75715e">#Convert landmarks to NumPy array for faster processing (required)</span>
+        landmark <span style="color:#f92672">=</span> face_utils<span style="color:#f92672">.</span>shape_to_np(landmark)
+
+        <span style="color:#75715e">#Landmark drawing</span>
+        <span style="color:#66d9ef">for</span> (x, y) <span style="color:#f92672">in</span> landmark:
+            cv2<span style="color:#f92672">.</span>circle(img, (x, y), <span style="color:#ae81ff">1</span>, (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>), <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+
+    <span style="color:#66d9ef">return</span> img
+
+
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># 3. Get camera image</span>
+<span style="color:#75715e"># --------------------------------</span>
+<span style="color:#75715e"># Specify camera (pass appropriate arguments)</span>
+cap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoCapture(<span style="color:#ae81ff">0</span>)
+
+<span style="color:#75715e"># Display camera image (end with&#39;q&#39; input)</span>
+<span style="color:#66d9ef">while</span>(True):
+    ret, img <span style="color:#f92672">=</span> cap<span style="color:#f92672">.</span>read()
+
+    <span style="color:#75715e"># Face landmark detection (function call in 2.)</span>
+    img <span style="color:#f92672">=</span> face_landmark_find(img)
+
+    <span style="color:#75715e"># Show results</span>
+    cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#39;img&#39;</span>, img)
+
+    Loop until <span style="color:#75715e">#&#39;q&#39; is entered</span>
+    <span style="color:#66d9ef">if</span> cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">1</span>) <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xFF</span> <span style="color:#f92672">==</span> ord(<span style="color:#e6db74">&#39;q&#39;</span>):
+        <span style="color:#66d9ef">break</span>
+
+<span style="color:#75715e">#Post-processing</span>
+cap<span style="color:#f92672">.</span>release()
+cv2<span style="color:#f92672">.</span>destroyAllWindows()
+
+</code></pre></div><h1 id="reference-link">Reference link</h1>
+<h2 id="paper-related-to-face-landmark-detection">Paper related to face landmark detection</h2>
+<ul>
+<li>
+<p><strong>Facemark: Facial Landmark Detection using OpenCV</strong>
+<a href="https://www.learnopencv.com/facemark-facial-landmark-detection-using-opencv/">https://www.learnopencv.com/facemark-facial-landmark-detection-using-opencv/</a>
+It explains from which paper the algorithm for detecting landmarks on each face is implemented.
+There is also a sample of face landmark detection using Facemaker LBF with C++.</p>
+</li>
+<li>
+<p><strong>One Millisecond Face Alignment with an Ensemble of Regression Trees</strong>
+<a href="http://www.csc.kth.se/~vahidk/face_ert.html">http://www.csc.kth.se/~vahidk/face_ert.html</a>
+This is a paper published by V. Kazemi and J. Sullivan.
+The algorithm of face landmark detection implemented in dlib used this time is based on this paper.</p>
+</li>
+<li>
+<p><strong>Optimization problems for fast AAM fitting in-the-wild</strong>
+<a href="https://ibug.doc.ic.ac.uk/media/uploads/documents/tzimiro_pantic_iccv2013.pdf">https://ibug.doc.ic.ac.uk/media/uploads/documents/tzimiro_pantic_iccv2013.pdf</a>
+This is a paper published by G. Tzimiropoulos and M. Pantic.
+Facemaker AAM of OpenCV is implemented based on this paper.</p>
+</li>
+<li>
+<p><strong>One Millisecond Face Alignment with an Ensemble of Regression Trees</strong>
+<a href="http://www.csc.kth.se/~vahidk/face_ert.html">http://www.csc.kth.se/~vahidk/face_ert.html</a>
+This is a paper published by S. Ren.
+Facemaker LBF of OpenCV is implemented based on this paper.</p>
+</li>
+</ul>
+<h2 id="coding-related">Coding related</h2>
+<ul>
+<li>
+<p><strong>dlib C++ Library-Face Landmark Detection-</strong>
+<a href="http://dlib.net/face_landmark_detection.py.html">http://dlib.net/face_landmark_detection.py.html</a>
+This is a sample of face landmark detection by python introduced on the official dlib website.</p>
+</li>
+<li>
+<p>** Detect face landmarks Use Python + OpenCV + dlib **
+<a href="https://tech-blog.s-yoshiki.com/2018/10/702/">https://tech-blog.s-yoshiki.com/2018/10/702/</a>
+The source code of face landmark detection by Python + OpenCV + dlib is introduced in Japanese.
+I used it as a reference when coding.</p>
+</li>
+<li>
+<p><strong>PyImageSearch</strong>
+<strong>Facial landmarks with dlib, OpenCV, and Python</strong>
+<a href="https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/">https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/</a>
+<strong>(Faster) Facial landmark detector with dlib</strong>
+<a href="https://www.pyimagesearch.com/2018/04/02/faster-facial-landmark-detector-with-dlib/">https://www.pyimagesearch.com/2018/04/02/faster-facial-landmark-detector-with-dlib/</a>
+The source code of face landmark detection by Python + OpenCV + dlib is presented in English.
+Since it was explained in detail, it led to an understanding of each process and was very helpful.</p>
+</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

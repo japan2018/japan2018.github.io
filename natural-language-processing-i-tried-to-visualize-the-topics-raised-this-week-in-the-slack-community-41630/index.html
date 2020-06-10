@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Natural language processing] I tried to visualize the topics raised this week in the Slack community | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Natural language processing] I tried to visualize the topics raised this week in the Slack community</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 9, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nlp"> NLP</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/slack"> Slack</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/wordcloud"> wordcloud</a></code></small>
+
+</p>
+<pre><code>## About this article
+</code></pre>
+<p>In this article, I will introduce a method of using Wordcloud to visualize what topics were raised within a certain period (here one week) of the Slack community.</p>
+<p>The source code can be found here [https://github.com/sota0121/slack-msg-analysis) :octocat:</p>
+<p>I would also like to read: <a href="https://qiita.com/masso/items/dca470fbc172daeb7dfd">[Natural language processing] I tried to visualize the comments of each member in the Slack community</a></p>
+<h2 id="table-of-contents">table of contents</h2>
+<ol>
+<li>Usage and output example</li>
+<li>Get message from Slack</li>
+<li>Pre-processing: message mart table creation</li>
+<li>Pre-treatment: Cleaning</li>
+<li>Pre-processing: Morphological analysis (Janome)</li>
+<li>Pre-processing: Normalization</li>
+<li>Pre-processing: Stop word removal</li>
+<li>Pre-processing: Extract important words (tf-idf)</li>
+<li>Visualization processing with Wordcloud</li>
+<li>Bonus</li>
+</ol>
+<p><font color=red> *I would like to summarize the preprocessing in another article in the future</font></p>
+<h2 id="1-usage-and-output-example">1. Usage and output example</h2>
+<h3 id="11-how-to-use">1.1. How to use</h3>
+<p>For details, see Getting started in <a href="https://github.com/sota0121/slack-msg-analysis/blob/master/README.md">README</a>.
+The flow is like this.</p>
+<ol>
+<li>Build a virtual environment with <code>docker-compose up -d</code></li>
+<li>Enter the shell with <code>docker exec -it ds-py3 bash</code></li>
+<li>Run <code>run_wordcloud_by_term.sh</code></li>
+</ol>
+<h3 id="12-output-example">1.2. Output example</h3>
+<p>This is an example of actual output. Wordcloud has comments from different periods.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/181972/55f42e33-0889-6490-4df8-f36f287e6143.gif" alt="anim__.gif"></p>
+<h2 id="2-get-message-from-slack">2. Get message from Slack</h2>
+<h3 id="21-using-slack-api">2.1. Using Slack API</h3>
+<p>Get Slack API token from <a href="https://api.slack.com/">Slack API Official</a></p>
+<p>How to get started with the Slack API isn&rsquo;t listed here.</p>
+<p>To carry out the following process, please obtain the following token</p>
+<ul>
+<li>Channel API</li>
+<li>Users API</li>
+</ul>
+<h3 id="22-create-a-class-to-get-slack-information-via-api">2.2. Create a class to get Slack information via API</h3>
+<p>Here, create a <strong>SlackApp</strong> class that retrieves Slack information via API.
+The acquired information is saved in JSON format without processing.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:slack_app.py" data-lang="python:slack_app.py"><span style="color:#75715e"># Class that acquires desired information using slackapi (not processed)</span>
+<span style="color:#f92672">import</span> requests
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SlackApp</span>:
+    ch_list_url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://slack.com/api/channels.list&#39;</span>
+    ch_history_url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://slack.com/api/channels.history&#39;</span>
+    usr_list_url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://slack.com/api/users.list&#39;</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self, ch_api_key, usr_api_key):
+        <span style="color:#75715e"># NEW members</span>
+        self<span style="color:#f92672">.</span>channels_info <span style="color:#f92672">=</span> []
+        self<span style="color:#f92672">.</span>users_info <span style="color:#f92672">=</span> []
+        self<span style="color:#f92672">.</span>messages_info <span style="color:#f92672">=</span> []
+        <span style="color:#75715e"># OLD members</span>
+        self<span style="color:#f92672">.</span>channelInfo <span style="color:#f92672">=</span> {} <span style="color:#75715e"># k: ch_name, v: ch_id</span>
+        self<span style="color:#f92672">.</span>messages_in_chs <span style="color:#f92672">=</span> {}
+        self<span style="color:#f92672">.</span>userInfo <span style="color:#f92672">=</span> {}
+        self<span style="color:#f92672">.</span>ch_api_token <span style="color:#f92672">=</span> str(ch_api_key)
+        self<span style="color:#f92672">.</span>usr_api_token <span style="color:#f92672">=</span> str(usr_api_key)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_save_channel_info</span>(self, outdir: str):
+        <span style="color:#75715e"># Get channel information via slack API and save to file</span>
+        payload <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;token&#39;</span>: self<span style="color:#f92672">.</span>ch_api_token}
+        response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(SlackApp<span style="color:#f92672">.</span>ch_list_url, params<span style="color:#f92672">=</span>payload)
+        <span style="color:#66d9ef">if</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">200</span>:
+            json_data <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>json()
+            <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;channels&#39;</span> <span style="color:#f92672">in</span> json_data<span style="color:#f92672">.</span>keys():
+                self<span style="color:#f92672">.</span>channels_info <span style="color:#f92672">=</span> json_data[<span style="color:#e6db74">&#39;channels&#39;</span>]
+            <span style="color:#66d9ef">with</span> open(outdir <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;channel_info.json&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+                json<span style="color:#f92672">.</span>dump(self<span style="color:#f92672">.</span>channels_info, f, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>, ensure_ascii<span style="color:#f92672">=</span>False)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_save_user_info</span>(self, outdir: str):
+        <span style="color:#75715e"># Get user information via slack API and save it in a file</span>
+        payload <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;token&#39;</span>: self<span style="color:#f92672">.</span>usr_api_token}
+        response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(SlackApp<span style="color:#f92672">.</span>usr_list_url, params<span style="color:#f92672">=</span>payload)
+        <span style="color:#66d9ef">if</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">200</span>:
+            json_data <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>json()
+            <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;members&#39;</span> <span style="color:#f92672">in</span> json_data<span style="color:#f92672">.</span>keys():
+                self<span style="color:#f92672">.</span>users_info <span style="color:#f92672">=</span> json_data[<span style="color:#e6db74">&#39;members&#39;</span>]
+            <span style="color:#66d9ef">with</span> open(outdir <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;user_info.json&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+                json<span style="color:#f92672">.</span>dump(self<span style="color:#f92672">.</span>users_info, f, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>, ensure_ascii<span style="color:#f92672">=</span>False)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_save_messages_info</span>(self, outdir: str):
+        <span style="color:#75715e"># channel id list created</span>
+        channel_id_list <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> ch <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>channels_info:
+            channel_id_list<span style="color:#f92672">.</span>append(ch[<span style="color:#e6db74">&#39;id&#39;</span>])
+        <span style="color:#75715e"># Get user information via slack API and save it in a file</span>
+        <span style="color:#66d9ef">for</span> ch_id <span style="color:#f92672">in</span> tqdm(channel_id_list, desc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;[loading...]&#39;</span>):
+            payload <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;token&#39;</span>: self<span style="color:#f92672">.</span>ch_api_token,<span style="color:#e6db74">&#39;channel&#39;</span>: ch_id}
+            response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(SlackApp<span style="color:#f92672">.</span>ch_history_url, params<span style="color:#f92672">=</span>payload)
+            <span style="color:#66d9ef">if</span> response<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> <span style="color:#ae81ff">200</span>:
+                json_data <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>json()
+                msg_in_ch <span style="color:#f92672">=</span> {}
+                msg_in_ch[<span style="color:#e6db74">&#39;channel_id&#39;</span>] <span style="color:#f92672">=</span> ch_id
+                <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;messages&#39;</span> <span style="color:#f92672">in</span> json_data<span style="color:#f92672">.</span>keys():
+                    msg_in_ch[<span style="color:#e6db74">&#39;messages&#39;</span>] <span style="color:#f92672">=</span> json_data[<span style="color:#e6db74">&#39;messages&#39;</span>]
+                <span style="color:#66d9ef">else</span>:
+                    msg_in_ch[<span style="color:#e6db74">&#39;messages&#39;</span>] <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+                self<span style="color:#f92672">.</span>messages_info<span style="color:#f92672">.</span>append(msg_in_ch)
+        <span style="color:#66d9ef">with</span> open(outdir <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;messages_info.json&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+            json<span style="color:#f92672">.</span>dump(self<span style="color:#f92672">.</span>messages_info, f, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>, ensure_ascii<span style="color:#f92672">=</span>False)
+
+</code></pre></div><h3 id="23-get-slack-information">2.3. Get Slack information</h3>
+<p>Use the <strong>SlackApp</strong> class from earlier to get the information.</p>
+<p>The information to be acquired is the following three</p>
+<ol>
+<li>Channel list</li>
+<li>Message list (acquired for each channel)</li>
+<li>User list</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:slack_msg_extraction.py" data-lang="python:slack_msg_extraction.py"><span style="color:#75715e"># Class to get desired information using slackapi</span>
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> json
+sys<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#39;../../src/d000_utils&#39;</span>) <span style="color:#75715e"># Add storage path for SlackApp script</span>
+<span style="color:#f92672">import</span> slack_app <span style="color:#f92672">as</span> sa
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># load api token</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    credentials_root <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../../conf/local/&#39;</span>
+    credential_fpath <span style="color:#f92672">=</span> credentials_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;credentials.json&#39;</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load credential.json ...&#39;</span>)
+    <span style="color:#66d9ef">with</span> open(credential_fpath,<span style="color:#e6db74">&#39;r&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        credentials <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># start slack app</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;start slack app ...&#39;</span>)
+    app <span style="color:#f92672">=</span> sa<span style="color:#f92672">.</span>SlackApp(
+        credentials[<span style="color:#e6db74">&#39;channel_api_key&#39;</span>],
+        credentials[<span style="color:#e6db74">&#39;user_api_key&#39;</span>]
+        )outdir <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../../data/010_raw&#39;</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># get channels info</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    app<span style="color:#f92672">.</span>load_save_channel_info(outdir)
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># get user info</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    app<span style="color:#f92672">.</span>load_save_user_info(outdir)
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># get msg info</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    app<span style="color:#f92672">.</span>load_save_messages_info(outdir)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()
+</code></pre></div><h2 id="3-pre-processing-message-mart-table-creation">3. Pre-processing: Message mart table creation</h2>
+<h3 id="31-message-mart-table-design">3.1. Message mart table design</h3>
+<p>The information obtained with SlackAPI was saved in JSON format according to the SlackAPI specifications.
+We will make this into a table data that is formatted into a form that is easy to analyze.
+When designing a table, be aware that it is Tidy Data.</p>
+<p>This time, I designed it as follows.
+The table below is based on the image of minimum required information + α.</p>
+<h4 id="message-mart-table">message mart table</h4>
+<table>
+<thead>
+<tr>
+<th align="center">No</th>
+<th align="center">Column Name</th>
+<th align="center">Type</th>
+<th align="left">Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">index</td>
+<td align="center">int</td>
+<td align="left">AUTO INCREMENT</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">ch_id</td>
+<td align="center">str</td>
+<td align="left">Channel ID</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">msg</td>
+<td align="center">str</td>
+<td align="left">message string</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">uid</td>
+<td align="center">str</td>
+<td align="left">User ID of the speaker</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">timestamp</td>
+<td align="center">datetime</td>
+<td align="left">Time when you speak</td>
+</tr>
+</tbody>
+</table>
+<h4 id="channels-table-bonus">channels table (bonus)</h4>
+<table>
+<thead>
+<tr>
+<th align="center">No</th>
+<th align="center">Column Name</th>
+<th align="center">Type</th>
+<th align="left">Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">index</td>
+<td align="center">int</td>
+<td align="left">AUTO INCREMENT</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">ch_id</td>
+<td align="center">str</td>
+<td align="left">Channel ID</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">ch_name</td>
+<td align="center">str</td>
+<td align="left">Channel name (name displayed in Slack UI)</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">ch_namenorm</td>
+<td align="center">str</td>
+<td align="left">Normalized channel name</td>
+</tr>
+<tr>
+<td align="center">4</td>
+<td align="center">ch_membernum</td>
+<td align="center">int</td>
+<td align="left">Number of participants in the channel</td>
+</tr>
+</tbody>
+</table>
+<h4 id="users-table-bonus">users table (bonus)</h4>
+<table>
+<thead>
+<tr>
+<th align="center">No</th>
+<th align="center">Column Name</th>
+<th align="center">Type</th>
+<th align="left">Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">0</td>
+<td align="center">index</td>
+<td align="center">int</td>
+<td align="left">AUTO INCREMENT</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">uid</td>
+<td align="center">str</td>
+<td align="left">User ID</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">uname</td>
+<td align="center">str</td>
+<td align="left">username</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-raw-data--format-to-message-mart-table">3.2. RAW data → Format to Message Mart table</h3>
+<p>The actual code is as follows.</p>
+<ul>
+<li>【note】
+-<code>../../data/010_raw</code>: Information JSON location saved from Slack
+-<code>user_info.json</code>: User information (JSON) file name
+-<code>messages_info.json</code>: Message information (JSON) file name of all channels
+-<code>channel_info.json</code>: Channel information (JSON) file name</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:make_msg_mart_table.py" data-lang="python:make_msg_mart_table.py"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_user_table</span>(usr_dict: dict) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>DataFrame:
+    uid_list <span style="color:#f92672">=</span> []
+    uname_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> usr_ditem <span style="color:#f92672">in</span> usr_dict:
+        <span style="color:#66d9ef">if</span> usr_ditem[<span style="color:#e6db74">&#39;deleted&#39;</span>] <span style="color:#f92672">==</span> True:
+            <span style="color:#66d9ef">continue</span>
+        uid_list<span style="color:#f92672">.</span>append(usr_ditem[<span style="color:#e6db74">&#39;id&#39;</span>])
+        uname_list<span style="color:#f92672">.</span>append(usr_ditem[<span style="color:#e6db74">&#39;profile&#39;</span>][<span style="color:#e6db74">&#39;real_name_normalized&#39;</span>])
+    user_table <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({<span style="color:#e6db74">&#39;uid&#39;</span>: uid_list,<span style="color:#e6db74">&#39;uname&#39;</span>: uname_list})
+    <span style="color:#66d9ef">return</span> user_table
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_msg_table</span>(msg_dict: dict) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>DataFrame:
+    ch_id_list <span style="color:#f92672">=</span> []
+    msg_list <span style="color:#f92672">=</span> []
+    uid_list <span style="color:#f92672">=</span> []
+    ts_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> msg_ditem <span style="color:#f92672">in</span> msg_dict:
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;channel_id&#39;</span> <span style="color:#f92672">in</span> msg_ditem<span style="color:#f92672">.</span>keys():
+            ch_id <span style="color:#f92672">=</span> msg_ditem[<span style="color:#e6db74">&#39;channel_id&#39;</span>]
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">continue</span>
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;messages&#39;</span> <span style="color:#f92672">in</span> msg_ditem<span style="color:#f92672">.</span>keys():
+            msgs_in_ch <span style="color:#f92672">=</span> msg_ditem[<span style="color:#e6db74">&#39;messages&#39;</span>]
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">continue</span>
+        <span style="color:#75715e"># get message in channel</span>
+        <span style="color:#66d9ef">for</span> i, msg <span style="color:#f92672">in</span> enumerate(msgs_in_ch):
+            <span style="color:#75715e"># if msg by bot, continue</span>
+            <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;user&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> msg:
+                <span style="color:#66d9ef">continue</span>
+            ch_id_list<span style="color:#f92672">.</span>append(ch_id)
+            msg_list<span style="color:#f92672">.</span>append(msg[<span style="color:#e6db74">&#39;text&#39;</span>])
+            uid_list<span style="color:#f92672">.</span>append(msg[<span style="color:#e6db74">&#39;user&#39;</span>]) <span style="color:#75715e"># bot does not have this key</span>
+            ts_list<span style="color:#f92672">.</span>append(msg[<span style="color:#e6db74">&#39;ts&#39;</span>])
+    df_msgs <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({
+        <span style="color:#e6db74">&#39;ch_id&#39;</span>: ch_id_list,
+        <span style="color:#e6db74">&#39;msg&#39;</span>: msg_list,
+        <span style="color:#e6db74">&#39;uid&#39;</span>: uid_list,
+        <span style="color:#e6db74">&#39;timestamp&#39;</span>: ts_list
+    })
+    <span style="color:#66d9ef">return</span> df_msgs
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_ch_table</span>(ch_dict: dict) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>DataFrame:
+    chid_list <span style="color:#f92672">=</span> []
+    chname_list <span style="color:#f92672">=</span> []
+    chnormname_list <span style="color:#f92672">=</span> []
+    chmembernum_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> ch_ditem <span style="color:#f92672">in</span> ch_dict:
+        chid_list<span style="color:#f92672">.</span>append(ch_ditem[<span style="color:#e6db74">&#39;id&#39;</span>])
+        chname_list<span style="color:#f92672">.</span>append(ch_ditem[<span style="color:#e6db74">&#39;name&#39;</span>])
+        chnormname_list<span style="color:#f92672">.</span>append(ch_ditem[<span style="color:#e6db74">&#39;name_normalized&#39;</span>])
+        chmembernum_list<span style="color:#f92672">.</span>append(ch_ditem[<span style="color:#e6db74">&#39;num_members&#39;</span>])
+    ch_table <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame({
+        <span style="color:#e6db74">&#39;ch_id&#39;</span>: chid_list,
+        <span style="color:#e6db74">&#39;ch_name&#39;</span>: chname_list,
+        <span style="color:#e6db74">&#39;ch_namenorm&#39;</span>: chnormname_list,
+        <span style="color:#e6db74">&#39;ch_membernum&#39;</span>: chmembernum_list
+    })
+    <span style="color:#66d9ef">return</span> ch_table
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    <span style="color:#75715e"># 1. load user/message/channels</span>
+    input_root <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../../data/010_raw&#39;</span>
+    user_info_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;user_info.json&#39;</span>
+    <span style="color:#66d9ef">with</span> open(user_info_fpath,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        user_info_rawdict <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load ...&#39;</span>, user_info_fpath)
+    msg_info_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;messages_info.json&#39;</span>
+    <span style="color:#66d9ef">with</span> open(msg_info_fpath,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        msgs_info_rawdict <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load ...&#39;</span>, msg_info_fpath)
+    ch_info_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;channel_info.json&#39;</span>
+    <span style="color:#66d9ef">with</span> open(ch_info_fpath,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        ch_info_rawdict <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load ...&#39;</span>, ch_info_fpath)
+    <span style="color:#75715e"># 2. make and save tables</span>
+    <span style="color:#75715e"># user</span>
+    output_root <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../../data/020_intermediate&#39;</span>
+    df_user_info <span style="color:#f92672">=</span> make_user_table(user_info_rawdict)
+    user_tbl_fpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;users.csv&#39;</span>
+    df_user_info<span style="color:#f92672">.</span>to_csv(user_tbl_fpath, index<span style="color:#f92672">=</span>False)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;save ...&#39;</span>, user_tbl_fpath)
+    <span style="color:#75715e"># msg</span>
+    df_msg_info <span style="color:#f92672">=</span> make_msg_table(msgs_info_rawdict)
+    msg_tbl_fpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;messages.csv&#39;</span>
+    df_msg_info<span style="color:#f92672">.</span>to_csv(msg_tbl_fpath, index<span style="color:#f92672">=</span>False)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;save ...&#39;</span>, msg_tbl_fpath)
+    <span style="color:#75715e"># channel</span>
+    df_ch_info <span style="color:#f92672">=</span> make_ch_table(ch_info_rawdict)
+    ch_tbl_fpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;channels.csv&#39;</span>
+    df_ch_info<span style="color:#f92672">.</span>to_csv(ch_tbl_fpath, index<span style="color:#f92672">=</span>False)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;save ...&#39;</span>, ch_tbl_fpath)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()
+</code></pre></div><h2 id="4-pretreatment-cleaning">4. Pretreatment: Cleaning</h2>
+<h3 id="41-contents-of-cleaning-processgenerally-refers-to-the-act-of-removing-noise">4.1. Contents of cleaning processGenerally refers to the act of removing noise</h3>
+<p>It is necessary to perform various processing depending on the target data and purpose.
+Here, the following processing was executed.</p>
+<ol>
+<li>Delete URL string</li>
+<li>Delete mention string</li>
+<li>Remove Unicode emoji</li>
+<li>Delete special characters in html (such as &amp;gt)</li>
+<li>Delete code block</li>
+<li>Delete inline code block</li>
+<li>Removed the message &ldquo;XX joined the channel&rdquo;</li>
+<li>Other noise removal peculiar to this community</li>
+</ol>
+<h3 id="42-implementation-of-cleaning-process">4.2. Implementation of cleaning process</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:cleaning.py" data-lang="python:cleaning.py"><span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">clean_msg</span>(msg: str) <span style="color:#f92672">-&gt;</span> str:
+    <span style="color:#75715e"># sub&#39;Return and Space&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;\s&#39;</span>, <span style="color:#e6db74">``</span>, msg)
+    <span style="color:#75715e"># sub&#39;url link&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;(&lt;)http.+(&gt;)&#39;</span>, <span style="color:#e6db74">``</span>, result)
+    <span style="color:#75715e"># sub&#39;mention&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;(&lt;)@.+\w(&gt;)&#39;</span>, <span style="color:#e6db74">``</span>, result)
+    <span style="color:#75715e"># sub&#39;reaction&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;(:).+\w(:)&#39;</span>, <span style="color:#e6db74">``</span>, result)
+    <span style="color:#75715e"># sub&#39;html key words&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;(&amp;).+?\w(;)&#39;</span>, <span style="color:#e6db74">``</span>, result)
+    <span style="color:#75715e"># sub&#39;multi lines code block&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;(```).+(```)&#39;</span>, <span style="color:#e6db74">``</span>, result)
+    <span style="color:#75715e"># sub&#39;inline code block&#39;</span>
+    result <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;(`).+(`)&#39;</span>, <span style="color:#e6db74">``</span>, result)
+    <span style="color:#66d9ef">return</span> result
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">clean_msg_ser</span>(msg_ser: pd<span style="color:#f92672">.</span>Series) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>Series:
+    cleaned_msg_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> i, msg <span style="color:#f92672">in</span> enumerate(msg_ser):
+        cleaned_msg <span style="color:#f92672">=</span> clean_msg(str(msg))
+        <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;joined the channel&#39;</span> <span style="color:#f92672">in</span> cleaned_msg:
+            <span style="color:#66d9ef">continue</span>
+        cleaned_msg_list<span style="color:#f92672">.</span>append(cleaned_msg)
+    cleaned_msg_ser <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>Series(cleaned_msg_list)
+    <span style="color:#66d9ef">return</span> cleaned_msg_ser
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_ch_id_from_table</span>(ch_name_parts: list, input_fpath: str) <span style="color:#f92672">-&gt;</span> list:
+    df_ch <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(input_fpath)
+    ch_id <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> ch_name_part <span style="color:#f92672">in</span> ch_name_parts:
+        <span style="color:#66d9ef">for</span> i, row <span style="color:#f92672">in</span> df_ch<span style="color:#f92672">.</span>iterrows():
+            <span style="color:#66d9ef">if</span> ch_name_part <span style="color:#f92672">in</span> row<span style="color:#f92672">.</span>ch_name:
+                ch_id<span style="color:#f92672">.</span>append(row<span style="color:#f92672">.</span>ch_id)
+                <span style="color:#66d9ef">break</span>
+    <span style="color:#66d9ef">return</span> ch_id
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(input_fname: str):
+    input_root <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../../data/020_intermediate&#39;</span>
+    output_root <span style="color:#f92672">=</span> input_root
+    <span style="color:#75715e"># 1. load messages.csv (including noise)</span>
+    msgs_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> input_fname
+    df_msgs <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(msgs_fpath)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load :{0}&#39;</span><span style="color:#f92672">.</span>format(msgs_fpath))
+    <span style="color:#75715e"># 2. Drop Not Target Records</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;drop records (drop non-target channel</span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">s messages)&#39;</span>)
+    non_target_ch_name <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;general&#39;</span>,<span style="color:#e6db74">&#39;announcement from management&#39;</span>]
+    non_target_ch_ids <span style="color:#f92672">=</span> get_ch_id_from_table(non_target_ch_name, input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;channels.csv&#39;</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;=== non target channels bellow ====&#39;</span>)
+    <span style="color:#66d9ef">print</span>(non_target_ch_ids)
+    <span style="color:#66d9ef">for</span> non_target_ch_id <span style="color:#f92672">in</span> non_target_ch_ids:
+        df_msgs <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;ch_id != @non_target_ch_id&#39;</span>)
+    <span style="color:#75715e"># 3. clean message string list</span>
+    ser_msg <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>msg
+    df_msgs<span style="color:#f92672">.</span>msg <span style="color:#f92672">=</span> clean_msg_ser(ser_msg)
+    <span style="color:#75715e"># 4. save it</span>
+    pin <span style="color:#f92672">=</span> Path(msgs_fpath)
+    msgs_cleaned_fpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> pin<span style="color:#f92672">.</span>stem <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;_cleaned.csv&#39;</span>
+    df_msgs<span style="color:#f92672">.</span>to_csv(msgs_cleaned_fpath, index<span style="color:#f92672">=</span>False)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser()
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;input_fname&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;set input file name&#34;</span>, type<span style="color:#f92672">=</span>str)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+    input_fname <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>input_fname
+    main(input_fname)
+</code></pre></div><p>I really wanted to &ldquo;remove only the source code in the code block&rdquo;, but I couldn&rsquo;t. :sweat:</p>
+<h2 id="5-pre-processing-morphological-analysis-janome">5. Pre-processing: Morphological analysis (Janome)</h2>
+<h3 id="51-what-is-morphological-analysis">5.1. What is morphological analysis?</h3>
+<p>Generally, this is the process of finding &ldquo;morphemes&rdquo; in sentences.
+Details of morphological analysis are left for other articles.</p>
+<p>The real purpose here is to do &ldquo;dividing&rdquo;.</p>
+<h3 id="52-what-is-a-wordbook">5.2. What is a wordbook?</h3>
+<p>Roughly speaking, it is the process of converting sentences into information called &ldquo;words/words&rdquo;.
+For example,</p>
+<p>**Example: I like baseball. **
+<strong>Example sentence segmentation: &ldquo;I like baseball&rdquo;</strong></p>
+<p>It will be in the form of.</p>
+<p>From a practical point of view, if you want to handle words that represent the context of a sentence like this time, I think <font color="red">extracting &ldquo;noun&quot;</font> is preferable. Therefore,</p>
+<p><strong>Example sentence segmentation (noun only): &ldquo;My baseball&rdquo;</strong></p>
+<p>Would be even better.</p>
+<ul>
+<li>Maybe I should also delete &ldquo;I&rdquo;? I thought you. See the &ldquo;Stopword Removal&rdquo; chapter</li>
+</ul>
+<h3 id="53-implementation-of-morphological-analysis-and-segmentation">5.3. Implementation of morphological analysis and segmentation</h3>
+<p>When implementing morphological analysis,</p>
+<ul>
+<li>What to use for the morphological analysis library</li>
+<li>What to use as dictionary data</li>
+</ul>
+<p>I have to decide that.</p>
+<p>This time, I did the following.</p>
+<ul>
+<li>Morphological analysis library: <a href="https://mocobeta.github.io/janome/">Janome</a></li>
+<li>Dictionary data: Janome default (NEologd with new words is better)</li>
+</ul>
+<p>Also, the part of speech to be extracted is &ldquo;<a href="http://www.unixuser.org/~euske/doc/postag/">Part of speech system of morphological analysis tool</a>&rdquo; something? I thought from that perspective.</p>
+<p>The official mascot, Janome-chan, is cute. (I don&rsquo;t know if Janome-chan is the name, though)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:morphological_analysis.py" data-lang="python:morphological_analysis.py"><span style="color:#f92672">from</span> janome.tokenizer <span style="color:#f92672">import</span> Tokenizer
+<span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">import</span> sys
+
+
+exc_part_of_speech <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#34;Noun&#34;</span>: [<span style="color:#e6db74">&#34;Independence&#34;</span>, <span style="color:#e6db74">&#34;Pronoun&#34;</span>, <span style="color:#e6db74">&#34;Number&#34;</span>]
+}
+inc_part_of_speech <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#34;Noun&#34;</span>: [<span style="color:#e6db74">&#34;Sahen connection&#34;</span>, <span style="color:#e6db74">&#34;General&#34;</span>, <span style="color:#e6db74">&#34;Proper noun&#34;</span>],
+}
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MorphologicalAnalysis</span>:
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>janome_tokenizer <span style="color:#f92672">=</span> Tokenizer()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">tokenize_janome</span>(self, line: str) <span style="color:#f92672">-&gt;</span> list:
+        <span style="color:#75715e"># list of janome.tokenizer.Token</span>
+        tokens <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>janome_tokenizer<span style="color:#f92672">.</span>tokenize(line)
+        <span style="color:#66d9ef">return</span> tokens
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">exists_pos_in_dict</span>(self, pos0: str, pos1: str, pos_dict: dict) <span style="color:#f92672">-&gt;</span> bool:
+        <span style="color:#75715e"># Retrurn where pos0, pos1 are in pos_dict or not.</span>
+        <span style="color:#75715e"># ** pos = part of speech</span>
+        <span style="color:#66d9ef">for</span> type0 <span style="color:#f92672">in</span> pos_dict<span style="color:#f92672">.</span>keys():
+            <span style="color:#66d9ef">if</span> pos0 <span style="color:#f92672">==</span> type0:
+                <span style="color:#66d9ef">for</span> type1 <span style="color:#f92672">in</span> pos_dict[type0]:
+                    <span style="color:#66d9ef">if</span> pos1 <span style="color:#f92672">==</span> type1:
+                        <span style="color:#66d9ef">return</span> True
+        <span style="color:#66d9ef">return</span> False
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_wakati_str</span>(self, line: str, exclude_pos: dict,
+                       include_pos: dict) <span style="color:#f92672">-&gt;</span> str:
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        exclude/include_pos is like this
+</span><span style="color:#e6db74">        {&#34;Noun&#34;: [&#34;Independence&#34;, &#34;Pronoun&#34;, &#34;Number&#34;], &#34;Adjective&#34;: [&#34;xxx&#34;, &#34;yyy&#34;]}
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+        tokens <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>janome_tokenizer<span style="color:#f92672">.</span>tokenize(line, stream<span style="color:#f92672">=</span>True) <span style="color:#75715e"># generator to save memory</span>
+        extracted_words <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> token <span style="color:#f92672">in</span> tokens:part_of_speech0 <span style="color:#f92672">=</span> token<span style="color:#f92672">.</span>part_of_speech<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;,&#39;</span>)[<span style="color:#ae81ff">0</span>]
+            part_of_speech1 <span style="color:#f92672">=</span> token<span style="color:#f92672">.</span>part_of_speech<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;,&#39;</span>)[<span style="color:#ae81ff">1</span>]
+            <span style="color:#75715e"># check for excluding words</span>
+            exists <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>exists_pos_in_dict(part_of_speech0, part_of_speech1,
+                                             exclude_pos)
+            <span style="color:#66d9ef">if</span> exists:
+                <span style="color:#66d9ef">continue</span>
+            <span style="color:#75715e"># check for including words</span>
+            exists <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>exists_pos_in_dict(part_of_speech0, part_of_speech1,
+                                             include_pos)
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> exists:
+                <span style="color:#66d9ef">continue</span>
+            <span style="color:#75715e"># append(表記揺れを吸収する為 表層形を取得)</span>
+            extracted_words<span style="color:#f92672">.</span>append(token<span style="color:#f92672">.</span>surface)
+        <span style="color:#75715e"># wakati string with extracted words</span>
+        wakati_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39; &#39;</span><span style="color:#f92672">.</span>join(extracted_words)
+        <span style="color:#66d9ef">return</span> wakati_str
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_wakati_for_lines</span>(msg_ser: pd<span style="color:#f92672">.</span>Series) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>Series:
+    manalyzer <span style="color:#f92672">=</span> MorphologicalAnalysis()
+    wakati_msg_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> msg <span style="color:#f92672">in</span> tqdm(msg_ser, desc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;[mk wakati msgs]&#39;</span>):
+        wakati_msg <span style="color:#f92672">=</span> manalyzer<span style="color:#f92672">.</span>get_wakati_str(str(msg), exc_part_of_speech,
+                                              inc_part_of_speech)
+        wakati_msg_list<span style="color:#f92672">.</span>append(wakati_msg)
+    wakati_msg_ser <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>Series(wakati_msg_list)
+    <span style="color:#66d9ef">return</span> wakati_msg_ser
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(input_fname: str):
+    input_root <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;../../data/020_intermediate&#39;</span>
+    output_root <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;../../data/030_processed&#39;</span>
+    <span style="color:#75715e"># 1. load messages_cleaned.csv</span>
+    msgs_cleaned_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> input_fname
+    df_msgs <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(msgs_cleaned_fpath)
+    <span style="color:#75715e"># 2. make wakati string by record</span>
+    ser_msg <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>msg
+    df_msgs[<span style="color:#e6db74">&#39;wakati_msg&#39;</span>] <span style="color:#f92672">=</span> make_wakati_for_lines(ser_msg)
+    <span style="color:#75715e"># 3. save it</span>
+    pin <span style="color:#f92672">=</span> Path(msgs_cleaned_fpath)
+    msgs_wakati_fpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> pin<span style="color:#f92672">.</span>stem <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_wakati.csv&#39;</span>
+    df_msgs<span style="color:#f92672">.</span>to_csv(msgs_wakati_fpath, index<span style="color:#f92672">=</span>False)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser()
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;input_fname&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;set input file name&#34;</span>, type<span style="color:#f92672">=</span>str)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+    input_fname <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>input_fname
+    <span style="color:#75715e"># input file must been cleaned</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;cleaned&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> input_fname:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;input file name is invalid.: {0}&#39;</span><span style="color:#f92672">.</span>format(input_fname))
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;input file name must include </span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">cleaned</span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">&#39;</span>)
+        sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+    main(input_fname)
+</code></pre></div><h2 id="6-前処理正規化">6. 前処理：正規化</h2>
+<h3 id="61-正規化とは">6.1. 正規化とは</h3>
+<p>自然言語処理の前処理における正規化とは、以下のような処理を指します。
+「名寄せ」などと呼ばれることもあります。</p>
+<ol>
+<li>文字種の統一
+<ol>
+<li>カナを全角に統一</li>
+<li>アルファベットは小文字に統一…など</li>
+</ol>
+</li>
+<li>数字の置き換え
+<ol>
+<li>数字を全て0に置き換えるなど</li>
+<li>※自然言語処理において数字が重要な場面は少ない</li>
+</ol>
+</li>
+<li>辞書を用いた単語の統一
+<ol>
+<li>「Sony」と「ソニー」を同一と判断し、「Sony」という表記に統一など</li>
+</ol>
+</li>
+</ol>
+<p>正規化の世界は奥深いですので、ここではこの辺までにしておきます。</p>
+<h3 id="62-正規化の実装">6.2. 正規化の実装</h3>
+<p>今回は、簡単の為以下の処理のみ実装しました。
+めちゃくちゃ簡単です。</p>
+<ol>
+<li>アルファベットを小文字に統一</li>
+<li>数字は全て0に置き換え</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:normalization.py" data-lang="python:normalization.py"><span style="color:#f92672">import</span> re
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">import</span> sys
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normarize_text</span>(text: str):
+    normalized_text <span style="color:#f92672">=</span> normalize_number(text)
+    normalized_text <span style="color:#f92672">=</span> lower_text(normalized_text)
+    <span style="color:#66d9ef">return</span> normalized_text
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normalize_number</span>(text: str) <span style="color:#f92672">-&gt;</span> str:
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    pattern = r&#39;\d+&#39;
+</span><span style="color:#e6db74">    replacer = re.compile(pattern)
+</span><span style="color:#e6db74">    result = replacer.sub(&#39;0&#39;, text)
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#75715e"># 連続した数字を0で置換</span>
+    replaced_text <span style="color:#f92672">=</span> re<span style="color:#f92672">.</span>sub(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;\d+&#39;</span>, <span style="color:#e6db74">&#39;0&#39;</span>, text)
+    <span style="color:#66d9ef">return</span> replaced_text
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lower_text</span>(text: str) <span style="color:#f92672">-&gt;</span> str:
+    <span style="color:#66d9ef">return</span> text<span style="color:#f92672">.</span>lower()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normalize_msgs</span>(wktmsg_ser: pd<span style="color:#f92672">.</span>Series) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>Series:
+    normalized_msg_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> wktstr <span style="color:#f92672">in</span> tqdm(wktmsg_ser, desc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;normalize words...&#39;</span>):
+        normalized <span style="color:#f92672">=</span> normarize_text(str(wktstr))
+        normalized_msg_list<span style="color:#f92672">.</span>append(normalized)
+    normalized_msg_ser <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>Series(normalized_msg_list)
+    <span style="color:#66d9ef">return</span> normalized_msg_ser
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(input_fname: str):
+    input_root <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;../../data/030_processed&#39;</span>
+    output_root <span style="color:#f92672">=</span> input_root
+    <span style="color:#75715e"># 1. load wakati messages</span>
+    msgs_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> input_fname
+    df_msgs <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(msgs_fpath)
+    <span style="color:#75715e"># 2. normalize wakati_msg (update)</span>
+    ser_msg <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>wakati_msg
+    df_msgs<span style="color:#f92672">.</span>wakati_msg <span style="color:#f92672">=</span> normalize_msgs(ser_msg)
+    <span style="color:#75715e"># 3. save it</span>
+    pin <span style="color:#f92672">=</span> Path(msgs_fpath)
+    msgs_ofpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> pin<span style="color:#f92672">.</span>stem <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_norm.csv&#39;</span>
+    df_msgs<span style="color:#f92672">.</span>to_csv(msgs_ofpath, index<span style="color:#f92672">=</span>False)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser()
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;input_fname&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;set input file name&#34;</span>, type<span style="color:#f92672">=</span>str)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+    input_fname <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>input_fname
+    <span style="color:#75715e"># input file must been cleaned</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;wakati&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> input_fname:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;input file name is invalid.: {0}&#39;</span><span style="color:#f92672">.</span>format(input_fname))
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;input file name must include </span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">wakati</span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">&#39;</span>)
+        sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+    main(input_fname)
+</code></pre></div><h2 id="7-前処理ストップワード除去">7. 前処理：ストップワード除去</h2>
+<h3 id="71-ストップワード除去とは">7.1. ストップワード除去とは？</h3>
+<p>「ストップワード除去」とは、ストップワードを除去する処理です。
+（そのまますぎる……）</p>
+<p>では、「<strong>ストップワード</strong>」とは何でしょうか？</p>
+<p>goo国語辞書によると</p>
+<blockquote>
+<p>全文検索などで、あまりに一般的であるため、単独では検索から除外される単語。日本語の「は」「の」「です」、英語のa, the, ofなどを指す。ストップワーズ。</p>
+</blockquote>
+<p>自然言語処理のタスクは、往々にして「文章のコンテクストを理解する」という目的を持っています。ストップワードは、この目的に不必要なものであるため、除去する必要があります。</p>
+<h3 id="72-ストップワードはどうやって決めるのか">7.2. ストップワードはどうやって決めるのか？</h3>
+<p>主要なものとして二つあります。今回は1を採用します。</p>
+<ol>
+<li>辞書を用いる方法（<strong>←今回はこちらを採用</strong>）</li>
+<li>出現頻度を用いる方法For the dictionary data, use <a href="http://svn.sourceforge.jp/svnroot/slothlib/CSharp/Version1/SlothLib/NLP/Filter/StopWord/word/Japanese.txt">here</a>.</li>
+</ol>
+<p>There are several reasons to choose method 1.</p>
+<ul>
+<li>When using a dictionary <a href="http://svn.sourceforge.jp/svnroot/slothlib/CSharp/Version1/SlothLib/NLP/Filter/StopWord/word/Japanese.txt">Existing dictionary</a> is easy to install.</li>
+<li>When using the frequency of occurrence, you need to extract only the &ldquo;words that have a high frequency of occurrence in <strong>general conversation</strong> and therefore should be removed&rdquo;. If we use the Slack data we have at hand to calculate the frequency of occurrence ** There is a risk that &ldquo;words related to a hot topic&rdquo; may be inadvertently removed **, so we thought that it would be necessary to prepare separate data for aggregation. .. &hellip;&hellip;It&rsquo;s a bit tough</li>
+</ul>
+<h3 id="73-stopword-removal-implementation">7.3. Stopword removal implementation</h3>
+<p>Remove the words registered in the dictionary data introduced in the previous section.
+In addition to that, the following characters were also targeted for removal.
+This is a word that I thought was disturbing while tuning various things.</p>
+<ul>
+<li>&ldquo;-&rdquo;</li>
+<li>&ldquo;-&rdquo;</li>
+<li>&ldquo;W&rdquo;</li>
+<li>&ldquo;M&rdquo;</li>
+<li>&ldquo;Lol&rdquo;</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:stopword_removal.py" data-lang="python:stopword_removal.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> urllib.request
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">import</span> sys
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">maybe_download</span>(path: str):
+    stopword_def_page_url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;http://svn.sourceforge.jp/svnroot/slothlib/CSharp/Version1/SlothLib/NLP/Filter/StopWord/word/Japanese.txt&#39;</span>
+    p <span style="color:#f92672">=</span> Path(path)
+    <span style="color:#66d9ef">if</span> p<span style="color:#f92672">.</span>exists():
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;File already exists.&#39;</span>)
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;downloading stop words definition ...&#39;</span>)
+        <span style="color:#75715e"># Download the file from `url` and save it locally under `file_name`:</span>
+        urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlretrieve(stopword_def_page_url, path)
+    <span style="color:#75715e"># stop word addition</span>
+    sw_added_list <span style="color:#f92672">=</span> [
+        <span style="color:#e6db74">&#39;-&#39;</span>,
+        <span style="color:#e6db74">&#34;-&#34;</span>,
+        <span style="color:#e6db74">&#39;w&#39;</span>,
+        <span style="color:#e6db74">&#39;W&#39;</span>,
+        <span style="color:#e6db74">&#39;m&#39;</span>,
+        <span style="color:#e6db74">&#39;Lol&#39;</span>
+    ]
+    sw_added_str <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>join(sw_added_list)
+    <span style="color:#66d9ef">with</span> open(path,<span style="color:#e6db74">&#39;a&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        <span style="color:#66d9ef">print</span>(sw_added_str, file<span style="color:#f92672">=</span>f)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_sw_definition</span>(path: str) <span style="color:#f92672">-&gt;</span> list:
+    <span style="color:#66d9ef">with</span> open(path,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        lines <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>read()
+        line_list <span style="color:#f92672">=</span> lines<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+        line_list <span style="color:#f92672">=</span> [x <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> line_list <span style="color:#66d9ef">if</span> x <span style="color:#f92672">!=</span><span style="color:#e6db74">&#39;&#39;</span>]
+    <span style="color:#66d9ef">return</span> line_list
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">remove_sw_from_text</span>(wktstr: str, stopwords: list) <span style="color:#f92672">-&gt;</span> str:
+    words_list <span style="color:#f92672">=</span> wktstr<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;&#39;</span>)
+    words_list_swrm <span style="color:#f92672">=</span> [x <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> words_list <span style="color:#66d9ef">if</span> x <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> stopwords]
+    swremoved_str <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join(words_list_swrm)
+    <span style="color:#66d9ef">return</span> swremoved_str
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">remove_sw_from_msgs</span>(wktmsg_ser: pd<span style="color:#f92672">.</span>Series, stopwords: list) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>Series:
+    swremved_msg_list <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> wktstr <span style="color:#f92672">in</span> tqdm(wktmsg_ser, desc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;remove stopwords...&#39;</span>):
+        removed_str <span style="color:#f92672">=</span> remove_sw_from_text(str(wktstr), stopwords)
+        swremved_msg_list<span style="color:#f92672">.</span>append(removed_str)
+    swremved_msg_ser <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>Series(swremved_msg_list)
+    <span style="color:#66d9ef">return</span> swremved_msg_ser
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(input_fname: str):
+    input_root <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;../../data/030_processed&#39;</span>
+    output_root <span style="color:#f92672">=</span> input_root
+    <span style="color:#75715e"># 1. load stop words</span>
+    sw_def_fpath <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;stopwords.txt&#39;</span>
+    maybe_download(sw_def_fpath)
+    stopwords <span style="color:#f92672">=</span> load_sw_definition(sw_def_fpath)
+    <span style="color:#75715e"># 2. load messages</span>
+    msgs_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> input_fname
+    df_msgs <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(msgs_fpath)
+    <span style="color:#75715e"># 3. remove stop words</span>
+    ser_msg <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>wakati_msg
+    df_msgs<span style="color:#f92672">.</span>wakati_msg <span style="color:#f92672">=</span> remove_sw_from_msgs(ser_msg, stopwords)
+    <span style="color:#75715e"># 4. save it</span>
+    pin <span style="color:#f92672">=</span> Path(msgs_fpath)
+    msgs_ofpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> pin<span style="color:#f92672">.</span>stem <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;_rmsw.csv&#39;</span>
+    df_msgs<span style="color:#f92672">.</span>to_csv(msgs_ofpath, index<span style="color:#f92672">=</span>False)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser()
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;input_fname&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;set input file name&#34;</span>, type<span style="color:#f92672">=</span>str)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+    input_fname <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>input_fname
+    <span style="color:#75715e"># input file must been cleaned</span>
+    <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;norm&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> input_fname:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;input file name is invalid.: {0}&#39;</span><span style="color:#f92672">.</span>format(input_fname))
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;input file name must include </span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">norm</span><span style="color:#ae81ff">\&#39;</span><span style="color:#e6db74">&#39;</span>)
+        sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+    main(input_fname)
+</code></pre></div><h2 id="8-pre-processing-extract-important-words-tf-idf">8. Pre-processing: Extract important words (tf-idf)</h2>
+<h3 id="81-what-is-tf-idf">8.1. What is tf-idf?</h3>
+<p>There are many great commentary articles.
+I referred to this article.
+<a href="https://qiita.com/AwaJ/items/5937665d5a4152cc24cf">TF-IDF | Qiita</a></p>
+<p>Here&rsquo;s a brief explanation.</p>
+<ul>
+<li>tf (Term Frequency)
+-Occurrence frequency of words in a document
+-If it is big, &ldquo;the word often appears in the document&rdquo;</li>
+<li>idf (Inverse Document Frequency)
+-Reciprocal of the ratio (to all documents) of documents in which a word appears **
+-If it is big, &ldquo;it does not appear in other documents&rdquo;</li>
+</ul>
+<p>tf-idf is the number obtained by multiplying tf and idf.
+That is,
+<strong>tf-idf is large</strong>
+= ** Frequently appearing in one document ** &amp; ** Not so often in other documents **
+==Important for understanding the context of the document**</p>
+<h3 id="82-word-scoring-implementation-using-tf-idf">8.2. Word scoring implementation using tf-idf</h3>
+<h4 id="821-what-is-a-documentall-documents">8.2.1. What is a document/all documents?</h4>
+<p>The purpose this time is to look at the characteristics of the speech during a certain period (one week).
+Therefore, I thought it <em>should</em> be made clear to all the posts so far* what kind of characteristics a statement during a certain period (one week) has.</p>
+<p>Therefore,</p>
+<ul>
+<li><strong>All documents</strong>: All posts so far</li>
+<li><strong>1 document</strong>: A lump of posts for a certain period (1 week)</li>
+</ul>
+<p>Was calculated as tf-idf.</p>
+<h4 id="822-implementation">8.2.2. Implementation</h4>
+<p>Write the process flow easily</p>
+<ol>
+<li>Read Message Mart table (pre-processed)</li>
+<li>Grouping by message duration
+<ol>
+<li>The past data is divided and grouped by 7 days starting from the time of processing execution</li>
+</ol>
+</li>
+<li>Calculate tf-idf with one group of messages as one document</li>
+<li>Extract words with tf-idf score above threshold (output as dictionary)</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:important_word_extraction.py" data-lang="python:important_word_extraction.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime, date, timedelta, timezone
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">from</span> sklearn.feature_extraction.text <span style="color:#f92672">import</span> TfidfVectorizer
+JST <span style="color:#f92672">=</span> timezone(timedelta(hours<span style="color:#f92672">=+</span><span style="color:#ae81ff">9</span>),<span style="color:#e6db74">&#39;JST&#39;</span>)
+
+<span style="color:#75715e"># Group messages by specified period</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">group_msgs_by_term</span>(df_msgs: pd<span style="color:#f92672">.</span>DataFrame, term: str) <span style="color:#f92672">-&gt;</span> dict:
+    <span style="color:#75715e"># set term</span>
+    term_days <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>
+    <span style="color:#66d9ef">if</span> term <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;lm&#39;</span>:
+        term_days <span style="color:#f92672">=</span> <span style="color:#ae81ff">31</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;group messages every {0} days&#39;</span><span style="color:#f92672">.</span>format(term_days))
+    <span style="color:#75715e"># analyze timestamp</span>
+    now_in_sec <span style="color:#f92672">=</span> (datetime<span style="color:#f92672">.</span>now(JST)<span style="color:#f92672">-</span>datetime<span style="color:#f92672">.</span>fromtimestamp(<span style="color:#ae81ff">0</span>, JST))<span style="color:#f92672">.</span>total_seconds()
+    interval_days <span style="color:#f92672">=</span> timedelta(days<span style="color:#f92672">=</span>term_days)
+    interval_seconds <span style="color:#f92672">=</span> interval_days<span style="color:#f92672">.</span>total_seconds()oldest_timestamp <span style="color:#f92672">=</span> df_msgs<span style="color:#f92672">.</span>min()<span style="color:#f92672">.</span>timestamp
+    oldest_ts_in_sec <span style="color:#f92672">=</span> (datetime<span style="color:#f92672">.</span>fromtimestamp(oldest_timestamp, JST) <span style="color:#f92672">-</span> datetime<span style="color:#f92672">.</span>fromtimestamp(<span style="color:#ae81ff">0</span>, JST))<span style="color:#f92672">.</span>total_seconds()
+    loop_num <span style="color:#f92672">=</span> (abs(now_in_sec <span style="color:#f92672">-</span> oldest_ts_in_sec) <span style="color:#f92672">/</span> interval_seconds) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#75715e"># extract by term</span>
+    dict_msgs_by_term <span style="color:#f92672">=</span> {}
+    df_tmp <span style="color:#f92672">=</span> df_msgs
+    now_tmp <span style="color:#f92672">=</span> now_in_sec
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(int(loop_num)):
+        <span style="color:#75715e"># make current term string</span>
+        cur_term_s <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;term_ago_{0}&#39;</span><span style="color:#f92672">.</span>format(str(i)<span style="color:#f92672">.</span>zfill(<span style="color:#ae81ff">3</span>))
+        <span style="color:#66d9ef">print</span>(cur_term_s)
+        <span style="color:#75715e"># current messages</span>
+        df_msgs_cur <span style="color:#f92672">=</span> df_tmp<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;@now_tmp - timestamp &lt; @interval_seconds&#39;</span>)
+        df_msgs_other <span style="color:#f92672">=</span> df_tmp<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;@now_tmp - timestamp &gt;= @interval_seconds&#39;</span>)
+        <span style="color:#75715e"># messages does not exist. break.</span>
+        <span style="color:#66d9ef">if</span> df_msgs_cur<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            <span style="color:#66d9ef">break</span>
+        <span style="color:#75715e"># add current messages to dict</span>
+        dict_msgs_by_term[cur_term_s] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39; &#39;</span><span style="color:#f92672">.</span>join(df_msgs_cur<span style="color:#f92672">.</span>wakati_msg<span style="color:#f92672">.</span>dropna()<span style="color:#f92672">.</span>values<span style="color:#f92672">.</span>tolist())
+        <span style="color:#75715e"># update temp value for next loop</span>
+        now_tmp <span style="color:#f92672">=</span> now_tmp <span style="color:#f92672">-</span> interval_seconds
+        df_tmp <span style="color:#f92672">=</span> df_msgs_other
+    <span style="color:#66d9ef">return</span> dict_msgs_by_term
+
+<span style="color:#75715e"># tf-idfスコアを参照しながら重要単語を抽出し辞書として返す</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">extract_important_word_by_key</span>(feature_names: list, bow_df: pd<span style="color:#f92672">.</span>DataFrame, uids: list) <span style="color:#f92672">-&gt;</span> dict:
+    <span style="color:#75715e"># &gt; 行ごとにみていき、重要単語を抽出する(tfidf上位X個の単語)</span>
+    dict_important_words_by_user <span style="color:#f92672">=</span> {}
+    <span style="color:#66d9ef">for</span> uid, (i, scores) <span style="color:#f92672">in</span> zip(uids, bow_df<span style="color:#f92672">.</span>iterrows()):
+        <span style="color:#75715e"># 当該ユーザーの単語・tfidfスコアのテーブルを作る</span>
+        words_score_tbl <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame()
+        words_score_tbl[<span style="color:#e6db74">&#39;scores&#39;</span>] <span style="color:#f92672">=</span> scores
+        words_score_tbl[<span style="color:#e6db74">&#39;words&#39;</span>] <span style="color:#f92672">=</span> feature_names
+        <span style="color:#75715e"># tfidfスコアで降順ソートする</span>
+        words_score_tbl <span style="color:#f92672">=</span> words_score_tbl<span style="color:#f92672">.</span>sort_values(<span style="color:#e6db74">&#39;scores&#39;</span>, ascending<span style="color:#f92672">=</span>False)
+        words_score_tbl <span style="color:#f92672">=</span> words_score_tbl<span style="color:#f92672">.</span>reset_index()
+        <span style="color:#75715e"># extract : tf-idf score &gt; 0.001</span>
+        important_words <span style="color:#f92672">=</span> words_score_tbl<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;scores &gt; 0.001&#39;</span>)
+        <span style="color:#75715e"># 当該ユーザの辞書作成 &#39;uid0&#39;: {&#39;w0&#39;: 0.9, &#39;w1&#39;: 0.87}</span>
+        d <span style="color:#f92672">=</span> {}
+        <span style="color:#66d9ef">for</span> i, row <span style="color:#f92672">in</span> important_words<span style="color:#f92672">.</span>iterrows():
+            d[row<span style="color:#f92672">.</span>words] <span style="color:#f92672">=</span> row<span style="color:#f92672">.</span>scores
+        <span style="color:#75715e"># 当該ユーザの辞書にワードが少なくとも一つ以上ある場合のみテーブルに追加</span>
+        <span style="color:#66d9ef">if</span> len(d<span style="color:#f92672">.</span>keys()) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
+            dict_important_words_by_user[uid] <span style="color:#f92672">=</span> d
+    <span style="color:#66d9ef">return</span> dict_important_words_by_user
+
+<span style="color:#75715e"># 指定した期間単位で重要単語を抽出する</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">extraction_by_term</span>(input_root: str, output_root: str, term: str) <span style="color:#f92672">-&gt;</span> dict:
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 1. load messages (processed)</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;load msgs (all of history and last term) ...&#39;</span>)
+    msg_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;messages_cleaned_wakati_norm_rmsw.csv&#39;</span>
+    df_msgs_all <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(msg_fpath)
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 2. group messages by term</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;group messages by term and save it.&#39;</span>)
+    msgs_grouped_by_term <span style="color:#f92672">=</span> group_msgs_by_term(df_msgs_all, term)
+    msg_grouped_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;messages_grouped_by_term.json&#39;</span>
+    <span style="color:#66d9ef">with</span> open(msg_grouped_fpath, <span style="color:#e6db74">&#39;w&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        json<span style="color:#f92672">.</span>dump(msgs_grouped_by_term, f, ensure_ascii<span style="color:#f92672">=</span>False, indent<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>)
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 3. 全文書を対象にtf-idf計算</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;tfidf vectorizing ...&#39;</span>)
+    <span style="color:#75715e"># &gt; 全文書にある単語がカラムで、文書数（=user）が行となる行列が作られる。各要素にはtf-idf値がある</span>
+    tfidf_vectorizer <span style="color:#f92672">=</span> TfidfVectorizer(token_pattern<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;(?u)</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">b</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">w+</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">b&#39;</span>)
+
+    bow_vec <span style="color:#f92672">=</span> tfidf_vectorizer<span style="color:#f92672">.</span>fit_transform(msgs_grouped_by_term<span style="color:#f92672">.</span>values())
+    bow_array <span style="color:#f92672">=</span> bow_vec<span style="color:#f92672">.</span>toarray()
+    bow_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(bow_array,
+                        index<span style="color:#f92672">=</span>msgs_grouped_by_term<span style="color:#f92672">.</span>keys(),
+                        columns<span style="color:#f92672">=</span>tfidf_vectorizer<span style="color:#f92672">.</span>get_feature_names())
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#75715e"># 5. tf-idfに基づいて重要単語を抽出する</span>
+    <span style="color:#75715e"># ---------------------------------------------</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;extract important words ...&#39;</span>)
+    dict_word_score_by_term <span style="color:#f92672">=</span> extract_important_word_by_key(
+        tfidf_vectorizer<span style="color:#f92672">.</span>get_feature_names(),
+        bow_df, msgs_grouped_by_term<span style="color:#f92672">.</span>keys())
+    <span style="color:#66d9ef">return</span> dict_word_score_by_term
+</code></pre></div><h2 id="9-wordcloudで可視化処理">9. Wordcloudで可視化処理</h2>
+<h3 id="91-wordcloudとは">9.1. Wordcloudとは</h3>
+<p>スコアの大きなワードは大きく、スコアの小さなワードは小さく表示した画像です。スコアには「出現頻度」や「重要度」など様々な値を自由に設定できます。</p>
+<p>公式リポジトリ：<a href="https://github.com/amueller/word_cloud">amueller/word_cloud :octocat: </a></p>
+<h3 id="92-wordcloudのフォントを用意">9.2. Wordcloudのフォントを用意</h3>
+<p>今回は、こちらを利用します。
+<a href="http://jikasei.me/font/rounded-mplus/about.html">自家製 Rounded M+ とは</a></p>
+<h3 id="93-wordcloudの実装">9.3. Wordcloudの実装</h3>
+<p>前章の「8. 前処理：重要語句抽出(tf-idf)」では、以下のようなJSONファイルを出力しました。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json:important_word_tfidf_by_term.json" data-lang="json:important_word_tfidf_by_term.json">{
+  <span style="color:#f92672">&#34;term_ago_000&#34;</span>: {
+    <span style="color:#f92672">&#34;データ&#34;</span>: <span style="color:#ae81ff">0.890021</span>,
+    <span style="color:#f92672">&#34;ゲーム&#34;</span>: <span style="color:#ae81ff">0.780122</span>,
+    <span style="color:#f92672">&#34;記事&#34;</span>: <span style="color:#ae81ff">0.720025</span>,
+    <span style="color:#960050;background-color:#1e0010">:</span>
+  },
+  <span style="color:#f92672">&#34;term_ago_001&#34;</span>: {
+    <span style="color:#f92672">&#34;翻訳&#34;</span>: <span style="color:#ae81ff">0.680021</span>,
+    <span style="color:#f92672">&#34;データ&#34;</span>: <span style="color:#ae81ff">0.620122</span>,
+    <span style="color:#f92672">&#34;deepl&#34;</span>: <span style="color:#ae81ff">0.580025</span>,
+    <span style="color:#960050;background-color:#1e0010">:</span>
+  },
+  <span style="color:#960050;background-color:#1e0010">:</span>
+}
+</code></pre></div><p>これを読み込んでWordcloudの画像を作ります。
+<code>WordCloud.generate_from_frequencies()</code> というメソッドを使います。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:wordcloud_from_score.py" data-lang="python:wordcloud_from_score.py"><span style="color:#f92672">from</span> wordcloud <span style="color:#f92672">import</span> WordCloud
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">from</span> pathlib <span style="color:#f92672">import</span> Path
+<span style="color:#f92672">from</span> sklearn.feature_extraction.text <span style="color:#f92672">import</span> TfidfVectorizer
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> argparse
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>(input_fname: str):
+    input_root <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;../../data/031_features&#39;</span>output_root <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./wordcloud_by_user&#39;</span> <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#39;by_user&#39;</span> <span style="color:#f92672">in</span> input_fname <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#39;./wordcloud_by_term&#39;</span>
+    p <span style="color:#f92672">=</span> Path(output_root)
+    <span style="color:#66d9ef">if</span> p<span style="color:#f92672">.</span>exists() <span style="color:#f92672">is</span> False:
+        p<span style="color:#f92672">.</span>mkdir()
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># 1. load tf-idf score dictionary</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    d_word_score_by_user <span style="color:#f92672">=</span> {}
+    tfidf_fpath <span style="color:#f92672">=</span> input_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> input_fname
+    <span style="color:#66d9ef">with</span> open(tfidf_fpath, <span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        d_word_score_by_user <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>load(f)
+    <span style="color:#75715e"># -------------------------------------</span>
+    <span style="color:#75715e"># 2. gen word cloud from score</span>
+    <span style="color:#75715e"># -------------------------------------</span>
+    fontpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./rounded-l-mplus-1c-regular.ttf&#39;</span>
+    <span style="color:#66d9ef">for</span> uname, d_word_score <span style="color:#f92672">in</span> tqdm(d_word_score_by_user<span style="color:#f92672">.</span>items(), desc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;word cloud ...&#39;</span>):
+        <span style="color:#75715e"># img file name is user.png</span>
+        uname <span style="color:#f92672">=</span> str(uname)<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;/&#39;</span>, <span style="color:#e6db74">&#39;-&#39;</span>)
+        out_img_fpath <span style="color:#f92672">=</span> output_root <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> uname <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;.png&#39;</span>
+        <span style="color:#75715e"># gen</span>
+        wc <span style="color:#f92672">=</span> WordCloud(
+            background_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;white&#39;</span>,
+            font_path<span style="color:#f92672">=</span>fontpath,
+            width<span style="color:#f92672">=</span><span style="color:#ae81ff">900</span>, height<span style="color:#f92672">=</span><span style="color:#ae81ff">600</span>,
+            collocations<span style="color:#f92672">=</span>False
+            )
+        wc<span style="color:#f92672">.</span>generate_from_frequencies(d_word_score)
+        wc<span style="color:#f92672">.</span>to_file(out_img_fpath)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser()
+    parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;input_fname&#34;</span>, help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;set input file name&#34;</span>, type<span style="color:#f92672">=</span>str)
+    args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+    input_fname <span style="color:#f92672">=</span> args<span style="color:#f92672">.</span>input_fname
+    main(input_fname)
+</code></pre></div><h2 id="10-おまけ">10. おまけ</h2>
+<h3 id="特に参考にした記事">特に参考にした記事</h3>
+<ul>
+<li><a href="https://qiita.com/Hironsan/items/2466fe0f344115aff177">自然言語処理における前処理の種類とその威力 | Qiita</a></li>
+<li><a href="https://medium.com/voice-tech-podcast/nlp-pipeline-101-with-basic-code-example-feature-extraction-ea9894ed8daf">NLP Pipeline 101 With Basic Code Example — Feature Extraction</a></li>
+</ul>
+<p>その他の参考資料（大量）は、<a href="https://github.com/sota0121/slack-msg-analysis/blob/master/references/REFERENCE_LINK.md">こちら :octocat: </a>にまとめています。</p>
+<h3 id="宣伝">宣伝</h3>
+<p>今回は、Data Learning Guild というSlackコミュニティのデータを利用させていただいています。
+Data Learning Guild はデータ分析人材が集まるオンラインコミュニティです。気になる方は、こちらをチェックしてみてください。</p>
+<p><a href="https://data-learning.com/guild">データラーニングギルド公式ホームページ</a></p>
+<p><a href="https://qiita.com/advent-calendar/2019/data-learning-guild">データラーニングギルド 2019 Advent Calendar</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>
