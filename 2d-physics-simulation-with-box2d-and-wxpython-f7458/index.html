@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] 2D physics simulation with Box2d and wxPython | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] 2D physics simulation with Box2d and wxPython</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 18, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/simulation"> simulation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/wxpython"> wxpython</a></code></small>
+
+</p>
+<pre><code>Reinforcement learning is showing signs that it will be hot next year due to the environment of gym and DeepMind, but after all, do you often want to solve your own short (robot control) problem?
+</code></pre>
+<p>In <a href="http://qiita.com/chachay/items/aa7b94f22163905b4c2b">- Qiita which made the environment of the line tracer like OpenAI I/F</a>, the line tracer ignoring the physical laws was moving around, but in the future, To tackle issues that consider tire grip and gravitational acceleration, we must incorporate physics into our simulation.</p>
+<p>There are various 3D robot simulators on the market such as Gazebo and Webot, but 2D is easier to handle for PoC and conceptually faster to test, so for PoC, I would like to recommend this first. I personally think.</p>
+<p>That&rsquo;s why Box2D, which was popular for a while, was used for physics simulation, and (for me) a standard wxPython animation.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/117379/f9a6aab1-4928-0c8c-226b-26d5e90d7773.png" alt="2016-12-18.png"></p>
+<p>Introducing # Box2d</p>
+<p>I&rsquo;m still using Windows, which is a bad environment, so I needed to prepare Swig first ⇒ [Introduction of SWIG on Windows - Volo di notte](<a href="http://chachay.hatenablog.com/entry/2016/12/(18/090010)">http://chachay.hatenablog.com/entry/2016/12/(18/090010)</a></p>
+<p>So, let&rsquo;s clone and install <a href="https://github.com/pybox2d/pybox2d">pybox2d</a>!</p>
+<pre><code>python setup.py build
+python setup.py install
+</code></pre><p>Windows people may need VC++ build tools. check.</p>
+<ul>
+<li>For python2: [Download Microsoft Visual C++ Compiler for Python 2.7 from Official Microsoft Download Center](<a href="https://www.microsoft.com/en-us/download/details.aspx?id=(44266)">https://www.microsoft.com/en-us/download/details.aspx?id=(44266)</a></li>
+<li>For python3: <a href="http://landinghub.visualstudio.com/visual-cpp-build-tools">Download the Visual C++ Build Tools (standalone C++ compiler, libraries and tools)</a></li>
+</ul>
+<h1 id="introducing-wxpython">Introducing wxPython</h1>
+<p>I recently switched to Python 3, so make a note of the wxPython installation.
+From <a href="https://www.wxpython.org/Phoenix/snapshot-builds/">Index of /Phoenix/snapshot-builds</a>, &ldquo;<a href="https://www.wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-">https://www.wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-</a> &ldquo;3.0.3.dev2700+c524ed1-cp35-cp35m-win_amd64.whl&rdquo; and pick up the link of the wheel package that corresponds to you.</p>
+<pre><code>pip install https://www.wxpython.org/Phoenix/snapshot-builds/wxPython_Phoenix-3.0.3.dev2700+c524ed1-cp35-cp35m-win_amd64.whl
+</code></pre><p>The ease of building an environment around here is python&rsquo;s best.</p>
+<h1 id="lets-box2d">Let&rsquo;s box2D</h1>
+<p>First, decide the scale factor and time of the simulation</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">PPM <span style="color:#f92672">=</span> <span style="color:#ae81ff">20.0</span> <span style="color:#75715e"># pixels per meter</span>
+TimeStep <span style="color:#f92672">=</span> <span style="color:#ae81ff">20</span> <span style="color:#75715e"># ms</span>
+</code></pre></div><p>This is the only package to use</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#f92672">import</span> Box2D
+<span style="color:#f92672">from</span> Box2D.b2 <span style="color:#f92672">import</span> (world, polygonShape, staticBody, dynamicBody)
+<span style="color:#f92672">import</span> wx
+</code></pre></div><h2 id="wxpython-initialization">wxPython initialization</h2>
+<p>It is the same as the previous Chachay series, but we will make it with the following configuration based on the wx.App class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">APPWINDOW</span>(wx<span style="color:#f92672">.</span>Frame):
+    <span style="color:#66d9ef">def</span> __init__(self, parent<span style="color:#f92672">=</span>None, id<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>, title<span style="color:#f92672">=</span>None):
+        <span style="color:#75715e"># 1. Initialize drawing window and timer</span>
+        <span style="color:#75715e"># 2. CloseWindow binding</span>
+        <span style="color:#75715e"># 3. Initialization of physics engine + definition of physics object (ground or object)</span>
+        <span style="color:#75715e"># 4. Start timer loop</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">CloseWindow</span>(self, event):
+        <span style="color:#75715e"># Simple end processing</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">OnTimer</span>(self, event):
+        <span style="color:#75715e"># 1. Clean window</span>
+        <span style="color:#75715e"># 2. Physical object drawing</span>
+        <span style="color:#75715e"># 3. Perform 1 step of physical simulation</span>
+</code></pre></div><h2 id="physics-engine-initialization">Physics engine initialization</h2>
+<p>First, define gravity in the world, create a ground (CreateStaticBody), and place a box in the air (CreateDynamicBody).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">        <span style="color:#75715e"># pybox2d world</span>
+        self<span style="color:#f92672">.</span>phys_world <span style="color:#f92672">=</span> world(gravity<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">10</span>), doSleep<span style="color:#f92672">=</span>True)
+        self<span style="color:#f92672">.</span>ground_body <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>phys_world<span style="color:#f92672">.</span>CreateStaticBody(
+            position<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>),
+            shapes<span style="color:#f92672">=</span>polygonShape(box<span style="color:#f92672">=</span>(<span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">5</span>)),
+        )
+        self<span style="color:#f92672">.</span>dynamic_body <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>phys_world<span style="color:#f92672">.</span>CreateDynamicBody(position<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">15</span>), angle<span style="color:#f92672">=</span><span style="color:#ae81ff">15</span>)
+        self<span style="color:#f92672">.</span>box <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>dynamic_body<span style="color:#f92672">.</span>CreatePolygonFixture(box<span style="color:#f92672">=</span>(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>), density<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, friction<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>)
+</code></pre></div><h2 id="timer-loop-processing">Timer loop processing</h2>
+<p>If you define up to here, the simulation is super easy. Just call the Step function.
+After that, devise only the part where you draw the picture. You can use kivy or whatever you like for the animation.</p>
+<p>This is a simulation of a box falling from the air and landing on the ground.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">OnTimer</span>(self, event):
+        <span style="color:#75715e"># 1. Clean window</span>
+        self<span style="color:#f92672">.</span>bdc <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>BufferedDC(self<span style="color:#f92672">.</span>cdc, self<span style="color:#f92672">.</span>bmp)
+        self<span style="color:#f92672">.</span>gcdc <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>GCDC(self<span style="color:#f92672">.</span>bdc)
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>Clear()
+        
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetPen(wx<span style="color:#f92672">.</span>Pen(<span style="color:#e6db74">&#39;white&#39;</span>))
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetBrush(wx<span style="color:#f92672">.</span>Brush(<span style="color:#e6db74">&#39;white&#39;</span>))
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>DrawRectangle(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">640</span>,<span style="color:#ae81ff">640</span>)
+        
+        <span style="color:#75715e"># 2. Physical object drawing</span>
+        <span style="color:#66d9ef">for</span> body <span style="color:#f92672">in</span> (self<span style="color:#f92672">.</span>ground_body, self<span style="color:#f92672">.</span>dynamic_body): <span style="color:#75715e"># or: world.bodies</span>
+            <span style="color:#66d9ef">for</span> fixture <span style="color:#f92672">in</span> body<span style="color:#f92672">.</span>fixtures:
+                shape <span style="color:#f92672">=</span> fixture<span style="color:#f92672">.</span>shape
+
+                vertices <span style="color:#f92672">=</span> [(body<span style="color:#f92672">.</span>transform <span style="color:#f92672">*</span> v) <span style="color:#f92672">*</span> PPM <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> shape<span style="color:#f92672">.</span>vertices]
+                vertices <span style="color:#f92672">=</span> [(int(v[<span style="color:#ae81ff">0</span>]), int(<span style="color:#ae81ff">480</span><span style="color:#f92672">-</span>v[<span style="color:#ae81ff">1</span>])) <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> vertices]
+                
+                self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetPen(wx<span style="color:#f92672">.</span>Pen(wx<span style="color:#f92672">.</span>Colour(<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">50</span>)))
+                self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetBrush(wx<span style="color:#f92672">.</span>Brush(wx<span style="color:#f92672">.</span>Colour(colors[body<span style="color:#f92672">.</span>type]))))
+                self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>DrawPolygon(vertices)
+        
+        <span style="color:#75715e"># 3. Perform 1 step of physical simulation</span>
+        self<span style="color:#f92672">.</span>phys_world<span style="color:#f92672">.</span>Step(TimeStep<span style="color:#f92672">/</span><span style="color:#ae81ff">1000</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>)
+</code></pre></div><h1 id="complete-source">Complete source</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#f92672">import</span> Box2D
+<span style="color:#f92672">from</span> Box2D.b2 <span style="color:#f92672">import</span> (world, polygonShape, staticBody, dynamicBody)
+<span style="color:#f92672">import</span> wx
+
+PPM <span style="color:#f92672">=</span> <span style="color:#ae81ff">20.0</span> <span style="color:#75715e"># pixels per meter</span>
+TimeStep <span style="color:#f92672">=</span> <span style="color:#ae81ff">20</span> <span style="color:#75715e"># ms</span>
+
+colors <span style="color:#f92672">=</span> {
+    staticBody: (<span style="color:#ae81ff">150</span>,<span style="color:#ae81ff">150</span>,<span style="color:#ae81ff">150</span>),
+    dynamicBody: (<span style="color:#ae81ff">112</span>,<span style="color:#ae81ff">146</span>,<span style="color:#ae81ff">190</span>),
+}
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">APPWINDOW</span>(wx<span style="color:#f92672">.</span>Frame):
+    <span style="color:#66d9ef">def</span> __init__(self, parent<span style="color:#f92672">=</span>None, id<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>, title<span style="color:#f92672">=</span>None):
+        <span style="color:#75715e"># 1. Initialize drawing window and timer</span>
+        wx<span style="color:#f92672">.</span>Frame<span style="color:#f92672">.</span>__init__(self, parent, id, title)
+        self<span style="color:#f92672">.</span>MainPanel <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>Panel(self, size<span style="color:#f92672">=</span>(<span style="color:#ae81ff">640</span>, <span style="color:#ae81ff">480</span>))
+        self<span style="color:#f92672">.</span>MainPanel<span style="color:#f92672">.</span>SetBackgroundColour(<span style="color:#e6db74">&#39;WHITE&#39;</span>)
+        
+        self<span style="color:#f92672">.</span>panel <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>Panel(self<span style="color:#f92672">.</span>MainPanel, size <span style="color:#f92672">=</span> (<span style="color:#ae81ff">640</span>,<span style="color:#ae81ff">480</span>))
+        self<span style="color:#f92672">.</span>panel<span style="color:#f92672">.</span>SetBackgroundColour(<span style="color:#e6db74">&#39;WHITE&#39;</span>)
+
+        mainSizer <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>BoxSizer(wx<span style="color:#f92672">.</span>VERTICAL)
+        mainSizer<span style="color:#f92672">.</span>Add(self<span style="color:#f92672">.</span>panel)
+
+        self<span style="color:#f92672">.</span>SetSizer(mainSizer)
+        self<span style="color:#f92672">.</span>Fit()
+        
+        self<span style="color:#f92672">.</span>timer <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>Timer(self)
+        self<span style="color:#f92672">.</span>Bind(wx<span style="color:#f92672">.</span>EVT_TIMER, self<span style="color:#f92672">.</span>OnTimer)
+        
+        self<span style="color:#f92672">.</span>cdc <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>ClientDC(self<span style="color:#f92672">.</span>panel)
+        w, h <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>panel<span style="color:#f92672">.</span>GetSize()self<span style="color:#f92672">.</span>bmp <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>Bitmap(w,h)
+
+        <span style="color:#75715e"># 2. CloseWindow binding</span>
+        self<span style="color:#f92672">.</span>Bind(wx<span style="color:#f92672">.</span>EVT_CLOSE, self<span style="color:#f92672">.</span>CloseWindow)
+        
+        <span style="color:#75715e"># 3. Initialization of physics engine + definition of physics object (ground or object)</span>
+        self<span style="color:#f92672">.</span>phys_world <span style="color:#f92672">=</span> world(gravity<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">10</span>), doSleep<span style="color:#f92672">=</span>True)
+        self<span style="color:#f92672">.</span>ground_body <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>phys_world<span style="color:#f92672">.</span>CreateStaticBody(
+            position<span style="color:#f92672">=</span>(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>),
+            shapes<span style="color:#f92672">=</span>polygonShape(box<span style="color:#f92672">=</span>(<span style="color:#ae81ff">50</span>, <span style="color:#ae81ff">5</span>)),
+        )
+        self<span style="color:#f92672">.</span>dynamic_body <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>phys_world<span style="color:#f92672">.</span>CreateDynamicBody(position<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">15</span>), angle<span style="color:#f92672">=</span><span style="color:#ae81ff">15</span>)
+        self<span style="color:#f92672">.</span>box <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>dynamic_body<span style="color:#f92672">.</span>CreatePolygonFixture(box<span style="color:#f92672">=</span>(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>), density<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, friction<span style="color:#f92672">=</span><span style="color:#ae81ff">0.3</span>)
+        
+        <span style="color:#75715e"># 4. Start timer loop</span>
+        self<span style="color:#f92672">.</span>timer<span style="color:#f92672">.</span>Start(TimeStep)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">CloseWindow</span>(self, event):
+        <span style="color:#75715e"># Simple end processing</span>
+        wx<span style="color:#f92672">.</span>Exit()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">OnTimer</span>(self, event):
+        <span style="color:#75715e"># 1. Clean window</span>
+        self<span style="color:#f92672">.</span>bdc <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>BufferedDC(self<span style="color:#f92672">.</span>cdc, self<span style="color:#f92672">.</span>bmp)
+        self<span style="color:#f92672">.</span>gcdc <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>GCDC(self<span style="color:#f92672">.</span>bdc)
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>Clear()
+        
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetPen(wx<span style="color:#f92672">.</span>Pen(<span style="color:#e6db74">&#39;white&#39;</span>))
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetBrush(wx<span style="color:#f92672">.</span>Brush(<span style="color:#e6db74">&#39;white&#39;</span>))
+        self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>DrawRectangle(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">640</span>,<span style="color:#ae81ff">640</span>)
+        
+        <span style="color:#75715e"># 2. Physical object drawing</span>
+        <span style="color:#66d9ef">for</span> body <span style="color:#f92672">in</span> (self<span style="color:#f92672">.</span>ground_body, self<span style="color:#f92672">.</span>dynamic_body): <span style="color:#75715e"># or: world.bodies</span>
+            <span style="color:#66d9ef">for</span> fixture <span style="color:#f92672">in</span> body<span style="color:#f92672">.</span>fixtures:
+                shape <span style="color:#f92672">=</span> fixture<span style="color:#f92672">.</span>shape
+
+                vertices <span style="color:#f92672">=</span> [(body<span style="color:#f92672">.</span>transform <span style="color:#f92672">*</span> v) <span style="color:#f92672">*</span> PPM <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> shape<span style="color:#f92672">.</span>vertices]
+                vertices <span style="color:#f92672">=</span> [(int(v[<span style="color:#ae81ff">0</span>]), int(<span style="color:#ae81ff">480</span><span style="color:#f92672">-</span>v[<span style="color:#ae81ff">1</span>])) <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> vertices]
+                
+                self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetPen(wx<span style="color:#f92672">.</span>Pen(wx<span style="color:#f92672">.</span>Colour(<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">50</span>,<span style="color:#ae81ff">50</span>)))
+                self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>SetBrush(wx<span style="color:#f92672">.</span>Brush(wx<span style="color:#f92672">.</span>Colour(colors[body<span style="color:#f92672">.</span>type]))))
+                self<span style="color:#f92672">.</span>gcdc<span style="color:#f92672">.</span>DrawPolygon(vertices)
+        
+        <span style="color:#75715e"># 3. Perform 1 step of physical simulation</span>
+        self<span style="color:#f92672">.</span>phys_world<span style="color:#f92672">.</span>Step(TimeStep<span style="color:#f92672">/</span><span style="color:#ae81ff">1000</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>)
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    app <span style="color:#f92672">=</span> wx<span style="color:#f92672">.</span>App()
+    w <span style="color:#f92672">=</span> APPWINDOW(title<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Box2D Test&#39;</span>)
+    w<span style="color:#f92672">.</span>Center()
+    w<span style="color:#f92672">.</span>Show()
+    app<span style="color:#f92672">.</span>MainLoop()
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

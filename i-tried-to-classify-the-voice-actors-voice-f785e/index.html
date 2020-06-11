@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried to classify the voice actor&#39;s voice | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried to classify the voice actor&rsquo;s voice</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jun 23, 2015
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scikit-learn"> scikit-learn</a></code></small>
+
+</p>
+<pre><code>I tried to identify the voice actor's voice in machine learning practice. Make a note of the procedure.
+</code></pre>
+<p>###Thing you want to do
+First of all, let&rsquo;s learn the voice actors&rsquo; original voices (voices such as radio), and check how accurately they can be identified by including the original voices as test data.
+Next, I would like to test whether the voices of anime can be predicted from the voice actors&rsquo; original voices.
+###1. First, collect data
+This time, I downloaded the radio video from Nico Nico Douga about the 5 voices of LadyGo.
+As it is .mp4, convert it to wav.</p>
+<pre><code>ffmpeg -i hoge.mp4 -map 0:1 hoge.wav
+</code></pre><p>This is OK!</p>
+<p>And this wav file was divided into 30 seconds.</p>
+<pre><code>sox hoge.wav hogehoge.wav trim 0 30 :newfile :restart
+</code></pre><p>It&rsquo;s not over yet.
+From here, I manually deleted the corner switching scenes, music playing corners, and other voice parts.
+However, I can&rsquo;t help it because the small music is always playing in the back, so I ignored it.
+What should I do to minimize or eliminate the effect of this back sound?</p>
+<p>For the time being, data collection is completed!
+###2. Extract features from data
+Shouldn&rsquo;t we use frequency strength as a feature quantity? Fast Fourier transform! However,
+It is better to use the Mel Frequency Cepstrum Coefficient (MFCC) for the practical machine learning system from O&rsquo;Reilly! I decided to use that one this time.</p>
+<p>Looking at various things, it seems that MFCC is used as a typical feature amount in current speech recognition, and the features of human speech perception are taken into consideration.
+However, MFCC does not seem to include pitch information.
+Cepstrum seems to be able to extract the pitch component, so maybe this is better as a feature amount, but for the moment I will use MFCC.</p>
+<p>To calculate MFCC, we use a library called Taklbox Scikit.
+Save the calculated result as a cache and reuse it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> scikits.talkbox.features <span style="color:#f92672">import</span> mfcc
+<span style="color:#f92672">import</span> scipy
+<span style="color:#f92672">from</span> scipy <span style="color:#f92672">import</span> io
+<span style="color:#f92672">from</span> scipy.io <span style="color:#f92672">import</span> wavfile
+<span style="color:#f92672">import</span> glob
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> os
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">write_ceps</span>(ceps,fn):
+base_fn,ext <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>splitext(fn)
+data_fn <span style="color:#f92672">=</span> base_fn <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;.ceps&#34;</span>
+np<span style="color:#f92672">.</span>save(data_fn,ceps)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_ceps</span>(fn):
+sample_rate,X <span style="color:#f92672">=</span> io<span style="color:#f92672">.</span>wavfile<span style="color:#f92672">.</span>read(fn)
+ceps,mspec,spec <span style="color:#f92672">=</span> mfcc(X)
+isNan <span style="color:#f92672">=</span> False
+<span style="color:#66d9ef">for</span> num <span style="color:#f92672">in</span> ceps:
+<span style="color:#66d9ef">if</span> np<span style="color:#f92672">.</span>isnan(num[<span style="color:#ae81ff">1</span>]):
+isNan <span style="color:#f92672">=</span> True
+<span style="color:#66d9ef">if</span> isNan <span style="color:#f92672">==</span> False:
+write_ceps(ceps,fn)
+
+</code></pre></div><p>Somehow, the cause was not clear because there was a wav file that could not be read well with io.wavfile.read(fn). ..
+I am trying to ignore this because the result will be Nan when MFCC is calculated without being able to read it well.</p>
+<p>The code to read the saved data is as follows. name_list is a list of directory names. This time, I created a directory with the names of five LadyGo voice actors and saved the data there.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_ceps</span>(name_list,base_dir <span style="color:#f92672">=</span> BASE_DIRE):
+X,y <span style="color:#f92672">=</span> [],[]
+<span style="color:#66d9ef">for</span> label,name <span style="color:#f92672">in</span> enumerate(name_list):
+<span style="color:#66d9ef">for</span> fn <span style="color:#f92672">in</span> glob<span style="color:#f92672">.</span>glob(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(base_dir,name,<span style="color:#e6db74">&#34;*.ceps.npy&#34;</span>)):
+ceps <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>load(fn)
+num_ceps <span style="color:#f92672">=</span> len(ceps)
+X<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>mean(ceps[:],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>))
+y<span style="color:#f92672">.</span>append(label)
+<span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>array(X),np<span style="color:#f92672">.</span>array(y)
+
+</code></pre></div><p>###3. Learn and predict
+The support vector machine (SVM) is used for learning, using the feature quantity created in 2.
+The code is below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> MFCC <span style="color:#75715e"># this is made in 2</span>
+<span style="color:#f92672">from</span> matplotlib.pyplot <span style="color:#f92672">import</span> specgram
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> confusion_matrix
+<span style="color:#f92672">from</span> sklearn.svm <span style="color:#f92672">import</span> LinearSVC
+<span style="color:#f92672">from</span> sklearn.utils <span style="color:#f92672">import</span> resample
+<span style="color:#f92672">from</span> matplotlib <span style="color:#f92672">import</span> pylab
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+name_list <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;Uesaka_Sumire&#34;</span>,<span style="color:#e6db74">&#34;Komatsu_Mikako&#34;</span>,<span style="color:#e6db74">&#34;Okubo_Rumi&#34;</span>,<span style="color:#e6db74">&#34;Takamori_Natsumi&#34;</span>,<span style="color:#e6db74">&#34;Mikami_Shiori&#34;</span>]
+
+x,y <span style="color:#f92672">=</span> MFCC<span style="color:#f92672">.</span>read_ceps(name_list)
+svc <span style="color:#f92672">=</span> LinearSVC(C<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span>)
+x,y <span style="color:#f92672">=</span> resample(x,y,n_samples<span style="color:#f92672">=</span>len(y))
+svc<span style="color:#f92672">.</span>fit(x[<span style="color:#ae81ff">150</span>:],y[<span style="color:#ae81ff">150</span>:])
+prediction <span style="color:#f92672">=</span> svc<span style="color:#f92672">.</span>predict(x[:<span style="color:#ae81ff">150</span>])
+cm <span style="color:#f92672">=</span> confusion_matrix(y[:<span style="color:#ae81ff">150</span>],prediction)
+</code></pre></div><p>After reading the data, I shuffled them by resample(), and tried the 151st and subsequent data as teacher data and the 150th and subsequent data as test data.</p>
+<p>confusion_matrix is a mixing matrix.
+The distribution for each label of the predicted result for the test data is shown.
+Plot a graph using this.
+###4. Plot the graph
+Plot the correct answer rate using the mixed matrix of the prediction results obtained in 3.
+The values of the mixing matrix are normalized to obtain the correct answer rate.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">normalisation</span>(cm):
+new_cm <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> cm:
+sum_val <span style="color:#f92672">=</span> sum(line)
+new_array <span style="color:#f92672">=</span> [float(num)<span style="color:#f92672">/</span>float(sum_val) <span style="color:#66d9ef">for</span> num <span style="color:#f92672">in</span> line]
+new_cm<span style="color:#f92672">.</span>append(new_array)
+<span style="color:#66d9ef">return</span> new_cm
+</code></pre></div><p>Plot the graph.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_confusion_matrix</span>(cm,name_list,name,title):
+pylab<span style="color:#f92672">.</span>clf()
+pylab<span style="color:#f92672">.</span>matshow(cm,fignum<span style="color:#f92672">=</span>False,cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Blues&#39;</span>,vmin<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>,vmax<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span>)
+ax <span style="color:#f92672">=</span> pylab<span style="color:#f92672">.</span>axes()
+ax<span style="color:#f92672">.</span>set_xticks(range(len(name_list)))
+ax<span style="color:#f92672">.</span>set_xticklabels(name_list)
+ax<span style="color:#f92672">.</span>xaxis<span style="color:#f92672">.</span>set_ticks_position(<span style="color:#e6db74">&#34;bottom&#34;</span>)
+ax<span style="color:#f92672">.</span>set_yticks(range(len(name_list)))
+ax<span style="color:#f92672">.</span>set_yticklabels(name_list)
+pylab<span style="color:#f92672">.</span>title(title)
+pylab<span style="color:#f92672">.</span>colorbar()
+pylab<span style="color:#f92672">.</span>grid(False)
+pylab<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#39;Predict class&#39;</span>)
+pylab<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#39;True class&#39;</span>)
+pylab<span style="color:#f92672">.</span>grid(False)
+pylab<span style="color:#f92672">.</span>show()
+</code></pre></div><p>result.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/44218/0274e4ba-4b62-2826-a862-d874502f7b7b.png%22Screenshot2015-06-231.34.50.png%22" alt="Screenshot 2015-06-23 1.34.50.png"></p>
+<p>The correct answer rate was 100%, and it was almost 100% no matter how many times I did it.</p>
+<p>Next, try the anime voice as test data.
+However, it was difficult to collect data, and only one or two characters could be collected for each voice actor. The number of data itself is small (about 90 patterns for 5 people in total).</p>
+<p>The results are below.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/44218/8a233309-e7b1-fe00-88e9-10150057b079.png%22UnvoicedvoicePredicttheanimevoicefrom.png%22" alt="Prediction of anime voice from unvoiced voice.png"></p>
+<p>It was totally useless!</p>
+<p>Furthermore, I tried to test the unvoiced voice using the voice of the animation as teacher data.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/44218/5ecf2b31-bc97-5a10-1ca7-706b8769dee6.png%22AnimevoicePredictunvoicedvoicefrom.png%22" alt="Predict original voice from anime voice.png"></p>
+<p>Of course this is no good either.</p>
+<p>###5. Consideration and verification
+Over-learning comes to mind as the reason why the accuracy was so poor when distinguishing anime voices.
+By default, the mfcc() function has 13 coefficients only for speech frames. Since this is very large, the value obtained by averaging each coefficient in all frames is used as the feature amount.
+In other words, the number of feature vectors is 13, and it is unlikely that overtraining was caused by this.</p>
+<p>Therefore, I wondered if there was a bias in the data used, which might have led to a decline in generalization ability.
+Since all the data used were voices on the radio, there was not much difference in the frequency components contained in each voice actor, which may have led to a decline in generalization ability.</p>
+<p>Therefore, I added some of the appropriate anime voices to the teacher data and tested it for the rest of the anime voices.
+2/3 of the teacher data are radio voices and 1/3 are anime voices.</p>
+<p>First, I tested the voice of the radio.
+<img src="https://qiita-image-store.s3.amazonaws.com/0/44218/e817c752-9404-0574-180e-e609ab99f530.png%22Screenshot2015-06-232.40.45.png%22" alt="Screenshot 2015-06-23 2.40.45.png"></p>
+<p>The recognition accuracy is almost 100% like the last time, and it will be about this level no matter how many times it is done.</p>
+<p>Next, let&rsquo;s test the voice of the anime.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/44218/07a6f83e-b84f-db81-8b3d-b0b8496151bd.png%22Screenshot2015-06-232.40.59.png%22" alt="Screenshot 2015-06-23 2.40.59.png"></p>
+<p>Recognition accuracy has increased dramatically!
+After all, it seems that the generalization ability had deteriorated significantly because he was learning only with the voice of the radio.</p>
+<p>###6. Conclusion
+It turns out that in machine learning, the danger of overlearning must always be considered.
+Then, it is necessary to accurately measure the generalization ability.In that sense, it is not good to evaluate the classifiers based on the correct answer rate this time.
+To evaluate a classifier, you can use a precision-recall curve or ROC curve (it was written in the book).</p>
+<p>###reference
+O&rsquo;Reilly Japan Practical Machine Learning System</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

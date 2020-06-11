@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Keras usage example: Input (Embedding &#43; Flatten) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Keras usage example: Input (Embedding + Flatten)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 19, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning">DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kaggle">Kaggle</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/keras">Keras</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow">TensorFlow</a></code></small>
+
+</p>
+<pre><code># 1. Install Keras
+</code></pre>
+<p>The installation method of Tensorflow and Theano is introduced in various sites, so the detailed explanation is omitted here.
+Keras installation is</p>
+<pre><code>pip install Keras
+</code></pre><p>All you have to do is change the config file and select Theano or Tensorflow.
+If you use Tensorflow in the backend, it will automatically use the GPU.</p>
+<p>When using Tensorflow with Keras, the following errors may occur as of January 2017.</p>
+<pre><code>AttributeError:'module' object has no attribute'control_flow_ops'
+</code></pre><p>It seems that such an error occurs because python.control_flow_ops does not exist in tensorflow. <a href="http://stackoverflow.com/questions/40046619/keras-tensorflow-gives-the-error-no-attribute-control-flow-ops">StackOverflow</a>,<a href="https://github.com/fchollet/keras/issues/3857">gitdiscussion</a>.
+You can fix it by defining it at the beginning of the script, like this:</p>
+<pre><code>import tensorflow as tf
+tf.python.control_flow_ops = tf
+</code></pre><h1 id="2-inputembedding--flatten--layer--dropout--output">2. Input(Embedding + Flatten) + Layer + Dropout + Output</h1>
+<p><a href="http://qiita.com/TomHortons/items/039852bca3714b43e887">Kaggle Summary: Redhat</a> is the sample code introduced.
+The original problem is a binary classification problem of whether an unknown customer purchases a service from about 100 variables based on customer information.
+Among them, qianqian posted an analysis method using Keras.
+** Normally, variables are engineered and processed, and then put into the input layer as they are, but in qianqian, after passing each variable independently to the Embedding layer and Flatten layer, they are merged. **</p>
+<p><a href="https://www.kaggle.com/qqgeogor/predicting-red-hat-business-value/keras-benchmark/code">Code of creator (qianqian)</a>or<a href="https://Pleaseusegist.github.com/TomHortons/dd672a4323f42aed59316c9f56f72574">thiscode</a>.</p>
+<p>Here is a diagram that visualizes the created model with visualize_util. (See &ldquo;Other&rdquo; in this article)</p>
+<img width="1014" alt="Screen Shot 2017-01-18 at 9.53.33.png" src="https://qiita-image-store.s3.amazonaws.com/0/72093/e7fd6ed5-8e2a-da80-096c-8aa387b9c235.png">
+<p>Here, we will focus on the explanation of Embedding + Flatten processing from the reference code.</p>
+<p>First, let&rsquo;s take a look at the part of Input creation.
+Input is created with the following code.</p>
+<pre><code>flatten_layers = []
+inputs = []
+
+for c in columns:
+
+    inputs_c = Input(shape=(1,), dtype='int32')
+
+    num_c = len(np.unique(data[c].values))
+
+    embed_c = Embedding(
+                    num_c,
+                    dim,
+                    dropout=0.2,
+                    input_length=1
+                    )(inputs_c)
+    flatten_c= Flatten()(embed_c)
+
+    inputs.append(inputs_c)
+    flatten_layers.append(flatten_c)
+
+flatten = merge(flatten_layers,mode='concat')
+</code></pre><p>columns is a list containing column names.
+As you can see from the first figure, we didn&rsquo;t enter each variable as it is.
+Input-&gt;Embedding-&gt;flatten is executed for each variable, and all 1600 variables are merged to form the input layer.
+In other words, 1-dimensional numerical data is expanded to 32 dimensions and input.</p>
+<pre><code>fc1 = Dense(hidden,activation='relu')(flatten)
+dp1 = Dropout(0.5)(fc1)
+
+outputs = Dense(1,activation='sigmoid')(dp1)
+</code></pre><p>After that, one middle layer (fc1) and one dropbou (dp1) are set as output.</p>
+<p>As you can see in this article,
+<a href="http://benjaminbolte.com/blog/2016/keras-language-modeling.html">Deep Language Modeling for Question Answering using Keras</a>
+Embedding seems to be used as Word2Vec in language learning.
+It was a mystery why Embedding is used with numerical data that is not language learning, so I searched Kaggle&rsquo;s forum and looked at it.</p>
+<img width="974" alt="Screen Shot 2017-01-18 at 11.44.48.png" src="https://qiita-image-store.s3.amazonaws.com/0/72093/ed0ca7f0-1be6-e4c3-23ac-960da4a7a305.png">
+<p>Roughly speaking, it looks like this.</p>
+<blockquote>
+<p>Embedding layer transforms each category into a different feature space. It&rsquo;s not easy to find a way to represent the best feature encodings, and can you train all of them using this method? ． The best neural is composed only of embedding layer, and the score is 0.9877. By adding more features to it, it improves to 0.989. It is difficult to determine each parameter (number of hidden layers, dimension of embedding, method of merging additional features, batch size, number of epochs of train) to the first place.</p>
+</blockquote>
+<blockquote>
+<p>Embedding layer has the following functions.
+For category data [1,2,3]</p>
+</blockquote>
+<ol>
+<li>Encode, 1:[1,0,0], 2:[0,1,0], 3:[0,0,1]</li>
+<li>Multiply the weight matrix W whose shape is (3,k).</li>
+<li>Finally, a one-hot matrix with a shape of (4, k) (a specific value is 1 and then zero) is created.</li>
+</ol>
+<blockquote>
+<p>Where k is the dimension of the latent feature set by the user.
+In other words, the embedding layer is performing the linear conversion of category data.</p>
+</blockquote>
+<p>Furthermore, there is the following explanation regarding the flatten layer.</p>
+<img width="973" alt="Screen Shot 2017-01-18 at 20.02.44.png" src="https://qiita-image-store.s3.amazonaws.com/0/72093/36660fba-6060-8041-4d7f-394c0dbca6a9.png">
+<blockquote>
+<p>Since the input sequence is one type (input is one-dimensional), the output of embedding layer is N<em>1</em>32. Therefore, it is necessary to transform the shape of output to N<em>32. Where N is the number of input data (maybe). If M is the number of categorical features, then we have M</em>32 dimensional inputs. For the above reason, flattened output is concatenated.
+The input of Keras model is the input layer expressed as a list.</p>
+</blockquote>
+<p>Very kindly, the relation between embedding layer and flatten layer is rewritten so that the output of the intermediate layer can be confirmed.</p>
+<pre><code>inputs = [model.layers[0].input,K.learning_phase()]
+outputs = [model.layers[3].output]
+func = K.function(inputs, outputs)
+
+sample_size = data.shape[0]
+data_ae = []
+batches = make_batches(sample_size, batch_size)
+for batch_index, (batch_start, batch_end) in enumerate(batches):
+    X_0 = data[batch_start:batch_end].toarray()
+    yy = func([X_0,0])[0]
+    print yy.shape
+    data_ae.append(yy)
+
+
+data_ae = np.vstack(data_ae)
+</code></pre><p>#Other</p>
+<h2 id="visualize-each-layer-of-the-model-created-with-keras">Visualize each layer of the model created with Keras.</h2>
+<p>Install pydot-ng,</p>
+<pre><code>pip install pydot-ng
+</code></pre><p>Run as follows.</p>
+<pre><code>from keras.utils.visualize_util import plot
+plot(model, to_file=&quot;model.png&quot;, show_shapes=True)
+</code></pre><h2 id="check-the-output-of-the-middle-tier">Check the output of the middle tier</h2>
+<p>When designing a Keras model, there are times when you want to check the behavior of the middle layer.
+In Document, the output of the middle layer is visualized by describing the Keras function.</p>
+<pre><code>from keras import backend as K
+
+# with a Sequential model
+get_3rd_layer_output = K.function([model.layers[0].input],
+                                  [model.layers[3].output])
+layer_output = get_3rd_layer_output([X])[0]
+</code></pre><p>When there is a dropout layer, it works by setting the learning phase flag.</p>
+<pre><code>get_3rd_layer_output = K.function([model.layers[0].input, K.learning_phase()],
+                                  [model.layers[3].output])
+
+# output in test mode = 0layer_output = get_3rd_layer_output([X, 0])[0]
+
+# output in train mode = 1
+layer_output = get_3rd_layer_output([X, 1])[0]
+</code></pre>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

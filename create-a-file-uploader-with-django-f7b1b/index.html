@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Create a file uploader with Django | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Create a file uploader with Django</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Aug 18, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+</p>
+<pre><code>Updated with old info and ugly code. (2017/03/16)
+</code></pre>
+<h2 id="environment">Environment</h2>
+<ul>
+<li>Python 3.5.1</li>
+<li>Django 1.9.1</li>
+<li>Virtualenv 15.0.1</li>
+<li>OS X El Capitan 10.11.6</li>
+</ul>
+<h2 id="final-configuration">Final configuration</h2>
+<pre><code>file_uploader
+├── db.sqlite3
+├── file_uploader
+│  ├── __init__.py
+│  ├── settings.py
+│  ├── urls.py
+│  └── wsgi.py
+├── manage.py
+├── requirements.txt
+└── upload_form
+├── __init__.py
+├── admin.py
+├── apps.py
+├── migrations
+│  ├── 0001_initial.py
+│  └── __init__.py
+├── models.py
+├── static
+│  └── files
+│  └── __init__.py
+├── templates
+│  └── upload_form
+│  ├── base.html
+│  ├── complete.html
+│  └── form.html
+├── tests.py
+├── urls.py
+└── views.py
+</code></pre><p>I would like to see it structured like this.
+<code>__pycache__</code> omitted</p>
+<h2 id="setup">setup</h2>
+<h3 id="project-creation">Project creation</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ pip install Django<span style="color:#f92672">==</span>1.9.1
+$ django-admin.py startproject file_uploader
+$ cd file_uploader
+$ django-admin.py startapp upload_form
+<span style="color:#75715e"># Later I want to see which file was uploaded</span>
+$python manage.py createsuperuser
+</code></pre></div><h3 id="change-settingspy">change <code>settings.py</code></h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:settings.py" data-lang="python:settings.py">INSTALLED_APPS <span style="color:#f92672">=</span> (
+    <span style="color:#e6db74">&#39;django.contrib.admin&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.auth&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.contenttypes&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.sessions&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.messages&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.staticfiles&#39;</span>,
+    <span style="color:#e6db74">&#39;upload_form&#39;</span>, <span style="color:#75715e">#add</span>
+)
+
+<span style="color:#f92672">...</span>
+
+LANGUAGE_CODE <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ja&#39;</span>
+
+TIME_ZONE <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Asia/Tokyo&#39;</span>
+
+<span style="color:#f92672">...</span>
+</code></pre></div><p>I wonder if I should do it</p>
+<h3 id="check-for-the-time-being">Check for the time being</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python manage.py migrate
+$ python manage.py runserver
+</code></pre></div><p>http://127.0.0.1:8000</p>
+<p>If you access to and see the example, OK</p>
+<h2 id="building-upload_form-app">Building <code>upload_form</code> App</h2>
+<h3 id="modelspy">models.py</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:upload_form/models.py" data-lang="python:upload_form/models.py"><span style="color:#f92672">from</span> django.db <span style="color:#f92672">import</span> models
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FileNameModel</span>(models<span style="color:#f92672">.</span>Model):
+    file_name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>CharField(max_length <span style="color:#f92672">=</span> <span style="color:#ae81ff">50</span>)
+    upload_time <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>DateTimeField(default <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>now)
+</code></pre></div><p><code>file_name</code>: File name
+<code>upload_time</code>: Upload date and time (current date and time are entered by default)</p>
+<h3 id="viewspy">views.py</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:upload_form/views.py" data-lang="python:upload_form/views.py"><span style="color:#f92672">from</span> django.shortcuts <span style="color:#f92672">import</span> render, redirect
+<span style="color:#f92672">from</span> django.template.context_processors <span style="color:#f92672">import</span> csrf
+<span style="color:#f92672">from</span> django.conf <span style="color:#f92672">import</span> settings
+<span style="color:#f92672">from</span> upload_form.models <span style="color:#f92672">import</span> FileNameModel
+<span style="color:#f92672">import</span> sys<span style="color:#f92672">,</span> os
+UPLOADE_DIR <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__)) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/static/files/&#39;</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">form</span>(request):
+    <span style="color:#66d9ef">if</span> request<span style="color:#f92672">.</span>method <span style="color:#f92672">!=</span><span style="color:#e6db74">&#39;POST&#39;</span>:
+        <span style="color:#66d9ef">return</span> render(request,<span style="color:#e6db74">&#39;upload_form/form.html&#39;</span>)
+
+    file <span style="color:#f92672">=</span> request<span style="color:#f92672">.</span>FILES[<span style="color:#e6db74">&#39;file&#39;</span>]
+    path <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(UPLOADE_DIR, file<span style="color:#f92672">.</span>name)
+    destination <span style="color:#f92672">=</span> open(path,<span style="color:#e6db74">&#39;wb&#39;</span>)
+
+    <span style="color:#66d9ef">for</span> chunk <span style="color:#f92672">in</span> file<span style="color:#f92672">.</span>chunks():
+        destination<span style="color:#f92672">.</span>write(chunk)
+
+    insert_data <span style="color:#f92672">=</span> FileNameModel(file_name <span style="color:#f92672">=</span> file<span style="color:#f92672">.</span>name)
+    insert_data<span style="color:#f92672">.</span>save()
+
+    <span style="color:#66d9ef">return</span> redirect(<span style="color:#e6db74">&#39;upload_form:complete&#39;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">complete</span>(request):
+    <span style="color:#66d9ef">return</span> render(request,<span style="color:#e6db74">&#39;upload_form/complete.html&#39;</span>)
+</code></pre></div><h4 id="template">template</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:upload_form/templates/upload_form/base.html" data-lang="html:upload_form/templates/upload_form/base.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span> <span style="color:#a6e22e">lang</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ja&#34;</span>&gt;
+    &lt;<span style="color:#f92672">head</span>&gt;
+        &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;viewport&#34;</span> <span style="color:#a6e22e">content</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;width=device-width, initial-scale=1.0&#34;</span>&gt;
+        &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;viewport&#34;</span> <span style="color:#a6e22e">content</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;content&#34;</span>&gt;
+        &lt;<span style="color:#f92672">title</span>&gt;File uploader&lt;/<span style="color:#f92672">title</span>&gt;
+    &lt;/<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">body</span>&gt;
+        {% block content %}
+            {{ content }}
+        {% endblock %}
+    &lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:upload_form/templates/upload_form/form.html" data-lang="html:upload_form/templates/upload_form/form.html">{% extends &#34;upload_form/base.html&#34; %}
+
+{% block title %} Uploader sample {% endblock title %}
+{% block content %}
+    &lt;<span style="color:#f92672">form</span> <span style="color:#a6e22e">method</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;POST&#34;</span> <span style="color:#a6e22e">enctype</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;multipart/form-data&#34;</span>&gt;
+        {% csrf_token %}
+        &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;file&#34;</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;file&#34;</span>&gt;
+        &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;submit&#34;</span> <span style="color:#a6e22e">value</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;upload&#34;</span>&gt;
+    &lt;/<span style="color:#f92672">form</span>&gt;
+{% endblock content %}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:upload_form/templates/upload_form/complete.html" data-lang="html:upload_form/templates/upload_form/complete.html">{% extends &#34;upload_form/base.html&#34; %}
+
+{% block title %} Upload completed {% endblock title %}
+{% block content %}
+    &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">align</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;center&#34;</span>&gt;
+        &lt;<span style="color:#f92672">h1</span> <span style="color:#a6e22e">align</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;center&#34;</span>&gt;Upload completed&lt;/<span style="color:#f92672">h1</span>&gt;
+        &lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;{% url&#39;upload_form:form&#39; %}&#34;</span>&gt;&lt;<span style="color:#f92672">button</span>&gt;Back&lt;/<span style="color:#f92672">button</span>&gt;&lt;/<span style="color:#f92672">a</span>&gt;
+    &lt;/<span style="color:#f92672">div</span>&gt;
+{% endblock content %}
+</code></pre></div><p>If you upload, there is no upload destination directory! Because I might get angry
+Create a directory with a structure like <code>upload_form/static/files/</code>.</p>
+<h2 id="url-setting">URL setting</h2>
+<h3 id="urlspy">urls.py</h3>
+<p>Create a new <code>upload_form/urls.py</code> and</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:upload_form/urls.py" data-lang="python:upload_form/urls.py"><span style="color:#f92672">from</span> django.conf.urls <span style="color:#f92672">import</span> url
+<span style="color:#f92672">from</span> upload_form <span style="color:#f92672">import</span> views
+
+urlpatterns <span style="color:#f92672">=</span> [
+    url(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;^$&#39;</span>, views<span style="color:#f92672">.</span>form, name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;form&#39;</span>),
+    url(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;^complete/&#39;</span>, views<span style="color:#f92672">.</span>complete, name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;complete&#39;</span>),
+]
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-file_uploader/urls.py" data-lang="file_uploader/urls.py"><span style="color:#f92672">from</span> django.conf.urls <span style="color:#f92672">import</span> url, include
+<span style="color:#f92672">from</span> django.contrib <span style="color:#f92672">import</span> admin
+
+urlpatterns <span style="color:#f92672">=</span> [
+    url(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;^admin/&#39;</span>, admin<span style="color:#f92672">.</span>site<span style="color:#f92672">.</span>urls),
+    url(<span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;^&#39;</span>, include(<span style="color:#e6db74">&#39;upload_form.urls&#39;</span>, namespace <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upload_form&#39;</span>)),
+]
+</code></pre></div><h2 id="django-admin-site-settings">Django admin site settings</h2>
+<h3 id="adminpy">admin.py</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:upload_form/admin.py" data-lang="python:upload_form/admin.py"><span style="color:#f92672">from</span> django.contrib <span style="color:#f92672">import</span> admin
+<span style="color:#f92672">from</span> upload_form.models <span style="color:#f92672">import</span> FileNameModel
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FileNameAdmin</span>(admin<span style="color:#f92672">.</span>ModelAdmin):
+    list_display <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;file_name&#39;</span>,<span style="color:#e6db74">&#39;upload_time&#39;</span>)
+    list_display_links <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#39;id&#39;</span>,<span style="color:#e6db74">&#39;file_name&#39;</span>)
+
+admin<span style="color:#f92672">.</span>site<span style="color:#f92672">.</span>register(FileNameModel, FileNameAdmin)
+</code></pre></div><p>Allow data to be viewed and edited from the Django admin site</p>
+<h2 id="migration--start">Migration &amp; start</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ python manage.py makemigrations
+$ python manage.py migrate
+$python manage.py runserver
+</code></pre></div><p>http://127.0.0.1:8000
+It seems that a crappy web page is displayed when you access.
+If you upload it properly from there, it will work.<img src="https://qiita-image-store.s3.amazonaws.com/0/97280/75cf25ad-84dc-4e40-1c4a-388351163e4f.png%22ScreenShot2016-08-18PM3.42.39.png%22" alt="Screenshot 2016-08-18 3.43.49.png PM"></p>
+<p>http://127.0.0.1:8000/admin/
+And log in
+http://127.0.0.1:8000/admin/upload_form/filenamemodel/
+Make sure you have the data when you enter! !</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/97280/6e8b978a-3909-3b06-7496-c8d7ddeca5e6.png%22ScreenShot2016-08-18PM3.43.48.png%22" alt="Screenshot 2016-08-18 PM 3.43.48.png"></p>
+<p>For some reason the uploaded file is iOS Certificate or p12 file, but I&rsquo;m sorry, but I was able to confirm it!</p>
+<p>Then bake or boil.</p>
+<p>When I uploaded a CSV file at graduate school last year, I read the contents and inserted it into the DB table.</p>
+<h2 id="repository">repository</h2>
+<p><a href="https://github.com/nnsnodnb/django-file-uploader">https://github.com/nnsnodnb/django-file-uploader</a></p>
+<p>Temporary repository link</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

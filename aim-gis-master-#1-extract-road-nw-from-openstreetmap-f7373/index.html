@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Aim GIS Master #1 Extract Road NW from OpenStreetMap | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Aim GIS Master #1 Extract Road NW from OpenStreetMap</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 13, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/openstreetmap">OpenStreetMap</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/postgis">PostGIS</a></code></small>
+
+</p>
+<pre><code>#I am still dissatisfied with the accuracy of GPS on smartphones
+</code></pre>
+<p>Nowadays you can easily perform GPS logging on your smartphone,
+After all, there are some errors.</p>
+<p>The following is the track of the vehicle traveled by MyTracks (Is it no longer usable?)
+<img src="https://qiita-image-store.s3.amazonaws.com/0/121181/43168fb9-bd2a-0f1f-f455-d0af1aeb88dd.png" alt="mytracks.png"></p>
+<p>People can see where they ran, but I can&rsquo;t manage to make a beautiful track&hellip;
+However, I do not have data such as G sensor and steering, and even if there is it, it seems difficult for an amateur to correct it.
+I wanted to do something about map matching.
+So where should we get the map data&hellip;?</p>
+<h1 id="nice-to-make-osm">Nice to make OSM</h1>
+<p>OpenStreetMap which is also used in the above figure.
+I built it because I wanted a map server myself (I&rsquo;ll post how to build it later),
+I used it frequently as a tile server, but I didn&rsquo;t see the data itself.</p>
+<p>But what a treasure trove! I haven&rsquo;t used this until now. .. ..</p>
+<p>There are road networks, POI information (though not many), and building polygons.
+There may be a problem with accuracy, but it won&rsquo;t shift by tens of meters (I believe that, at least it should be better than the GPS of a smartphone).
+I want to dig up the treasure.</p>
+<p>Is it possible to extract road NW from #OpenStreetMap? I tried a challenge.</p>
+<p>In the first place I was thinking of accessing OSM data
+I was told that there is an Overpass API.
+<a href="http://wiki.openstreetmap.org/wiki/JA:Overpass_API">http://wiki.openstreetmap.org/wiki/JA:Overpass_API</a></p>
+<p>Certainly it is a unique format, but if you throw a query, road NW etc. will be displayed!
+That means you can get data from your own OSM server as well!
+I thought.</p>
+<p>I remember having put Postgresql and PostGIS in the build,
+Access Postgresql, a map server.
+There is! A table like that!
+Looking at the table schema, there are attributes such as highway as in Overpass API.
+This can go. I&rsquo;m sure.</p>
+<p>Refer to the following for the schema. ..
+<a href="http://wiki.openstreetmap.org/wiki/JA:Osm2pgsql/schema">http://wiki.openstreetmap.org/wiki/JA:Osm2pgsql/schema</a>
+→ If you take the road NW, it seems to be taken from the planet_osm_line table.
+This time, this table.</p>
+<p>Also, since we want only the road on which the car runs, it is necessary to check what the attributes of highway are.
+The following is helpful.
+<a href="http://wiki.openstreetmap.org/wiki/Key:highway">http://wiki.openstreetmap.org/wiki/Key:highway</a>
+Sidewalks such as footway are also included in the data.</p>
+<h1 id="i-actually-took-it">I actually took it</h1>
+<p>Looking at the schema, it seems that the way column actually has location information,
+The type is &ldquo;geometry(~~)&rdquo;, and even if it is simply acquired, it cannot be read by humans.
+To understand it, you need to convert the geometry type in PostGIS.
+<code>ST_Astext(ST_Transform(way,4326))</code>
+→ 4326 is the Projection code. It seems that there are various types, but the world geodetic system seems to be good with 4326.</p>
+<p>Based on the above, as an example, the data in which the word Koshu Kaido is included in the name column is extracted with SQL.
+<code>select osm_id,name,highway,z_order,ST_Astext(ST_Transform(way,4326)),way_area from planet_osm_line where name like'%Koshu Kaido%';</code></p>
+<p>It will take some time,
+<code>141147784 | Koshu Kaido | trunk | 8 | LINESTRING(138.089114228403 36.0716119850332,138.088936900966 36.0716665145095,・・・</code>
+So I got the data. Crackling crackling w
+However, there are many data that do not contain name, so it is necessary to devise the acquisition condition. .. ..</p>
+<h1 id="i-want-to-take-it-all-together">I want to take it all together.</h1>
+<p>I want to specify the rectangle of latitude and longitude and take only the data contained in it.
+Eventually I want to take within the range specified in POLYGON.
+I felt like it would take time,
+If you think about it, you can do it because it is taken in the range visible in bbox with Overpass API.</p>
+<p>When I looked it up, of course I could.
+The condition that &ldquo;the first point of the way is included&rdquo; in the specified POLYGON can be realized by the following.
+You can put this in the where clause.
+<code>ST_Within( ST_StartPoint( ST_Transform(way,4326)) ,ST_GeomFromText ('POLYGON(( position 1, position 2, position 3, ..., position 1))' ,4326) )</code></p>
+<p>The position of POLYGON is a space-separated pair of latitude and longitude, such as &ldquo;lon1 lat1, lon2 lat2&hellip;&rdquo;,
+Separate the positions with commas. Finally, position 1 must also be described so that it forms a loop.</p>
+<p>If you use this, if you have POLYGON data such as prefectures, you should be able to say &ldquo;acquire by prefecture&rdquo;.</p>
+<h1 id="postgis-has-various-functions">PostGIS has various functions</h1>
+<p>It&rsquo;s still a long way to go, but it has quite a few useful features.
+It is especially convenient to get the area of POLYGON. It seems to be used in the future.
+<img src="https://qiita-image-store.s3.amazonaws.com/0/121181/8fb757b9-73f3-1b85-e522-ab99420227f6.png" alt="area.png"></p>
+<p>It can be calculated that the area specified by POLYGON is about 500 square km.
+Since I just want to use PostGIS functions, I just have to select to calculate.</p>
+<h1 id="road-nw-data-can-be-extracted-for-the-time-being">Road NW data can be extracted for the time being</h1>
+<p>This time, road NW was extracted from the OSM database.
+However, since it is called map matching, it is necessary to match this extracted data with GPS data.</p>
+<p>How about&hellip;
+There is a way to calculate the distance from one end, but it will take too much time&hellip;</p>
+<p>Tsu R-Tree</p>
+<p>So next time, I will use R-Tree to match &ldquo;fast&rdquo; GPS and OSM road NW.</p>
+<p>Our battle has just begun</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>
