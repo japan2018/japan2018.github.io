@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Try frequency control simulation with Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Try frequency control simulation with Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 17, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/simulation"> simulation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/power"> power</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I recently read a book &ldquo;Introduction to Control Engineering with Python&rdquo;. I would like to try the Python-Control that appears in it, so I will try to simulate frequency control. It is in the control and title, but the main topic is power engineering.</p>
+<p>・Explanation of power system and frequency control
+・Try using Python-Control</p>
+<p>It will be the content.</p>
+<p>#What is frequency
+The 100V electricity we use at home does not always reach 100V, and it vibrates in a fixed cycle as shown in the figure below. At this time, the voltage change with time
+$$v(t) = 100\sqrt 2 \sin(2\pi f t) [\rm{V}]$$
+It is expressed as Here, $f$ is called frequency and represents how many times it vibrates in one second. And this frequency is 50Hz in eastern Japan and 60Hz in western Japan.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/2ddd24b7-8314-267d-9ba6-c984483a2dd8.png" alt="image.png"></p>
+<p>For the side that uses electricity, the frequency of electricity is often treated as constant at 50 or 60 Hz. However, the actual frequency is constantly fluctuating, and if the frequency changes greatly, it may have an adverse effect on electrical equipment. Therefore, the grid operator (that is, the power company) must control the frequency so that it does not fluctuate significantly.</p>
+<h1 id="relationship-between-supply-and-demand-balance-and-frequency">Relationship between supply and demand balance and frequency</h1>
+<h3 id="power-system-supply-and-demand">Power system supply and demand</h3>
+<p>Before explaining why the frequency fluctuates, let&rsquo;s first briefly describe the power system.
+A power grid consists of power plants that supply power, consumers that consume power, and the grid that connects them.
+An important property of a power system is the principle of &ldquo;simultaneous equal amount&rdquo; in which the supplied power $P_G$ and the consumed power $P_L$ must always match (because it is difficult to store electricity). However, the side that uses electricity (consumers) wants to use as much electricity as they want at any time, so in order to achieve the same amount at the same time, the power plant must always match the generated power with the power consumption.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/d3edba32-ef81-84eb-c214-629ed644bca7.png" alt="image.png"></p>
+<p>Then, how does the power plant match the generated power with the power consumption? It is not possible to grasp the power consumption of all consumers in real time. Therefore, <strong>frequency control</strong> becomes important.</p>
+<h3 id="generator-shake-equation">Generator shake equation</h3>
+<p>The types of power plants are thermal power, hydraulic power, and nuclear power generation. Recently, solar power generation and wind power generation have been increasing, but I will not consider this time. These power generation methods differ only in how they obtain rotational energy (mechanical energy), and all the parts that convert mechanical energy into electrical energy are the same, and &ldquo;synchronous generators&rdquo; are used.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/ee3dcf05-458c-54c7-e6fe-f7ea2d5a300b.png" alt="image.png">
+As shown in the figure, by installing a generator coaxially with the steam turbine, the mechanical output of the turbine is converted into electrical energy. At this time, the following relationship holds between the rotational speed of the rotor $\omega_m\ [\rm{rad/s}]$ and the frequency $f\ [\rm{Hz}]$ of the voltage induced by the generator. I will.
+$$\omega_m=2\pi f/p$$
+Here, $p$ is called the pole pair number, and it has a fixed value (often $p=1$ for thermal power) depending on the generator. Therefore, the electrical frequency and the rotation speed of the generator/turbine are equivalent. Since the frequency is the same throughout the grid, all generators connected to the grid rotate at the same speed. In other words, controlling the number of revolutions of the generator is the same as controlling the frequency of the entire power system.
+▽The change of the rotation speed (=frequency) of the generator is expressed by the following <strong>motion equation</strong>.
+$$M\frac{df}{dt}=P_m-P_g$$
+Here, $M$ is called the inertia constant and is a parameter like the moment of inertia of the rotating body. Also, the mechanical output $P_m$ is a controllable value determined by the flow rate of steam, etc., but the electrical output $P_g$ is determined by the power demand $P_L$ of the power system (if the loss of the system is ignored, $P_g$ =P_L$). From this perturbation equation, the following can be said.</p>
+<ul>
+<li>When $P_m&gt;P_g$, frequency rises (oversupply)</li>
+<li>When $P_m=P_g$, the frequency is constant (demand balance)</li>
+<li>When $P_m&lt;P_g$, frequency drops (supply shortage)</li>
+</ul>
+<p>In other words, it is necessary to measure the frequency of the power system, and if the frequency rises, reduce the generator output, and if the frequency decreases, increase the generator output. Frequency control is feedback control that uses the relationship between supply and demand balance and frequency.</p>
+<h1 id="frequency-control-overview">Frequency control overview</h1>
+<h3 id="block-diagram">Block Diagram</h3>
+<p>This time, consider the case where the generators of the entire electric power system are integrated into one. The block diagram of frequency control is as follows. The difference between the generator output and the load affects frequency fluctuations. The system frequency characteristics in the figure take into consideration the frequency characteristics of the load in addition to the inertia of the generator. There are two main types of feedback loops, local control loops and global control loops.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/1e425284-c022-be4d-98ad-56e54d0c199c.png" alt="image.png"></p>
+<h3 id="local-control">Local control</h3>
+<p>In the local control loop, the generator governor measures the frequency and adjusts the amount of steam entering the turbine according to the frequency deviation. This allows you to maintain a balance between supply and demand even when the load fluctuates.
+However, even if the demand-supply balance can be maintained with only local control, the frequency will have a steady deviation and will converge to a value deviating from $50\rm{Hz}$.</p>
+<h3 id="global-control">Global control</h3>
+<p>Global control is controlled from the central power supply command station, which manages the power plant. Although frequency deviation will occur if only local control is used, here we will issue a command to each generator so that the frequency will return to $50\rm{Hz}$ using integral control (this time, one generator) ).</p>
+<p>In addition, this time we are using simple integral control, but in the actual system, the speed characteristics and fuel cost for each generator are various, so we comprehensively consider them and decide the output.</p>
+<h1 id="try-using-python-control">Try using Python-Control</h1>
+<p>I used this article as reference for how to use Python-Control.
+<a href="https://qiita.com/nnn112358/items/5de7a5664bb7668ed2e7">Use PythonControl to find the response to a sine wave. </a></p>
+<h3 id="calculate-transfer-function">Calculate transfer function</h3>
+<p>Now, I would like to simulate the frequency change with load change in Python. The sample code will be put together at the end.
+First, as shown in the figure below, the control block is simplified and expressed by one transfer function. Using Python-Control makes it easy to handle transfer functions.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/4ec74dc0-a4ae-f527-a2be-133eeda4b937.png" alt="image.png"></p>
+<h3 id="condition-setting">Condition setting</h3>
+<p>The simulation time is 100 seconds and the step is 0.01 seconds. The load fluctuation is assumed to increase by 10% 10 seconds after the simulation starts.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/33294816-0d81-6d1d-e2a1-a62d13d9d63f.png" alt="image.png"></p>
+<h3 id="simulation">simulation</h3>
+<p>The time change of the frequency deviation when a load change is given is shown.
+First, there is only local control ($K_I=0$). You can see that there is a steady deviation.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/fef0bbc4-b75f-7c82-6dcb-4255bf0ed77b.png" alt="image.png"></p>
+<p>Next is the case where global control is added. It came to return to 50Hz properly.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/327443/cdaecf3f-220b-df2b-3ee8-3f93e606e441.png" alt="image.png"></p>
+<p>In this way, the power system constantly monitors the frequency and continues to adjust the power output of the power plant so that it can maintain 50Hz or 60Hz. However, it is difficult to control the output of renewable energy sources (wind power and solar power), which are increasing in recent years, and this is a factor that reduces the frequency control capability. It seems that electric power companies are also struggling to cope with the increasing number of renewable energy sources.</p>
+<h1 id="at-the-end">at the end</h1>
+<p>To tell the truth, I wanted to make a reproduction simulation of the Hokkaido Blackout in September 2018, but it was complicated and I did not understand it well. So this time I tried the simplest one for frequency control. I want to increase what I can do little by little.</p>
+<p>If you are interested, please read this material. The frequency fluctuations just before the blackout are listed.
+<a href="http://www.iee.jp/wp-content/uploads/honbu/03-conference/19-taikai/symp/h1-1.pdf">What kind of phenomenon is blackout?- IEEJ</a></p>
+<p>Sample code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> control.matlab <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    <span style="color:#75715e"># parameter settings</span>
+    M <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#75715e"># inertia constant</span>
+    D <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span><span style="color:#75715e"># damping</span>
+    K_gov <span style="color:#f92672">=</span> <span style="color:#ae81ff">20</span> <span style="color:#75715e"># proportional control gain</span>
+    K_I <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#75715e"># integral control gain</span>
+
+    <span style="color:#75715e">#Set transfer function</span>
+    System_frequency <span style="color:#f92672">=</span> tf(<span style="color:#ae81ff">1</span>, [M, D]) <span style="color:#75715e"># System frequency characteristics</span>
+    Governor <span style="color:#f92672">=</span> tf(K_gov, <span style="color:#ae81ff">1</span>) <span style="color:#75715e"># Governor control block</span>
+    LFC <span style="color:#f92672">=</span> tf(K_I, [<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">0</span>]) <span style="color:#75715e"># LFC control block</span>
+    G <span style="color:#f92672">=-</span>feedback(System_frequency, Governor <span style="color:#f92672">+</span> LFC) <span style="color:#75715e"># system-wide transfer function</span>
+
+    <span style="color:#75715e">#Simulation settings</span>
+    T <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">0.01</span>) <span style="color:#75715e"># 0~100 seconds</span>
+    dPL <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">0</span> <span style="color:#66d9ef">if</span> t <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">10</span> <span style="color:#66d9ef">else</span> <span style="color:#ae81ff">0.1</span> <span style="color:#66d9ef">for</span> t <span style="color:#f92672">in</span> T]) <span style="color:#75715e"># Load fluctuation setting (step fluctuation)</span>
+
+    <span style="color:#75715e">#Calculation</span>
+    df, T, _ <span style="color:#f92672">=</span> lsim(G, dPL, T)<span style="color:#75715e"># Plot</span>
+     plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">4</span>))
+     plt<span style="color:#f92672">.</span>plot(T, dPL) <span style="color:#75715e"># Load fluctuation</span>
+     plt<span style="color:#f92672">.</span>grid()
+     plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">100</span>)
+
+     plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">4</span>))
+     plt<span style="color:#f92672">.</span>plot(T, (df<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">*</span><span style="color:#ae81ff">50</span>) <span style="color:#75715e"># frequency deviation</span>
+     plt<span style="color:#f92672">.</span>grid()
+     plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">100</span>)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+     main()
+     plt<span style="color:#f92672">.</span>show()
+
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [Python] Article that enables high-speed sparse matrix calculation | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [Python] Article that enables high-speed sparse matrix calculation</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 27, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numerical-calculation"> numerical calculation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scipy"> scipy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/matrix"> matrix</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>**A sparse matrix is a matrix in which most of the elements of the matrix are 0. It is used in a wide range of fields such as numerical calculation, machine learning, and graph theory (I think). Since most of the matrix is 0, if you devise to ignore 0, you can perform matrix calculation at high speed. For example, if you use a large-scale sparse matrix (nearly 90% is 0) (1 million rows x 1 million columns) and only use non-zero parts, the calculation time will be about 1/10 and the calculation can be completed quickly. You can easily imagine that. In other words, if devised, the amount of calculation per iteration can be reduced from $O(N^2)$ to $O(N)$.
+In this article, I will explain these sparse matrix calculations using Python, Numpy, and Scipy. We will update it as we add things. If you have any mistakes, please feel free to contact us in the comments.</p>
+<h3 id="target-audience">Target audience</h3>
+<ul>
+<li>People who can handle Python</li>
+<li>People who are interested in matrix calculation</li>
+</ul>
+<h3 id="overview">Overview</h3>
+<p>After summarizing the concepts necessary for dealing with sparse matrix calculations in Python, we will mention the direct and iterative method libraries. Finally, solve the problem created in <a href="https://qiita.com/KQTS/items/97daa509991bb9777a4a">Last article</a> by a method called non-stationary iterative method.</p>
+<p>Library to use: Scipy/Numpy/matplotlib</p>
+<p>Calculation result</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/166a0007-d4ba-45b3-c3b1-998895ec2645.gif" alt="anim.gif"></p>
+<h3 id="contents-in-the-article">Contents in the article</h3>
+<ol>
+<li><a href="#1-sparsematrix">sparse matrix</a>
+<ol>
+<li><a href="#1-1-DenseandSparse">Dense and Sparse</a></li>
+<li><a href="#1-2-Sparsematrixvisualization">Sparse matrix visualization</a></li>
+</ol>
+</li>
+<li><a href="#2-Sparsematrixstorageformat">Sparse matrix storage format</a>
+<ol>
+<li><a href="#2-1-ListofListslist-of-lists--lil">List of Lists (LIL)</a></li>
+<li><a href="#2-2-Compressedrowstoragemethodcompressed-sparse-row-csr">Compressed row storage method (CSR)</a></li>
+<li><a href="#2-3-Compressedcolumnstoragemethodcompressed-sparse-column-csc">Compressed column storage method (CSC)</a></li>
+<li><a href="#2-4-Other">Other</a></li>
+</ol>
+</li>
+<li><a href="#3-Fourarithmeticoperations">Four arithmetic operations</a></li>
+<li><a href="#4-matrix-market-Format">Matrix Market Format</a></li>
+<li><a href="#5-DirectMethodLibrary">Direct Method Library</a></li>
+<li><a href="#6-iterationlibrary">iteration library</a></li>
+</ol>
+<h1 id="1-sparse-matrix">1. Sparse matrix</h1>
+<h3 id="1-1-dense-and-sparse-matrices">1-1. Dense and sparse matrices</h3>
+<ul>
+<li>
+<p>Dense matrix</p>
+<p>Dense matrix. A matrix with few zeros in the matrix. Perhaps many people are more accustomed to this than math problems.</p>
+</li>
+</ul>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccc}
+      2 &amp; 1 &amp; 1 &amp; \ldots &amp; \ldots &amp; 1 \\
+      1 &amp; 2 &amp; -1 &amp; 1 &amp; \ldots &amp; 1 \\
+      1 &amp; 1 &amp; 2 &amp; 1 &amp; 1 &amp; \vdots \\
+      \vdots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \vdots\\
+      1 &amp; 1 &amp; \ddots &amp; 1 &amp; 2 &amp; 1 \\
+      1 &amp; 1 &amp; \ldots &amp; 1 &amp; 1 &amp; 2
+    \end{array}
+  \right)
+</code></pre><ul>
+<li>
+<p>Sparse matrix</p>
+<p>A sparse matrix. Just because there are many 0s in the matrix. If you devise the calculation part related to 0, almost no calculation is necessary, so use a special method. I will deal with this article.</p>
+</li>
+</ul>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccc}
+      2 &amp; -1 &amp; 0 &amp; \ldots &amp; \ldots &amp; 0 \\
+      -1 &amp; 2 &amp; -1 &amp; 0 &amp; \ldots &amp; 0 \\
+      0 &amp;-1 &amp; 2 &amp; -1 &amp; \ddots &amp; \vdots \\
+      \vdots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; 0\\
+      0 &amp; 0 &amp; \ddots &amp; -1 &amp; 2 &amp; -1 \\
+      0 &amp; 0 &amp; \ldots &amp; 0 &amp; -1 &amp; 2
+    \end{array}
+  \right)
+</code></pre><h3 id="1-2-sparse-matrix-visualization">1-2. Sparse matrix visualization</h3>
+<p>I think that the best way to visualize a sparse matrix is to use the spy function of matplotlib. This is a matrix where the 0 part is white, and if there is any number, it will be displayed in color.
+If the sparse matrix above is a $100 \times 100$ matrix, then</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/fdf6d7b9-03b5-e3e4-556d-65c9de8c6af3.png" alt="100100example.png"></p>
+<h1 id="2-sparse-matrix-storage-format">2. Sparse matrix storage format</h1>
+<p>A special method is used to represent a sparse matrix in order to handle sparse matrices ignoring 0. By doing this, it is possible to significantly reduce the memory used and the amount of calculation. You may not be sure, so I will explain using the matrix below. However, a=1, b=2, c=3, d=4, e=5, f=6.</p>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccc}
+      a &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      b &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; c &amp; 0 &amp; d \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; e &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; f
+    \end{array}
+  \right)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/a8e8c5ff-598f-3b00-b61d-118f7d8c11d6.png" alt="example.png"></p>
+<h3 id="2-1-list-of-lists-lil">2-1. List of Lists (LIL)</h3>
+<p>Store a tuple of (column, element) for each row.
+It is easier to use the LIL method when initially storing the data in the matrix. After that, I think that it is easy to understand to convert to the CRS or CCS method shown below. If you&rsquo;re used to working with Python lists and Numpy arrays, it&rsquo;s not that hard. In the example above,</p>
+<table>
+<thead>
+<tr>
+<th align="left">Row</th>
+<th align="left">(column, element)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">0</td>
+<td align="left">(0, a)</td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="left">(0, b)</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">(3, c), (5, d)</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">(4, e)</td>
+</tr>
+<tr>
+<td align="left">5</td>
+<td align="left">(5, f)</td>
+</tr>
+</tbody>
+</table>
+<p>You can see that sparse matrix can be described with less memory. The larger the sparse matrix, the better the storage scheme that ignores these 0s.</p>
+<h4 id="scipysparselil_matrix"><code>scipy.sparse.lil_matrix</code></h4>
+<p>Function <a href="https://github.com/scipy/scipy/blob/master/scipy/sparse/lil.py">lil_matrix</a> for handling LIL format provided by scipy. It is often used to generate sparse matrices because it makes it easy to enter the non-zero elements of a matrix.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">from</span> scipy.sparse <span style="color:#f92672">import</span> lil_matrix
+ 
+<span style="color:#75715e"># Create sparse matrix</span>
+a<span style="color:#f92672">=</span>lil_matrix((<span style="color:#ae81ff">6</span>,<span style="color:#ae81ff">6</span>))
+ 
+<span style="color:#75715e"># Set the non-zero values</span>
+a[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">1.</span>; a[<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">2.</span>; a[<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">3.</span>; a[<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">5</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">4.</span>; a[<span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">4</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">5.</span>; a[<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">5</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">6.</span>
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;(row, column) value&#34;</span>)
+<span style="color:#66d9ef">print</span>(a, <span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Normal type: &#34;</span>)
+<span style="color:#66d9ef">print</span>(a<span style="color:#f92672">.</span>todense()) <span style="color:#75715e"># return to normal matrix form</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;LIL type: &#34;</span>)
+<span style="color:#66d9ef">print</span>(a<span style="color:#f92672">.</span>rows) <span style="color:#75715e"># Which column in each row contains a non-zero element</span>
+<span style="color:#66d9ef">print</span>(a<span style="color:#f92672">.</span>data) <span style="color:#75715e"># non-zero element on each line</span>
+</code></pre></div><p>The execution result is as follows.</p>
+<pre><code>(row, column) value
+  (0, 0) 1.0
+  (1, 0) 2.0
+  (2, 3) 3.0
+  (2, 5) 4.0
+  (4, 4) 5.0
+  (5, 5) 6.0
+  
+Normal type:
+[[1.0.0.0.0.0.0.0.]]
+ [2.0.0.0.0.0.0.0.]
+ [0. 0. 0. 3. 0. 4.]
+ [0.0.0.0.0.0.0.0.0.]
+ [0. 0. 0. 0. 5. 0.]
+ [0.0.0.0.0.0.6]]
+
+LIL type:
+[list([0]) list([0]) list([3, 5]) list([]) list([4]) list([5])]
+[list([1.0]) list([2.0]) list([3.0, 4.0]) list([]) list([5.0]) list([6.0])]
+</code></pre><h3 id="2-2-compressed-sparse-row-csr">2-2. Compressed Sparse Row (CSR)</h3>
+<p>Some people call it CRS (Compressed Row Storage). Search in the row direction and store the elements of the non-zero matrix. If it is difficult to understand, please read <a href="http://nkl.cc.u-tokyo.ac.jp/seminars/ppOpen-APPL-FVM/JSIAM14w.pdf">Materials</a> by Professor Nakajima of the University of Tokyo. An example of excluding the diagonal component and executing the CSR method is shown.</p>
+<p>With the CSR method,</p>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccc}
+      a &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      b &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; c &amp; 0 &amp; d \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; e &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; f
+    \end{array}
+  \right)
+</code></pre><p>Is</p>
+<ul>
+<li>indices: <code>IA = [0, 0, 3, 5, 4, 5]</code>
+<ul>
+<li>Starting from the top row, the column number of the element is displayed. The size of indices is the number of nonzero elements.</li>
+</ul>
+</li>
+<li>data: <code>A = [a, b, c, d, e, f]</code>
+<ul>
+<li>The non-zero elements are shown according to the indices. data will be the same size as indices.</li>
+</ul>
+</li>
+<li>indptr: <code>IN = [0, 1, 2, 4, 4, 5, 6]</code>
+<ul>
+<li>Counts the number of elements in each line, and shows the integrated value. Since it starts from 0, the size will be the number of rows + 1.It is possible to express by three lists. Again, you can see that you can write a sparse matrix with less memory. When doing sparse matrix calculations, I think that this CSR format is often used. How to finish the calculation quickly is described in the four arithmetic operations in Chapter 3.</li>
+</ul>
+</li>
+</ul>
+<p>To show what these lists represent, let&rsquo;s show indices the subscripts of the elements of the original matrix, and indptr on the right.</p>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccccc|c}
+      col0 &amp; col1 &amp; col2 &amp; col3 &amp; col4 &amp; col5 &amp; indptr \\
+          &amp; &amp; &amp; &amp; &amp; &amp; 0 \\
+      a_0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 \\
+      b_0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 2 \\
+      0 &amp; 0 &amp; 0 &amp; c_3 &amp; 0 &amp; d_5&amp; 4 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 4 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; e_4 &amp; 0 &amp; 5 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; f_5 &amp; 6
+    \end{array}
+  \right)
+</code></pre><p>To explain the idea using this example,</p>
+<ul>
+<li>initial state
+<ul>
+<li><code>indices: IA = []</code></li>
+<li><code>data: A = []</code></li>
+<li>Set <code>indptr: IN = [0, 0, 0, 0, 0, 0, 0]</code> (size of number of lines + 1).</li>
+</ul>
+</li>
+<li>Line 0
+<ul>
+<li>Search for non-zero elements starting from column 0.</li>
+<li>Discover a! Add element a to A.</li>
+<li>0 is added to IA because a is in the 0th column.</li>
+<li>In line 0, we found one element, so we add 1 to <code>IN[1]</code>.</li>
+<li><code>IA = [0], A = [a], IN = [0, 1, 0, 0, 0, 0, 0]</code></li>
+</ul>
+</li>
+<li>The first line
+<ul>
+<li>Search for non-zero elements starting from column 0.</li>
+<li>Discover b! Add element b to A.</li>
+<li>b is in the 0th column, so add 0 to IA.</li>
+<li>In the first line, we found one element, so add <code>1+IN[1]</code> to <code>IN[2]</code>.</li>
+<li><code>IA = [0, 0], A = [a, b], IN = [0, 1, 2, 0, 0, 0, 0]</code></li>
+</ul>
+</li>
+<li>Repeat this from the second line.
+<ul>
+<li><code>IA = [0, 0, 3, 5, 4, 5], A = [a, b, c, d, e, f], IN = [0, 1, 2, 4, 4, 5, 6 ]</code></li>
+</ul>
+</li>
+</ul>
+<h4 id="scipysparsecsr_matrix"><code>scipy.sparse.csr_matrix</code></h4>
+<p>Function <a href="https://github.com/scipy/scipy/blob/master/scipy/sparse/csr.py">csr_matrix</a>forhandlingtheCSRformatprovidedbyscipy.Ifyouputanarbitrarymatrixmtxlike<code>scipy.sparse.csr_matrix(mtx)</code>,itwillbeconvertedintoCSRformat.Theformatofmtxislist,numpy.ndarray,numpy.matrix,etc.TochangefromLILformattoCSRformat,use<code>tocsr()</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">a_csr <span style="color:#f92672">=</span> a<span style="color:#f92672">.</span>tocsr()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Normal type: &#34;</span>)
+<span style="color:#66d9ef">print</span>(a_csr<span style="color:#f92672">.</span>todense())
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;csr type:&#34;</span>)
+<span style="color:#66d9ef">print</span>(a_csr<span style="color:#f92672">.</span>indices)
+<span style="color:#66d9ef">print</span>(a_csr<span style="color:#f92672">.</span>data)
+<span style="color:#66d9ef">print</span>(a_csr<span style="color:#f92672">.</span>indptr)
+</code></pre></div><pre><code>Normal type:
+[[1.0.0.0.0.0.0.0.]]
+ [2.0.0.0.0.0.0.0.]
+ [0. 0. 0. 3. 0. 4.]
+ [0.0.0.0.0.0.0.0.0.]
+ [0. 0. 0. 0. 5. 0.]
+ [0.0.0.0.0.0.6]]
+
+csr type:
+[0 0 3 5 4 5] # indices: The columns of the elements are displayed in order from the upper row.
+[1. 2. 3. 4. 5. 6.] # data: Show the non-zero elements according to indices.
+[0 1 2 4 4 5 6] # indptr: Count the number of elements in each line and add up. Since it starts from 0, the size will be the number of rows + 1.
+</code></pre><h3 id="2-3-compressed-sparse-column-csc">2-3. Compressed Sparse Column (CSC)</h3>
+<p>Some call it CCS. It searches in the column direction and stores the elements of the non-zero matrix. Column type for CSR method.</p>
+<h4 id="scipysparsecsc_matrix"><code>scipy.sparse.csc_matrix</code></h4>
+<p>Function <a href="https://github.com/scipy/scipy/blob/master/scipy/sparse/csc.py">csc_matrix</a>forhandlingCSCformatprovidedbyscipy.Ifyouputanymatrixmtxlike<code>scipy.sparse.csc_matrix(mtx)</code>,itwillbeconvertedintoCSCformat.Theformatofmtxislist,numpy.ndarray,numpy.matrix,etc.TochangefromLILformattoCSCformat,use<code>tocsc()</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">a_csc <span style="color:#f92672">=</span> a<span style="color:#f92672">.</span>tocsc()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Normal type: &#34;</span>)
+<span style="color:#66d9ef">print</span>(a_csc<span style="color:#f92672">.</span>todense())
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;csc type:&#34;</span>)
+<span style="color:#66d9ef">print</span>(a_csc<span style="color:#f92672">.</span>indices)
+<span style="color:#66d9ef">print</span>(a_csc<span style="color:#f92672">.</span>data)
+<span style="color:#66d9ef">print</span>(a_csc<span style="color:#f92672">.</span>indptr)
+</code></pre></div><pre><code>Normal type:
+[[1.0.0.0.0.0.0.0.]]
+ [2.0.0.0.0.0.0.0.]
+ [0. 0. 0. 3. 0. 4.]
+ [0.0.0.0.0.0.0.0.0.]
+ [0. 0. 0. 0. 5. 0.]
+ [0.0.0.0.0.0.6]]
+
+csc type:
+[0 1 2 4 2 5] # indices: It shows the row number of the element in order from the left column.
+[1. 2. 3. 5. 4. 6.] # data: Show the non-zero elements according to indices.
+[0 2 2 2 3 4 6] # indptr: Count the number of elements in each column and add up. Since it starts from 0, the number of columns is +1.
+</code></pre><h3 id="2-4-other">2-4. Other</h3>
+<p>There are various other matrix storage methods, so please see <a href="https://en.wikipedia.org/wiki/sparsematrix">Wikipedia</a> for more information.</p>
+<h1 id="3-arithmetic-operations">3. Arithmetic operations</h1>
+<p>When calculating a sparse matrix, it is most common to calculate after storing in the CSR method or the CSC method. It can be executed in the same way as the familiar numpy arithmetic operation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#75715e"># csr example</span>
+<span style="color:#75715e"># Create sparse matrix</span>
+a <span style="color:#f92672">=</span> scipy<span style="color:#f92672">.</span>sparse<span style="color:#f92672">.</span>lil_matrix((<span style="color:#ae81ff">6</span>,<span style="color:#ae81ff">6</span>))
+<span style="color:#75715e"># Set the non-zero values</span>
+a[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">1.</span>; a[<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">2.</span>; a[<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">3.</span>; a[<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">5</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">4.</span>; a[<span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">4</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">5.</span>; a[<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">5</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">6.</span>
+a_csr <span style="color:#f92672">=</span> a<span style="color:#f92672">.</span>tocsr()
+a_matrix <span style="color:#f92672">=</span> a<span style="color:#f92672">.</span>todense()
+
+b <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">6</span>)<span style="color:#f92672">.</span>reshape((<span style="color:#ae81ff">6</span>,<span style="color:#ae81ff">1</span>))
+<span style="color:#66d9ef">print</span>(b)
+<span style="color:#66d9ef">print</span>(a_matrix <span style="color:#f92672">*</span> b)
+<span style="color:#66d9ef">print</span>(a_csr <span style="color:#f92672">*</span> b)
+<span style="color:#66d9ef">print</span>(a_matrix<span style="color:#f92672">.</span>dot(b))
+<span style="color:#66d9ef">print</span>(a_csr<span style="color:#f92672">.</span>dot(b))
+</code></pre></div><p>Multiplication of sparse matrices stored in CSR format can also be calculated like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">b_sparse <span style="color:#f92672">=</span> scipy<span style="color:#f92672">.</span>sparse<span style="color:#f92672">.</span>lil_matrix((<span style="color:#ae81ff">6</span>,<span style="color:#ae81ff">6</span>))
+b_sparse[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">1.</span>; b_sparse[<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">2.</span>; b_sparse[<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">3.</span>; b_sparse[<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">4</span>]<span style="color:#f92672">=</span><span style="color:#ae81ff">4.</span>
+b_csr <span style="color:#f92672">=</span> b_sparse<span style="color:#f92672">.</span>tocsr()
+<span style="color:#66d9ef">print</span>(b_csr<span style="color:#f92672">.</span>todense())
+<span style="color:#66d9ef">print</span>(a_matrix <span style="color:#f92672">*</span> b_csr)
+<span style="color:#66d9ef">print</span>((a_csr <span style="color:#f92672">*</span> b_csr)<span style="color:#f92672">.</span>todense())
+</code></pre></div><p>Based on these, let&rsquo;s confirm the effectiveness of the CSR (compressed row storage) method. Try running the following code on your Jupyter notebook. You can see that the calculation in **CSR method is considerably (about 1000 times) faster than the solution using ordinary matrix. **</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> scipy.sparse
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+num <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span><span style="color:#f92672">**</span><span style="color:#ae81ff">4</span>
+<span style="color:#75715e"># Creat LIL type sparse matrix</span>
+a_large <span style="color:#f92672">=</span> scipy<span style="color:#f92672">.</span>sparse<span style="color:#f92672">.</span>lil_matrix((num,num))
+<span style="color:#75715e"># Set the non-zero values</span>
+a_large<span style="color:#f92672">.</span>setdiag(np<span style="color:#f92672">.</span>ones(num)<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>)
+a_large<span style="color:#f92672">.</span>setdiag(np<span style="color:#f92672">.</span>ones(num<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">*-</span><span style="color:#ae81ff">1</span>, k<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+a_large<span style="color:#f92672">.</span>setdiag(np<span style="color:#f92672">.</span>ones(num<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">*-</span><span style="color:#ae81ff">1</span>, k<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)
+a_large_csr <span style="color:#f92672">=</span> a_large<span style="color:#f92672">.</span>tocsr()
+a_large_dense <span style="color:#f92672">=</span> a_large<span style="color:#f92672">.</span>todense()
+plt<span style="color:#f92672">.</span>spy(a_large_csr)
+b <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(num)
+<span style="color:#f92672">%</span>timeit a_large_csr<span style="color:#f92672">.</span>dot(b) <span style="color:#75715e"># CSR method</span>
+<span style="color:#f92672">%</span>timeit a_large_dense<span style="color:#f92672">.</span>dot(b) <span style="color:#75715e"># normal matrix</span>
+</code></pre></div><h3 id="important-point">important point</h3>
+<p>If you put a csr format matrix in the argument of the numpy dot function like <code>np.dot(a_csr, b)</code>,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">[[<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">6</span>x6 sparse matrix of type<span style="color:#e6db74">&#39;&lt;class&#39;</span>numpy<span style="color:#f92672">.</span>float64<span style="color:#e6db74">&#39;&gt;&#39;</span>
+<span style="color:#66d9ef">with</span> <span style="color:#ae81ff">6</span> stored elements <span style="color:#f92672">in</span> Compressed Sparse Row format<span style="color:#f92672">&gt;</span>]
+ [<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">6</span>x6 sparse matrix of type<span style="color:#e6db74">&#39;&lt;class&#39;</span>numpy<span style="color:#f92672">.</span>float64<span style="color:#e6db74">&#39;&gt;&#39;</span>
+<span style="color:#66d9ef">with</span> <span style="color:#ae81ff">6</span> stored elements <span style="color:#f92672">in</span> Compressed Sparse Row format<span style="color:#f92672">&gt;</span>]
+ [<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">6</span>x6 sparse matrix of type<span style="color:#e6db74">&#39;&lt;class&#39;</span>numpy<span style="color:#f92672">.</span>float64<span style="color:#e6db74">&#39;&gt;&#39;</span>
+<span style="color:#66d9ef">with</span> <span style="color:#ae81ff">6</span> stored elements <span style="color:#f92672">in</span> Compressed Sparse Row format<span style="color:#f92672">&gt;</span>]
+ [<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">6</span>x6 sparse matrix of type<span style="color:#e6db74">&#39;&lt;class&#39;</span>numpy<span style="color:#f92672">.</span>float64<span style="color:#e6db74">&#39;&gt;&#39;</span>
+<span style="color:#66d9ef">with</span> <span style="color:#ae81ff">6</span> stored elements <span style="color:#f92672">in</span> Compressed Sparse Row format<span style="color:#f92672">&gt;</span>]
+ [<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">6</span>x6 sparse matrix of type<span style="color:#e6db74">&#39;&lt;class&#39;</span>numpy<span style="color:#f92672">.</span>float64<span style="color:#e6db74">&#39;&gt;&#39;</span>
+<span style="color:#66d9ef">with</span> <span style="color:#ae81ff">6</span> stored elements <span style="color:#f92672">in</span> Compressed Sparse Row format<span style="color:#f92672">&gt;</span>]
+ [<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">6</span>x6 sparse matrix of type<span style="color:#e6db74">&#39;&lt;class&#39;</span>numpy<span style="color:#f92672">.</span>float64<span style="color:#e6db74">&#39;&gt;&#39;</span><span style="color:#66d9ef">with</span> <span style="color:#ae81ff">6</span> stored elements <span style="color:#f92672">in</span> Compressed Sparse Row format <span style="color:#f92672">&gt;</span>]]
+</code></pre></div><p>It becomes like this and I can not calculate well.</p>
+<h1 id="4-matrix-market-format">4. Matrix Market format</h1>
+<p>Although not used in this article, I will also mention <a href="https://math.nist.gov/MatrixMarket/formats.html">Matrix Market format</a>, which is one of the expressions for sparse matrices. Sparse matrix data is basically distributed in this format or in the format of Rutherford Boeing, and it becomes necessary knowledge to refer to papers and implementations related to sparse matrix calculation.
+As a dataset for sparse matrix problems, I think <a href="https://sparse.tamu.edu">The SuiteSparse Matrix Collection formerly the University of Florida Sparse Matrix Collection</a> is famous.</p>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccc}
+      a &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      b &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; c &amp; 0 &amp; d \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; e &amp; 0 \\
+      0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; f
+    \end{array}
+  \right)
+</code></pre><p>In Matrix Market (MM) format</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Fortran" data-lang="Fortran">%%Matrix Market matrix coordinate <span style="color:#66d9ef">real </span>general
+%<span style="color:#f92672">==================================================</span> <span style="color:#f92672">================================</span>
+%
+% This ASCII <span style="color:#66d9ef">file </span>represents a sparse MxN matrix with L
+% nonzeros in the following Matrix Market <span style="color:#66d9ef">format</span>:
+%
+% <span style="color:#f92672">+----------------------------------------------+</span>
+% <span style="color:#960050;background-color:#1e0010">|</span>%%MatrixMarket matrix coordinate <span style="color:#66d9ef">real </span>general <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#f92672">&lt;---</span> header line
+% <span style="color:#960050;background-color:#1e0010">|</span>% <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#f92672">&lt;--+</span>
+% <span style="color:#960050;background-color:#1e0010">|</span>% comments <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#960050;background-color:#1e0010">|</span><span style="color:#f92672">--</span> <span style="color:#ae81ff">0</span> or more comment lines
+% <span style="color:#960050;background-color:#1e0010">|</span>% <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#f92672">&lt;--+</span>
+% <span style="color:#960050;background-color:#1e0010">|</span> M N L <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#f92672">&lt;---</span> rows, columns, entries
+% <span style="color:#960050;background-color:#1e0010">|</span> I1 J1 A(I1, J1) <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#f92672">&lt;--+</span>
+% <span style="color:#960050;background-color:#1e0010">|</span> I2 J2 A(I2, J2) <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#960050;background-color:#1e0010">|</span>
+% <span style="color:#960050;background-color:#1e0010">|</span> I3 J3 A(I3, J3) <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#960050;background-color:#1e0010">|</span><span style="color:#f92672">--</span> L lines
+% <span style="color:#960050;background-color:#1e0010">|</span> ... <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#960050;background-color:#1e0010">|</span>
+% <span style="color:#960050;background-color:#1e0010">|</span> IL JL A(IL, JL) <span style="color:#960050;background-color:#1e0010">|</span> <span style="color:#f92672">&lt;--+</span>
+% <span style="color:#f92672">+----------------------------------------------+</span>
+%
+% Indices are <span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>based, i.e. A(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>) <span style="color:#66d9ef">is </span>the first element.
+%
+%<span style="color:#f92672">==================================================</span> <span style="color:#f92672">================================</span>
+  <span style="color:#ae81ff">6</span> <span style="color:#ae81ff">6</span> <span style="color:#ae81ff">6</span>
+    <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span> a
+    <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span> b
+    <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">4</span> c
+    <span style="color:#ae81ff">5</span> <span style="color:#ae81ff">5</span> e
+    <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">6</span> d
+    <span style="color:#ae81ff">6</span> <span style="color:#ae81ff">6</span> f
+</code></pre></div><p>Will be. You can see it by looking at the comments above.
+This <a href="http://xxxxxeeeee.hatenablog.com/entry/20100825/1282743025">article</a>iseasytounderstand.Forthetimebeing,Iwillplayaroundwithasparsematrixcalled<a href="https://sparse.tamu.edu/HB/steam3">steam3</a> that I chose appropriately.
+Use <code>scipy.io</code> when reading the Matrix market format.</p>
+<ul>
+<li>When you run <code>scipy.io.mminfo</code>, it tells you how many rows and how many columns there are, and how many non-zero elements there are.</li>
+<li>You can read the matrix in Matrix Market format with <code>scipy.io.mmread</code>. The return value is numpy.array or <a href="https://qiita.com/Hase8388/items/369fbd57318d8a976999">coo_matrix format</a>(similartocsrstorageformat).</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> scipy.io <span style="color:#f92672">as</span> io
+<span style="color:#66d9ef">print</span>(io<span style="color:#f92672">.</span>mminfo(<span style="color:#e6db74">&#34;steam3/steam3.mtx&#34;</span>))
+steam3 <span style="color:#f92672">=</span> io<span style="color:#f92672">.</span>mmread(<span style="color:#e6db74">&#34;steam3/steam3.mtx&#34;</span>)<span style="color:#f92672">.</span>tocsr()
+<span style="color:#66d9ef">print</span>(steam3<span style="color:#f92672">.</span>todense())
+plt<span style="color:#f92672">.</span>spy(steam3)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">(<span style="color:#ae81ff">80</span>, <span style="color:#ae81ff">80</span>, <span style="color:#ae81ff">928</span>,<span style="color:#e6db74">&#39;coordinate&#39;</span>,<span style="color:#e6db74">&#39;real&#39;</span>,<span style="color:#e6db74">&#39;general&#39;</span>)
+matrix([[<span style="color:#f92672">-</span><span style="color:#ae81ff">3.8253876e+05</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">...</span>,
+          <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>],
+        [<span style="color:#ae81ff">9.1147205e-01</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">9.5328382e+03</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">...</span>,
+          <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>],
+        [<span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">2.7754141e+02</span>, <span style="color:#f92672">...</span>,
+          <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>],
+        <span style="color:#f92672">...</span>,
+        [<span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">...</span>,
+         <span style="color:#f92672">-</span><span style="color:#ae81ff">4.6917325e+08</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">1.2118734e+05</span>],
+        [<span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">...</span>,
+          <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">1.3659626e+07</span>, <span style="color:#ae81ff">0.0000000e+00</span>],
+        [<span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#ae81ff">0.0000000e+00</span>, <span style="color:#f92672">...</span>,
+          <span style="color:#ae81ff">2.1014810e+07</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">3.6673643e+07</span>, <span style="color:#f92672">-</span><span style="color:#ae81ff">1.0110894e+04</span>]])
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/e58e6834-2468-6fe3-1502-0fe9a23021a0.png" alt="steam3.png"></p>
+<h1 id="5-direct-method-library">5. Direct method library</h1>
+<p>It is contained in <code>scipy.sparse.linalg.dsolve</code>. [Previous article] Implemented Ax=b problem (see formula below for details) solved in (<a href="https://qiita.com/KQTS/items/97daa509991bb9777a4a">https://qiita.com/KQTS/items/97daa509991bb9777a4a</a>) as an example (implementation is almost unchanged) ).</p>
+<pre><code class="language-math" data-lang="math">  \left(
+    \begin{array}{cccc}
+      2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots &amp; \ldots &amp; 0 \\
+      -1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots &amp; 0 \\
+      0 &amp;-1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 &amp; 0 &amp; \ldots \\
+      \vdots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots &amp; \ddots\\
+      0 &amp; 0 &amp; \ddots &amp; -1 &amp; 2 \left(\frac{1}{d} + 1 \right) &amp; -1 \\
+      0 &amp; 0 &amp; \ldots &amp; 0 &amp; -1 &amp; 2 \left(\frac{1}{d} + 1 \right)
+    \end{array}
+  \right)
+  \left(
+    \begin{array}{c}
+      T_1^{n+1} \\
+      T_2^{n+1} \\
+      T_3^{n+1} \\
+      \vdots \\
+      T_{M-1}^{n+1} \\
+      T_M^{n+1}
+    \end{array}
+  \right)
+   =
+   \left(
+    \begin{array}{c}
+      T_2^{n} + 2 \left(\frac{1}{d}-1 \right) T_1^{n} + \left(T_0^n + T_0^{n+1}\right) \\
+      T_3^{n} + 2 \left(\frac{1}{d}-1 \right) T_2^{n} + T_1^n \\
+      T_4^{n} + 2 \left(\frac{1}{d}-1 \right) T_3^{n} + T_2^n \\
+      \vdots \\
+      T_M^{n} + 2 \left(\frac{1}{d}-1 \right) T_{M-1}^{n} + T_{M-2}^n \\
+      \left(T_{M+1}^n + T_{M+1}^{n+1}\right) + 2 \left(\frac{1}{d}-1 \right) T_{M}^ {n} + T_{M-1}^n
+    \end{array}
+  \right)
+</code></pre><p>In the default setting, <code>scipy.sparse.linalg.dsolve(csr format A matrix, b vector)</code> <a href="http://www.turbare.net/transl/scipy-lecture-notes/advanced/scipy_sparse/solvers.html">SuperLU decomposition</a> should be done.</p>
+<p>The image below shows the result of comparison with the Gauss-Seidel method of stationary iteration.<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/7bdac9db-da60-06c5-5d95-357c1b4b2350.png" alt="sp.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> scipy.sparse
+<span style="color:#75715e"># Make stencils</span>
+<span style="color:#75715e"># Creat square wave</span>
+Num_stencil_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">101</span>
+x_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float64(np<span style="color:#f92672">.</span>arange(Num_stencil_x))
+temperature_array <span style="color:#f92672">=</span> x_array <span style="color:#f92672">+</span> <span style="color:#ae81ff">100</span>
+temperature_lower_boundary <span style="color:#f92672">=</span> <span style="color:#ae81ff">150</span>
+temperature_upper_boundary <span style="color:#f92672">=</span> <span style="color:#ae81ff">150</span>
+Time_step <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+Delta_x <span style="color:#f92672">=</span> max(x_array) <span style="color:#f92672">/</span> (Num_stencil_x<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+C <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+Delta_t <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.2</span>
+kappa <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span>
+d <span style="color:#f92672">=</span> kappa <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">/</span> Delta_x<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+total_movement <span style="color:#f92672">=</span> C <span style="color:#f92672">*</span> Delta_t <span style="color:#f92672">*</span> (Time_step<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)
+exact_temperature_array <span style="color:#f92672">=</span> (temperature_upper_boundary <span style="color:#f92672">-</span> temperature_lower_boundary) <span style="color:#f92672">/</span> (x_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> x_array[<span style="color:#ae81ff">0</span>]) <span style="color:#f92672">*</span> x_array <span style="color:#f92672">+</span> temperature_lower_boundary
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_array, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Initial condition&#34;</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Δx:&#34;</span>, Delta_x, <span style="color:#e6db74">&#34;Δt:&#34;</span>, Delta_t, <span style="color:#e6db74">&#34;d:&#34;</span>, d)
+
+temperature_sp <span style="color:#f92672">=</span> temperature_array<span style="color:#f92672">.</span>copy()
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    a_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>identity(len(temperature_sp)) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>eye(len(temperature_sp), k<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>eye(len(temperature_sp), k<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)
+    temp_temperature_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>append(
+                        temperature_lower_boundary, 
+                        temperature_sp), temperature_upper_boundary)
+    b_array <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">*</span> temperature_sp <span style="color:#f92672">+</span> temp_temperature_array[<span style="color:#ae81ff">2</span>:] <span style="color:#f92672">+</span> temp_temperature_array[:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+    b_array[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> temperature_lower_boundary
+    b_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> temperature_upper_boundary
+    a_csr <span style="color:#f92672">=</span> scipy<span style="color:#f92672">.</span>sparse<span style="color:#f92672">.</span>csr_matrix(a_matrix)
+    temperature_sp <span style="color:#f92672">=</span> spla<span style="color:#f92672">.</span>dsolve<span style="color:#f92672">.</span>spsolve(a_csr, b_array)
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_sp, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SuperLU&#34;</span>)
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;temperature&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><h1 id="6-反復法ライブラリ">6. 反復法ライブラリ</h1>
+<p>非定常反復法のライブラリがscipyでは実装されております。<code>scipy.sparse.linalg.isolve</code>の中に入っております。非定常反復法がよくわからない人は<a href="https://qiita.com/KQTS/items/97daa509991bb9777a4a">前の記事</a>をご覧ください。使用できるライブラリの一部を以下に列挙しておきます。これら以外のライブラリを使いたい場合は、Scipyの<a href="https://docs.scipy.org/doc/scipy/reference/sparse.linalg.html#module-scipy.sparse.linalg">マニュアル</a>から探してみてください。</p>
+<ol>
+<li>対称行列
+<ol>
+<li><code>cg</code>共役勾配法(Conjugate Gradient method : CG法) - 正定値対称行列のみ</li>
+<li><code>minres</code>最小残差法(MINimum RESidual: MINRES法)</li>
+</ol>
+</li>
+<li>非対称行列
+<ol>
+<li><code>bicg</code>双共役勾配法(Bi-Conjugate Gradient: BiCG法)</li>
+<li><code>cgs</code>自乗共役勾配法(Conjugate Residual Squared: CGS法)</li>
+<li><code>bicgstab</code>双共役勾配安定化法(BiCG Stabilization: BiCGSTAB法)</li>
+<li><code>gmres</code>一般化最小残差法(Generalized Minimal Residual: GMRES法)</li>
+<li><code>qmr</code>準最小残差法(Quasi-Minimal Residual: QMR法)</li>
+</ol>
+</li>
+</ol>
+<p>直接法で使用した同じ問題に対して、BiCGSTAB法での実装例とその実行結果を以下に示します。</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/327c6923-0de2-74ab-a502-b5c2b2c58f27.gif" alt="anim.gif"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271340/1f440752-69e4-918e-292b-e300758c0f1f.png" alt="sp_isolve.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">temperature_sp <span style="color:#f92672">=</span> temperature_array<span style="color:#f92672">.</span>copy()
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(Time_step):
+    a_matrix <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>identity(len(temperature_sp)) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>eye(len(temperature_sp), k<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>) \
+                <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>eye(len(temperature_sp), k<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>)
+    temp_temperature_array <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>append(
+                        temperature_lower_boundary, 
+                        temperature_sp), temperature_upper_boundary)
+    b_array <span style="color:#f92672">=</span> <span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>d <span style="color:#f92672">-</span> <span style="color:#ae81ff">1.0</span>) <span style="color:#f92672">*</span> temperature_sp <span style="color:#f92672">+</span> temp_temperature_array[<span style="color:#ae81ff">2</span>:] <span style="color:#f92672">+</span> temp_temperature_array[:<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+    b_array[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> temperature_lower_boundary
+    b_array[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> temperature_upper_boundary
+    a_csr <span style="color:#f92672">=</span> scipy<span style="color:#f92672">.</span>sparse<span style="color:#f92672">.</span>csr_matrix(a_matrix)
+    temperature_sp <span style="color:#f92672">=</span> spla<span style="color:#f92672">.</span>isolve<span style="color:#f92672">.</span>bicgstab(a_csr, b_array)[<span style="color:#ae81ff">0</span>]
+plt<span style="color:#f92672">.</span>plot(x_array, temperature_sp, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Scipy.isolve (1000 steps)&#34;</span>)
+
+plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;lower right&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>)
+plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;temperature&#34;</span>)
+plt<span style="color:#f92672">.</span>xlim(<span style="color:#ae81ff">0</span>, max(x_array))
+plt<span style="color:#f92672">.</span>ylim(<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">200</span>)
+</code></pre></div><h1 id="まとめ">まとめ</h1>
+<ul>
+<li>疎行列には0を無視する格納方式がある
+<ul>
+<li>LIL方式は疎行列を作成するときに用いることが多い。</li>
+<li>CSR方式とCSC方式は疎行列計算をするときに用いることが多い。</li>
+</ul>
+</li>
+<li>CSR方式で計算すると、普通の行列の形で計算するより、圧倒的に早く計算が終わることが確認できた。</li>
+<li>Matrix Market方式で疎行列は配布されることが多い。</li>
+<li>直接法と非定常反復法の関数がScipyに実装されており、簡単に使用することができる。</li>
+</ul>
+<p>という感じかと思います。</p>
+<h2 id="参考文献">参考文献</h2>
+<ol>
+<li><a href="http://www.turbare.net/transl/scipy-lecture-notes/advanced/scipy_sparse/index.html">Scipyでの疎行列</a></li>
+<li><a href="https://www.atmarkit.co.jp/ait/articles/1706/21/news018_2.html">https://www.atmarkit.co.jp/ait/articles/1706/21/news018_2.html</a></li>
+<li><a href="http://xxxxxeeeee.hatenablog.com/entry/20100825/1282743025">http://xxxxxeeeee.hatenablog.com/entry/20100825/1282743025</a></li>
+<li><a href="https://qiita.com/Hase8388/items/369fbd57318d8a976999">https://qiita.com/Hase8388/items/369fbd57318d8a976999</a></li>
+<li><a href="https://math.nist.gov/MatrixMarket/formats.html">Matrix Market File Format</a></li>
+</ol>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

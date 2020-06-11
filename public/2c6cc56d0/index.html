@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried to detect the iris from the camera image | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried to detect the iris from the camera image</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 12, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/dedicated"> Dedicated</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>We have summarized the presentation contents of <a href="https://kantocv.connpass.com/event/160053/">56th Computer Vision Study Group @ Kanto</a> held on Saturday, January 19, 2020.
+The materials for the day can be viewed from <a href="https://www.slideshare.net/NaoyaTakeuchi/ss-221273392?ref=https://kantocv.connpass.com/event/160053/presentation/">here</a>.</p>
+<p>The source code is available on Github below.
+<a href="https://github.com/33taro/gaze_cv">https://github.com/33taro/gaze_cv</a></p>
+<p>#Iris detection procedure</p>
+<p>Iris detection is a theme that I was studying when I was a university student, so I think it would be easy to do with advanced OpenCV.
+The procedure is as follows.</p>
+<ol>
+<li>Detection of human faces and face landmarks from camera images</li>
+<li>Cut out the eye area from the landmark of the face</li>
+<li>Binarize the eye area and extract the iris area</li>
+<li>Iris detection from the extracted iris region</li>
+</ol>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/7ddcbc04-c505-0c11-61b7-6f4e5b60a620.png" alt="Iris detection procedure.png"></p>
+<h2 id="human-face-and-face-landmark-detection-from-camera-image">Human face and face landmark detection from camera image</h2>
+<p>Previously, I tried to detect the iris (black eye part) by using the face landmark detection introduced in <a href="https://qiita.com/mimitaro/items/bbc58051104eafc1eb38">another article</a>.
+See there for details.</p>
+<h2 id="cut-out-eye-area-from-face-landmark">Cut out eye area from face landmark</h2>
+<p>As mentioned in the above article (<a href="https://qiita.com/mimitaro/items/bbc58051104eafc1eb38),">https://qiita.com/mimitaro/items/bbc58051104eafc1eb38),</a> the landmarks on the face are <a href="https://ibug.doc.ic.ac.uk/Iamusingatrainedmodelatresources/facial-point-annotations/">here</a>.
+Therefore, in the eye area, the right eye is &ldquo;No.37 to 42&rdquo; and the left eye is &ldquo;No.43 to 48&rdquo;.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/d4f4e815-b952-b9e4-8651-a7e7de2e1e01.png" alt="Eye area.png"></p>
+<p>This is described in &ldquo;eye_region_manager.py&rdquo; in the &ldquo;tracking_system&rdquo; directory in the actual source code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:eye_region_manager.py" data-lang="python:eye_region_manager.py">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">detect_eye_region</span>(self, face_landmark):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Get coordinates of eye area from landmark
+</span><span style="color:#e6db74">        :param face_landmark:
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#75715e"># Cut out right eye</span>
+        self<span style="color:#f92672">.</span>_right_eye_region <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;top_x&#39;</span>: face_landmark[<span style="color:#ae81ff">36</span>][<span style="color:#ae81ff">0</span>],<span style="color:#e6db74">&#39;bottom_x&#39;</span>: face_landmark[<span style="color:#ae81ff">39</span>][<span style="color:#ae81ff">0</span>],
+                                  <span style="color:#e6db74">&#39;top_y&#39;</span>: face_landmark[<span style="color:#ae81ff">37</span>][<span style="color:#ae81ff">1</span>]
+                                  <span style="color:#66d9ef">if</span> face_landmark[<span style="color:#ae81ff">37</span>][<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&lt;</span>face_landmark[<span style="color:#ae81ff">38</span>][<span style="color:#ae81ff">1</span>] <span style="color:#66d9ef">else</span> face_landmark[<span style="color:#ae81ff">38</span>][<span style="color:#ae81ff">1</span>],
+                                  <span style="color:#e6db74">&#39;bottom_y&#39;</span>: face_landmark[<span style="color:#ae81ff">41</span>][<span style="color:#ae81ff">1</span>]
+                                  <span style="color:#66d9ef">if</span> face_landmark[<span style="color:#ae81ff">41</span>][<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&gt;</span>face_landmark[<span style="color:#ae81ff">40</span>][<span style="color:#ae81ff">1</span>] <span style="color:#66d9ef">else</span> face_landmark[<span style="color:#ae81ff">40</span>][<span style="color:#ae81ff">1</span>]}
+
+        <span style="color:#75715e"># Left eye clipping</span>
+        self<span style="color:#f92672">.</span>_left_eye_region <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;top_x&#39;</span>: face_landmark[<span style="color:#ae81ff">42</span>][<span style="color:#ae81ff">0</span>],<span style="color:#e6db74">&#39;bottom_x&#39;</span>: face_landmark[<span style="color:#ae81ff">45</span>][<span style="color:#ae81ff">0</span>],
+                                 <span style="color:#e6db74">&#39;top_y&#39;</span>: face_landmark[<span style="color:#ae81ff">43</span>][<span style="color:#ae81ff">1</span>]
+                                 <span style="color:#66d9ef">if</span> face_landmark[<span style="color:#ae81ff">43</span>][<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&lt;</span>face_landmark[<span style="color:#ae81ff">45</span>][<span style="color:#ae81ff">1</span>] <span style="color:#66d9ef">else</span> face_landmark[<span style="color:#ae81ff">45</span>][<span style="color:#ae81ff">1</span>],
+                                 <span style="color:#e6db74">&#39;bottom_y&#39;</span>: face_landmark[<span style="color:#ae81ff">47</span>][<span style="color:#ae81ff">1</span>]
+                                 <span style="color:#66d9ef">if</span> face_landmark[<span style="color:#ae81ff">47</span>][<span style="color:#ae81ff">1</span>] <span style="color:#f92672">&gt;</span>face_landmark[<span style="color:#ae81ff">46</span>][<span style="color:#ae81ff">1</span>] <span style="color:#66d9ef">else</span> face_landmark[<span style="color:#ae81ff">46</span>][<span style="color:#ae81ff">1</span>]}
+</code></pre></div><p>*Since the array starts from 0, the numbers are 0 to 67 and the numbers are shifted by one.
+*The vertical y-coordinates of the eye area are acquired to be longer.</p>
+<h2 id="eye-region-is-binarized-and-iris-region-is-extracted">Eye region is binarized and iris region is extracted</h2>
+<p>The P-tile method was used to binarize the eye area.
+This is a method of specifying the percentage of the image area to be binarized as a percentage.
+As a result, the iris was acquired regardless of the brightness.
+(As a rule of thumb, the iris is 40% of the eye area)</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/6ec50e3e-9a12-c608-5ebe-dfc2db0788a8.png" alt="Binarization of eye area.png"></p>
+<ul>
+<li>Before binarization, it is smoothed with a Gaussian filter to remove noise.</li>
+</ul>
+<p>The P-tile method is not implemented in OpenCV, so I made it myself,
+It is described in &ldquo;image_utility.py&rdquo; in the &ldquo;utility&rdquo; directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:image_utility.py" data-lang="python:image_utility.py"><span style="color:#75715e"># coding:utf-8</span>
+
+<span style="color:#f92672">import</span> cv2
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">p_tile_threshold</span>(img_gry, per):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Binarization process by P-tile method
+</span><span style="color:#e6db74">    :param img_gry: Grayscale image to be binarized
+</span><span style="color:#e6db74">    :param per: Ratio of image to be binarized
+</span><span style="color:#e6db74">    :return img_thr: Binarized image
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+
+    <span style="color:#75715e"># Get histogram</span>
+    img_hist <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>calcHist([img_gry], [<span style="color:#ae81ff">0</span>], None, [<span style="color:#ae81ff">256</span>], [<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">256</span>])
+
+    <span style="color:#75715e">#Calculate the number of pixels from the ratio of the binarization object in the image</span>
+    all_pic <span style="color:#f92672">=</span> img_gry<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">*</span> img_gry<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]
+    pic_per <span style="color:#f92672">=</span> all_pic <span style="color:#f92672">*</span> per
+
+    Threshold calculation <span style="color:#66d9ef">for</span> binarization by <span style="color:#75715e">#P tile method</span>
+    p_tile_thr <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    pic_sum <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    <span style="color:#75715e">#Calculate current brightness and total brightness (highest to highest)</span>
+    <span style="color:#66d9ef">for</span> hist <span style="color:#f92672">in</span> img_hist:
+        pic_sum <span style="color:#f92672">+=</span> hist
+
+        <span style="color:#75715e"># When the total brightness exceeds the specified ratio, the processing ends.</span>
+        <span style="color:#66d9ef">if</span> pic_sum <span style="color:#f92672">&gt;</span>pic_per:
+            <span style="color:#66d9ef">break</span>
+
+        p_tile_thr <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+
+    Binarization processing <span style="color:#66d9ef">with</span> the threshold value obtained by the <span style="color:#75715e">#P tile method</span>
+    ret, img_thr <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(img_gry, p_tile_thr, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>THRESH_BINARY)
+
+    <span style="color:#66d9ef">return</span> img_thr
+</code></pre></div><h2 id="iris-detection-from-the-extracted-iris-area">Iris detection from the extracted iris area</h2>
+<p>I was able to obtain the iris area, but the iris alone cannot be extracted cleanly because of the shadows of the eyebrows and eyelids.
+Therefore, we obtained a black area by tracing contour points, added it to each area, and approximated a circumscribed circle, and made the circle with the largest radius the iris.
+*However, if the circumscribed circle is too large, it will be excluded from the iris candidates.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/84f4a6cb-4c30-ae4d-4582-c7678602c6c8.png" alt="Iris circumcircle approximation.png"></p>
+<p>A series of binarization-iris detection is described in &ldquo;eye_system_manager.py&rdquo; in the &ldquo;tracking_system&rdquo; directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:eye_system_manager.py" data-lang="python:eye_system_manager.py">    <span style="color:#a6e22e">@staticmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_detect_iris</span>(eye_img):
+        <span style="color:#75715e"># Smoothing with a Gaussian filter after grayscale conversion</span>
+        eye_img_gry <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(eye_img, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+        eye_img_gau <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>GaussianBlur(eye_img_gry, (<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">5</span>), <span style="color:#ae81ff">0</span>)
+
+        Binarization by <span style="color:#75715e">#P tile method</span>
+        eye_img_thr <span style="color:#f92672">=</span> p_tile_threshold(eye_img_gau, IRIS_PER)
+
+        cv2<span style="color:#f92672">.</span>rectangle(eye_img_thr, (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>), (eye_img_thr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, eye_img_thr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>), (<span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">255</span>), <span style="color:#ae81ff">1</span>)
+
+        <span style="color:#75715e">#Contour extraction</span>
+        contours, hierarchy <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>findContours(eye_img_thr, cv2<span style="color:#f92672">.</span>RETR_TREE, cv2<span style="color:#f92672">.</span>CHAIN_APPROX_SIMPLE)
+
+        <span style="color:#75715e"># Find the iris from the contour by the minimum circumcircle</span>
+        iris <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;center&#39;</span>: (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>),<span style="color:#e6db74">&#39;radius&#39;</span>: <span style="color:#ae81ff">0</span>}
+        <span style="color:#66d9ef">for</span> i, cnt <span style="color:#f92672">in</span> enumerate(contours):
+            (x, y), radius <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>minEnclosingCircle(cnt)
+            center <span style="color:#f92672">=</span> (int(x), int(y))
+            radius <span style="color:#f92672">=</span> int(radius)
+
+            <span style="color:#75715e"># Exclude from iris candidates if radius is too large</span>
+            <span style="color:#66d9ef">if</span> eye_img_thr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">&lt;</span>radius<span style="color:#f92672">*</span><span style="color:#ae81ff">0.8</span>:
+                <span style="color:#75715e"># # Drawing iris candidates</span>
+                <span style="color:#75715e"># cv2.circle(eye_img, center, radius, (255, 0, 0))</span>
+                <span style="color:#66d9ef">continue</span>
+
+            <span style="color:#75715e">#Circle with largest radius is recognized as iris</span>
+            <span style="color:#66d9ef">if</span> iris[<span style="color:#e6db74">&#39;radius&#39;</span>] <span style="color:#f92672">&lt;</span>radius:
+                iris[<span style="color:#e6db74">&#39;center&#39;</span>] <span style="color:#f92672">=</span> centeriris[<span style="color:#e6db74">&#39;radius&#39;</span>] <span style="color:#f92672">=</span> radius
+                iris[<span style="color:#e6db74">&#39;num&#39;</span>] <span style="color:#f92672">=</span> i
+
+        <span style="color:#66d9ef">return</span> iris
+</code></pre></div><h2 id="iris-detection-result">Iris detection result</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/224034/cd4170d5-25ea-9a7f-f734-a6b6d182db2d.gif" alt="demo.gif"></p>
+<p>As shown in the figure above, the irises of the left and right eyes are well acquired.
+However, there are still issues regarding the top and bottom.
+However, when people look up and down, they often move their faces rather than their iris.
+(If you actually look up and down with your eyes, you get tired)
+So I wonder if I can somehow detect the orientation of the face from the landmarks on the face.</p>
+<h1 id="reference-link">Reference link</h1>
+<h2 id="contour-point-tracking">Contour point tracking</h2>
+<ul>
+<li>
+<p>**OpenCV-Python Tutorial ~Contour: The First Steps~ **
+<a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html">http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html</a>
+This is an OpenCV tutorial. I used it as a reference for basic usage.</p>
+</li>
+<li>
+<p><strong>OpenCV-How to extract contours with findContours</strong>
+<a href="https://www.pynote.info/entry/opencv-findcontours">https://www.pynote.info/entry/opencv-findcontours</a>
+The details of the contour point tracking function findContours() of OpenCV are introduced.
+I used it as a reference when writing the source code.</p>
+</li>
+<li>
+<p>** [OpenCV; Python] Summary of findcontours function **
+<a href="https://qiita.com/anyamaru/items/fd3d894966a98098376c">https://qiita.com/anyamaru/items/fd3d894966a98098376c</a>
+The outline point tracking function findContours() of OpenCV is explained in an easy-to-understand manner using figures.
+It was used as a reference for understanding this technology.</p>
+</li>
+</ul>
+<h2 id="minimum-circumscribed-circle">Minimum circumscribed circle</h2>
+<ul>
+<li>**OpenCV-Python Tutorial-Characteristics of Area (Contour)-**<br>
+<a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html">http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html</a><br>
+This is an OpenCV tutorial. I used it as a reference for basic usage.</li>
+</ul>
+<h2 id="p-tile-method">P tile method</h2>
+<ul>
+<li>
+<p>** Imaging Solution-P-tile method-**
+<a href="https://imagingsolution.net/imaging/p-tile-method/">https://imagingsolution.net/imaging/p-tile-method/</a>
+The P-tile method is explained in an easy-to-understand manner.
+I referred to it for understanding and implementing the P-tile method.</p>
+</li>
+<li>
+<p>** Introduction to image processing and C language sample collection -P tile method- **
+<a href="http://pgsample.info/image/other/PercentileMethod.html">http://pgsample.info/image/other/PercentileMethod.html</a>
+An implementation of the P-tile method in C.
+This time I used it as a reference when writing the P-tile method code in python.</p>
+</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

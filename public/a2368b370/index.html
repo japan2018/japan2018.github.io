@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I made a module in C language that applies a filter to the image read in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I made a module in C language that applies a filter to the image read in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 24, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/c"> C</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-processing"> image processing</a></code></small>
+
+</p>
+<pre><code>At work I had to do image processing using Python. It's okay if it can be done by OpenCV etc., but the filter of the original algorithm will not be practical unless it is C/C++. So I made a module for Python in C language.
+</code></pre>
+<p>If you want to try it out quickly, please use my repository.
+<a href="https://github.com/soramimi/pymodule-image-filter">https://github.com/soramimi/pymodule-image-filter</a></p>
+<h2 id="how-to-make-your-own-module-for-python">How to make your own module for Python</h2>
+<h3 id="install-dependent-modules">Install dependent modules</h3>
+<p>The first trial is <code>helloworld</code>, so it is not necessary, but numpy, pillow, and matplotlib are used in the later image processing section, so these modules must be installed. It is supposed to be developed on Ubuntu. Python development package is required.</p>
+<p><code>sudo apt install python3-dev python3-matplotlib</code></p>
+<h3 id="write-the-function-definition-structure">Write the function definition structure</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">static</span> PyMethodDef myMethods[] <span style="color:#f92672">=</span> {
+{<span style="color:#e6db74">&#34;helloworld&#34;</span>, helloworld, METH_NOARGS, <span style="color:#e6db74">&#34;My helloworld function.&#34;</span> },
+{NULL}
+};
+</code></pre></div><p>The definition contents are described in the order of {(function name), (pointer to function), (argument passing method), (description)}.</p>
+<p><code>METH_NOARGS</code> is for a function that has no arguments. To use the argument, use <code>METH_VARARGS</code>.</p>
+<h3 id="write-the-module-definition-structure">Write the module definition structure</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">struct</span> PyModuleDef mymodule <span style="color:#f92672">=</span> (
+PyModuleDef_HEAD_INIT,
+<span style="color:#e6db74">&#34;mymodule&#34;</span>,
+<span style="color:#e6db74">&#34;Python3 C API Module&#34;</span>,
+<span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>,
+myMethods
+};
+</code></pre></div><p>Write the module name and description.</p>
+<h3 id="write-a-function-to-initialize-the-module">write a function to initialize the module</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c">PyMODINIT_FUNC <span style="color:#a6e22e">PyInit_mymodule</span>(<span style="color:#66d9ef">void</span>)
+{
+import_array();
+<span style="color:#66d9ef">return</span> PyModule_Create(<span style="color:#f92672">&amp;</span>mymodule);
+}
+</code></pre></div><p>Write the function call <code>import_array()</code> as needed. This is necessary for the theme this time, as it handles arrays in image processing. Not needed if you don&rsquo;t use arrays. You need to run <code>import_array()</code> on all source code that uses the array API.</p>
+<h3 id="write-the-function-body">write the function body</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span><span style="color:#a6e22e">helloworld</span>(PyObject <span style="color:#f92672">*</span>self, PyObject <span style="color:#f92672">*</span>args)
+{
+fprintf(stderr, <span style="color:#e6db74">&#34;Hello, world</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+<span style="color:#66d9ef">return</span> Py_None;
+}
+</code></pre></div><p>Since it is the first trial function, it is <code>helloworld</code>. Later, we will implement the code for image processing.</p>
+<h3 id="write-a-build-script">Write a build script</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-setup.py" data-lang="setup.py"><span style="color:#f92672">from</span> distutils.core <span style="color:#f92672">import</span> setup, Extension
+setup(name <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mymodule&#39;</span>, version <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;1.0.0&#39;</span>, ext_modules <span style="color:#f92672">=</span> [Extension(<span style="color:#e6db74">&#39;mymodule&#39;</span>, [<span style="color:#e6db74">&#39;mymodule.c&#39;</span>])])
+</code></pre></div><h3 id="build">build</h3>
+<p><code>python3 setup.py build_ext -i</code></p>
+<p>If you have a long named <code>.so</code> file, you are good to go.</p>
+<pre><code>$ls*.so
+mymodule.cpython-35m-x86_64-linux-gnu.so
+</code></pre><h3 id="write-the-calling-python-side-program">Write the calling (Python side) program</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-main.py" data-lang="main.py"><span style="color:#f92672">import</span> mymodule
+
+mymodule<span style="color:#f92672">.</span>helloworld()
+</code></pre></div><h3 id="run">Run</h3>
+<p>Run the Python program and the module <code>.so</code> file in the same directory.</p>
+<pre><code>$python3 main.py
+Hello, world
+</code></pre><h2 id="create-an-image-processing-filter">Create an image processing filter</h2>
+<p>As an example, let&rsquo;s use a function that applies a sepia tone filter. The function name is changed from <code>helloworld</code> to <code>sepia</code>.</p>
+<p>The program on the Python side is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-main.py" data-lang="main.py"><span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> mymodule
+
+im <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(Image<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#39;kamo.jpg&#39;</span>))
+
+im <span style="color:#f92672">=</span> mymodule<span style="color:#f92672">.</span>sepia(im)
+
+<span style="color:#66d9ef">print</span>(type(im))
+<span style="color:#66d9ef">print</span>(im<span style="color:#f92672">.</span>dtype)
+<span style="color:#66d9ef">print</span>(im<span style="color:#f92672">.</span>shape)
+
+plt<span style="color:#f92672">.</span>imshow(im)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p>It works as follows.</p>
+<ol>
+<li>Load an image file</li>
+<li>Filter</li>
+<li>Display array information</li>
+<li>Display the image</li>
+</ol>
+<p>Make the function definition as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c">{<span style="color:#e6db74">&#34;sepia&#34;</span>, sepia, METH_VARARGS, <span style="color:#e6db74">&#34;Sepia tone image filter&#34;</span> },
+</code></pre></div><p>This is an excerpt of the C language source.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-mymodule.c" data-lang="mymodule.c"><span style="color:#66d9ef">static</span> PyObject <span style="color:#f92672">*</span><span style="color:#a6e22e">sepia</span>(PyObject <span style="color:#f92672">*</span>self, PyObject <span style="color:#f92672">*</span>args)
+{
+PyArrayObject <span style="color:#f92672">*</span>srcarray;
+<span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>PyArg_ParseTuple(args, <span style="color:#e6db74">&#34;O&#34;</span>, <span style="color:#f92672">&amp;</span>srcarray)) {
+fprintf(stderr, <span style="color:#e6db74">&#34;invalid argument</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+<span style="color:#66d9ef">return</span> Py_None;
+}
+</code></pre></div><p>The first (but only one) argument is an array. Get as an object.</p>
+<p>The input array is a three-dimensional array of (height) x (width) x (channels), so an error will occur if not. The number of channels is limited to 3 (RGB).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">if</span> (srcarray<span style="color:#f92672">-&gt;</span>nd <span style="color:#f92672">!=</span> <span style="color:#ae81ff">3</span>) {
+fprintf(stderr, <span style="color:#e6db74">&#34;invalid image</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+<span style="color:#66d9ef">return</span> Py_None;
+}
+<span style="color:#66d9ef">if</span> (srcarray<span style="color:#f92672">-&gt;</span>dimensions[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">3</span>) {
+fprintf(stderr, <span style="color:#e6db74">&#34;invalid image</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+<span style="color:#66d9ef">return</span> Py_None;
+}
+</code></pre></div><p>Gets the size of the image.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">int</span> h <span style="color:#f92672">=</span> srcarray<span style="color:#f92672">-&gt;</span>dimensions[<span style="color:#ae81ff">0</span>];
+<span style="color:#66d9ef">int</span> w <span style="color:#f92672">=</span> srcarray<span style="color:#f92672">-&gt;</span>dimensions[<span style="color:#ae81ff">1</span>];
+</code></pre></div><p>Allocate an array to store the image of the filtering result.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c">npy_intp dims[] <span style="color:#f92672">=</span> {h, w, <span style="color:#ae81ff">3</span> };
+PyObject <span style="color:#f92672">*</span>image <span style="color:#f92672">=</span> PyArray_SimpleNew(<span style="color:#ae81ff">3</span>, dims, NPY_UBYTE);
+<span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>image) {
+fprintf(stderr, <span style="color:#e6db74">&#34;failed to allocate array</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>);
+<span style="color:#66d9ef">return</span> Py_None;
+}
+</code></pre></div><p>Do not mistake the order of (height) x (width) x (channel).</p>
+<p>The object secured as an array can be directly cast to a pointer to an array structure.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c">PyArrayObject <span style="color:#f92672">*</span>dstarray <span style="color:#f92672">=</span> (PyArrayObject <span style="color:#f92672">*</span>)image;
+</code></pre></div><p>Apply the filter.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> y <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; y <span style="color:#f92672">&lt;</span>h; y<span style="color:#f92672">++</span>) {
+uint8_t <span style="color:#66d9ef">const</span> <span style="color:#f92672">*</span>src <span style="color:#f92672">=</span> (uint8_t <span style="color:#66d9ef">const</span> <span style="color:#f92672">*</span>)srcarray<span style="color:#f92672">-&gt;</span>data <span style="color:#f92672">+</span> y <span style="color:#f92672">*</span> w <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span>;
+uint8_t <span style="color:#f92672">*</span>dst <span style="color:#f92672">=</span> (uint8_t <span style="color:#f92672">*</span>)dstarray<span style="color:#f92672">-&gt;</span>data <span style="color:#f92672">+</span> y <span style="color:#f92672">*</span> w <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span>;
+<span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; x <span style="color:#f92672">&lt;</span>w; x<span style="color:#f92672">++</span>) {
+uint8_t r <span style="color:#f92672">=</span> src[x <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0</span>];
+uint8_t g <span style="color:#f92672">=</span> src[x <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>];
+uint8_t b <span style="color:#f92672">=</span> src[x <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">2</span>];
+r <span style="color:#f92672">=</span> pow(r <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>, <span style="color:#ae81ff">0.62</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">205</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">19</span>;
+g <span style="color:#f92672">=</span> pow(g <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>, <span style="color:#ae81ff">1.00</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">182</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">17</span>;
+b <span style="color:#f92672">=</span> pow(b <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>, <span style="color:#ae81ff">1.16</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">156</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">21</span>;
+dst[x <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> r;
+dst[x <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> g;
+dst[x <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> b;
+}
+}
+</code></pre></div><p>Return the object and finish.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-.c" data-lang=".c"><span style="color:#66d9ef">return</span> image;
+}
+</code></pre></div><p>that&rsquo;s all.</p>
+<p>Error handling is omitted. In case the function returns <code>None</code> (<code>Py_None</code>), such as when an invalid image file is received, please handle the error appropriately in the actual program.</p>
+<p>As I wrote at the beginning, the full source code is <strong><a href="https://github.com/soramimi/pymodule-image-filter">here</a></strong></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/61222/77fca117-8c92-a8e1-14ac-6745941b5163.png" alt="image.png"></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

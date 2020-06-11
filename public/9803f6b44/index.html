@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Machine learning model inference web API server configuration [FastAPI implementation example available] | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Machine learning model inference web API server configuration [FastAPI implementation example available]</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 21, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fastapi"> FastAPI</a></code></small>
+
+</p>
+<pre><code>## Purpose of this article
+</code></pre>
+<p>Introducing a typical configuration of machine learning inference web API. I think that the content can be read without necessarily having knowledge of WEB or machine learning. (Excluding implementation example)
+The configuration to introduce is based on my experience of making inference web APIs for some machine learning models in my work, but since it is my personal opinion, if you have any suggestions, please let me know in the comments. I&rsquo;m happy.
+In the implementation example, the web framework uses Fast API from the viewpoint of handling asynchronous processing and simplicity of implementation.</p>
+<h2 id="table-of-contents">table of contents</h2>
+<ol>
+<li>Structure of machine learning inference web API</li>
+<li>Implementation example</li>
+</ol>
+<h2 id="1-machine-learning-inference-web-api-configuration">1. Machine learning inference web API configuration</h2>
+<p>In this article, I will introduce two patterns.</p>
+<p>Note) First, I will explain the common parts. Basically, only the common parts need the knowledge of machine learning. If you are not familiar with machine learning or you are not familiar with web, you can share the role with the common part and the part described later, so you can let me know.</p>
+<h3 id="inference-api-common-part">Inference API (common part)</h3>
+<p>If you want to infer a learned model, you should generally build the following machine learning model inference API.
+Even if you are only developing on a local PC or Jupyter Notebook, I think that you can create such an API (pipeline).</p>
+<p>I will omit the details, but for convenience of load balancing and model management, I think it is okay to cut out only APIs that use machine learning models for servers on the cloud (Reference: <a href="https://cloud.google.com/ai-platform/prediction/docs">GCP AI platform Prediction</a>). In the case of a heavy model that has a performance problem if you do not use the GPU for not only the load but also the inference, the server for common WEB applications cannot handle it, so I think it is more flexible to be able to separate it.
+Also, I think that the configuration will be the same when using an external service that uses a trained model.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/b96269e2-014b-5caf-f634-561279170c7d.png" alt="online_vs_batch-Copy of online prediction API.png"></p>
+<p>As the amount of data increases, I think it will be necessary to devise ways such as replacing preprocessing with a large-scale data processing engine such as Google Cloud Dataflow.</p>
+<p>When making a web API based on the inference API developed on the above local PC or Jupyter Notebook, there are mainly two types of patterns. The handling of input/output data differs for these.</p>
+<ul>
+<li>1.1. Online prediction (also called HTTP prediction)</li>
+<li>1.2. Batch prediction</li>
+</ul>
+<p>(The name used in GCP&rsquo;s AI platform is used. Reference: <a href="https://cloud.google.com/ml-engine/docs/tensorflow/online-vs-batch-prediction?hl=ja">Online prediction vs. batch prediction</a>)</p>
+<h3 id="11-online-prediction">1.1. Online prediction</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/a672a576-6dae-3cda-913f-a643f5ab1f7d.png" alt="online prediction API.png"></p>
+<p>When the http request comes, the ML function is operated and the output is immediately returned as http response. Load the weight only once when starting the server. When loading weights, it is easier to change the model if the weights are acquired from cloud storage (such as google storage).</p>
+<h4 id="benefits">Benefits</h4>
+<ul>
+<li>Move it by moving the inference function that works locally to the web framework.</li>
+<li>Because the inference result is returned just by hitting one API, it becomes an easy to hit API</li>
+<li>Fast response when model is small and data is small</li>
+</ul>
+<h4 id="disadvantage">Disadvantage</h4>
+<ul>
+<li>In terms of load balancing, web APIs are often set to time out in tens of seconds to minutes, so if inference takes a long time, processing will fail. So it&rsquo;s not suitable for handling heavy models or large amounts of data at once.</li>
+</ul>
+<h3 id="12-batch-prediction">1.2. Batch prediction</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/d371c95f-7e2f-1f40-d113-5abd10323945.png" alt="batch prediction API.png"></p>
+<p>If you can&rsquo;t or don&rsquo;t need to return the response immediately, store the inference result of ML API in some storage without directly responding as follows. You can think of the process in three stages as follows. (If 2 and 3 are separated, upload API can be integrated with ML API)</p>
+<ol>
+<li>upload API: Store input data in Storage (Database, cloud storage, etc.)</li>
+<li>ML API (Asynchronous execution): Get data from Storage, run ML function, and save the result to Storage. However, the response is returned before the processing is completed.</li>
+<li>download API: Get results from Storage and return</li>
+</ol>
+<p>Each API can be loosely coupled. Therefore, the upload API and download API can be implemented quite freely.
+There are various ways to use it.</p>
+<ul>
+<li>Accumulate input data for a certain period of time and infer at the end of the day</li>
+<li>Inference using a complicated model that will time out</li>
+<li>Cache the inference result and do not repeatedly infer the same input</li>
+<li>Such</li>
+</ul>
+<p>Also, the implementation of upload and download APIs is not a problem for languages other than Python, and if you can read and write to the same storage, you can have APIs on different servers. You can read and write to Storage directly from the front end without going through the API. Especially when the input and output are images, it will be a simpler flow to handle cloud storage directly.</p>
+<h4 id="benefits-1">Benefits</h4>
+<ul>
+<li>No longer fail due to timeout</li>
+<li>High degree of freedom</li>
+<li>Learning API can be implemented with similar configuration</li>
+</ul>
+<h4 id="disadvantage-1">Disadvantage</h4>
+<ul>
+<li>Difficult to use because the configuration is more complicated than online prediction</li>
+<li>Processing takes longer than online prediction</li>
+</ul>
+<h2 id="2-implementation-example">2. Implementation example</h2>
+<p>Let&rsquo;s implement the online prediction and batch prediction APIs with FastAPI.
+If you look at the following example, I think that if you properly function the inference pipeline locally, it seems that the hurdle is quite low to make it a web API.</p>
+<h3 id="do-not-do">Do not do</h3>
+<p>This article does not cover the following:</p>
+<ul>
+<li>security</li>
+<li>deploy</li>
+</ul>
+<h3 id="what-is-fast-api">What is Fast API</h3>
+<p>The Python web framework, which is a micro-framework like Flask.
+Its strengths are high performance, ease of writing, design with a strong focus on production operations, and modern functions.
+Especially, asynchronous processing is easy to handle.</p>
+<p>The following assumes basic knowledge of FastAPI.
+If you want to know the details, please refer to the following as appropriate.</p>
+<ul>
+<li><a href="https://fastapi.tiangolo.com/">Official Doc</a></li>
+<li><a href="https://qiita.com/bee2/items/75d9c0d7ba20e7a4a0e9">[FastAPI] Getting Started with ASGI Web Framework FastAPI made by Python</a></li>
+</ul>
+<h3 id="inference-api-common-part-1">Inference API (common part)</h3>
+<p>To be versatile, we define a very loose mock.
+It has no particular meaning, but since it is simple, it is a task of sentiment analysis of natural language processing.</p>
+<p>The required functions are as follows. However, if only the model is cut out to another server, it is not necessary to retain the load and model.</p>
+<ul>
+<li>Load model instance using weight load, joblib, pickle, etc.</li>
+<li>Model retention</li>
+<li>Inference pipeline</li>
+</ul>
+<p>This time, we will use predict to return random emotions. Since I want to make the processing time realistic, I freeze it for 20 seconds at load and freeze it for 10 seconds at predict.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:ml.py" data-lang="python:ml.py"><span style="color:#f92672">from</span> random <span style="color:#f92672">import</span> choice
+<span style="color:#f92672">from</span> time <span style="color:#f92672">import</span> sleep
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MockMLAPI</span>:
+    <span style="color:#66d9ef">def</span> __init__(self):
+        <span style="color:#75715e"># model instanse</span>
+        self<span style="color:#f92672">.</span>model <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load</span>(self, filepath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        when server is activated, load weight or use joblib or pickle for performance improvement.
+</span><span style="color:#e6db74">        then, assign pretrained model instance to self.model.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        sleep(<span style="color:#ae81ff">20</span>)
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">predict</span>(self, x):
+        <span style="color:#e6db74">&#34;&#34;&#34;implement followings
+</span><span style="color:#e6db74">        -Load data
+</span><span style="color:#e6db74">        -Preprocess
+</span><span style="color:#e6db74">        -Prediction using self.model
+</span><span style="color:#e6db74">        -Post-process
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        sleep(<span style="color:#ae81ff">10</span>)
+        preds <span style="color:#f92672">=</span> [choice([<span style="color:#e6db74">&#39;happy&#39;</span>,<span style="color:#e6db74">&#39;sad&#39;</span>,<span style="color:#e6db74">&#39;angry&#39;</span>]) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(x))]
+        out <span style="color:#f92672">=</span> [{<span style="color:#e6db74">&#39;text&#39;</span>: t<span style="color:#f92672">.</span>text,<span style="color:#e6db74">&#39;sentiment&#39;</span>: s} <span style="color:#66d9ef">for</span> t, s <span style="color:#f92672">in</span> zip(x, preds)]
+        <span style="color:#66d9ef">return</span> out
+</code></pre></div><h3 id="requestresponse-data-format">Request/Response data format</h3>
+<p>Defines the request data format.
+I will try to support multiple inputs as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;data&#34;</span>: [
+    {<span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;hogehoge&#34;</span>},
+    {<span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;fugafuga&#34;</span>}
+  ]
+}
+</code></pre></div><p>The response data is formatted so that the inference result is added to the input and returned.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+  <span style="color:#f92672">&#34;prediction&#34;</span>: [
+    {<span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;hogehoge&#34;</span>, <span style="color:#f92672">&#34;sentiment&#34;</span>: <span style="color:#e6db74">&#34;angry&#34;</span>},
+    {<span style="color:#f92672">&#34;text&#34;</span>: <span style="color:#e6db74">&#34;fugafuga&#34;</span>, <span style="color:#f92672">&#34;sentiment&#34;</span>: <span style="color:#e6db74">&#34;sad&#34;</span>}
+  ]
+}
+</code></pre></div><p>Therefore, Schema is defined as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:schemas.py" data-lang="python:schemas.py"><span style="color:#f92672">from</span> pydantic <span style="color:#f92672">import</span> BaseModel
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> List
+
+<span style="color:#75715e"># requestclass Text(BaseModel):</span>
+    text: str
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Data</span>(BaseModel):
+    data: List[Text]
+
+<span style="color:#75715e"># response</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Output</span>(Text):
+    sentiment: str
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Pred</span>(BaseModel):
+    prediction: List[Output]
+</code></pre></div><h3 id="21-online-prediction">2.1. Online prediction</h3>
+<p>We will implement a web API that makes online predictions using the common parts above.
+All you need is</p>
+<ul>
+<li>Load a trained machine learning model at server startup</li>
+<li>Receive data, infer with ML API, return results</li>
+</ul>
+<p>is. Implement the following to complete the minimum API.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> FastAPI
+<span style="color:#f92672">from</span> ml_api <span style="color:#f92672">import</span> schemas
+<span style="color:#f92672">from</span> ml_api.ml <span style="color:#f92672">import</span> MockMLAPI
+
+app <span style="color:#f92672">=</span> FastAPI()
+ml <span style="color:#f92672">=</span> MockMLAPI()
+ml<span style="color:#f92672">.</span>load() <span style="color:#75715e"># load weight or model instance using joblib or pickle</span>
+
+<span style="color:#a6e22e">@app.post</span>(<span style="color:#e6db74">&#39;/prediction/online&#39;</span>, response_model<span style="color:#f92672">=</span>schemas<span style="color:#f92672">.</span>Pred)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">online_prediction</span>(data: schemas<span style="color:#f92672">.</span>Data):
+    preds <span style="color:#f92672">=</span> ml<span style="color:#f92672">.</span>predict(data<span style="color:#f92672">.</span>data)
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;prediction&#34;</span>: preds}
+</code></pre></div><h4 id="operation-check">Operation check</h4>
+<p>Check the operation locally.
+Post sample input with CuRL. Then you can see that the expected output is returned.
+Also, since it took 10 seconds for the response to come back, it can be confirmed that it only took the predict processing time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ curl -X POST <span style="color:#e6db74">&#34;http://localhost:8000/prediction/online&#34;</span> -H <span style="color:#e6db74">&#34;accept: application/json&#34;</span> -H <span style="color:#e6db74">&#34;Content-Type: application/json&#34;</span> -d <span style="color:#e6db74">&#34;{\&#34;data\&#34;:[{ \&#34;text\&#34;:\&#34;hogehoge\&#34;},{\&#34;text\&#34;:\&#34;fugafuga\&#34;}]}&#34;</span> -w <span style="color:#e6db74">&#34;\nelapsed time: %{time_starttransfer} s\n&#34;</span>
+
+<span style="color:#f92672">{</span><span style="color:#e6db74">&#34;prediction&#34;</span>:<span style="color:#f92672">[{</span><span style="color:#e6db74">&#34;text&#34;</span>:<span style="color:#e6db74">&#34;hogehoge&#34;</span>,<span style="color:#e6db74">&#34;sentiment&#34;</span>:<span style="color:#e6db74">&#34;angry&#34;</span><span style="color:#f92672">}</span>,<span style="color:#f92672">{</span><span style="color:#e6db74">&#34;text&#34;</span>:<span style="color:#e6db74">&#34;fugafuga&#34;</span>,<span style="color:#e6db74">&#34;sentiment&#34;</span>:<span style="color:#e6db74">&#34;happy&#34;</span><span style="color:#f92672">}]}</span>
+elapsed time: 10.012029 s
+</code></pre></div><h3 id="21-batch-prediction">2.1. Batch prediction</h3>
+<p>Implement a web API that performs batch prediction using the common parts above.</p>
+<ol>
+<li>upload API: Store input data in Storage (Database, cloud storage, etc.)</li>
+<li>ML API (Asynchronous execution): Get data from Storage, run ML function, and save the result to Storage. However, the response is returned before the processing is completed.</li>
+<li>download API: Get results from Storage and return</li>
+</ol>
+<h4 id="inputoutput">Input/Output</h4>
+<p>Originally, you should save the data to cloud&rsquo;s storage or DB, but for simplicity, in this article we will save the data in the local storage in csv format.
+First, define the functions for reading and writing. A file name is created with a random character string when saving input data, and a series of batch predictions is performed by exchanging the random character string with api.
+The implementation may seem long, but in reality, there are only three processes below.</p>
+<ul>
+<li>read and write csv</li>
+<li>adjust path of file</li>
+<li>Random string generation</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:io.py" data-lang="python:io.py"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> csv
+<span style="color:#f92672">from</span> random <span style="color:#f92672">import</span> choice
+<span style="color:#f92672">import</span> string
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> List
+<span style="color:#f92672">from</span> ml_api <span style="color:#f92672">import</span> schemas
+
+storage <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(__file__),<span style="color:#e6db74">&#39;local_storage&#39;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_csv</span>(data, filepath: str, fieldnames<span style="color:#f92672">=</span>None):
+    <span style="color:#66d9ef">with</span> open(filepath,<span style="color:#e6db74">&#39;w&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        writer <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>DictWriter(f, fieldnames<span style="color:#f92672">=</span>fieldnames)
+
+        writer<span style="color:#f92672">.</span>writeheader()
+        <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> data:
+            writer<span style="color:#f92672">.</span>writerow(f)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_csv</span>(filepath: str):
+    <span style="color:#66d9ef">with</span> open(filepath,<span style="color:#e6db74">&#39;r&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        reader <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>DictReader(f)
+        out <span style="color:#f92672">=</span> list(reader)
+    <span style="color:#66d9ef">return</span> out
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_inputs</span>(data: schemas<span style="color:#f92672">.</span>Data, length<span style="color:#f92672">=</span><span style="color:#ae81ff">8</span>):
+    letters <span style="color:#f92672">=</span> string<span style="color:#f92672">.</span>ascii_lowercase
+    filename <span style="color:#f92672">=</span> <span style="color:#e6db74">``</span><span style="color:#f92672">.</span>join(choice(letters) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(length)) <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;.csv&#39;</span>
+    filepath <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(storage,<span style="color:#e6db74">&#39;inputs&#39;</span>, filename)
+    save_csv(data<span style="color:#f92672">=</span>data<span style="color:#f92672">.</span>dict()[<span style="color:#e6db74">&#39;data&#39;</span>], filepath<span style="color:#f92672">=</span>filepath, fieldnames<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;text&#39;</span>])
+    <span style="color:#66d9ef">return</span> filename
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_inputs</span>(filename: str):
+    filepath <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(storage,<span style="color:#e6db74">&#39;inputs&#39;</span>, filename)
+    texts <span style="color:#f92672">=</span> load_csv(filepath<span style="color:#f92672">=</span>filepath)
+    texts <span style="color:#f92672">=</span> [schemas<span style="color:#f92672">.</span>Text(<span style="color:#f92672">**</span>f) <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> texts]
+    <span style="color:#66d9ef">return</span> texts
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">save_outputs</span>(preds: List[str], filename):
+    filepath <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(storage,<span style="color:#e6db74">&#39;outputs&#39;</span>, filename)
+    save_csv(data<span style="color:#f92672">=</span>preds, filepath<span style="color:#f92672">=</span>filepath, fieldnames<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;text&#39;</span>,<span style="color:#e6db74">&#39;sentiment&#39;</span>])
+    <span style="color:#66d9ef">return</span> filename
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_outputs</span>(filename: str):
+    filepath <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(storage,<span style="color:#e6db74">&#39;outputs&#39;</span>, filename)
+    <span style="color:#66d9ef">return</span> load_csv(filepath<span style="color:#f92672">=</span>filepath)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">check_outputs</span>(filename: str):
+    filepath <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(storage,<span style="color:#e6db74">&#39;outputs&#39;</span>, filename)
+    <span style="color:#66d9ef">return</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(filepath)
+</code></pre></div><h4 id="web-api">web API</h4>
+<p>There are 3 APIs, upload, inference, and download. Note that batch inference does not immediately return a response, so the model is loaded each time the API is hit.</p>
+<p>Here, Backgournd Tasks of Fast API is used to process the model inference asynchronously. The inference process is done in the background, and the response can be returned first without waiting for the end.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> FastAPI
+<span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> BackgroundTasks
+<span style="color:#f92672">from</span> fastapi <span style="color:#f92672">import</span> HTTPException
+<span style="color:#f92672">from</span> ml_api <span style="color:#f92672">import</span> schemas, io
+<span style="color:#f92672">from</span> ml_api.ml <span style="color:#f92672">import</span> MockBatchMLAPI
+
+app <span style="color:#f92672">=</span> FastAPI()
+
+<span style="color:#a6e22e">@app.post</span>(<span style="color:#e6db74">&#39;/upload&#39;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">upload</span>(data: schemas<span style="color:#f92672">.</span>Data):
+    filename <span style="color:#f92672">=</span> io<span style="color:#f92672">.</span>save_inputs(data)
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;filename&#34;</span>: filename}
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">batch_predict</span>(filename: str):
+    <span style="color:#e6db74">&#34;&#34;&#34;batch predict method for background process&#34;&#34;&#34;</span>
+    ml <span style="color:#f92672">=</span> MockMLAPI()
+    ml<span style="color:#f92672">.</span>load()
+    data <span style="color:#f92672">=</span> io<span style="color:#f92672">.</span>load_inputs(filename)
+    pred <span style="color:#f92672">=</span> ml<span style="color:#f92672">.</span>predict(data)
+    io<span style="color:#f92672">.</span>save_outputs(pred, filename)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;finished prediction&#39;</span>)
+
+<span style="color:#a6e22e">@app.get</span>(<span style="color:#e6db74">&#39;/prediction/batch&#39;</span>)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">batch_prediction</span>(filename: str, background_tasks: BackgroundTasks):
+    <span style="color:#66d9ef">if</span> io<span style="color:#f92672">.</span>check_outputs(filename):
+        <span style="color:#66d9ef">raise</span> HTTPException(status_code<span style="color:#f92672">=</span><span style="color:#ae81ff">404</span>, detail<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;the result of prediction already exists&#34;</span>)
+
+    background_tasks<span style="color:#f92672">.</span>add_task(ml<span style="color:#f92672">.</span>batch_predict, filename)
+    <span style="color:#66d9ef">return</span> {}
+
+<span style="color:#a6e22e">@app.get</span>(<span style="color:#e6db74">&#39;/download&#39;</span>, response_model<span style="color:#f92672">=</span>schemas<span style="color:#f92672">.</span>Pred)
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">download</span>(filename: str):
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> io<span style="color:#f92672">.</span>check_outputs(filename):
+        <span style="color:#66d9ef">raise</span> HTTPException(status_code<span style="color:#f92672">=</span><span style="color:#ae81ff">404</span>, detail<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;the result of prediction does not exist&#34;</span>)
+
+    preds <span style="color:#f92672">=</span> io<span style="color:#f92672">.</span>load_outputs(filename)
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#34;prediction&#34;</span>: preds}
+</code></pre></div><h4 id="operation-check-1">Operation check</h4>
+<p>Check the operation in the same way as the online prediction.
+Post sample input with CuRL. Then you can see that the expected output is returned.
+It also waits 30 seconds before hitting the download API. But you can see that each response is returning very quickly.</p>
+<pre><code class="language-bash$" data-lang="bash$">{&quot;filename&quot;:&quot;fdlelteb.csv&quot;}
+elapsed time: 0.010242 s
+
+$ curl -X GET &quot;http://localhost:8000/prediction/batch?filename=fdlelteb.csv&quot; -w &quot;\nelapsed time: %{time_starttransfer} s\n&quot;
+{}
+elapsed time: 0.007223 s
+
+$ curl -X GET &quot;http://localhost:8000/download?filename=fdlelteb.csv&quot; -w &quot;\nelapsed time: %{time_starttransfer} s\n&quot; [12:58:27]
+{&quot;prediction&quot;:[{&quot;text&quot;:&quot;hogehoge&quot;,&quot;sentiment&quot;:&quot;happy&quot;},{&quot;text&quot;:&quot;fugafuga&quot;,&quot;sentiment&quot;:&quot;sad&quot;}]}
+elapsed time: 0.008825 s
+</code></pre><h2 id="in-conclusion">in conclusion</h2>
+<p>We introduced two typical inference web API configurations for machine learning: online prediction and batch prediction.
+Although it requires some twists from the general web API configuration, I also introduced an implementation example that uses FastAPI to build simply. It would be nice if you could feel that the hurdle is low to make it a web API if you properly function the inference pipeline locally.
+The excitement of machine learning is not stopping, but I feel that the information such as the configuration of the web API is still small ~~ (It seems quite possible. I added a link collection.). I think the configuration introduced in this article is also rough. If you have any improvements, please feel free to comment!</p>
+<h2 id="related-links">Related Links</h2>
+<p>Links for content that could not be handled in this article.</p>
+<ul>
+<li><a href="https://qiita.com/shogomuranushi/items/6af61b9f24d59eee9606">N things to keep in mind when running a machine learning platform for inference in production</a></li>
+<li><a href="https://tech.mercari.com/entry/ml-system-design">Publish the machine learning system design pattern. (Mercari Engineering Blog)</a></li>
+<li><a href="https://qiita.com/cvusk/items/25bd9f85acda4080036a">Machine learning system configuration example (reference)</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

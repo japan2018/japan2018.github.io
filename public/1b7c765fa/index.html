@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Automatically generate a polarity dictionary for emotion analysis | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Automatically generate a polarity dictionary for emotion analysis</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 7, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/sentiment-analysis"> sentiment analysis</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This is the 7th day of &ldquo;Natural Language Processing Advent Calendar 2019&rdquo;.
+I felt the problem in the article of &ldquo;<a href="https://qiita.com/gk/items/e49f68d7e2fed6e300ea">Score the negative/positive degree of news articles by sentiment analysis</a>&rdquo; that I posted earlier, **I can use polar dictionary too much I tried to solve the &ldquo;no problem&rdquo; **. This time we will challenge the automatic generation of a polar dictionary using fasttext.</p>
+<p>#reference
+I have referred to the following when learning fasttext.</p>
+<ul>
+<li><a href="https://dot-blog.jp/news/fasttext-natural-language-machine-learning-tutorial/">Summary of steps to generate learning model of natural language (Japanese) with fastText</a></li>
+<li><a href="https://qiita.com/Hironsan/items/513b9f93752ecee9e670">We have released a trained model of fastText</a></li>
+</ul>
+<p>#What is sentiment analysis</p>
+<h2 id="sentiment-analysis-overview">Sentiment analysis overview</h2>
+<p>Sentiment analysis is a method of analyzing the sentiment of the described contents ** using various types of text information using text mining and machine learning techniques. The positive or negative one-axis analysis is the most orthodox impression, but there are also those that have gone into more detailed emotion analysis.</p>
+<p>##Sentiment analysis method
+The most common method of sentiment analysis is to focus on words contained in sentences, based on the idea that positive (negative) sentences should contain their own words. A list of such specific words is called a &ldquo;polarity dictionary&rdquo;, and this polarity dictionary is used in this sentiment analysis.</p>
+<h2 id="polar-dictionary">Polar dictionary</h2>
+<h3 id="about-polar-dictionaries">About polar dictionaries</h3>
+<p>A polar dictionary is a dictionary in which each word or term is semantically flagged as &ldquo;positive&rdquo; or &ldquo;negative.&rdquo; Some have only &ldquo;positive&rdquo; and &ldquo;negative&rdquo; flags, while others have positive and negative degrees given as discrete score numbers.</p>
+<h2 id="issues-in-sentiment-analysis">Issues in sentiment analysis</h2>
+<h3 id="there-are-few-useful-polar-dictionaries">There are few useful polar dictionaries</h3>
+<p>I wanted to do sentiment analysis and searched various polar dictionaries, but there were only two polar dictionaries that I could actually use. <a href="http://www.lr.pi.titech.ac.jp/~takamura/pndic_ja.html">Word Emotion Polarity Correspondence Table</a>hasanegative/positivediscretevalue(-1to1)foralargenumberofwords.(Intherangeof) is attached, it is very convenient, but it is prohibited for commercial use.</p>
+<ul>
+<li><a href="http://www.lr.pi.titech.ac.jp/~takamura/pndic_ja.html">Word emotion polarity correspondence table</a></li>
+<li><a href="https://www.cl.ecei.tohoku.ac.jp/index.php?Open%20Resources%2FJapanese%20Sentiment%20Polarity%20Dictionary">Japanese evaluation polarity dictionary</a></li>
+</ul>
+<h3 id="tuning-is-very-troublesome">Tuning is very troublesome</h3>
+<p>In fact, even if it is said that each word is assigned a value of negative/positive degree, whether the word should be judged as positive or negative depending on the object to be analyzed, the context, and the viewpoint of performing negative/positive inversion. Is different. ** Therefore, the polarity dictionary should be tuned as a whole according to the task, but if you try to do it, it will take a very long time.</p>
+<h2 id="solution-to-the-above-issues">Solution to the above issues</h2>
+<p>Automatic generation of polar dictionary using ###fasttext
+As a solution to the above problem, I would like to create a program that can easily generate a polarity dictionary automatically and is easy to tune. **</p>
+<h1 id="automatic-generation-of-polarity-dictionary">Automatic generation of polarity dictionary</h1>
+<h2 id="outline-of-automatic-generation-program">Outline of automatic generation program</h2>
+<p>I made a polar dictionary automatic generation program with the following mechanism.</p>
+<ol>
+<li>Specify multiple <strong>&ldquo;very positive words&rdquo;</strong> and <strong>&ldquo;very negative words&rdquo;</strong> in the documents you want to judge negative/positive.</li>
+<li>Using a fasttext model in which all wikipedia Japanese pages have been learned, the average similarity between the above &ldquo;&ldquo;very positive words&rdquo;<strong>&rdquo; and the &ldquo;very negative&rdquo; for the morphemes in each sentence &ldquo;Meaningful words&rdquo;</strong> measure the average similarity.</li>
+<li>The polarity with the higher average similarity is used. If it is &ldquo;positive&rdquo;, the value of similarity is left as it is, and if it is &ldquo;negative&rdquo;, it is given a negative value to give the negative/positive score of that morpheme.</li>
+<li>Convert the score scale of all words from -1 to 1 to complete the polarity dictionary.</li>
+</ol>
+<h2 id="implementation-of-automatic-polarity-dictionary-generation-program">Implementation of automatic polarity dictionary generation program</h2>
+<p>About ###fasttext
+This time, fasttext is used to measure the similarity between words. I also compared with Word2vec, but fasttext seems to be more resistant to antonyms, so I chose fasttext.
+I created a fasttext model from scratch, but it took 300 hours to learn&hellip;
+There are people who have published the learned model, so (<a href="https://qiita.com/Hironsan/items/513b9f93752ecee9e670">Published the learned model of fastText</a> etc.
+) So basically I think that there is no problem in using that.</p>
+<p>Also, since there are some people who wrote about fasttext on Advent Calendar, please have a look.
+<a href="https://qiita.com/MonaCat/items/c26fa660a711f010c39a">Let&rsquo;s use the distributed expression of words quickly with fastText! </a></p>
+<h3 id="automatic-determination-of-the-degree-of-negativepositive">Automatic determination of the degree of negative/positive</h3>
+<p>First, write a program to judge the degree of negative/positive of a specific word.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> gensim
+Load the <span style="color:#75715e">#fasttext model</span>
+model <span style="color:#f92672">=</span> gensim<span style="color:#f92672">.</span>models<span style="color:#f92672">.</span>KeyedVectors<span style="color:#f92672">.</span>load_word2vec_format(<span style="color:#e6db74">&#39;./wikimodel_20191102.bin&#39;</span>, binary<span style="color:#f92672">=</span>True)
+
+<span style="color:#75715e"># Optionally specify &#34;very positive words&#34; and &#34;very negative words&#34;</span>
+posi_list <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;Excellent&#39;</span>,<span style="color:#e6db74">&#39;Good&#39;</span>,<span style="color:#e6db74">&#39;Rejoice&#39;</span>,<span style="color:#e6db74">&#39;Praise&#39;</span>,<span style="color:#e6db74">&#39;Medeai&#39;</span>,<span style="color:#e6db74">&#39;Clever&#39;</span>,<span style="color:#e6db74">&#39;Good&#39;</span>,<span style="color:#e6db74">&#39;Suitable&#39;</span>,<span style="color:#e6db74">&#39;Tenbare&#39;</span>,
+ <span style="color:#e6db74">&#39;Celebrate&#39;</span>,<span style="color:#e6db74">&#39;achievement&#39;</span>,<span style="color:#e6db74">&#39;award&#39;</span>,<span style="color:#e6db74">&#39;happy&#39;</span>,<span style="color:#e6db74">&#39;joy&#39;</span>,<span style="color:#e6db74">&#39;intelligence&#39;</span>,<span style="color:#e6db74">&#39;virtues&#39;</span>,<span style="color:#e6db74">&#39;talent&#39;</span>,<span style="color:#e6db74">&#39;great&#39;</span>,<span style="color:#e6db74">&#39;good&#39;</span>,<span style="color:#e6db74">&#39;praise&#39;</span>,
+ <span style="color:#e6db74">&#34;Appropriate&#34;</span>, <span style="color:#e6db74">&#34;worship&#34;</span>, <span style="color:#e6db74">&#34;help&#34;</span>, <span style="color:#e6db74">&#34;outstanding&#34;</span>, <span style="color:#e6db74">&#34;Shimizu&#34;</span>, <span style="color:#e6db74">&#34;heroic&#34;</span>, <span style="color:#e6db74">&#34;assortment&#34;</span>, <span style="color:#e6db74">&#34;lucky&#34;</span>, <span style="color:#e6db74">&#34;lucky&#34;</span>, <span style="color:#e6db74">&#34;excellent&#34;</span>]
+
+nega_list <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;Bad&#39;</span>,<span style="color:#e6db74">&#39;Die&#39;</span>,<span style="color:#e6db74">&#39;Ill&#39;</span>,<span style="color:#e6db74">&#39;Awful&#39;</span>,<span style="color:#e6db74">&#39;Abusive&#39;</span>,<span style="color:#e6db74">&#39;Dip&#39;</span>,<span style="color:#e6db74">&#39;Humble&#39;</span>,
+ <span style="color:#e6db74">&#34;Poor&#34;</span>, <span style="color:#e6db74">&#34;Suffering&#34;</span>, <span style="color:#e6db74">&#34;Suffering&#34;</span>, <span style="color:#e6db74">&#34;Stick&#34;</span>, <span style="color:#e6db74">&#34;Severe&#34;</span>, <span style="color:#e6db74">&#34;Difficult&#34;</span>, <span style="color:#e6db74">&#34;Kill&#34;</span>, <span style="color:#e6db74">&#34;Difficult&#34;</span>, <span style="color:#e6db74">&#34;Rough&#34;</span>,
+ <span style="color:#e6db74">&#39;Woeful&#39;</span>,<span style="color:#e6db74">&#39;blame&#39;</span>,<span style="color:#e6db74">&#39;enemy&#39;</span>,<span style="color:#e6db74">&#39;streak&#39;</span>,<span style="color:#e6db74">&#39;scorn&#39;</span>,<span style="color:#e6db74">&#39;suffering&#39;</span>,<span style="color:#e6db74">&#39;spicy&#39;</span>,<span style="color:#e6db74">&#39;lonesome&#39;</span>,<span style="color:#e6db74">&#39;punishment&#39;</span>,<span style="color:#e6db74">&#39;unfaithful&#39;</span>,
+ <span style="color:#e6db74">&#34;Cold&#34;</span>, <span style="color:#e6db74">&#34;Don&#39;t go down&#34;</span>, <span style="color:#e6db74">&#34;Sorry&#34;</span>]
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">posi_nega_score</span>(x):
+    <span style="color:#75715e">#Positivity judgment</span>
+    posi <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> posi_list:
+        <span style="color:#66d9ef">try</span>:
+            n <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>similarity(i, x)
+            posi<span style="color:#f92672">.</span>append(n)
+        <span style="color:#66d9ef">except</span>:
+            <span style="color:#66d9ef">continue</span>
+    <span style="color:#66d9ef">try</span>:
+        posi_mean <span style="color:#f92672">=</span> sum(posi)<span style="color:#f92672">/</span>len(posi)
+    <span style="color:#66d9ef">except</span>:
+        posi_mean <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    <span style="color:#75715e"># Judgment of negative degree</span>
+    nega <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> nega_list:
+        <span style="color:#66d9ef">try</span>:
+            n <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>similarity(i, x)
+            nega<span style="color:#f92672">.</span>append(n)
+        <span style="color:#66d9ef">except</span>:
+            <span style="color:#66d9ef">continue</span>
+    <span style="color:#66d9ef">try</span>:
+        nega_mean <span style="color:#f92672">=</span> sum(nega)<span style="color:#f92672">/</span>len(nega)
+    <span style="color:#66d9ef">except</span>:
+        nega_mean <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">if</span> posi_mean<span style="color:#f92672">&gt;</span> nega_mean:
+        <span style="color:#66d9ef">return</span> posi_mean
+    <span style="color:#66d9ef">if</span> nega_mean <span style="color:#f92672">&gt;</span>posi_mean:
+        <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>nega_mean
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>
+
+</code></pre></div><p>If you use the above program to judge whether words are negative or positive, it will look like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(posi_nega_score(<span style="color:#e6db74">&#39;Excellent&#39;</span>))
+</code></pre></div><pre><code>0.2679512406197878
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(posi_nega_score(<span style="color:#e6db74">&#39;No&#39;</span>))
+</code></pre></div><pre><code>- 0.2425743742631032
+</code></pre><h3 id="polarity-dictionary-automatic-generation-program">Polarity dictionary automatic generation program</h3>
+<p>This time the data set will be <a href="https://www.rondhuit.com/download.html#ldcc">[livedoor news corpus]</a>.Ifyouareinterestedinthedetailsofthedatasetandthemethodofmorphologicalanalysis,pleasereferto<a href="https://qiita.com/gk/items/e49f68d7e2fed6e300ea">Postedinapreviouslypostedarticle</a>. I will. The result of morphological analysis is output like this.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/cea9ba1f-2e13-70e9-5756-9411dd4022d2.png" alt="Screenshot 2019-12-07 8.51.39.png"></p>
+<p>A polar dictionary is generated based on this data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+ddf <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;news_word.csv&#39;</span>)
+
+<span style="color:#75715e"># Assign a score to each word</span>
+ddf[<span style="color:#e6db74">&#39;score&#39;</span>] <span style="color:#f92672">=</span> ddf[<span style="color:#e6db74">&#39;word&#39;</span>]<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x :posi_nega_score(x))
+
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#75715e"># Adjust given score to range from -1 to 1</span>
+score <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(ddf[<span style="color:#e6db74">&#39;score&#39;</span>])
+score_std <span style="color:#f92672">=</span> (score<span style="color:#f92672">-</span>score<span style="color:#f92672">.</span>min())<span style="color:#f92672">/</span>(score<span style="color:#f92672">.</span>max()<span style="color:#f92672">-</span>score<span style="color:#f92672">.</span>min())
+score_scaled <span style="color:#f92672">=</span> score_std <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)) <span style="color:#f92672">+</span> (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+ddf[<span style="color:#e6db74">&#39;score&#39;</span>] <span style="color:#f92672">=</span> score_scaled
+</code></pre></div><p>Click here for the <strong>negative word top 20</strong> of the polar dictionary created by the above program.</p>
+<p>![Screenshot 2019-12-07 8.58.11.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/1fe490c8-1fe8-955b-b955-(8d2700fb92a0.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/1fe490c8-1fe8-955b-b955-(8d2700fb92a0.png)</a></p>
+<p>Click here for the top 20 positive words ** in the polar dictionary created by the above program.![Screenshot 2019-12-07 9.00.54.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/c3b28d14-be32-d1c6-328d-(1a4e68cc1cf6.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/c3b28d14-be32-d1c6-328d-(1a4e68cc1cf6.png)</a></p>
+<p>You can see that words like that are coming in properly. Some words have not been designated as negative words or positive words, so I think that the accuracy is relatively good.</p>
+<p>#Next
+Thank you for visiting our website.
+&ldquo;Advent Calendar&rdquo; was the first time I participated, but I would like to continue to actively participate.
+Tomorrow is <a href="https://qiita.com/oumugai">oumugai mori</a>! !</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

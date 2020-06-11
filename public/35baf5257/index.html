@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried rewriting the MNIST code of Chainer with PyTorch &#43; Ignite | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried rewriting the MNIST code of Chainer with PyTorch + Ignite</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 17, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/chainer"> Chainer</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch"> PyTorch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ignite"> Ignite</a></code></small>
+
+</p>
+<pre><code># TL;DR
+</code></pre>
+<p>The impression that I rewrote the MNIST code of Chainer to PyTorch was almost the same.
+The difference was in the layer above Updater in Chainer and the Ignite layer in PyTorch.
+Moreover, when <a href="https://github.com/chainer/chainer-pytorch-migration">chainer-pytorch-migration</a> is actually used, Extensions used in Chainer can also be used in Ignite, and PyTorch+Ignite can be used quite like Chainer.
+I think that even people who have been using Chainer can naturally get used to PyTorch+Ignite.</p>
+<h1 id="stop-development-of-chainer-by-pfn-and-adopt-pytorch">Stop development of Chainer by PFN and adopt PyTorch</h1>
+<p>As stated here <a href="https://preferred.jp/ja/news/pr20191205/">[1]</a>, it has been announced that PFN will finish Chainer development and move to PyTorch.</p>
+<blockquote>
+<p>Preferred Networks Co., Ltd. (Headquarters: Chiyoda-ku, Tokyo, President: Toru Nishikawa, Preferred Networks, PFN) uses the deep learning framework, which is the basic technology of research and development, from its own developed Chainer™. Migrate to PyTorch sequentially. At the same time, we will participate in the development of PyTorch by collaborating with Facebook, which develops PyTorch, and the PyTorch developer community. Chainer will enter the maintenance phase with the latest version v7, which is a major version update released today. For Chainer users, we provide documentation and libraries to help you transition to PyTorch.</p>
+</blockquote>
+<p>It doesn&rsquo;t mean that Chainer can&rsquo;t be used immediately, but Chainer users are gradually forced to move to other frameworks.</p>
+<h1 id="pfn-support-for-chainer-to-pytorch-migration">PFN support for Chainer to PyTorch migration</h1>
+<p>Although the end of Chainer development is a sudden announcement and I think many users were confused, PFN also assumes the situation and supports <a href="https://chainer.github.io/migration-guide/">Document [2]</a> and <a href="https://github.com/chainer/chainer-pytorch-migration">Library [ 3]</a> are provided.</p>
+<p>Looking at the above document, the correspondence between Chainer and PyTorch+Ignite is as follows.</p>
+<p><img width="758" alt=" screenshot 2019-12-17 15.32.28.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/111482/b86cbf5a-5450-965d-a32b-a2d8331ab25c.png"> cited from <a href="https://chainer.github.io/migration-guide/">[2]</a></p>
+<p>From the above,</p>
+<ul>
+<li>PyTorch supports the role of Chainer up to Optimizer</li>
+<li>Ignite supports the role of Updater/Trainer of Chainer</li>
+</ul>
+<p>So, if you want to write the learning steps yourself, you can write only with PyTorch, but if you want the learning steps to be supported by the framework like Chainer&rsquo;s Trainer, you need to use PyTorch+Ignite.</p>
+<h1 id="immediately-i-moved-from-chainer-to-pytorch--ignite">Immediately I moved from Chainer to PyTorch + Ignite</h1>
+<h2 id="code-to-be-migrated">Code to be migrated</h2>
+<p>The following link has a notebook for training and inferring MNIST using Chainer&rsquo;s Trainer.</p>
+<ul>
+<li><a href="https://chainer-colab-notebook.readthedocs.io/ja/latest/notebook/hands_on/chainer/begginers_hands_on/12_Try_Trainer_class.html">Chainer Begginer&rsquo;s Hands-on »Let&rsquo;s use Trainer</a></li>
+</ul>
+<p>This time I would like to rewrite the above code using PyTorch+Ignite.</p>
+<h2 id="transition-method-of-each-step">Transition method of each step</h2>
+<h3 id="read-part-of-sample-dataset">Read part of sample dataset</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> chainer.datasets <span style="color:#f92672">import</span> mnist
+
+train, test <span style="color:#f92672">=</span> mnist<span style="color:#f92672">.</span>get_mnist()
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> torchvision.datasets <span style="color:#f92672">import</span> MNIST
+<span style="color:#f92672">from</span> torchvision.transforms <span style="color:#f92672">import</span> ToTensor
+
+data_transform <span style="color:#f92672">=</span> ToTensor()
+
+train <span style="color:#f92672">=</span> MNIST(download<span style="color:#f92672">=</span>True, root<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;.&#34;</span>, transform<span style="color:#f92672">=</span>data_transform, train<span style="color:#f92672">=</span>True)
+test <span style="color:#f92672">=</span> MNIST(download<span style="color:#f92672">=</span>False, root<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;.&#34;</span>, transform<span style="color:#f92672">=</span>data_transform, train<span style="color:#f92672">=</span>False)
+</code></pre></div><ul>
+<li>the difference
+-This is the part that reads the sample data set, so I think that there is some difference, but in actual use it is a part that does not matter much even if there is a difference.</li>
+</ul>
+<h3 id="iterator---dataloader">Iterator -&gt; DataLoader</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> chainer <span style="color:#f92672">import</span> iterators
+
+batchsize <span style="color:#f92672">=</span> <span style="color:#ae81ff">128</span>
+
+train_iter <span style="color:#f92672">=</span> iterators<span style="color:#f92672">.</span>SerialIterator(train, batchsize)
+test_iter <span style="color:#f92672">=</span> iterators<span style="color:#f92672">.</span>SerialIterator(test, batchsize, False, False)
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> torch.utils.data <span style="color:#f92672">import</span> DataLoader
+
+batch_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">128</span>
+
+train_loader <span style="color:#f92672">=</span> DataLoader(train, batch_size<span style="color:#f92672">=</span>batch_size, shuffle<span style="color:#f92672">=</span>True)
+test_loader <span style="color:#f92672">=</span> DataLoader(test, batch_size<span style="color:#f92672">=</span>batch_size, shuffle<span style="color:#f92672">=</span>False)
+</code></pre></div><ul>
+<li>Difference (almost the same)
+-Is the argument a little different?</li>
+</ul>
+<h3 id="model-preparation">model preparation</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">import</span> chainer
+<span style="color:#f92672">import</span> chainer.links <span style="color:#f92672">as</span> L
+<span style="color:#f92672">import</span> chainer.functions <span style="color:#f92672">as</span> F
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MLP</span>(chainer<span style="color:#f92672">.</span>Chain):
+
+    <span style="color:#66d9ef">def</span> __init__(self, n_mid_units<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>, n_out<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>):
+        super(MLP, self)<span style="color:#f92672">.</span>__init__()
+        <span style="color:#66d9ef">with</span> self<span style="color:#f92672">.</span>init_scope():
+            self<span style="color:#f92672">.</span>l1<span style="color:#f92672">=</span>L<span style="color:#f92672">.</span>Linear(None, n_mid_units)
+            self<span style="color:#f92672">.</span>l2<span style="color:#f92672">=</span>L<span style="color:#f92672">.</span>Linear(None, n_mid_units)
+            self<span style="color:#f92672">.</span>l3<span style="color:#f92672">=</span>L<span style="color:#f92672">.</span>Linear(None, n_out)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, x):
+        h1 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>l1(x))
+        h2 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>l2(h1))
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>l3(h2)
+
+gpu_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># Set to -1 if you don&#39;t have a GPU</span>
+
+model <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Classifier(model)
+<span style="color:#66d9ef">if</span> gpu_id <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span>:
+    model<span style="color:#f92672">.</span>to_gpu(gpu_id)
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> torch <span style="color:#f92672">import</span> nn
+<span style="color:#f92672">import</span> torch.nn.functional <span style="color:#f92672">as</span> F
+<span style="color:#f92672">import</span> torch
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MLP</span>(nn<span style="color:#f92672">.</span>Module):
+
+    <span style="color:#66d9ef">def</span> __init__(self, n_mid_units<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>, n_out<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>):
+        super(MLP, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>l1 <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Linear(<span style="color:#ae81ff">784</span>, n_mid_units)
+        self<span style="color:#f92672">.</span>l2 <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Linear(n_mid_units, n_mid_units)
+        self<span style="color:#f92672">.</span>l3 <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Linear(n_mid_units, n_out)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, x):
+        x <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>flatten(x, start_dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        h1 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>l1(x))
+        h2 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(self<span style="color:#f92672">.</span>l2(h1))
+        h3 <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>l3(h2)
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>log_softmax(h3, dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+
+device <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;cuda:0&#39;</span>
+
+model <span style="color:#f92672">=</span> MLP()
+</code></pre></div><ul>
+<li>Difference (almost the same)
+-In case of PyTorch, it seems that <code>in_features</code> of <code>Linear</code> cannot be omitted as <code>None</code>.
+-In case of PyTorch, since <code>L.Classifier</code> of Chainer does not exist, <code>F.log_softmax(h3, dim=1)</code> is explicitly calculated in the final layer.
+-(The difference in the format of the data set rather than the difference in the framework) Since the MNIST data of PyTorch is two-dimensional, it is made one-dimensional as <code>x = torch.flatten(x, start_dim=1)</code>.</li>
+</ul>
+<h3 id="optimizer-preparation">Optimizer preparation</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> chainer <span style="color:#f92672">import</span> optimizers
+
+lr <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+
+optimizer <span style="color:#f92672">=</span> optimizers<span style="color:#f92672">.</span>SGD(lr<span style="color:#f92672">=</span>lr)
+optimizer<span style="color:#f92672">.</span>setup(model)
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> torch <span style="color:#f92672">import</span> optim
+
+lr <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+
+<span style="color:#75715e">#Select optimization method</span>
+optimizer <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>SGD(model<span style="color:#f92672">.</span>parameters(), lr<span style="color:#f92672">=</span>lr)
+</code></pre></div><ul>
+<li>Difference (almost the same)
+-Is the argument a little different?</li>
+</ul>
+<h3 id="updater---ignite">Updater -&gt; Ignite</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> chainer <span style="color:#f92672">import</span> training
+
+updater <span style="color:#f92672">=</span> training<span style="color:#f92672">.</span>StandardUpdater(train_iter, optimizer, device<span style="color:#f92672">=</span>gpu_id)
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> ignite.engine <span style="color:#f92672">import</span> create_supervised_trainer
+
+trainer <span style="color:#f92672">=</span> create_supervised_trainer(model, optimizer, F<span style="color:#f92672">.</span>nll_loss, device<span style="color:#f92672">=</span>device)
+</code></pre></div><ul>
+<li>Difference (almost the same)
+-Is the argument a little different?</li>
+</ul>
+<h3 id="add-extensions">Add extensions</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> chainer.training <span style="color:#f92672">import</span> extensions
+
+trainer <span style="color:#f92672">=</span> training<span style="color:#f92672">.</span>Trainer(
+    updater, (max_epoch,<span style="color:#e6db74">&#39;epoch&#39;</span>), out<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mnist_result&#39;</span>
+)
+
+trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>LogReport())
+<span style="color:#f92672">.</span>
+<span style="color:#f92672">.</span>
+<span style="color:#f92672">.</span>trainer<span style="color:#f92672">.</span>extend(extensions<span style="color:#f92672">.</span>Evaluator(test_iter, model, device<span style="color:#f92672">=</span>gpu_id))
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> ignite.engine <span style="color:#f92672">import</span> create_supervised_evaluator
+<span style="color:#f92672">from</span> ignite.metrics <span style="color:#f92672">import</span> Accuracy, Loss
+<span style="color:#f92672">from</span> ignite.engine <span style="color:#f92672">import</span> Events
+
+evaluator <span style="color:#f92672">=</span> create_supervised_evaluator(
+    model,
+    metrics<span style="color:#f92672">=</span>{
+      <span style="color:#e6db74">&#39;accuracy&#39;</span>: Accuracy(),
+      <span style="color:#e6db74">&#39;nll&#39;</span>: Loss(F<span style="color:#f92672">.</span>nll_loss),
+    },
+    device<span style="color:#f92672">=</span>device,
+)
+
+training_history <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;accuracy&#39;</span>:[],<span style="color:#e6db74">&#39;loss&#39;</span>:[]}
+validation_history <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;accuracy&#39;</span>:[],<span style="color:#e6db74">&#39;loss&#39;</span>:[]}
+
+<span style="color:#a6e22e">@trainer.on</span>(Events<span style="color:#f92672">.</span>EPOCH_COMPLETED)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">log_training_results</span>(engine):
+    evaluator<span style="color:#f92672">.</span>run(train_loader)
+    metrics <span style="color:#f92672">=</span> evaluator<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>metrics
+    avg_accuracy <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;accuracy&#39;</span>]
+    avg_nll <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;nll&#39;</span>]
+    training_history[<span style="color:#e6db74">&#39;accuracy&#39;</span>]<span style="color:#f92672">.</span>append(avg_accuracy)
+    training_history[<span style="color:#e6db74">&#39;loss&#39;</span>]<span style="color:#f92672">.</span>append(avg_nll)
+    <span style="color:#66d9ef">print</span>(
+        <span style="color:#e6db74">&#34;Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}&#34;</span>
+        <span style="color:#f92672">.</span>format(engine<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>epoch, avg_accuracy, avg_nll)
+    )
+
+<span style="color:#a6e22e">@trainer.on</span>(Events<span style="color:#f92672">.</span>EPOCH_COMPLETED)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">log_validation_results</span>(engine):
+    evaluator<span style="color:#f92672">.</span>run(test_loader)
+    metrics <span style="color:#f92672">=</span> evaluator<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>metrics
+    avg_accuracy <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;accuracy&#39;</span>]
+    avg_nll <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;nll&#39;</span>]
+    validation_history[<span style="color:#e6db74">&#39;accuracy&#39;</span>]<span style="color:#f92672">.</span>append(avg_accuracy)
+    validation_history[<span style="color:#e6db74">&#39;loss&#39;</span>]<span style="color:#f92672">.</span>append(avg_nll)
+    <span style="color:#66d9ef">print</span>(
+        <span style="color:#e6db74">&#34;Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}&#34;</span>
+        <span style="color:#f92672">.</span>format(engine<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>epoch, avg_accuracy, avg_nll))
+
+<span style="color:#75715e"># Create snapshot</span>
+<span style="color:#f92672">from</span> ignite.handlers <span style="color:#f92672">import</span> ModelCheckpoint
+
+checkpointer <span style="color:#f92672">=</span> ModelCheckpoint(
+    <span style="color:#e6db74">&#39;./models&#39;</span>,
+    <span style="color:#e6db74">&#39;MNIST&#39;</span>,
+    save_interval<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,
+    n_saved<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, 
+    create_dir<span style="color:#f92672">=</span>True, 
+    save_as_state_dict<span style="color:#f92672">=</span>True,
+    require_empty<span style="color:#f92672">=</span>False,
+)
+trainer<span style="color:#f92672">.</span>add_event_handler(Events<span style="color:#f92672">.</span>EPOCH_COMPLETED, checkpointer, {<span style="color:#e6db74">&#39;MNIST&#39;</span>: model})
+</code></pre></div><ul>
+<li>違い
+<ul>
+<li>ためしに、Igniteで以下をしてみたのですが、Chainerと書き方はだいぶ異なります。ただ、実装さえすれば今までできたことができないということはなさそうです。
+<ul>
+<li>訓練データでの精度・ロスを表示・保存</li>
+<li>検証データでの精度・ロスを表示・保存</li>
+<li>１epoch ごとにスナップショットを保存</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="訓練の実行">訓練の実行</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">trainer<span style="color:#f92672">.</span>run()
+</code></pre></div><p>↓</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">max_epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+trainer<span style="color:#f92672">.</span>run(train_loader, max_epochs<span style="color:#f92672">=</span>max_epochs)
+</code></pre></div><ul>
+<li>違い（ほとんど同じですね）
+<ul>
+<li>引数がちょっと違うくらいですかね。</li>
+</ul>
+</li>
+</ul>
+<h3 id="移行後のコード">移行後のコード</h3>
+<p>実際に移行してColaboratoryで動くNotebookは以下にあります。上記で説明したコードだけでなく、以下も含まれているのでよろしければお手元で実行してみてください。</p>
+<ul>
+<li>訓練・検証データでの精度・ロスのプロットする</li>
+<li>スナップショットからモデルをロードし、推論する</li>
+</ul>
+<p><a href="https://drive.google.com/open?id=1NqHYJjFz-dl1tWP8kMO0y0kCZ9-ZWLxi">https://drive.google.com/open?id=1NqHYJjFz-dl1tWP8kMO0y0kCZ9-ZWLxi</a></p>
+<h1 id="おまけ">おまけ</h1>
+<p>実は、<a href="https://github.com/chainer/chainer-pytorch-migration">chainer-pytorch-migration</a>を使うと、Chainerで使っていたextensionsをIgniteでも使えます！ Chainerのextensionsが恋しい方はchainer-pytorch-migrationを使ってみてください。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> chainer_pytorch_migration <span style="color:#f92672">as</span> cpm
+<span style="color:#f92672">import</span> chainer_pytorch_migration.ignite
+<span style="color:#f92672">from</span> chainer.training <span style="color:#f92672">import</span> extensions
+
+optimizer<span style="color:#f92672">.</span>target <span style="color:#f92672">=</span> model
+trainer<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;result&#39;</span>
+
+cpm<span style="color:#f92672">.</span>ignite<span style="color:#f92672">.</span>add_trainer_extension(trainer, optimizer, extensions<span style="color:#f92672">.</span>LogReport())
+cpm<span style="color:#f92672">.</span>ignite<span style="color:#f92672">.</span>add_trainer_extension(trainer, optimizer, extensions<span style="color:#f92672">.</span>ExponentialShift(<span style="color:#e6db74">&#39;lr&#39;</span>, <span style="color:#ae81ff">0.9</span>, <span style="color:#ae81ff">1.0</span>, <span style="color:#ae81ff">0.1</span>))
+cpm<span style="color:#f92672">.</span>ignite<span style="color:#f92672">.</span>add_trainer_extension(trainer, optimizer, extensions<span style="color:#f92672">.</span>PrintReport(
+    [<span style="color:#e6db74">&#39;epoch&#39;</span>, <span style="color:#e6db74">&#39;iteration&#39;</span>, <span style="color:#e6db74">&#39;loss&#39;</span>, <span style="color:#e6db74">&#39;lr&#39;</span>]))
+
+max_epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+trainer<span style="color:#f92672">.</span>run(train_loader, max_epochs<span style="color:#f92672">=</span>max_epochs)
+</code></pre></div><h1 id="reference">Reference</h1>
+<ul>
+<li><a href="https://preferred.jp/ja/news/pr20191205/">1</a> <a href="https://preferred.jp/ja/news/pr20191205/">Preferred Networks、深層学習の研究開発基盤をPyTorchに移行</a></li>
+<li><a href="https://chainer.github.io/migration-guide/">2</a> <a href="https://chainer.github.io/migration-guide/">Framework Migration Guide</a></li>
+<li><a href="https://github.com/chainer/chainer-pytorch-migration">3</a> <a href="https://github.com/chainer/chainer-pytorch-migration">github.com/chainer/chainer-pytorch-migration</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

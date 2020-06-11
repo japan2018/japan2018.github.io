@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Observing Gemini meteor shower with RaspberryPi4 | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Observing Gemini meteor shower with RaspberryPi4</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 17, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/raspberrypi"> RaspberryPi</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/%E3%83%A9%E3%82%BA%E3%83%91%E3%82%A4"> ラズパイ</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/astronomy"> astronomy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/sdr"> SDR</a></code></small>
+
+</p>
+<pre><code># Overview
+</code></pre>
+<p>I have purchased Raspberry Pi 4, so I will talk about making a shooting star radio observation system with Raspberry Pi.
+Also, since 12/12~15 is the Gemini meteor shower every year, I tried to see if I could actually observe it.</p>
+<p>It will be a long story because it will be explained from the principle.</p>
+<p>#Observation principle
+A shooting star appears when dust floating in the universe plunges into the Earth&rsquo;s atmosphere, collides violently, and emits plasma.
+A gas called an ionizing column generated at that time has a characteristic of reflecting radio waves, and by utilizing this phenomenon, it is possible to know that a meteor has flown.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/9a2af987-d647-6431-f287-bf7faafa6382.png" alt="Scattering">
+As shown in the figure above, radio waves from distant places, which normally do not physically reach, are reflected in the atmosphere and arrive only when the meteor flows.</p>
+<h1 id="system">System</h1>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/5f31b2c5-b87c-88d8-d97a-b5977b3b5ddc.png" alt="System Diagram">
+This time, we will receive the beacon wave of 53.755MHz from Fukui Prefectural University on SDR (software radio).
+The radio waves coming in from the antenna are converted to sound by SDR, that sound is output from USB audio, and then it is put into the microphone input as it is, and FFT is performed to analyze the meteor echo.</p>
+<h1 id="things-necessary">Things necessary</h1>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/1555e539-a374-3f23-d217-94c0eee759e7.jpeg" alt="IMG_2481_.jpg">
+・RaspberryPi4
+・USB audio conversion cable
+・Audio cable
+・<a href="https://airspy.com/airspy-mini/">AirspyMini</a>(softwareradio)
+・<a href="http://www.comet-ant.co.jp/new/HTML/products_fixed_8.html">50MHz band antenna</a>
+・<a href="https://oyaide.com/catalog/products/p-562.html">Coaxial cable</a>
+・Various connectors
+(In the case of the above antenna, it is an M type connector, so M-SMA type conversion is required)</p>
+<p>Around 30,000 to 40,000 yen.
+With the conventional method using an analog receiver, an analog receiver and a PC are required, so the cost is SDR + Raspai, which is probably lower.
+If you think that a shooting star is a dream system that fulfills your wishes, 30,000 yen should not be so expensive.</p>
+<p>You can put it in a box and operate it, so even if you leave it outdoors in the cold, it will not hurt your heart.</p>
+<h1 id="installation">Installation</h1>
+<p>Simply assemble and connect.</p>
+<p>Regardless of the frosty eyes of the neighborhood, simply attach the antenna to a high place and aim at the sky of the target (Fukui).</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/a86336b9-0472-3203-c4ab-68f5cf8ecae6.jpeg" alt="IMG_2474.jpg">
+The shorter the element, the more forward.</p>
+<h1 id="setup">setup</h1>
+<p>I&rsquo;m going to set up Raspberry Pi.</p>
+<p><strong>1. Enable SDR</strong>
+This time, I will run it with GUI using SDR software called gqrx.</p>
+<pre><code># gqrx download
+$wget https://github.com/csete/gqrx/releases/download/v2.6/gqrx-2.6-rpi3-2.tar.xz
+
+# Expand
+$tar xvf gqrx-2.6-rpi3-2.tar.xz
+
+$cd gqrx-2.6-rpi3-2/
+
+$./setup_gqrx.sh
+
+# Execute
+$sh run_gqrx.sh
+
+</code></pre><p>At first, the following Configure screen will appear.
+<img width="316" alt="Screenshot of preview (2019-12-16 22-37-38).png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/c4b8b134-fe71-6492-ee3a-44d3d0afc18f.png"></p>
+<p>・I/Q input is &ldquo;AirSpy AIRSPY&rdquo;
+・Input rate is 3000000
+After that, the default settings should be fine.</p>
+<p>Let&rsquo;s try to see if something can be heard in accordance with the FM radio frequency.</p>
+<p><strong>2. Install the library used for sound analysis</strong></p>
+<pre><code>#Graph drawing
+$sudo apt install python3-scipy
+$sudo pip3 install drawnow
+
+# Audio system
+$sudo apt-get install python3-pyaudio
+$sudo apt-get install lame
+</code></pre><h1 id="run-sdr">Run SDR</h1>
+<p>SDR tuning requires a little fine setting.</p>
+<img width="949" alt="Screenshot of preview (2019-12-17 0-55-17).png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/95446d03-bc0c-680d-f5e3-b2b312b3f03e.png">
+<p>Open Receiver Options from the setting screen on the right,
+・Filter width is Narrow
+・Filter shape is Sharp
+・Mode is USB</p>
+<p>I will.
+Mode refers to the USB modulation method and cuts and modulates frequency components lower than the frequency set for reception.</p>
+<p>Next, regarding the frequency specification in the upper left, it is necessary to slightly shift the reception frequency from the transmission frequency to produce sound.</p>
+<p>If you match at 53.754MHz frequency which is 1000Hz lower than the transmitting side frequency of 53.755MHz
+A sound of 1000Hz will come out.</p>
+<p>** [Transmission frequency-Reception frequency = Sound frequency] **</p>
+<p>#Analyze the meteor echo
+If the SDR works properly, when a meteor flows, you will hear a phone and a high sound of about 1000Hz. When the reflection of radio waves is long, the sound continues to be heard for 30 seconds or longer.</p>
+<p>↓ Like this. Be careful of the volume!
+<a href="https://soundcloud.com/user-395229817/20191218-175747a">https://soundcloud.com/user-395229817/20191218-175747a</a></p>
+<p>I will analyze this sound with Python.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:streamfft.py" data-lang="python:streamfft.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">from</span> subprocess <span style="color:#f92672">import</span> getoutput
+
+<span style="color:#f92672">import</span> argparse
+<span style="color:#f92672">from</span> scipy.fftpack <span style="color:#f92672">import</span> fft
+
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> itertools
+<span style="color:#f92672">import</span> matplotlib
+matplotlib<span style="color:#f92672">.</span>use(<span style="color:#e6db74">&#34;TkAgg&#34;</span>)
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> pyaudio
+<span style="color:#f92672">import</span> wave
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime, timedelta
+
+
+<span style="color:#75715e"># Frequency to analyze (Hz)</span>
+FREQ_LOW <span style="color:#f92672">=</span> <span style="color:#ae81ff">800</span>
+FREQ_HIGH <span style="color:#f92672">=</span> <span style="color:#ae81ff">1200</span>
+
+<span style="color:#75715e"># Maximum volume</span>
+VOL_LIMIT <span style="color:#f92672">=</span> <span style="color:#ae81ff">2800</span>
+
+
+<span style="color:#75715e"># Detection threshold 0-255</span>
+THRESHOLD <span style="color:#f92672">=</span> <span style="color:#ae81ff">70</span>
+
+<span style="color:#75715e">#Recording time at detection (s)</span>
+RECORD_SECONDS <span style="color:#f92672">=</span> <span style="color:#ae81ff">30</span>
+
+<span style="color:#75715e">#Recorded data save destination</span>
+SAVE_PATH <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/PATHtoSAVE/&#39;</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">str2bool</span>(v):
+    <span style="color:#66d9ef">if</span> v<span style="color:#f92672">.</span>lower() <span style="color:#f92672">in</span> (<span style="color:#e6db74">&#39;true&#39;</span>,<span style="color:#e6db74">&#39;t&#39;</span>,<span style="color:#e6db74">&#39;y&#39;</span>, <span style="color:#e6db74">&#39;1&#39;</span>):
+        <span style="color:#66d9ef">return</span> True
+    <span style="color:#66d9ef">elif</span> v<span style="color:#f92672">.</span>lower() <span style="color:#f92672">in</span> (<span style="color:#e6db74">&#39;false&#39;</span>,<span style="color:#e6db74">&#39;f&#39;</span>,<span style="color:#e6db74">&#39;n&#39;</span>, <span style="color:#e6db74">&#39;0&#39;</span>):
+        <span style="color:#66d9ef">return</span> False
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">raise</span> argparse<span style="color:#f92672">.</span>ArgumentTypeError(<span style="color:#e6db74">&#39;Boolean value expected.&#39;</span>)
+
+<span style="color:#75715e"># Whether to show graph</span>
+dataplot <span style="color:#f92672">=</span> False
+parser <span style="color:#f92672">=</span> argparse<span style="color:#f92672">.</span>ArgumentParser(description<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;data plot enable&#34;</span>)
+parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;-p&#34;</span>,
+                    metavar<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;--p&#34;</span>,
+                    type<span style="color:#f92672">=</span>str2bool,
+                    nargs<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;+&#34;</span>,
+                    help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;data plot enable&#34;</span>
+                    )
+
+
+<span style="color:#75715e"># Whether to save MP3 when meteor is detected</span>
+datasave <span style="color:#f92672">=</span> False
+parser<span style="color:#f92672">.</span>add_argument(<span style="color:#e6db74">&#34;-s&#34;</span>,
+                    metavar<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;--s&#34;</span>,
+                    type<span style="color:#f92672">=</span>str2bool,
+                    nargs<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;+&#34;</span>,
+                    help<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;MP3 Save&#34;</span>
+                    )
+
+args <span style="color:#f92672">=</span> parser<span style="color:#f92672">.</span>parse_args()
+
+dataplot <span style="color:#f92672">=</span> bool(args<span style="color:#f92672">.</span>p[<span style="color:#ae81ff">0</span>])
+datasave <span style="color:#f92672">=</span> bool(args<span style="color:#f92672">.</span>s[<span style="color:#ae81ff">0</span>])
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;data plot enable :&#34;</span> <span style="color:#f92672">+</span> str(dataplot))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;MP3 Save :&#34;</span> <span style="color:#f92672">+</span> str(datasave))
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SpectrumAnalyzer</span>:
+    FORMAT <span style="color:#f92672">=</span> pyaudio<span style="color:#f92672">.</span>paInt16
+    CHANNELS <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+    RATE <span style="color:#f92672">=</span> <span style="color:#ae81ff">44100</span>
+    CHUNK <span style="color:#f92672">=</span> <span style="color:#ae81ff">22050</span>
+    N <span style="color:#f92672">=</span> <span style="color:#ae81ff">22050</span>
+
+    <span style="color:#75715e"># Detection flag</span>
+    detect <span style="color:#f92672">=</span> False
+
+    <span style="color:#75715e"># Recording flag</span>
+    isRecording <span style="color:#f92672">=</span> False
+
+    data <span style="color:#f92672">=</span> []
+    frames <span style="color:#f92672">=</span> []
+    y <span style="color:#f92672">=</span> []
+    maxVol <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    startTime <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>now()
+    endTime <span style="color:#f92672">=</span> startTime <span style="color:#f92672">+</span> timedelta(seconds<span style="color:#f92672">=</span>RECORD_SECONDS)
+    filename <span style="color:#f92672">=</span> startTime<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">_%H%M%S&#34;</span>)
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+
+        self<span style="color:#f92672">.</span>audio <span style="color:#f92672">=</span> pyaudio<span style="color:#f92672">.</span>PyAudio()
+        DEVICE_IDX <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(self<span style="color:#f92672">.</span>audio<span style="color:#f92672">.</span>get_device_count()):
+            dev <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>audio<span style="color:#f92672">.</span>get_device_info_by_index(i)
+            <span style="color:#66d9ef">if</span> dev[<span style="color:#e6db74">&#39;name&#39;</span>]<span style="color:#f92672">.</span>find(<span style="color:#e6db74">&#39;USB PnP Sound Device&#39;</span>) <span style="color:#f92672">!=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>:DEVICE_IDX <span style="color:#f92672">=</span> i
+
+        self<span style="color:#f92672">.</span>stream <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>audio<span style="color:#f92672">.</span>open(
+            format <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>FORMAT,
+            channels <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>CHANNELS,
+            rate <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>RATE,
+            input_device_index <span style="color:#f92672">=</span> DEVICE_IDX,
+            input <span style="color:#f92672">=</span> True,
+            output <span style="color:#f92672">=</span> False,
+            frames_per_buffer <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>CHUNK,
+            stream_callback <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>callback)
+
+        self<span style="color:#f92672">.</span>stream<span style="color:#f92672">.</span>start_stream()
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;SpectrumAnalyzer init&#39;</span>)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">close</span>(self):
+        self<span style="color:#f92672">.</span>stream<span style="color:#f92672">.</span>stop_stream()
+        self<span style="color:#f92672">.</span>stream<span style="color:#f92672">.</span>close()
+        self<span style="color:#f92672">.</span>audio<span style="color:#f92672">.</span>terminate()
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Quitting...&#34;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">callback</span>(self, in_data, frame_count, time_info, status):
+        yf <span style="color:#f92672">=</span> fft(np<span style="color:#f92672">.</span>frombuffer(in_data, dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>int16)) <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>CHUNK
+        self<span style="color:#f92672">.</span>y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(yf)[<span style="color:#ae81ff">1</span>:int(self<span style="color:#f92672">.</span>CHUNK<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>)]
+
+        freqRange <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>RATE <span style="color:#f92672">/</span> self<span style="color:#f92672">.</span>N
+        lowIdx <span style="color:#f92672">=</span> int(FREQ_LOW <span style="color:#f92672">/</span> freqRange)
+        highIdx <span style="color:#f92672">=</span> int(FREQ_HIGH <span style="color:#f92672">/</span> freqRange)
+        vol <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>y[lowIdx:highIdx]
+
+        self<span style="color:#f92672">.</span>maxVol <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        idx <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> vol:
+            <span style="color:#75715e"># ホワイトノイズが5~10%の25以下になるように調整</span>
+            vol[idx] <span style="color:#f92672">=</span> v<span style="color:#f92672">.</span>round()
+
+            <span style="color:#75715e"># VOL_LIMITで切っちゃう</span>
+            <span style="color:#66d9ef">if</span> VOL_LIMIT <span style="color:#f92672">&lt;=</span> vol[idx]:
+                vol[idx] <span style="color:#f92672">=</span> VOL_LIMIT
+
+            <span style="color:#75715e"># 255で正規化</span>
+            vol[idx] <span style="color:#f92672">=</span> int(round(vol[idx] <span style="color:#f92672">/</span> VOL_LIMIT <span style="color:#f92672">*</span> <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">0</span>))
+
+            <span style="color:#75715e"># 最大値</span>
+            <span style="color:#66d9ef">if</span> (self<span style="color:#f92672">.</span>maxVol <span style="color:#f92672">&lt;=</span> vol[idx]):
+                self<span style="color:#f92672">.</span>maxVol <span style="color:#f92672">=</span> vol[idx]
+
+            <span style="color:#66d9ef">if</span> (vol[idx] <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">255</span>):
+                vol[idx] <span style="color:#f92672">=</span> <span style="color:#ae81ff">255</span>
+
+            idx <span style="color:#f92672">=</span> idx <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+
+
+        <span style="color:#66d9ef">if</span>(dataplot):
+            self<span style="color:#f92672">.</span>data <span style="color:#f92672">=</span> vol<span style="color:#f92672">.</span>tolist()
+            self<span style="color:#f92672">.</span>drawGraph()
+
+        <span style="color:#75715e"># しきい値の比較</span>
+        <span style="color:#66d9ef">if</span> THRESHOLD <span style="color:#f92672">&lt;=</span> self<span style="color:#f92672">.</span>maxVol:
+            self<span style="color:#f92672">.</span>detect <span style="color:#f92672">=</span> True
+        <span style="color:#66d9ef">else</span>:
+            self<span style="color:#f92672">.</span>detect <span style="color:#f92672">=</span> False
+
+        <span style="color:#75715e"># 録音開始</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>isRecording <span style="color:#f92672">==</span> False <span style="color:#f92672">and</span> self<span style="color:#f92672">.</span>detect:
+            self<span style="color:#f92672">.</span>isRecording <span style="color:#f92672">=</span> True
+            self<span style="color:#f92672">.</span>startRecording()
+
+        <span style="color:#75715e"># 録音中処理</span>
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>isRecording:
+            self<span style="color:#f92672">.</span>frames<span style="color:#f92672">.</span>append(in_data)
+
+            <span style="color:#75715e"># 録音終了時処理</span>
+            <span style="color:#66d9ef">if</span> datetime<span style="color:#f92672">.</span>now() <span style="color:#f92672">&gt;</span> self<span style="color:#f92672">.</span>endTime:
+                self<span style="color:#f92672">.</span>isRecording <span style="color:#f92672">=</span> False
+                self<span style="color:#f92672">.</span>stopRecording()
+
+
+        <span style="color:#66d9ef">return</span>(None, pyaudio<span style="color:#f92672">.</span>paContinue)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">drawGraph</span>(self):
+        plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>)
+        plt<span style="color:#f92672">.</span>clf()
+        plt<span style="color:#f92672">.</span>plot(self<span style="color:#f92672">.</span>data)
+        plt<span style="color:#f92672">.</span>draw()
+        plt<span style="color:#f92672">.</span>pause(<span style="color:#ae81ff">0.05</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">startRecording</span>(self):
+        self<span style="color:#f92672">.</span>startTime <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>now()
+        self<span style="color:#f92672">.</span>endTime <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>startTime <span style="color:#f92672">+</span> timedelta(seconds<span style="color:#f92672">=</span>RECORD_SECONDS)
+        self<span style="color:#f92672">.</span>filename <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>startTime<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">_%H%M%S&#34;</span>)
+
+        <span style="color:#66d9ef">print</span>(self<span style="color:#f92672">.</span>startTime<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#34;%Y%m</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">_%H%M%S&#34;</span>) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; Recording Start&#34;</span>)
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">stopRecording</span>(self):
+        waveFile <span style="color:#f92672">=</span> wave<span style="color:#f92672">.</span>open(SAVE_PATH <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>filename <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;.wav&#39;</span>, <span style="color:#e6db74">&#39;wb&#39;</span>)
+        waveFile<span style="color:#f92672">.</span>setnchannels(self<span style="color:#f92672">.</span>CHANNELS)
+        waveFile<span style="color:#f92672">.</span>setsampwidth(self<span style="color:#f92672">.</span>audio<span style="color:#f92672">.</span>get_sample_size(self<span style="color:#f92672">.</span>FORMAT))
+        waveFile<span style="color:#f92672">.</span>setframerate(self<span style="color:#f92672">.</span>RATE)
+        waveFile<span style="color:#f92672">.</span>writeframes(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join(self<span style="color:#f92672">.</span>frames))
+        waveFile<span style="color:#f92672">.</span>close()
+
+        self<span style="color:#f92672">.</span>frames <span style="color:#f92672">=</span> []
+
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Recording Stop&#34;</span>)
+
+        <span style="color:#75715e"># MP3変換</span>
+        self<span style="color:#f92672">.</span>convertMp3()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">convertMp3</span>(self):
+        checkConvert <span style="color:#f92672">=</span> getoutput(<span style="color:#e6db74">&#34;lame -b 128 &#34;</span> <span style="color:#f92672">+</span> SAVE_PATH <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>filename <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;.wav&#39;</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34; &#34;</span> <span style="color:#f92672">+</span> SAVE_PATH <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>filename <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;.mp3&#39;</span>)
+        <span style="color:#66d9ef">print</span>(checkConvert)
+
+        <span style="color:#75715e"># WAV 削除</span>
+        srcDel <span style="color:#f92672">=</span> getoutput(<span style="color:#e6db74">&#34;rm -rf &#34;</span> <span style="color:#f92672">+</span> SAVE_PATH <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>filename <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;.wav&#39;</span>)
+        <span style="color:#66d9ef">print</span>(srcDel)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">keyInterrupt</span>():
+    <span style="color:#66d9ef">while</span> True:
+        <span style="color:#66d9ef">try</span>:
+            <span style="color:#66d9ef">pass</span>
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyboardInterrupt</span>:
+            spec<span style="color:#f92672">.</span>close()
+            <span style="color:#66d9ef">return</span>
+
+spec <span style="color:#f92672">=</span> None
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    spec <span style="color:#f92672">=</span> SpectrumAnalyzer()
+    keyInterrupt()
+</code></pre></div><p>処理の流れとしては</p>
+<p><strong>1. 0.5秒毎にFFT
+2. 800~1200Hzのデータを抜き出す
+3. 上記範囲のボリュームが閾値を超えたか判定
+4. 超えていたら30秒間wavとして保存する
+5. wavからmp3に変換</strong></p>
+<p>という感じで、流れ星が流れるたびにmp3ファイルが出来上がっていきます。</p>
+<h3 id="閾値の調整">閾値の調整</h3>
+<p>流星検知の閾値を調整するためにスペクトログラムを表示します。</p>
+<pre><code># スペクトログラムの描画
+# p → True
+python3 /home/pi/streamfft.py -p True -s False
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/cc54d83b-3ef6-076d-86a7-5f48870f81ad.png" alt="Desktop.png"></p>
+<p>0.5秒毎にFFTしているので、周波数分解能は2Hz。
+800~1200Hzの400Hz分の解析をしているため、一回のFFTで得られるデータは200点。
+ラベルをつけてないのが不親切で申し訳ないですが、X軸は左端800Hz、右端1200Hzということになります。
+Y軸は0~255で正規化された値です。</p>
+<p>上図はホワイトノイズのみが入っている状態で、ノイズフロアが255中の10くらいの大きさになるようにボリュームVOL_LIMITを調整しています。
+この調整を行ったのちに、検知閾値を超えたら流星だ！というざっくり判定です。</p>
+<p>↓流星の電波が入ってくると下図のようにスパイクします。
+<img width="600" alt="spike" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/9a192121-103f-4b08-12c4-fd44f2bf3fb0.png"></p>
+<h3 id="いざ観測へ">いざ、観測へ！</h3>
+<pre><code># 観測コマンド
+# s → Trueにしてデータを保存する
+python3 /home/pi/streamfft.py -p False -s True
+</code></pre><h1 id="2019年-ふたご座流星群の観測結果">2019年 ふたご座流星群の観測結果</h1>
+<img width="631" alt="Screenshot of プレビュー (2019-12-17 11-10-22).png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/a760423a-4eb2-94b5-5dc4-3cd652cb67ce.png">
+<p>12/14深夜2時から観測をはじめて、12/16の10時に観測終了したので56時間くらい。
+そのうち12時間くらいは福井のビーコン波が止まってたらしく、その間はデータ取れず。</p>
+<p>データとしては400個くらいあり、明らかに別のノイズっぽいものが重なったり流星エコーじゃないものを弾いて、所感としては200個くらいでした。
+SDRのAGCの具合と決め打ちの閾値判定があまりうまく噛み合わなかったのか、データ欠損時間があったりして良い感じには取れませんでした。</p>
+<p>これは一昨年くらいに日本各地に設置した流れ星観測局のデータ。
+ラズパイでFFTした値をAWSに送ってサーバーの方でリアルタイムに流星エコー検出しています。Normally, the number of meteor showers gradually increases from about 12/12 in this way, and it drops sharply at the peak of 12/14-15, which is a feature of the Gemini meteor shower.
+<img width="1444" alt="Screenshot of Google Chrome (2019-12-17 11-34-13).png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/53216/c4763154-212e-7f19-777d-79837ad52817.png"></p>
+<p>#Summary
+With RaspberryPi4, the performance has improved significantly, and it is now possible to perform echo analysis while performing SDR.
+RaspberryPi3 is full of SDR&hellip;</p>
+<p>Also, this time, I introduced it with a simple judgment of whether or not it exceeded the threshold, but since various noises will be introduced when actually observing, I think it would be more interesting to add a sophisticated judgment process to repel it.</p>
+<p>ex. The echo reflected by the airplane is Doppler. Judge by frequency displacement and repel. Toka Toka</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

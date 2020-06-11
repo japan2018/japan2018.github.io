@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Multi-armed bandit problem | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Multi-armed bandit problem</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Oct 23, 2015
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning"> MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/multi-armed-bandit-problem"> multi-armed bandit problem</a></code></small>
+
+</p>
+<pre><code>## wrap up
+</code></pre>
+<p>I tried solving the multi-armed bandit problem with Thompson Sampling.</p>
+<h2 id="what-is-the-multi-armed-bandit-problem">What is the multi-armed bandit problem?</h2>
+<p>(For Bernoulli Bandit)
+I have multiple slot machines and when I play them, I get a hit or a miss.
+The probability of winning is different for each slot, but its value is unknown.
+At this time, I want to win a lot with a certain number of game plays.</p>
+<p>This is called Bernoulli Bandit,
+The discrete distribution with probability p of 1 and p-1 of 0 is <a href="https://en.wikipedia.org/wiki/%E3%83%99%E3%83%AB%E3%83%8C%E3%83%BC%E3%82%A4%E5%88%86%E5%B8%83">Bernoulli distribution</a>.</p>
+<p>As an image to solve,</p>
+<ul>
+<li>I want to play a lot of winning slots.</li>
+<li>But I want to play other slots and check the ease of hitting
+I want to achieve such things at the same time.</li>
+</ul>
+<h2 id="what-is-thompson-sampling">What is Thompson Sampling</h2>
+<p>One of the algorithms to solve the multi-armed bandit problem.</p>
+<ul>
+<li>Count the number of hits and misses for each slot machine.</li>
+<li>A random number is subtracted from Beta distribution Be(a+1, b+1) for each slot machine.
+(a is the number of hits of the slot machine, b is the number of misses)</li>
+<li>Play the slot machine with the maximum subtracted value.</li>
+</ul>
+<p>Here, the beta distribution means that if the probability distribution is Bernoulli distribution,
+If the prior distribution is the beta distribution, the posterior probability is also the beta distribution,
+It seems to be the conjugate prior [2]</p>
+<h2 id="i-implemented-it-like-this">I implemented it like this.</h2>
+<p>Although <code>self.results</code> need only be Sat and Fat, it is retained because it may be used later.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> scipy
+<span style="color:#f92672">import</span> scipy.stats
+<span style="color:#f92672">import</span> numpy.random
+<span style="color:#f92672">import</span> collections
+<span style="color:#f92672">import</span> pprint
+
+
+<span style="color:#75715e"># Banding machine simulator.</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getResult</span>(prob):
+    <span style="color:#66d9ef">return</span> scipy<span style="color:#f92672">.</span>stats<span style="color:#f92672">.</span>bernoulli<span style="color:#f92672">.</span>rvs(prob, size<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)[<span style="color:#ae81ff">0</span>]
+
+<span style="color:#75715e"># Multiarm Bandit Problem solver using Thompson Sampling.</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Bernoulli</span> Bandit:
+    <span style="color:#66d9ef">def</span> __init__ (self, numBandits):
+        self<span style="color:#f92672">.</span>numBandits <span style="color:#f92672">=</span> numBandits
+        self<span style="color:#f92672">.</span>results <span style="color:#f92672">=</span> dict([(i, []) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(self<span style="color:#f92672">.</span>numBandits)])
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getBandit</span>(self):
+        posteriors <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> b <span style="color:#f92672">in</span> range(self<span style="color:#f92672">.</span>numBandits):
+            Sat <span style="color:#f92672">=</span> len([r <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>results[b] <span style="color:#66d9ef">if</span> r <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>])
+            Fat <span style="color:#f92672">=</span> len([r <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>results[b] <span style="color:#66d9ef">if</span> r <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>])
+            posteriors<span style="color:#f92672">.</span>append(numpy<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>beta(Sat<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, Fat<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>))
+        <span style="color:#66d9ef">return</span> numpy<span style="color:#f92672">.</span>array(posteriors)<span style="color:#f92672">.</span>argmax()
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">feed</span>(self, selectedBandit, result):
+        self<span style="color:#f92672">.</span>results[selectedBandit]<span style="color:#f92672">.</span>append(result)
+        
+    <span style="color:#66d9ef">def</span> __str__(self):
+        out <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>
+        <span style="color:#66d9ef">for</span> b <span style="color:#f92672">in</span> range(self<span style="color:#f92672">.</span>numBandits):
+            Sat <span style="color:#f92672">=</span> len([r <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>results[b] <span style="color:#66d9ef">if</span> r <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>])
+            Fat <span style="color:#f92672">=</span> len([r <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>results[b] <span style="color:#66d9ef">if</span> r <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>])
+            out <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;Bandit[</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">] Fails: </span><span style="color:#e6db74">%4d</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74"> Successes: </span><span style="color:#e6db74">%6d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>(b, Sat, Fat)
+        <span style="color:#66d9ef">return</span> out
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    <span style="color:#75715e"># set parameters</span>
+    numBandits <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+    numTrials <span style="color:#f92672">=</span> <span style="color:#ae81ff">5000</span>
+    rewards <span style="color:#f92672">=</span> [<span style="color:#ae81ff">0.9</span>, <span style="color:#ae81ff">0.9</span>, <span style="color:#ae81ff">0.4</span>] <span style="color:#75715e"># expected rewards (hidden)</span>
+
+    bandit <span style="color:#f92672">=</span> BernoulliBandit(numBandits)
+    <span style="color:#66d9ef">for</span> t <span style="color:#f92672">in</span> range(numTrials):
+        <span style="color:#66d9ef">if</span> t <span style="color:#f92672">%</span><span style="color:#ae81ff">100</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            <span style="color:#66d9ef">print</span> t,
+        b <span style="color:#f92672">=</span> bandit<span style="color:#f92672">.</span>getBandit()
+        r <span style="color:#f92672">=</span> getResult(rewards[b])
+        bandit<span style="color:#f92672">.</span>feed(b, r)
+    <span style="color:#66d9ef">print</span>
+    <span style="color:#66d9ef">print</span> bandit
+    <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;Rewards&#34;</span>, rewards
+</code></pre></div><p>The execution result is this street. I haven&rsquo;t met the true reward expectations,
+Is this naive implementation like this? Or is it a mistake in the implementation?</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#ae81ff">0</span> <span style="color:#ae81ff">100</span> <span style="color:#ae81ff">200</span> <span style="color:#ae81ff">300</span> <span style="color:#ae81ff">400</span> <span style="color:#ae81ff">500</span> <span style="color:#ae81ff">600</span> <span style="color:#ae81ff">700</span> <span style="color:#ae81ff">800</span> <span style="color:#ae81ff">900</span> <span style="color:#ae81ff">1000</span> <span style="color:#ae81ff">1100</span> <span style="color:#ae81ff">1200</span> <span style="color:#ae81ff">1300</span> <span style="color:#ae81ff">1400</span> <span style="color:#ae81ff">1500</span> <span style="color:#ae81ff">1600</span> <span style="color:#ae81ff">1700</span> <span style="color:#ae81ff">1800</span> <span style="color:#ae81ff">1900</span> <span style="color:#ae81ff">2000</span> <span style="color:#ae81ff">2100</span> <span style="color:#ae81ff">2200</span> <span style="color:#ae81ff">2300</span> <span style="color:#ae81ff">2400</span> <span style="color:#ae81ff">2500</span> <span style="color:#ae81ff">2600</span> <span style="color:#ae81ff">2700</span> <span style="color:#ae81ff">2800</span> <span style="color:#ae81ff">2900</span> <span style="color:#ae81ff">3000</span> <span style="color:#ae81ff">3100</span> <span style="color:#ae81ff">3200</span> <span style="color:#ae81ff">3300</span> <span style="color:#ae81ff">3400</span> <span style="color:#ae81ff">3500</span> <span style="color:#ae81ff">3600</span> <span style="color:#ae81ff">3700</span> <span style="color:#ae81ff">3800</span> <span style="color:#ae81ff">3900</span> <span style="color:#ae81ff">4000</span> <span style="color:#ae81ff">4100</span> <span style="color:#ae81ff">4200</span> <span style="color:#ae81ff">4300</span> <span style="color:#ae81ff">4400</span> <span style="color:#ae81ff">4500</span> <span style="color:#ae81ff">4600</span> <span style="color:#ae81ff">4700</span> <span style="color:#ae81ff">4800</span> <span style="color:#ae81ff">4900</span>
+Bandit<span style="color:#f92672">[</span>0<span style="color:#f92672">]</span> Fails: <span style="color:#ae81ff">250</span> Successes: <span style="color:#ae81ff">40</span>
+Bandit<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span> Fails: <span style="color:#ae81ff">4261</span> Successes: <span style="color:#ae81ff">446</span>
+Bandit<span style="color:#f92672">[</span>2<span style="color:#f92672">]</span> Fails: <span style="color:#ae81ff">0</span> Successes: <span style="color:#ae81ff">3</span>
+
+Rewards <span style="color:#f92672">[</span>0.9, 0.9, 0.4<span style="color:#f92672">]</span>
+</code></pre></div><p><a href="https://gist.github.com/mzmttks/ead0951367e39c4ffba6">jupyter&rsquo;s gist</a></p>
+<h1 id="references">References</h1>
+<p>1.http://ibisml.org/archive/ibis2014/ibis2014_bandit.pdf
+2.http://jmlr.org/proceedings/papers/v23/agrawal12/agrawal12.pdf</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

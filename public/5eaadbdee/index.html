@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] How to deal with imbalanced data | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] How to deal with imbalanced data</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 6, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-analysis"> data analysis</a></code></small>
+
+</p>
+<pre><code>This is the article on the 10th day of the Advent Calendar of the DOCOMO Advanced Technology Research Institute.
+</code></pre>
+<p>My name is Kaneda from DoCoMo. In this article, I will explain the basics of evaluation methods and model building methods for imbalanced data that are often encountered in actual data analysis. Also, in the second half of the article, we are experimenting to better understand imbalanced data. I think there are many points that cannot be reached, but I would appreciate your favor.</p>
+<h2 id="1-what-is-imbalanced-data">1. What is imbalanced data?</h2>
+<p>It is data like ** 1% positive example, 99% negative example **. Not only binary classification but also multi-class classification may be used. In this article, we will focus on the most common binary classification, where there are minority positive cases and majority negative cases.</p>
+<h2 id="2-evaluation-method">2. Evaluation method</h2>
+<p>An important part of building a model from imbalanced data is deciding how to evaluate the model. If you don&rsquo;t have an evaluation method, you will not know the goals you should aim for. In the case of imbalanced data, it is important to note that there are some evaluation indicators that cannot be interpreted in the same way as normal times.</p>
+<h3 id="how-to-evaluate">How to evaluate</h3>
+<p>In conclusion, I think it is better to draw a <strong>Precision-Recall curve (hereinafter PR curve)</strong>. On top of that, it is important to set a proper threshold value and perform final binary classification, considering the balance between Precision and Recall required for each problem setting. When performing parameter tuning of the model, I think it is better to use the area under the PR curve (hereinafter PR-AUC) as an evaluation index.</p>
+<p>Below we explain why we should use the PR curve and PR-AUC in predicting imbalanced data.</p>
+<h3 id="correct-and-incorrect-answers-in-binary-classification">Correct and incorrect answers in binary classification</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Positive</th>
+<th>Negative</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Positive</td>
+<td>TP: True Positive</td>
+<td>FN:False Negative</td>
+</tr>
+<tr>
+<td>Negative</td>
+<td>FP: False Positive</td>
+<td>TN: True Negative</td>
+</tr>
+</tbody>
+</table>
+<p>This table is called a mixed matrix and is indispensable when considering the evaluation index for binary classification. It is a good model to predict positive cases as positive cases and negative cases as negative cases, so a model with many TP and TN and few FN and FP is a good model.</p>
+<p>At this time, think about which of the false predictions, FN and FP, should be prioritized. In general, when predicting imbalanced data, is it often the priority to reduce FN? The reason for this is that as long as the positive example of the minority is misjudged, even if the negative example of the majority is misjudged to be the positive example, it is likely that the positive example is sure to be surely judged to be the positive example. Because (it depends on the problem setting). **At present, it is important to consider whether FN or FP should be prioritized in the problem setting that I face in order to finally perform binary classification. **</p>
+<h3 id="representative-evaluation-index">Representative evaluation index</h3>
+<p>Based on the above, let&rsquo;s look at the representative evaluation indicators in binary classification.</p>
+<pre><code class="language-math" data-lang="math"> Accuracy = (TP+TN)/(TP+FP+TN+FN)
+</code></pre><p>Accuracy is the most straightforward metric, but difficult to employ in predicting imbalanced data. This is because the accuracy can easily be close to the maximum value of 1 simply by constructing a model that predicts negative majority cases. Since it is clear that such a model is not the model we are looking for, it would be inappropriate to use Accuracy as a metric.</p>
+<pre><code class="language-math" data-lang="math">Precision = TP/(TP+FP)\\
+Recall = TP/(TP+FN)
+</code></pre><p>Next is Precision and Recall. These are generally considered to be in a trade-off relationship: when Precision is high/low, Recall is low/high. Now, let&rsquo;s think again about FN and FP in order to decide which should be prioritized. Earlier, I explained that you often want to reduce FN in predicting imbalanced data, but in that case you should aim to increase the recall that contains FN in the denominator. However, if you just want to set Recall to the maximum value of 1, you should build a model that predicts all minority positive cases contrary to the Accuracy example. **Therefore, it is not necessary to use either Precision or Recall as an evaluation index, but it is necessary to evaluate the model comprehensively from the two evaluation indexes. **</p>
+<p>However, there are many cases where I want to combine two evaluation indicators, Precision and Recall, into one. The evaluation index often used at that time is the F1 value introduced below.</p>
+<pre><code class="language-math" data-lang="math">F-measure = 2Recall*Precision/(Recall+Precision)
+</code></pre><p>The F1 value is calculated from the harmonic mean of Precision and Recall. From an intuitive understanding, a model with a high F1 value will have a high precision and recall. Note that the F1 value evaluates Precison and Recall equally, and is not an indicator that prioritizes either Precision or Recall <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>.</p>
+<h3 id="about-threshold">About threshold</h3>
+<p>Before we proceed to the next introduction of evaluation indicators, we will explain the concept of thresholds in binary classification. When predicting whether the model is a positive example or a negative example, first, a score such as “probability of being a positive example 80%” is calculated, and if the score is higher than a threshold value (for example, 50%), it is a positive example, and if it is low, it is a negative example. The process to consider is performed. The prediction result changes greatly when this threshold is changed, so it is necessary to decide which threshold should be used when actually performing binary classification.</p>
+<p>The four types of evaluation indicators introduced above are all calculated after determining the threshold value. Therefore, if it is decided in advance that &ldquo;50% is the threshold value&rdquo;, I think that the model can be constructed so that the F1 value calculated when the threshold value is 50% is the highest. However, <strong>There are many cases where it is possible to properly classify with one of the thresholds (the threshold is not set to a specific value)</strong>, and in that case, an evaluation index that does not require the threshold is used.</p>
+<h3 id="evaluation-index-that-does-not-require-a-threshold">Evaluation index that does not require a threshold</h3>
+<p>Areas under the ROC curve (ROC-AUC) and areas under the PR curve (PR-AUC) are evaluation indices that do not require a threshold.</p>
+<ul>
+<li>ROC-AUC: Area under the curve drawn when plotting the relationship between Recall and false positive rate FPR while changing the threshold (left figure)</li>
+<li>PR-AUC: Area under the curve drawn when plotting the relationship between Precision and Recall while changing the threshold (right figure)</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/603f13da-9ad3-17c7-5ba0-b20166aeaf74.png" alt="roc_pr_auc.png"></p>
+<p>The formula for calculating the false positive rate FPR is as follows.</p>
+<pre><code class="language-math" data-lang="math">FPR = FP/(FP+TN)
+</code></pre><p>I think that AUC often refers to ROC-AUC. I will omit the detailed explanation, but the basic properties of both indicators are similar, and the closer to the maximum value of 1, the better the model. In addition, both are calculated based on two evaluation indices as well as the F1 value, so normally a meaningless model that predicts all positive or negative cases is not considered good. However, ROC-AUC may not be an appropriate evaluation index in the case of forecasting imbalanced data. **</p>
+<p>It is difficult to explain this reason accurately, but as an easy-to-understand understanding of my own, **ROC-AUC evaluates &ldquo;Is the positive example positive and the negative example correctly predicted?&rdquo; On the other hand, PR-AUC uses only &ldquo;Is it possible to correctly predict positive cases as positive cases?&rdquo; ** In the case of predicting imbalanced data, it is easy to predict negative cases that are the majority as negative cases, and ROC-AUC, which uses this as a point of evaluation, has confirmed that most positive cases are positive cases. Even if you haven&rsquo;t predicted it, **it is likely that the final value will be higher just by building a model that predicts the majority of negative cases as negative cases. On the other hand, PR-AUC uses the evaluation points only for predicting positive cases as positive cases, so no matter how correctly the negative cases are predicted as negative cases, it will not be evaluated at all.</p>
+<p>However, PR-AUC does not mean that it is superior to ROC-AUC, and ** it is important to properly predict the positive minority cases when predicting imbalanced data. Therefore, PR-AUC is considered to be appropriate as an evaluation index.</p>
+<p>Actually, when there were model A with PR-AUC of 0.5 and model B with PR-AUC of 0.4, &ldquo;model A has better overall performance seen with PR-AUC, but specific recall It is possible that, for example, the precision of Model B is higher at the time of ``, etc.'&rsquo;, so do not stick to one value of AUC too much, consider the balance of Precision and Recall required, draw a PR curve and finish I think it&rsquo;s good to check the goodness and badness of the traditional model. **</p>
+<h2 id="3-model-building-method">3. Model building method</h2>
+<p>In the following, we will introduce general countermeasures against imbalanced data. In this article, only an overview is briefly introduced.</p>
+<h3 id="processing-for-data">Processing for data</h3>
+<p>The easiest way is to reduce the majority data (undersampling) or increase the minority data (oversampling). It is possible to combine these two. When undersampling, there is a method of using clustering to prevent sampling bias. Also, when oversampling, the algorithm called SMOTE is famous.</p>
+<p>If you adjust the data by sampling, the output score value will be distorted, so if the score value itself is important, you need to correct the value <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>. The score value itself is not important, and if it is important to divide it into positive and negative examples, we think that correction is unnecessary.</p>
+<h3 id="processing-for-the-algorithm">Processing for the algorithm</h3>
+<p>When training the model, it internally solves the objective function minimization problem. At this time, by adjusting the penalty for misjudging negative majority cases and the penalty for misjudging positive minor cases, minority positive cases can be predicted correctly. ..</p>
+<h3 id="supplement-utilization-of-ensemble-learning">Supplement: Utilization of ensemble learning</h3>
+<p>When reducing the majority negative data by undersampling, it is expected that the negative data trend will change depending on the reduction method. There are many methods that do not change the tendency of the data, but it is said that the method that combines ensemble learning is a good way to deal with the difference <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>.</p>
+<h3 id="supplement-abnormality-detection">Supplement: Abnormality detection</h3>
+<p>If there is too much difference between the number of positive cases and negative cases, it is possible to consider the minority positive cases as anomalies and then apply the anomaly detection algorithm (I will omit this article). ..</p>
+<h2 id="4-experiment">4. Experiment</h2>
+<p>We will conduct experiments to gain a better understanding of imbalanced data. In this experiment, we will create imbalanced data from random numbers that follow a normal distribution and evaluate it with various models. The amount of data is 500 for positive examples (y=1) and 10000 for negative examples (y=0). The feature quantity is two-dimensional because the emphasis is on ease of visualization.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/1e390519-9e1f-ed67-78ed-a798505a1a01.png" alt="all_data.png">As a minimum experimental condition, the training data and the test data are separated by 8:2, and after simple parameter tuning, the test data is predicted. For comparison, the results of tuning based on the F1 value and the results of tuning based on PR-ROC<sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup> are shown for comparison in this experiment.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">When tuning <span style="color:#66d9ef">with</span> <span style="color:#75715e">#f1 value</span>
+GridSearchCV(model, params, scoring<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;f1&#34;</span>)
+<span style="color:#75715e"># When tuning with PR-AUC</span>
+GridSearchCV(model, params, scoring<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;average_precision&#34;</span>)
+</code></pre></div><p>When dividing the dataset, make sure to keep the balance between positive and negative examples <sup id="fnref:5"><a href="#fn:5" class="footnote-ref" role="doc-noteref">5</a></sup>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">When using train_test_split function of <span style="color:#75715e"># scikit-learn</span>
+X_train, X_test, y_train, y_test <span style="color:#f92672">=</span> train_test_split(X, y, test_size<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>, stratify<span style="color:#f92672">=</span>y)
+</code></pre></div><h3 id="logistic-regression">Logistic regression</h3>
+<h4 id="no-action">No action</h4>
+<p>The first is the prediction result of ordinary logistic regression without any special measures.</p>
+<ul>
+<li>Tuning with F1 value</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/73a66662-227d-d807-d9c3-751f759a6400.png" alt="lr_org_f1.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR@F1</td>
+<td>0.960</td>
+<td>0.642</td>
+<td>0.430</td>
+<td>0.515</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+</tbody>
+</table>
+<p>The background color indicates the score value, and yellow indicates a positive example and purple indicates a negative example. The red line is the threshold, and Accuracy, Precision, Recall, and F1 values are calculated from the results of classification based on this threshold.
+As expected, the results are dragged by the negative examples of the majority.</p>
+<p>The ROC-AUC is a staggering 0.975.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/fd4b5d98-ca35-255c-a950-1d03c446ee1d.png" alt="lr_org_f1_roc.png"></p>
+<p>On the other hand, PR-AUC is 0.632.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/37faecb9-43f0-d96b-9300-a70d13ef460e.png" alt="lr_org_f1_pr.png"></p>
+<p>Looking at ROC-AUC alone makes me think that a terribly good model was made, but I think if you check the PR curve, you can see that it is not a very good model.</p>
+<ul>
+<li>Tuning with PR-AUC</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/ef2dde4b-2e86-3e11-dba4-acdd1d0d369e.png" alt="lr_org_ap.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR@PR-AUC</td>
+<td>0.950</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+</tbody>
+</table>
+<p>Compared with the result of tuning with F1 value, you can see that the background color became purple overall (it came to point to a negative example). In this result, all of the data are below the threshold, and all of the indicators based on the threshold are predicted to be negative cases, and the values are calculated.
+On the other hand, the values of ROC-AUC and PR-AUC are the same as the results of tuning with F1 value. This is because ROC-AUC and PR-AUC are not absolute score values, but rather an index that evaluates whether positive results are in the upper part and negative cases are in the lower part when the prediction results are sorted in score order. In other words, although the absolute value of the score has changed for these two types of results, it can be inferred that the order of the prediction results when sorted by score is almost the same.</p>
+<h4 id="processing-for-the-algorithm-1">Processing for the algorithm</h4>
+<p>Next is the result of logistic regression with the processing applied to the algorithm. With scikit-learn, all you have to do is set the class_weight parameter.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">When applying the processing <span style="color:#66d9ef">for</span> the <span style="color:#75715e"># algorithm</span>
+clf <span style="color:#f92672">=</span> LogisticRegression(class_weight<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;balanced&#34;</span>)
+</code></pre></div><ul>
+<li>Tuning with F1 value</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/bb894a6d-27c7-70dc-dccc-bfcbd9700549.png" alt="lr_w_f1.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR_weight@F1</td>
+<td>0.901</td>
+<td>0.329</td>
+<td>0.950</td>
+<td>0.488</td>
+<td>0.975</td>
+<td>0.633</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tuning with PR-AUC</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/0bb7441c-ca49-b3db-2bcd-b4c2ca0c71b9.png" alt="lr_w_ap.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR_weight@PR-AUC</td>
+<td>0.887</td>
+<td>0.301</td>
+<td>0.950</td>
+<td>0.457</td>
+<td>0.975</td>
+<td>0.631</td>
+</tr>
+</tbody>
+</table>
+<p>Compared with the result of the usual logistic regression tuned by F1 value earlier, it can be seen that the location of the threshold moves greatly to the lower left to correctly predict the positive example. Along with this, the Recall has risen sharply. On the other hand, ROC-AUC and PR-AUC do not change much. Regarding this as well, it is considered that the order when the prediction results are sorted in score order has not changed, as in the case of normal logistic regression.</p>
+<h4 id="data-processing">Data processing</h4>
+<p>Finally, here are the results of the logistic regression with the treatment applied to the data. The method called SMOTE Tomek implemented in <a href="https://imbalanced-learn.readthedocs.io/en/stable/">imbalanced-learn</a>, which is a library for unbalanced data prediction, is used. This is a method that combines undersampling and downsampling. By applying SMOTETomek, the learning data, which was originally 400 positive cases and 7600 negative cases, is now 7439 for both positive and negative cases.</p>
+<ul>
+<li>Tuning with F1 value</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/5d6562c8-1c20-d3e7-25be-8404dee8bc2e.png" alt="lr_s_f1.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR_sampling@F1</td>
+<td>0.891</td>
+<td>0.308</td>
+<td>0.950</td>
+<td>0.466</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tuning with PR-AUC</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/5d6e3392-ce82-8118-094e-7d67599aab44.png" alt="lr_s_ap.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR_sampling@PR-AUC</td>
+<td>0.873</td>
+<td>0.279</td>
+<td>0.970</td>
+<td>0.433</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+</tbody>
+</table>
+<p>The result was almost the same as the result of logistic regression applying the processing to the algorithm. There is no big difference between each index.</p>
+<p>The results of logistic regression are as follows. In this example, when evaluated in terms of PR-AUC, it can be seen that all models have similar performance.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LR@F1</td>
+<td>0.960</td>
+<td>0.642</td>
+<td>0.430</td>
+<td>0.515</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+<tr>
+<td>LR@PR-AUC</td>
+<td>0.950</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+<tr>
+<td>LR_weight@F1</td>
+<td>0.901</td>
+<td>0.329</td>
+<td>0.950</td>
+<td>0.488</td>
+<td>0.975</td>
+<td>0.633</td>
+</tr>
+<tr>
+<td>LR_weight@PR-AUC</td>
+<td>0.887</td>
+<td>0.301</td>
+<td>0.950</td>
+<td>0.457</td>
+<td>0.975</td>
+<td>0.631</td>
+</tr>
+<tr>
+<td>LR_sampling@F1</td>
+<td>0.891</td>
+<td>0.308</td>
+<td>0.950</td>
+<td>0.466</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+<tr>
+<td>LR_sampling@PR-AUC</td>
+<td>0.873</td>
+<td>0.279</td>
+<td>0.970</td>
+<td>0.433</td>
+<td>0.975</td>
+<td>0.632</td>
+</tr>
+</tbody>
+</table>
+<h3 id="for-svm-rbf-kernel">For SVM (RBF kernel)</h3>
+<p>Next, I made a similar comparison with a non-linear model SVM (RBF kernel). The red line of the threshold is not shown here.</p>
+<h4 id="no-action-1">No action</h4>
+<p>First of all, it is a prediction result of normal SVM without any special measures.</p>
+<ul>
+<li>Tuning with F1 value</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/da82e4d1-6294-6049-e199-b8089c0f53ad.png" alt="svm_org_f1.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM@F1</td>
+<td>0.964</td>
+<td>0.656</td>
+<td>0.590</td>
+<td>0.621</td>
+<td>0.966</td>
+<td>0.629</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tuning with PR-AUC<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/6699c668-8e35-6a32-7ef5-d3498f693a16.png" alt="svm_org_ap.png"></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM@PR-AUC</td>
+<td>0.950</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.934</td>
+<td>0.650</td>
+</tr>
+</tbody>
+</table>
+<p>Unlike the results of logistic regression, there is a clear difference in the results depending on whether the tuning is F1 or PR-AUC. The score when tuned with PR-AUC is predicted to be radially smaller from the upper right of the center of the positive example, which seems reasonable in this model that does not deal with imbalance data .. On the contrary, the score when tuning with F1 value looks a bit unnatural. **The SVM tuned with PR-AUC actually has higher PR-AUC than all models of logistic regression, while the SVM tuned with F1 value has lower PR-AUC than all models of logistic regression I will. **With this in mind, it is considered that the evaluation index at the time of tuning is important when building a model with rich expressiveness.</p>
+<h4 id="processing-for-the-algorithm-2">Processing for the algorithm</h4>
+<p>Next is the SVM result with some adjustments made to the algorithm.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">clf <span style="color:#f92672">=</span> SVC(class_weight<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;balanced&#34;</span>)
+</code></pre></div><ul>
+<li>Tuning with F1 value</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/00288acd-864f-f5d1-d7b5-7f62ca337fe5.png" alt="svm_w_f1.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM_weight@F1</td>
+<td>0.904</td>
+<td>0.339</td>
+<td>0.970</td>
+<td>0.503</td>
+<td>0.976</td>
+<td>0.575</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tuning with PR-AUC</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/3aea986e-9cc0-9536-4605-9b76aaaa8e35.png" alt="svm_w_ap.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM_weight@PR-AUC</td>
+<td>0.050</td>
+<td>0.050</td>
+<td>1.00</td>
+<td>0.095</td>
+<td>0.978</td>
+<td>0.639</td>
+</tr>
+</tbody>
+</table>
+<p>In any of the results, it can be seen that the model has been trained to more accurately predict the positive cases than the SVM prediction results under normal conditions. On the other hand, the PR-AUC of the SVM tuned with the F1 value was 0.575, the worst so far.</p>
+<h4 id="data-processing-1">Data processing</h4>
+<p>Finally, here is the result of SVM with processing applied to the data.</p>
+<ul>
+<li>Tuning with F1 value</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/7e724a26-0f6c-7c81-2600-5f8da4153582.png" alt="svm_s_f1.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM_sampling@F1</td>
+<td>0.903</td>
+<td>0.338</td>
+<td>0.990</td>
+<td>0.504</td>
+<td>0.968</td>
+<td>0.473</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tuning with PR-AUC</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/89407afb-6b67-614c-8c55-7b4acdf706e6.png" alt="svm_s_ap.png"></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM_sampling@PR-AUC</td>
+<td>0.877</td>
+<td>0.289</td>
+<td>1.0</td>
+<td>0.448</td>
+<td>0.978</td>
+<td>0.637</td>
+</tr>
+</tbody>
+</table>
+<p>The overall trend was similar to the result of SVM with processing applied to the algorithm. On the other hand, the PR-AUC of the model tuned with F1 value became 0.473 and worse.</p>
+<p>The result of SVM is as follows. In this example, when evaluating from the viewpoint of PR-AUC, it was found that the performance significantly decreases unless PR-AUC is set as the evaluation index for tuning. This is because SVM is a model with high expressiveness, so it is a model specialized for the evaluation index used for tuning, compared to a linear model such as logistic regression.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Accuacy</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>F1</th>
+<th>ROC-AUC</th>
+<th>PR-AUC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SVM@F1</td>
+<td>0.964</td>
+<td>0.656</td>
+<td>0.590</td>
+<td>0.621</td>
+<td>0.966</td>
+<td>0.629</td>
+</tr>
+<tr>
+<td>SVM@PR-AUC</td>
+<td>0.950</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>0.934</td>
+<td>0.650</td>
+</tr>
+<tr>
+<td>SVM_weight@F1</td>
+<td>0.904</td>
+<td>0.339</td>
+<td>0.970</td>
+<td>0.503</td>
+<td>0.976</td>
+<td>0.575</td>
+</tr>
+<tr>
+<td>SVM_weight@PR-AUC</td>
+<td>0.050</td>
+<td>0.050</td>
+<td>1.00</td>
+<td>0.095</td>
+<td>0.978</td>
+<td>0.639</td>
+</tr>
+<tr>
+<td>SVM_sampling@F1</td>
+<td>0.903</td>
+<td>0.338</td>
+<td>0.990</td>
+<td>0.504</td>
+<td>0.968</td>
+<td>0.473</td>
+</tr>
+<tr>
+<td>SVM_sampling@PR-AUC</td>
+<td>0.877</td>
+<td>0.289</td>
+<td>1.0</td>
+<td>0.448</td>
+<td>0.978</td>
+<td>0.637</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pr-curve-comparison">PR curve comparison</h3>
+<p>Finally, the PR curves of the 6 models (tuned with PR-AUC) tested in this experiment are arranged.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543632/57643a32-353a-f289-7a68-eddcd4ec4238.png" alt="summary.png"></p>
+<p>Compared with PR-AUC alone, the best model is a normal SVM that does nothing, but when the recall is high, the precision of the SVM drops sharply, and it is better to use another model. I will. From this result, I think that it is difficult to select an appropriate model only with PR-AUC. Again, I think it&rsquo;s important to consider the balance of Precision and Recall from the **PR curve and find the best performing model for your problem setup. **</p>
+<h2 id="summary">Summary</h2>
+<ul>
+<li>Let&rsquo;s draw a PR curve!</li>
+</ul>
+<h2 id="reference">Reference</h2>
+<ul>
+<li><a href="https://sammi-baba.hatenablog.com/entry/2019/07/30/171700">Imbalanced data-ROC curve defect implementation example</a></li>
+<li><a href="https://aotamasaki.hatenablog.com/entry/2018/04/08/235339">Difference in behavior of PR curve and ROC curve in imbalance data</a></li>
+<li><a href="https://aizine.ai/roccurve-auc0311/">Evaluation index of machine learning that can be understood from zero! Precision-Recall/ROC curve and AUC</a></li>
+<li><a href="https://qiita.com/skyshk/items/016cd1820650ea78d101">Discussion about the difference between ROC curve and PR curve</a></li>
+</ul>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>There is also an index called Fβ value, which is a generalization of F1 value. By adjusting the value of β, you can adjust the priority of Precision and Recall. <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p><a href="https://pompom168.hatenablog.com/entry/2019/07/22/113433">Bias of prediction probability by downsampling</a> <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>imbalanced-learn, a library for unbalanced data prediction, provides a convenient class called BalancedBaggingClassifier to implement this method. <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p>Average Precision specified in the scoring parameter is an approximate value of PR-ROC. Reference: <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html">https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html</a> <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:5" role="doc-endnote">
+<p>GridSearchCV is divided into layers (while maintaining balance) by default in the case of binary classification. <a href="#fnref:5" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Use Python program with fluentd&#39;s exec Output Plugin | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Use Python program with fluentd&rsquo;s exec Output Plugin</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Aug 3, 2014
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/fluentd">Fluentd</a></code></small>
+
+</p>
+<pre><code>It's been a week since I started using it in battle, but fluentd is very convenient. Then try passing data to the Python program with exec Output Plugin.
+</code></pre>
+<h2 id="startup-command">Startup command</h2>
+<p>Here is a Python example from <a href="http://docs.fluentd.org/articles/out_exec">docs</a>:</p>
+<pre><code class="language-td-agent.conf" data-lang="td-agent.conf">&lt;match fizzbuzz&gt;
+  type exec
+  command python /path/to/fizzbuzz.py
+  buffer_path /path/to/buffer_path
+  format tsv
+  keys fizzbuzz
+  flush_interval 5s # for debugging/checking
+&lt;/match&gt;
+</code></pre><p>However, when actually using it, I wanted to specify the Python put in virtualenv, and there was a question that what happened to PYTHONPATH, so I tried specifying <code>command</code> like this.</p>
+<pre><code class="language-td-agent.conf" data-lang="td-agent.conf">  # python specifies the one put in virtualenv
+  # For myapp which is my code, write setup.py and install the package in advance
+  command /path/to/myapp/bin/python -m myapp.command.xxxx arg1
+</code></pre><p>Now you don&rsquo;t have to worry about PYTHONPATH, and you don&rsquo;t have to mess with the file path. Write setup.py without any hassle.</p>
+<p>Trying to set an environment variable</p>
+<pre><code class="language-td-agent.conf" data-lang="td-agent.conf">  # Specify environment variable (error)
+  command HOGE=FUGA /path/to/myapp/bin/python -m myapp.command.xxx arg1
+</code></pre><p>Then I got the following error. If you want to pass something, use arguments. I saw 32512 for the first time.</p>
+<pre><code class="language-td-agent.log" data-lang="td-agent.log">2014-08-03 17:59:54 +0900 [warn]: temporarily failed to flush the buffer.next_retry=2014-08-03 17:59:57 +0900 error_class=&quot;RuntimeError&quot; error=&quot;command returns 32512: HOGE =FUGA /path/to/myapp/bin/python /path/to/myapp/myapp/command/xxx.py /path/to/buffer_path/.20140803.q4ffb5d85bf81f0d4.log&quot;
+</code></pre><h2 id="executable-file">Executable file</h2>
+<p>The path of the buffer file is passed at the end of the argument. The code to read and process line by line looks like this: If you want to call each process from the test code, separate the method. You can write it neatly by stream processing from reading the file to the final processing, and in PyMongo you can pass the generator as it is to the insert method of Collection, so performance is also good.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:/path/to/myapp/myapp/command/xxx.py" data-lang="python:/path/to/myapp/myapp/command/xxx.py"><span style="color:#75715e"># coding=utf-8</span>
+
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> logging
+<span style="color:#f92672">import</span> logging.config
+<span style="color:#f92672">import</span> traceback
+
+logging<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>fileConfig(<span style="color:#e6db74">&#39;logging.conf&#39;</span>)
+logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger(<span style="color:#e6db74">&#39;fluent-exec-out&#39;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+file_path <span style="color:#f92672">=</span> parse_args()
+    do_something(exclude_error_row(parse(readline(file_path))))
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">parse_args</span>():
+<span style="color:#66d9ef">return</span> sys<span style="color:#f92672">.</span>argv[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">readline</span>(file_path):
+    <span style="color:#66d9ef">with</span> file(file_path) <span style="color:#66d9ef">as</span> input:
+        <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> input:
+            <span style="color:#66d9ef">yield</span> line
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">parse</span>(lines):
+<span style="color:#75715e">#When the input format is json</span>
+    <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> lines:
+        <span style="color:#66d9ef">yield</span> json<span style="color:#f92672">.</span>loads(line)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">exclude_error_row</span>(rows):
+    <span style="color:#66d9ef">for</span> row <span style="color:#f92672">in</span> rows:
+        <span style="color:#75715e">#Validation and log output</span>
+        <span style="color:#66d9ef">if</span> xxxxxx:
+logger<span style="color:#f92672">.</span>warn(<span style="color:#e6db74">&#34;Invalid line found </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span>, row)
+<span style="color:#66d9ef">continue</span>
+       <span style="color:#66d9ef">yield</span> row
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">do_something</span>(rows):
+<span style="color:#75715e"># Do something</span>
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;Start&#39;</span>)
+<span style="color:#66d9ef">try</span>:
+main()
+<span style="color:#66d9ef">except</span>:
+logger<span style="color:#f92672">.</span>error(traceback<span style="color:#f92672">.</span>format_exc())
+logger<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;End&#39;</span>)
+</code></pre></div><h3 id="test-code">test code</h3>
+<p>To test the main method, create a file of the same format as the buffer file passed from fluentd and pass it as an argument.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:test_xxx.py" data-lang="python:test_xxx.py"><span style="color:#75715e"># coding=utf-8</span>
+
+<span style="color:#f92672">from</span> nose.tools <span style="color:#f92672">import</span> ok_, eq_
+
+<span style="color:#f92672">from</span> myapp.command <span style="color:#f92672">import</span> xxx
+
+original_argv <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>argv
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">TestAll</span>(object):
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">teardown</span>(self):
+sys<span style="color:#f92672">.</span>argv <span style="color:#f92672">=</span> original_argv
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_main</span>(self):
+sys<span style="color:#f92672">.</span>argv<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#39;./tests/data/fluentd_buffer.log&#39;</span>)
+xxx<span style="color:#f92672">.</span>main()
+<span style="color:#75715e"># Test something</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_readline</span>(self):
+gen <span style="color:#f92672">=</span> xxx<span style="color:#f92672">.</span>readline(<span style="color:#e6db74">&#39;./tests/data/fluentd_buffer.log&#39;</span>):
+<span style="color:#75715e"># Test something</span>
+</code></pre></div><h3 id="log-output">Log output</h3>
+<p>It might be cool to pass more logs to fluentd using something like <a href="https://github.com/fluent/fluent-logger-python">fluent-logger-python</a>.</p>
+<h3 id="filtering">Filtering</h3>
+<p>The above code also performs filtering, but it may be fluentd clean to do the previous match using exec_filter Output Plugin. It&rsquo;s a matter of taste because you can do it either way.</p>
+<p>I think it&rsquo;s fine to combine them with a single exec output if it is about filter processing, but if you pack too many processes too much, there will be more concern about what to do if the process goes wrong in the middle. It&rsquo;s better to split the exec Output into separate code calls.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

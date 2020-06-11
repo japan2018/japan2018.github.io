@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Improve PyTorch execution environment with Docker November 2019 | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Improve PyTorch execution environment with Docker November 2019</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 12, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning">DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch">PyTorch</a></code></small>
+
+</p>
+<pre><code>## Overview
+</code></pre>
+<ul>
+<li>Develop a deep learning execution environment with PyTorch in a Docker container</li>
+<li>After Docker version 19.03, if you have the GPU driver of the host OS and nvidia-container-runtime, everything else will be locked in a container</li>
+<li>In most cases, you can reproduce the environment with one command</li>
+</ul>
+<h2 id="preparation">Preparation</h2>
+<p>The following preparations are required.</p>
+<ul>
+<li>docker version 19.03 or later
+-See <a href="https://docs.docker.com/install/linux/docker-ce/ubuntu/">Official Documentation</a>(thislinkisforUbuntu)</li>
+<li>nvidia-container-runtime
+-Install by referring to README.md of <a href="https://github.com/NVIDIA/nvidia-container-runtime">GitHub</a></li>
+<li>NVIDIA Driver
+-Refer to <a href="https://www.nvidia.co.jp/Download/index.aspx?lang=jp">Official Site</a> and install the driver for your GPU.</li>
+</ul>
+<h2 id="create-dockerfile">Create Dockerfile</h2>
+<p><code>CUDA</code> and <code>CuDNN</code> are entered in the container, and the GPU driver on the host side is used.
+In this <code>Dockerfile</code>, <code>Python 3.7.1</code> and Python packages are installed based on the image in which <code>CUDA:10.1</code> and <code>CuDNN:7</code> are included in <code>Ubuntu:18.04</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile" data-lang="Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span> <span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">WORKDIR</span><span style="color:#e6db74"> /code</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> PYTHON_VERSION 3.7.1<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> HOME /root<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> PYTHON_ROOT $HOME/local/python-$PYTHON_VERSION<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> PATH $PYTHON_ROOT/bin:$PATH<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> PYENV_ROOT $HOME/.pyenv<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> TZ<span style="color:#f92672">=</span>Asia/Tokyo<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ADD</span> requirements.txt /code<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> export DEBIAN_FRONTEND<span style="color:#f92672">=</span>noninteractive <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    apt-get -y update <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    apt-get -y upgrade <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    apt-get -y install tzdata<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get -y install git make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>     apt-get -y install wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    git clone https://github.com/pyenv/pyenv.git $PYENV_ROOT <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    $PYENV_ROOT/plugins/python-build/install.sh <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    /usr/local/bin/python-build -v $PYTHON_VERSION $PYTHON_ROOT <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    rm -rf $PYENV_ROOT <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    pip install -r requirements.txt<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>Example of contents of <code>requirements.txt</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-requirements.txt" data-lang="requirements.txt">torch
+torchvision
+</code></pre></div><h2 id="use-container-environment">Use container environment</h2>
+<p>First, build the container.
+Execute the following command in the directory where you created the Dockerfile.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker build .-t torch3.7
+</code></pre></div><p>Enter the container and check if the GPU can be recognized.
+If the following display appears with the nvidia-smi command, ok.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ docker run -it --gpus all torch3.7 bash
+$ nvidia-smi
+ Tue Nov <span style="color:#ae81ff">19</span> 15:01:12 <span style="color:#ae81ff">2019</span>
+ +------------------------------------------------- ----------------------------+
+ NVIDIA-SMI 430.50 Driver Version: 430.50 CUDA Version: 10.1 |
+ |-------------------------------+----------------- -----+----------------------+
+ | GPU Name Persistence-M| Bus-Id Disp.A | Volatile Uncorr. ECC |
+ | Fan Temp Perf Pwr:Usage/Cap| Memory-Usage | GPU-Util Compute M. |
+ |<span style="color:#f92672">===============================</span>+<span style="color:#f92672">==================</span> <span style="color:#f92672">=====</span>+<span style="color:#f92672">======================</span>|
+ | <span style="color:#ae81ff">0</span> GeForce GTX 166... Off | 00000000:1F:00.0 Off | N/A |
+ 45% 36C P0 1W / 120W | 0MiB / 5944MiB | 0% Default |
+ +-------------------------------+----------------- -----+----------------------+
+                                                                                
+ +------------------------------------------------- ----------------------------+
+ | Processes: GPU Memory |
+ | GPU PID Type Process name Usage |
+ |<span style="color:#f92672">==================================================</span> <span style="color:#f92672">============================</span>|
+ | No running processes found |
+ +------------------------------------------------- ----------------------------+
+</code></pre></div><p>Finally, make sure that PyTorch&rsquo;s torch.Tensor can be loaded in the memory on the GPU.
+I could use torch.Tensor on the GPU.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$python
+&gt;&gt;&gt; import torch
+&gt;&gt;&gt; torch.cuda.is_available<span style="color:#f92672">()</span>
+True
+&gt;&gt;&gt; x <span style="color:#f92672">=</span> torch.Tensor<span style="color:#f92672">([</span>0, 1<span style="color:#f92672">])</span>
+&gt;&gt;&gt; x
+tensor<span style="color:#f92672">([</span>0., 1.<span style="color:#f92672">])</span>
+&gt;&gt;&gt; x.cuda<span style="color:#f92672">()</span>
+tensor<span style="color:#f92672">([</span>0., 1.<span style="color:#f92672">]</span>, device<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;cuda:0&#39;</span><span style="color:#f92672">)</span>
+</code></pre></div><h2 id="by-the-way">By the way&hellip;</h2>
+<p>It seems that volume will be used in sync with the host and container in many cases. In that case, change the following command appropriately and use it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">docker run -it -v /path/to/your_project_directory:/code --gpus all torch3.7 bash
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

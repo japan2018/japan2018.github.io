@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I made a system that automatically decides whether to run tomorrow with Python and adds it to Google Calendar. | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I made a system that automatically decides whether to run tomorrow with Python and adds it to Google Calendar.</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 29, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlecalendar">GoogleCalendar</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/openweathermap">OpenWeatherMap</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/crontab">crontab</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>On weekdays, I basically run every day, but of course I don&rsquo;t feel like running on a rainy day or a holiday.
+So, I tried writing a program in Python that automates the decision whether to run the next day and adds an appointment to Google Calendar.</p>
+<h2 id="environment">Environment</h2>
+<ul>
+<li>macOS, Linux</li>
+<li>python 3.8.1</li>
+</ul>
+<p>Since we use <code>crontab</code> to execute periodically, we assume macOS or Linux, but if you use AWS etc. on Windows, you may be able to do the same thing.</p>
+<h2 id="python-settings">Python settings</h2>
+<p>First, set up Python. Personally, I don&rsquo;t like to pollute the environment, so I create a <code>virtualenv</code> for each project. Please refer to <a href="https://qiita.com/Kodaira_/items/feadfef9add468e3a85b">here</a> for details, as it is out of the question.</p>
+<pre><code>$ pyenv virtualenv 3.8.1 develop_3.8.1
+$ pyenv activate develop_3.8.1
+$ pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+</code></pre><h2 id="determine-tomorrows-weather">Determine tomorrow&rsquo;s weather</h2>
+<p>We used <a href="https://openweathermap.org/">OpenWeatherMap</a> to get the weather forecast.</p>
+<p>The usage is very simple. After creating the account, get the API key from the &ldquo;API keys&rdquo; tab and set it to <code>OPENWEATHER_API_KEY</code>.
+By the way, this time I used a postal code to specify the location, but it seems that you can also specify the city name or latitude and longitude [https://qiita.com/nownabe/items/aeac1ce0977be963a740].</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> requests
+
+BASE_URL <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;http://api.openweathermap.org/data/2.5/forecast&#39;</span>
+OPENWEATHER_API_KEY <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Your OpenWeather Api key&#39;</span>
+ZIP_CODE <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Zip code of your area&#39;</span>
+
+url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{}?units=metric&amp;zip={zip},JP&amp;APPID={key}&#39;</span><span style="color:#f92672">.</span>format(BASE_URL, zip<span style="color:#f92672">=</span>ZIP_CODE, key<span style="color:#f92672">=</span>OPENWEATHER_API_KEY)
+
+res <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(url)<span style="color:#f92672">.</span>json()
+</code></pre></div><p>Then, the result like this is returned.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
+    <span style="color:#f92672">&#34;cod&#34;</span>: <span style="color:#e6db74">&#34;200&#34;</span>,
+    <span style="color:#f92672">&#34;message&#34;</span>: <span style="color:#ae81ff">0</span>,
+    <span style="color:#f92672">&#34;cnt&#34;</span>: <span style="color:#ae81ff">40</span>,
+    <span style="color:#f92672">&#34;list&#34;</span>: [
+        {
+            <span style="color:#f92672">&#34;dt&#34;</span>: <span style="color:#ae81ff">1582956000</span>,
+            <span style="color:#f92672">&#34;main&#34;</span>: {
+                <span style="color:#f92672">&#34;temp&#34;</span>: <span style="color:#ae81ff">13.03</span>,
+                <span style="color:#f92672">&#34;feels_like&#34;</span>: <span style="color:#ae81ff">9.94</span>,
+                <span style="color:#f92672">&#34;temp_min&#34;</span>: <span style="color:#ae81ff">12.61</span>,
+                <span style="color:#f92672">&#34;temp_max&#34;</span>: <span style="color:#ae81ff">13.03</span>,
+                <span style="color:#f92672">&#34;pressure&#34;</span>: <span style="color:#ae81ff">1016</span>,
+                <span style="color:#f92672">&#34;sea_level&#34;</span>: <span style="color:#ae81ff">1016</span>,
+                <span style="color:#f92672">&#34;grnd_level&#34;</span>: <span style="color:#ae81ff">1010</span>,
+                <span style="color:#f92672">&#34;humidity&#34;</span>: <span style="color:#ae81ff">40</span>,
+                <span style="color:#f92672">&#34;temp_kf&#34;</span>: <span style="color:#ae81ff">0.42</span>
+            },
+            <span style="color:#f92672">&#34;weather&#34;</span>: [
+                {
+                    <span style="color:#f92672">&#34;id&#34;</span>: <span style="color:#ae81ff">803</span>,
+                    <span style="color:#f92672">&#34;main&#34;</span>: <span style="color:#e6db74">&#34;Clouds&#34;</span>,
+                    <span style="color:#f92672">&#34;description&#34;</span>: <span style="color:#e6db74">&#34;broken clouds&#34;</span>,
+                    <span style="color:#f92672">&#34;icon&#34;</span>: <span style="color:#e6db74">&#34;04d&#34;</span>
+                }
+            ],
+            <span style="color:#f92672">&#34;clouds&#34;</span>: {
+                <span style="color:#f92672">&#34;all&#34;</span>: <span style="color:#ae81ff">60</span>
+            },
+            <span style="color:#f92672">&#34;wind&#34;</span>: {
+                <span style="color:#f92672">&#34;speed&#34;</span>: <span style="color:#ae81ff">1.52</span>,
+                <span style="color:#f92672">&#34;deg&#34;</span>: <span style="color:#ae81ff">150</span>
+            },
+            <span style="color:#f92672">&#34;sys&#34;</span>: {
+                <span style="color:#f92672">&#34;pod&#34;</span>: <span style="color:#e6db74">&#34;d&#34;</span>
+            },
+            <span style="color:#f92672">&#34;dt_txt&#34;</span>: <span style="color:#e6db74">&#34;2020-02-29 06:00:00&#34;</span>
+        },
+        <span style="color:#960050;background-color:#1e0010">...</span>
+</code></pre></div><p>The results are returned every 3 hours up to 5 days later.
+The array of <code>list</code> contains the weather forecast for <code>dt_txt</code>,</p>
+<ul>
+<li>temp: temperature</li>
+<li>feels_like: Feeling temperature</li>
+<li>temp_min: Minimum temperature</li>
+<li>temp_max: maximum temperature</li>
+<li>pressure: atmospheric pressure</li>
+<li>sea_level: sea level atmospheric pressure</li>
+<li>grnd_level: Ground pressure</li>
+<li>humidity: Humidity</li>
+</ul>
+<p>And so on. It has a lot of information and is wonderful. However, this time I just want to know if it is raining, so I would like to focus on the <code>main</code> of the <code>weather</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> datetime
+
+tommorow <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now() <span style="color:#f92672">+</span> datetime<span style="color:#f92672">.</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+tommorow_str <span style="color:#f92672">=</span> tommorow<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">is_rain</span>(tommorow_str):
+    tommorow_morning_dt <span style="color:#f92672">=</span> [tommorow_str <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;06:00:00&#39;</span>, tommorow_str <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;09:00:00&#39;</span>]
+    tommorow_morning_weather <span style="color:#f92672">=</span> []
+
+    weather_preds <span style="color:#f92672">=</span> res[<span style="color:#e6db74">&#39;list&#39;</span>]
+
+    <span style="color:#66d9ef">for</span> pred <span style="color:#f92672">in</span> weather_preds:
+        <span style="color:#66d9ef">if</span> pred[<span style="color:#e6db74">&#39;dt_txt&#39;</span>] <span style="color:#f92672">in</span> tommorow_morning_dt:
+            <span style="color:#66d9ef">for</span> weather <span style="color:#f92672">in</span> pred[<span style="color:#e6db74">&#39;weather&#39;</span>]:
+                tommorow_morning_weather<span style="color:#f92672">.</span>append(weather[<span style="color:#e6db74">&#39;main&#39;</span>])
+
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;Rain&#39;</span> <span style="color:#f92672">in</span> tommorow_morning_weather
+</code></pre></div><p>First, use <code>datetime</code> to calculate tomorrow&rsquo;s date.
+And since it&rsquo;s running early in the morning, I&rsquo;ll put the dates around 6 am and 9 am tomorrow as a string in <code>tommorow_morning_dt</code>. Then, comparing with the previous result, if <code>dt_txt</code> is the desired date, it is added to <code>tommorow_morning_weather</code>.</p>
+<p>Now you can get the weather for the time you will run tomorrow. However, I think this implementation is honestly subtle, and I don&rsquo;t feel like comparing dates as strings, so please let me know if there&rsquo;s a good way.</p>
+<h2 id="determine-if-it-is-a-holiday">Determine if it is a holiday</h2>
+<p>Basically, I have no desire to run except on weekdays, so I would like to exclude holidays. The story is simple if you simply exclude holidays, but since you have to consider holidays as well, refer to <a href="https://qiita.com/hid_tanabe/items/3c5e6e85c6c65f7b38be">here</a>andreferto<code>jpholidayIusedapackagecalled</code>.Byusingthe<code>is_rain()</code> that judges whether it is the rain created earlier, you can express the condition when running.
+By the way, the <code>weekday()</code> function of <code>datetime</code> corresponds to 0~4 for Monday-Friday and 5,6 for Saturday and Sunday.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> jpholiday
+
+<span style="color:#66d9ef">if</span> tommorow<span style="color:#f92672">.</span>weekday() <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">5</span> <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> jpholiday<span style="color:#f92672">.</span>is_holiday(tommorow) <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> is_rain(tommorow_str):
+    <span style="color:#75715e"># Add event to Google Calendar</span>
+    add_event(tommorow_str)
+</code></pre></div><h2 id="add-event-to-google-calendar">Add event to Google Calendar</h2>
+<p>Finally, add the event to Google Calendar. Please refer to <a href="https://non-dimension.com/python-googlecalendarapi/">here</a> for how to activate Google Calendar API. I will leave the details to the link destination, and briefly explain the procedure until using the API.</p>
+<ol>
+<li>Press the &ldquo;Enable the Google Calendar API&rdquo; button in <a href="https://developers.google.com/calendar/quickstart/python?hl=ja">Python Quickstart</a>.</li>
+<li>After the pop-up is displayed, click the &ldquo;DOWNLOAD CLIENT CONFIGURATION&rdquo; button to download <code>credentials.json</code>.</li>
+<li>Move <code>credentials.json</code> to the same directory as your project.</li>
+</ol>
+<p>For now, you&rsquo;re ready to use the API.</p>
+<p>Next, confirm the ID of the calendar you want to add. The ID confirmation method is also explained in detail in the link above, so the flow will be briefly described.</p>
+<ol>
+<li>Open Google Calendar.</li>
+<li>From the overflow menu of &ldquo;My Calendar&rdquo; on the left sidebar, press the &ldquo;Settings and Share&rdquo; button of the calendar you want to add.</li>
+<li>Make a note of the &ldquo;Calendar ID&rdquo; displayed at the top of &ldquo;Combine Calendars&rdquo;.</li>
+</ol>
+<p>Event can be added at last by setting the confirmed calendar ID in <code>CALENDAR_ID</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> os.path
+<span style="color:#f92672">import</span> pickle
+
+<span style="color:#f92672">from</span> googleapiclient.discovery <span style="color:#f92672">import</span> build
+<span style="color:#f92672">from</span> google_auth_oauthlib.flow <span style="color:#f92672">import</span> InstalledAppFlow
+<span style="color:#f92672">from</span> google.auth.transport.requests <span style="color:#f92672">import</span> Request
+
+CALENDAR_ID <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Your Google Calendar ID&#39;</span>
+DIR <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__))
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">add_event</span>(tommorow):
+    creds <span style="color:#f92672">=</span> None<span style="color:#75715e"># The file token.pickle stores the user&#39;s access and refresh tokens, and is</span>
+    <span style="color:#75715e"># created automatically when the authorization flow completes for the first</span>
+    <span style="color:#75715e"># time.</span>
+    token_pickle_path <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(DIR, <span style="color:#e6db74">&#39;token.pickle&#39;</span>)
+    credentials_path <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(DIR, <span style="color:#e6db74">&#39;credentials.json&#39;</span>)
+
+    <span style="color:#66d9ef">if</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(token_pickle_path):
+        <span style="color:#66d9ef">with</span> open(token_pickle_path, <span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> token:
+            creds <span style="color:#f92672">=</span> pickle<span style="color:#f92672">.</span>load(token)
+    <span style="color:#75715e"># If there are no (valid) credentials available, let the user log in.</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> creds <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> creds<span style="color:#f92672">.</span>valid:
+        <span style="color:#66d9ef">if</span> creds <span style="color:#f92672">and</span> creds<span style="color:#f92672">.</span>expired <span style="color:#f92672">and</span> creds<span style="color:#f92672">.</span>refresh_token:
+            creds<span style="color:#f92672">.</span>refresh(Request())
+        <span style="color:#66d9ef">else</span>:
+            flow <span style="color:#f92672">=</span> InstalledAppFlow<span style="color:#f92672">.</span>from_client_secrets_file(credentials_path, SCOPES)
+            creds <span style="color:#f92672">=</span> flow<span style="color:#f92672">.</span>run_local_server(port<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+        <span style="color:#75715e"># Save the credentials for the next run</span>
+        <span style="color:#66d9ef">with</span> open(token_pickle_path, <span style="color:#e6db74">&#39;wb&#39;</span>) <span style="color:#66d9ef">as</span> token:
+            pickle<span style="color:#f92672">.</span>dump(creds, token)
+
+    service <span style="color:#f92672">=</span> build(<span style="color:#e6db74">&#39;calendar&#39;</span>, <span style="color:#e6db74">&#39;v3&#39;</span>, credentials<span style="color:#f92672">=</span>creds)
+
+    <span style="color:#75715e"># Call the Calndar API</span>
+    event <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;summary&#39;</span>: <span style="color:#e6db74">&#39;ランニング&#39;</span>,
+        <span style="color:#e6db74">&#39;location&#39;</span>: <span style="color:#e6db74">&#39;Your running location&#39;</span>,
+        <span style="color:#e6db74">&#39;start&#39;</span>: {
+            <span style="color:#e6db74">&#39;dateTime&#39;</span>: <span style="color:#e6db74">&#39;{}T07:30:00&#39;</span><span style="color:#f92672">.</span>format(tommorow),
+            <span style="color:#e6db74">&#39;timeZone&#39;</span>: <span style="color:#e6db74">&#39;Japan&#39;</span>,
+        },
+        <span style="color:#e6db74">&#39;end&#39;</span>: {
+            <span style="color:#e6db74">&#39;dateTime&#39;</span>: <span style="color:#e6db74">&#39;{}T09:00:00&#39;</span><span style="color:#f92672">.</span>format(tommorow),
+            <span style="color:#e6db74">&#39;timeZone&#39;</span>: <span style="color:#e6db74">&#39;Japan&#39;</span>,
+        },
+    }
+
+    service<span style="color:#f92672">.</span>events()<span style="color:#f92672">.</span>insert(calendarId<span style="color:#f92672">=</span>CALENDAR_ID, body<span style="color:#f92672">=</span>event)<span style="color:#f92672">.</span>execute()
+</code></pre></div><p>前半のコードに関しては、<a href="https://github.com/gsuitedevs/python-samples/blob/master/calendar/quickstart/quickstart.py">公式のサンプル</a> からとってきたものなので、特に手を加える必要はなさそうです。あとは、 <code>event</code> の <code>summary</code> に追加したいイベントのタイトルを、 <code>start</code> と <code>end</code> の <code>dateTime</code> にそれぞれ開始時間、終了時間を入れれば完成です。</p>
+<h2 id="完成コード">完成コード</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:add_calendar.py" data-lang="python:add_calendar.py"><span style="color:#f92672">import</span> datetime
+<span style="color:#f92672">import</span> os.path
+<span style="color:#f92672">import</span> pickle
+<span style="color:#f92672">import</span> requests
+
+<span style="color:#f92672">import</span> jpholiday
+<span style="color:#f92672">from</span> googleapiclient.discovery <span style="color:#f92672">import</span> build
+<span style="color:#f92672">from</span> google_auth_oauthlib.flow <span style="color:#f92672">import</span> InstalledAppFlow
+<span style="color:#f92672">from</span> google.auth.transport.requests <span style="color:#f92672">import</span> Request
+
+<span style="color:#75715e"># If modifying these scopes, delete the file token.pickle.</span>
+SCOPES <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;https://www.googleapis.com/auth/calendar&#39;</span>]
+
+<span style="color:#75715e"># 任意の値を設定してください。</span>
+CALENDAR_ID <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Your Google Calendar ID&#39;</span>
+OPENWEATHER_API_KEY <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;You Openweather API key&#39;</span>
+ZIP_CODE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Zip code of your area&#39;</span>
+DIR <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__))
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">add_event</span>(tommorow):
+    creds <span style="color:#f92672">=</span> None
+    <span style="color:#75715e"># The file token.pickle stores the user&#39;s access and refresh tokens, and is</span>
+    <span style="color:#75715e"># created automatically when the authorization flow completes for the first</span>
+    <span style="color:#75715e"># time.</span>
+    token_pickle_path <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(DIR, <span style="color:#e6db74">&#39;token.pickle&#39;</span>)
+    credentials_path <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(DIR, <span style="color:#e6db74">&#39;credentials.json&#39;</span>)
+
+    <span style="color:#66d9ef">if</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(token_pickle_path):
+        <span style="color:#66d9ef">with</span> open(token_pickle_path, <span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> token:
+            creds <span style="color:#f92672">=</span> pickle<span style="color:#f92672">.</span>load(token)
+    <span style="color:#75715e"># If there are no (valid) credentials available, let the user log in.</span>
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> creds <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> creds<span style="color:#f92672">.</span>valid:
+        <span style="color:#66d9ef">if</span> creds <span style="color:#f92672">and</span> creds<span style="color:#f92672">.</span>expired <span style="color:#f92672">and</span> creds<span style="color:#f92672">.</span>refresh_token:
+            creds<span style="color:#f92672">.</span>refresh(Request())
+        <span style="color:#66d9ef">else</span>:
+            flow <span style="color:#f92672">=</span> InstalledAppFlow<span style="color:#f92672">.</span>from_client_secrets_file(credentials_path, SCOPES)
+            creds <span style="color:#f92672">=</span> flow<span style="color:#f92672">.</span>run_local_server(port<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+        <span style="color:#75715e"># Save the credentials for the next run</span>
+        <span style="color:#66d9ef">with</span> open(token_pickle_path, <span style="color:#e6db74">&#39;wb&#39;</span>) <span style="color:#66d9ef">as</span> token:
+            pickle<span style="color:#f92672">.</span>dump(creds, token)
+
+    service <span style="color:#f92672">=</span> build(<span style="color:#e6db74">&#39;calendar&#39;</span>, <span style="color:#e6db74">&#39;v3&#39;</span>, credentials<span style="color:#f92672">=</span>creds)
+
+    event <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;summary&#39;</span>: <span style="color:#e6db74">&#39;ランニング&#39;</span>,
+        <span style="color:#e6db74">&#39;location&#39;</span>: <span style="color:#e6db74">&#39;Your running location&#39;</span>,
+        <span style="color:#e6db74">&#39;start&#39;</span>: {
+            <span style="color:#e6db74">&#39;dateTime&#39;</span>: <span style="color:#e6db74">&#39;{}T07:30:00&#39;</span><span style="color:#f92672">.</span>format(tommorow),
+            <span style="color:#e6db74">&#39;timeZone&#39;</span>: <span style="color:#e6db74">&#39;Japan&#39;</span>,
+        },
+        <span style="color:#e6db74">&#39;end&#39;</span>: {
+            <span style="color:#e6db74">&#39;dateTime&#39;</span>: <span style="color:#e6db74">&#39;{}T09:00:00&#39;</span><span style="color:#f92672">.</span>format(tommorow),
+            <span style="color:#e6db74">&#39;timeZone&#39;</span>: <span style="color:#e6db74">&#39;Japan&#39;</span>,
+        },
+    }
+
+    service<span style="color:#f92672">.</span>events()<span style="color:#f92672">.</span>insert(calendarId<span style="color:#f92672">=</span>CALENDAR_ID, body<span style="color:#f92672">=</span>event)<span style="color:#f92672">.</span>execute()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">is_rain</span>(tommorow):
+    BASE_URL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;http://api.openweathermap.org/data/2.5/forecast&#39;</span>
+    url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;{}?units=metric&amp;zip={zip},JP&amp;APPID={key}&#39;</span><span style="color:#f92672">.</span>format(BASE_URL, zip<span style="color:#f92672">=</span>ZIP_CODE, key<span style="color:#f92672">=</span>OPENWEATHER_API_KEY)
+
+    res <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(url)<span style="color:#f92672">.</span>json()
+    weather_preds <span style="color:#f92672">=</span> res[<span style="color:#e6db74">&#39;list&#39;</span>]
+
+    tommow_morning_dt <span style="color:#f92672">=</span> [tommorow <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39; 06:00:00&#39;</span>, tommorow <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39; 09:00:00&#39;</span>]
+    tommow_morning_weather <span style="color:#f92672">=</span> []
+
+    <span style="color:#66d9ef">for</span> pred <span style="color:#f92672">in</span> weather_preds:
+        <span style="color:#66d9ef">if</span> pred[<span style="color:#e6db74">&#39;dt_txt&#39;</span>] <span style="color:#f92672">in</span> tommow_morning_dt:
+            <span style="color:#66d9ef">for</span> weather <span style="color:#f92672">in</span> pred[<span style="color:#e6db74">&#39;weather&#39;</span>]:
+                tommow_morning_weather<span style="color:#f92672">.</span>append(weather[<span style="color:#e6db74">&#39;main&#39;</span>])
+
+    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#39;Rain&#39;</span> <span style="color:#f92672">in</span> tommow_morning_weather
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    tommorow <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now() <span style="color:#f92672">+</span> datetime<span style="color:#f92672">.</span>timedelta(days<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    tommorow_str <span style="color:#f92672">=</span> tommorow<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)
+
+    <span style="color:#75715e"># weekday: 0 ~ 4</span>
+    <span style="color:#66d9ef">if</span> tommorow<span style="color:#f92672">.</span>weekday() <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> jpholiday<span style="color:#f92672">.</span>is_holiday(tommorow) <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> is_rain(tommorow_str):
+        add_event(tommorow_str)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+    main()
+</code></pre></div><p>なお、このコードを</p>
+<pre><code>$ python add_calendar.py
+</code></pre><p>で実行した際に、１度目に警告画面が表示されますが、問題ないので、</p>
+<ol>
+<li>アカウントを選択</li>
+<li>「詳細」リンクをクリック</li>
+<li>「Quickstart（安全ではないページ）に移動」リンクをクリック</li>
+<li>「許可」ボタンをクリック</li>
+<li>「許可」ボタンをクリック</li>
+</ol>
+<p>の手順で進めてください。２度目以降はこの操作を行う必要はありません。</p>
+<p>ここまでで、明日の天気が雨でなく、平日であることを確認した上で、ランニングの予定を追加するスクリプトが完成したので、これを自動化したいと思います。</p>
+<h2 id="イベント追加の定期実行regular-execution-can-be-easily-done-by-using-crontab-which-is-installed-by-default-in-macos-and-linux-for-more-information-please-refer-to-herehttpswwwserver-memonettipscrontabhtml-first">イベント追加の定期実行Regular execution can be easily done by using <code>crontab</code> which is installed by default in macOS and Linux. For more information, please refer to <a href="https://www.server-memo.net/tips/crontab.html">here</a>. First,</h2>
+<pre><code>$ crontab -e
+</code></pre><p>Start <code>crontab</code> with. And write like this:</p>
+<pre><code>00 18 * * 0-4 [python path] [project directory]/add_calendar.py
+</code></pre><p>python path is</p>
+<pre><code>$ which python
+</code></pre><p>You can check it at.</p>
+<p><code>00 18 * * 0-4</code> means run at 18:00 on Sunday-Thursday. From left to right, &ldquo;minute&rdquo;, &ldquo;hour&rdquo;, &ldquo;day&rdquo;, &ldquo;month&rdquo;, and &ldquo;day of the week&rdquo; are displayed. I don&rsquo;t think it is necessary to specify the day of the week because it determines whether it is a weekday in the program, but I put it in to reduce unnecessary processing.</p>
+<h2 id="summary">Summary</h2>
+<p>This time, I wrote a script for the purpose of adding running, but I think that it is quite often that I want to judge the conditions and add an appointment to the calendar, so please use it.</p>
+<h2 id="reference">Reference</h2>
+<p><a href="https://qiita.com/Kodaira_/items/feadfef9add468e3a85b">Build environment with pyenv and pyenv-virtualenv
+</a></p>
+<p><a href="https://qiita.com/hid_tanabe/items/3c5e6e85c6c65f7b38be">A script that combines daytime and jholiday to determine if it is a weekday or a weekend
+</a></p>
+<p><a href="https://qiita.com/optimisuke/items/87d4846de15736b599e4">Get weather information from OpenWeatherMap using python
+</a></p>
+<p><a href="https://qiita.com/nownabe/items/aeac1ce0977be963a740">Try using OpenWeatherMap, a free weather forecast API
+</a></p>
+<p><a href="https://qiita.com/hajime_migi/items/d7d0a310995a99297e80">Add Appointment to Google Calendar with Python
+</a></p>
+<p><a href="https://non-dimension.com/python-googlecalendarapi/">Get and add appointments in Google Calendar using Google Calendar API
+</a></p>
+<p><a href="https://www.server-memo.net/tips/crontab.html">How to write crontab
+</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

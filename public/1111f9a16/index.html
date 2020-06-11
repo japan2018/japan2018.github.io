@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Vertical Tower of Pisa using OpenCV ～Vertical Tower of Pisa～ | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Vertical Tower of Pisa using OpenCV ～Vertical Tower of Pisa～</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 25, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/inpainting"> inpainting</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/leaning-tower-of-pisa"> Leaning Tower of Pisa</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/normal-gravity"> Normal Gravity</a></code></small>
+
+</p>
+<pre><code>#Overview
+</code></pre>
+<p>Recently, I learned image processing in a class and learned the technique of transforming a plane by matrix transformation.</p>
+<p>Then I suddenly got an urge to make the Leaning Tower of Pisa vertical, so I&rsquo;ll try to practice Python and OpenCV.</p>
+<p>Well, I don&rsquo;t understand much, so I&rsquo;m good at using OpenCV useful functions.</p>
+<p>Let&rsquo;s Vertical!</p>
+<p>#environment
+windows10
+Python 3.7.7
+OpenCV 3.4.2
+Pillow 7.1.2
+numpy 1.18.4</p>
+<p>#Implementation
+Click here for the Leaning Tower of Pisa
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/58e44607-79ba-4585-2405-3e14ae5cfb54.jpeg" alt="a.jpg"></p>
+<p>Since white is strong as a whole, this time try to detect the contour not by the edge but by the color tone.
+(Not to mention the background that didn&rsquo;t work on the edges)</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa"># White detection
+def detect_white_color(img):
+    #Convert to HSV color space
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # White HSV range
+    hsv_min = np.array([0,0,100])
+    hsv_max = np.array([180,45,255])
+    mask = cv2.inRange(hsv, hsv_min, hsv_max)
+
+    # Masking process
+    masked_img = cv2.bitwise_and(img, img, mask=mask)
+
+    return mask, masked_img
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/817283a4-9097-592d-6d45-b3416fb1a720.jpeg" alt="a.jpg"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/37eef11a-8989-54b1-7429-14108e0d99ee.jpeg" alt="a.jpg"></p>
+<p>Left is mask, right is masked_img</p>
+<p>Next, binarize and detect rectangle</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa">imgray = cv2.cvtColor(blurred_img,cv2.COLOR_BGR2GRAY)
+ret,thresh = cv2.threshold(imgray,115,255,0)
+im, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+
+for cnt in contours:
+    rect = cv2.minAreaRect(cnt)
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)
+    cv2.drawContours(img, [box], 0, (0,255,0), 2)
+
+</code></pre><p>First run minAreaRect(contours) on rect
+minAreaRect() returns a tuple with a Box2D structure
+The structure of Box2D is (upper left point (x, y), horizontal and vertical size (width, height), rotation angle)</p>
+<p>In order to draw a rectangle, we need to convert this information into four coordinates, so we execute boxPoints() which can do that.</p>
+<p>The flow is to draw at the end
+(<a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html#b">Reference Reference</a>)</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/f505a6b7-5065-7edd-a304-cdb5759c60cb.jpeg" alt="a.jpg"></p>
+<p>It works, but I blur it with a Gaussian filter just in case so that I can handle other photos well!</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa">#Blur with a Gaussian filter
+blurred_img = cv2.GaussianBlur(white_masked_img,(5,5),10)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/f1835f29-697a-443f-842b-d8f3cec49389.jpeg" alt="a.jpg"></p>
+<p>The edge has calmed down considerably</p>
+<p>I just pick the largest rect and I&rsquo;ll pick it up</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa">#Function that returns the index of the rectangle with the largest area
+def detect_max_rect(img,contours):
+    #Contours index that takes the largest area
+    max_idx = 0
+    
+    for i in range(len(contours)):
+        if cv2.contourArea(contours[max_idx]) &lt;cv2.contourArea(contours[i]):
+            max_idx = i
+    
+    return max_idx
+
+</code></pre><p>At <a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html#contour-area">contourArea(contours)</a> You can get the area of the quadrangle surrounded by the corners</p>
+<p>Use this to define a function that returns the index of the coordinate that maximizes the area</p>
+<p>And by setting minAreaRect(max_idx), only the quadrilateral with the maximum area can be extracted.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/d1c62beb-0b73-a076-e408-b4a61a8d032c.jpeg" alt="pisa_rect.jpg"></p>
+<p>You&rsquo;re leaning!</p>
+<p>##Let&rsquo;s Vertical</p>
+<p>I&rsquo;m doing without writing a flowchart, so I&rsquo;m sorry</p>
+<h3 id="trimming-a-rotating-rectangle">Trimming a rotating rectangle</h3>
+<p>First, create a function to trim the square area that you will need later.</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa">
+#Cutout function
+def crop_rect(img, rect):
+    center, size, angle = rect
+    center = tuple(map(int, center)) # float -&gt; int
+    size = tuple(map(int, size)) # float -&gt; int
+    h, w = img.shape[:2] # image height, width
+
+    Get height and width of #rect
+    height,width=rect[1]
+    height,width=int(height),int(width)
+    
+    #angle is +90 because it shows the angle formed by the horizontal line.
+    if angle&lt;0:
+        angle+=90
+    
+    # rotate the image using the affine matrix
+    M = cv2.getRotationMatrix2D(center, angle, 1)
+    rotated = cv2.warpAffine(img, M, (w, h))
+
+    # Cut out
+    cropped = cv2.getRectSubPix(rotated, (w,h), center)
+
+    return cropped
+
+</code></pre><p>I wrote the details in the comments
+The image of the execution result is as follows</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/8302a938-8b46-ee8b-00b4-07125c6860fa.jpeg" alt="pisa_rect_crop.jpg"></p>
+<p>It&rsquo;s unnatural and interesting</p>
+<h3 id="heading"></h3>
+<p>It&rsquo;s already easy because the angle is obtained</p>
+<p>Create a function to rotate the image</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa">
+# Rotate function
+def rotate_img(img,rect):
+    #Calculate center of screen from height and width
+    _height = img.shape[0]
+    _width = img.shape[1]
+    _center = (int(_width/2), int(_height/2))
+    
+    _angle=rect[2]
+    +90 because #angle shows the angle with the horizontal line
+    if _angle&lt;0:
+        _angle+=90
+    
+    # rotate the image using the affine matrix
+    _M = cv2.getRotationMatrix2D(_center, _angle, 1)
+    _rotated_img = cv2.warpAffine(img, _M, (_width, _height))
+    
+    return _rotated_img
+
+</code></pre><p>Rotate by the angle of Pisa around the center of the image</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/5b7f766e-146c-63fa-13e6-b747c7fff1de.jpeg" alt="pisa_rect_rotate.jpg"></p>
+<p>High perfect! ! !</p>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+<p>． ． ． I&rsquo;m kidding, sorry
+Throw away some of the previous functions</p>
+<p>As a policy, I will complement the image of the original image and paste the trimmed image at the same coordinates.</p>
+<h3 id="image-completion">Image completion</h3>
+<pre><code class="language-python:pisa" data-lang="python:pisa"># Image completion
+def inpaint_img(img):
+    
+    _mask = cv2.imread('img/pisa1.jpg')
+
+    # Fill with white
+    cv2.drawContours(_mask, [box], 0, (255,255,255), -1)
+    _maskGray = cv2.cvtColor(_mask,cv2.COLOR_BGR2GRAY)
+    ret,_thresh = cv2.threshold(_maskGray,254,255,0)
+    
+    # Image correctiondst = cv2.inpaint(img, _thresh, 3, cv2.INPAINT_TELEA)
+    
+    cv2.imwrite('img/pisa_rect_inpaint.jpg', dst)
+
+
+</code></pre><p><a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_photo/py_inpainting/py_inpainting.html">inpaint</a> is the input image and the same size mask image Is required
+The non-zero valued pixels in this mask image represent where to repair
+In other words, you can complement by whitening the part you want to restore and binarizing the rest to black.</p>
+<p>There are two types of algorithms, INPAINT_TELEA and INPAINT_NS, this time I tried to run both</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/665bb878-a556-2379-8768-29d9e4ff467b.jpeg" alt="a.jpg"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/f47c8f6b-92f1-55a3-5a7e-0de5b610d45a.jpeg" alt="a.jpg"></p>
+<p>INPAINT_TELEA on the left, INPAINT_NS on the right</p>
+<p>I feel that the NS is slightly cleaner in the empty part, so this time I adopted this</p>
+<h3 id="otateru-take-2">Otateru (Take 2)</h3>
+<p>It seems to be troublesome to paste images only with OpenCV, so use the Pillow library</p>
+<pre><code class="language-python:pisa" data-lang="python:pisa"># Paste on the background image that complements the cropped Pisa
+def paste_pisa(rect):
+    Center coordinates of Pisa trimmed to #x, y are entered
+    x,y=rect[0]
+    
+    #Because I want to bring it to the upper left, subtract half width w and height h from x and y
+    _w,_h=rect[1]
+    #print(h,w)
+    x -= _h/2
+    y -= _w/2
+    
+    x,y=int(x),int(y)
+    
+    source_img = Image.open('img/pisa_rect_crop.jpg')
+    canvas_img = Image.open('img/pisa_rect_inpaint.jpg')
+    
+    Paste the trimmed Pisa to the #inpainted image
+    canvas_img.paste(source_img, (x,y))
+    #Save image
+    canvas_img.save('img/vertical_pisa.jpg')
+
+
+</code></pre><p>Let&rsquo;s do it</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/07c69f12-a046-f841-ec65-d38454a7880f.jpeg" alt="vertical_pisa.jpg"></p>
+<p>**Pi, Pi and Pisa stood! ! ! **</p>
+<h1 id="try-to-disturb">Try to disturb</h1>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/7ea93cc6-3507-7d8f-945f-c33f5ede5b12.jpeg" alt="1.jpg"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/7698302d-594b-5427-e8fb-3121f8e2f932.jpeg" alt="2.jpg">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/f37cffb5-4e80-f332-0f2d-777d64c2836c.jpeg" alt="3.jpg"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/e58cbceb-aa89-0088-e9ac-247f6bd0439c.jpeg" alt="4.jpg">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/cb6a6a3e-7462-b47f-fd83-26ee7db81c36.png" alt="10.png"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/b6566053-9550-65eb-6a47-6c70cf414696.jpeg" alt="5.jpg">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/5fee5ee3-6852-16de-c84e-bc8e83513cea.jpeg" alt="7.jpg"></p>
+<p>#at the end
+The complementary part is visible and it is rough, or it is not very vertical, but I think it was said well</p>
+<p>I didn&rsquo;t learn anything personally, and was surprised at the accuracy of the inpaint function, which is an algorithm only.
+In addition, python&rsquo;s dynamic typing is too convenient. ． ． Honestly I do not understand the type, but I am impressed with the comfortable specifications because there are things I advanced</p>
+<p>This time we are detecting the area by color, so next time I think that it will be possible to increase the degree of freedom if it can be done with edges.</p>
+<p>Everyone, **Let&rsquo; vertical! **</p>
+<p>#bonus
+##<strong>Vertical Michael</strong></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/518001/0cdf28fb-1ae6-d560-c09a-97f536bc1077.jpeg" alt="m.jpg"></p>
+<p>This is normal gravity</p>
+<p>#References</p>
+<p>minAreaRect function
+<a href="https://www.it-swarm.dev/ja/python/minarearect-opencv%E3%81%AB%E3%82%88%E3%81%A3%E3%81%A6%E8%BF%94%25">https://www.it-swarm.dev/ja/python/minarearect-opencv%E3%81%AB%E3%82%88%E3%81%A3%E3%81%A6%E8%BF%94%</a> E3%81%95%E3%82%8C%E3%82%8B%E5%9B%9B%E8%A7%92%E5%BD%A2%E3%81%AE%E3%83%88%E3% 83%AA%E3%83%9F%E3%83%B3%E3%82%B0python/824441051/</p>
+<p>Contour extraction
+<a href="https://hk29.hatenablog.jp/entry/2020/02/01/162533">https://hk29.hatenablog.jp/entry/2020/02/01/162533</a></p>
+<p>White extraction
+<a href="https://temari.co.jp/blog/2017/11/13/opencv-4/">https://temari.co.jp/blog/2017/11/13/opencv-4/</a></p>
+<p>trimming
+<a href="https://teratail.com/questions/219340">https://teratail.com/questions/219340</a></p>
+<p>inpaint function
+<a href="https://lp-tech.net/articles/kb4bO/view?page=2">https://lp-tech.net/articles/kb4bO/view?page=2</a></p>
+<p>Pillow library
+<a href="https://water2litter.net/rum/post/python_pil_paste/">https://water2litter.net/rum/post/python_pil_paste/</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

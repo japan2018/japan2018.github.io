@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Support iOS private streaming (limited) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Support iOS private streaming (limited)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jul 23, 2014
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/boto">boto</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cloudfront">CloudFront</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/stream">Stream</a></code></small>
+
+</p>
+<pre><code>This article is a continuation related to [Video Streaming with AWS S3 + CloudFront](http://qiita.com/terapyon/items/b77ac981da790662e247).
+</code></pre>
+<h1 id="purpose">Purpose</h1>
+<ul>
+<li>Streaming compatible with iOS <a href="http://qiita.com/terapyon/items/e4925c15c7ee58778f92">Preliminary survey is here</a></li>
+<li>Delivered via CloudFront to private (browsing restricted) <a href="http://qiita.com/terapyon/items/ff2dd73bd479fbd44e82">Preliminary survey is here</a></li>
+<li>Realizing the latest private while supporting HLS for iOS &lt;This is the main purpose this time</li>
+</ul>
+<h1 id="method">Method</h1>
+<h2 id="jaws-days-2014-announcement-has-instructions">JAWS Days 2014 announcement has instructions.</h2>
+<p>There is a description in p17 of <a href="http://www.slideshare.net/kkitasako/jawsdays2014-cf">Secure Content Delivery and Effect Tracking with CloudFront</a>.</p>
+<h2 id="generate-signed-url">Generate Signed URL</h2>
+<p>Signed URL generates a one-time URL for each URL and cancels browsing for a certain period of time, but you can specify the URL with a wildcard, and by using it, a valid signature for the directory containing the .ts file can be specified. It seems that you can get it.</p>
+<p><a href="http://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html">http://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-custom-policy.html</a></p>
+<p>In case of boto (Python module), it can be created by giving policy_url (str) to the create_signed_url method.
+<a href="http://boto.readthedocs.org/en/latest/ref/cloudfront.html">http://boto.readthedocs.org/en/latest/ref/cloudfront.html</a></p>
+<h2 id="rewriting-the-manifest-file">Rewriting the manifest file</h2>
+<p>According to the JAWS Days document introduced earlier, the URI of the .ts file in the manifest file with the extension .m3u8 is added to the domain and rewritten as a Signed URL.</p>
+<p>This will be possible if this is done dynamically at the timing of video viewing.</p>
+<p>The manifest file had the following simple format, so it seems good to rewrite the lines that do not start with &ldquo;#&rdquo;. (Available with a simple parser)</p>
+<pre><code class="language-Manifest" data-lang="Manifest">#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-ALLOW-CACHE:YES
+#EXT-X-TARGETDURATION:11
+#EXTINF:10.866922,
+hls_400_00000.ts
+#EXTINF:10.817778,
+hls_400_00001.ts
+#EXTINF:10.815044,
+hls_400_00002.ts
+.
+.
+.
+#EXT-X-ENDLIST
+</code></pre><h2 id="dynamic-rewriting-of-manifest-file">Dynamic rewriting of manifest file</h2>
+<p>The problem is where and when to do this.</p>
+<p>As a method under consideration, on the application server (this time assuming Plone), get the original manifest from S3 (or CloudFront), rewrite it as a Signed URL, and deliver it.</p>
+<p>It seems that it is necessary to consider how much this rewriting is done every time the URL is accessed. Especially, in case of PC access, this conversion is not necessary because it is viewed with RTMP instead of HLS.</p>
+<p>If you do it when the manifest file of the application server is accessed, it may not be a problem because it is not necessary to convert carelessly when using RTMP. (Video.js selects two Sources, so I feel like this is okay)</p>
+<p>#Summary</p>
+<p>By integrating the various technologies, I think we have reached a situation where it is possible to implement the desired functions.
+In practice, I&rsquo;ll try to experiment with this method for streaming.</p>
+<h1 id="todo">TODO</h1>
+<ul>
+<li>Try Signed URL Custom Policy (specify allowed content with wildcard)</li>
+<li>Experiment by rewriting the manifest file to see if it can be supported</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

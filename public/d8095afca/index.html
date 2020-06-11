@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Let&#39;s create a web chat using WebSocket with AWS serverless (Python)! | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Let&rsquo;s create a web chat using WebSocket with AWS serverless (Python)!</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 2, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws"> AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/websocket"> websocket</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lambda"> lambda</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/serverless"> serverless</a></code></small>
+
+</p>
+<pre><code>This article is the second day of NTT Technocross [Advent Calendar 2019](https://qiita.com/advent-calendar/2019/ntt-tx).
+</code></pre>
+<p>Hello. My name is Yasuda.
+I am in charge of new AI-related product development at NTT Technocross. It&rsquo;s a gap from the main subject immediately, but drawing a manga is a recent break, and I&rsquo;m drawing the following manga.</p>
+<p><a href="https://www.ntt-tx.co.jp/products/dataspidercloud/manga.html?utm_source=qiita&amp;utm_medium=ac2019&amp;utm_campaign=02">Data link understood by manga</a>
+<a href="https://www.ntt-tx.co.jp/column/yasuda_blog/20170413/?utm_source=qiita&amp;utm_medium=ac2019&amp;utm_campaign=02">Enterprise architecture in the AI era understood with manga</a>
+<a href="https://www.itmedia.co.jp/enterprise/articles/1606/25/news012.html">IT strategy understood by manga</a>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/7ba52e24-d96f-1f6c-32e2-50ba5869814d.jpeg" alt="240_news012.jpg"></p>
+<p>&hellip; Well, in this article, I&rsquo;d like to see how to do &ldquo;WebSocket&rdquo; without AWS server. From December 2018, AWS API Gateway seems to be able to establish WebSocket communication, and I thought that I would like to try it someday, so I tried it. I found a lot of sample programs that use node.js for AWS Lambda, but I can&rsquo;t find any Python samples&hellip;I&rsquo;m better at Python, so I&rsquo;d like to write Python code.</p>
+<h1 id="what-to-make">What to make</h1>
+<p>Create a web chat. When you connect to that Web page and write a message, the message will be delivered in real time to all terminals (that have WebSocket sessions) connected to that page at that time.
+<img width="594" alt="qiita Things to make.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/89d3b911-7909-4739-8c80-5fa1b312f2f7.png"></p>
+<h1 id="system-configuration">System configuration</h1>
+<p>It is created by combining API Gateway, Lambda, and DynamoDB, which are typical elements of AWS serverless. The web page to publish works even if you put the HTML file on the PC locally, or you can put it on S3 static hosting and publish it easily.</p>
+<img width="590" alt="qiita What to make.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/24542038-b5da-dcab-afce-d95f21175211.png">
+<p>#Coding</p>
+<h2 id="1-first-prepare-api-gateway">1. First, prepare API Gateway!</h2>
+<h3 id="1-1-create-a-new-websocket-api-gateway">1-1. Create a new &ldquo;WebSocket&rdquo; API Gateway</h3>
+<p>Select WebSocket to create a new API Gateway.
+<img width="500" alt="capture.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/db9955b3-c4c9-6444-6ff3-870604a51545.png"></p>
+<p>The route selection formula is &ldquo;$request.body.action&rdquo; here. You can change this later.</p>
+<h3 id="1-2-we-are-making-routes-one-by-one-from-here">1-2. We are making routes one by one from here</h3>
+<p>Create a route for connecting (connect), a route for disconnecting (disconnnect), and a route for sending a message (sendMessage).
+<img width="372" alt="capture.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/9436bb77-a2ce-e35a-d592-c9cb13e912b3.png"></p>
+<p>But, before that, we need to create DynamoDB and an IAM role.</p>
+<h3 id="1-3-deploy-and-create-a-stage">1-3. Deploy and create a stage</h3>
+<p>Although we have not created any routes yet, we will deploy and create a stage.
+<img width="533" alt="capture.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/d0e59465-1ff6-472b-d124-2515aa0b6e78.png"></p>
+<p>A unique character string is inserted in the part that is erased in blue. This unique string will be used in the next IAM role creation.</p>
+<h2 id="2-create-an-iam-role-for-lambda">2. Create an IAM role for Lambda</h2>
+<p>First, add &ldquo;AWSLambdaBasicExecutionRole&rdquo; to run Lambda and &ldquo;AmazonDynamoDBFullAccess&rdquo; to run DynamoDB. * It doesn&rsquo;t have to be FullAccess, but it&rsquo;s easy.
+<img width="537" alt="Capture.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/fce0ed15-4017-b70b-4633-204b0ddc666a.png"></p>
+<p>After that, set the following inline policy. You can now access the API Gatteway from Lambda.</p>
+<pre><code class="language-json:" data-lang="json:">{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Action&quot;: [
+                &quot;execute-api:ManageConnections&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:execute-api:ap-northeast-1:&lt;Tenant ID here&gt;:&lt;Write the unique string of the API Gateway you just set here&gt;/*&quot;
+            ],
+            &quot;Effect&quot;: &quot;Allow&quot;
+        }
+    ]
+}
+</code></pre><p>Where the image of the above role is erased in blue, please set the unique character string that appeared when you first deployed API Gateway.</p>
+<h2 id="3-create-a-table-dynamodb-that-manages-connection-information">3. Create a table (DynamoDB) that manages connection information</h2>
+<p>Shall I set the primary key as the character string &ldquo;id&rdquo;?
+<img width="418" alt="capture.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/da5ead64-1640-9c83-dc67-9cbef93066a1.png"></p>
+<h2 id="4-create-a-route-connect-when-connecting">4. Create a route (connect) when connecting</h2>
+<h3 id="4-1-make-lambda">4-1. Make Lambda</h3>
+<p>Create a new Lambda/Python 3.8. Set the IAM role you used earlier.
+If you don&rsquo;t take the abnormal system into consideration, the program is really simple because it only has two lines. (Actually, it should be made considering the abnormal system.)
+All you have to do is get the connected connection_id and register it in DynamoDB.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:ac19_onConnect/lambda_function.py" data-lang="python:ac19_onConnect/lambda_function.py"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> boto3
+
+dynamodb <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;dynamodb&#39;</span>)
+connections <span style="color:#f92672">=</span> dynamodb<span style="color:#f92672">.</span>Table(os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;CONNECTION_TABLE&#39;</span>])
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+    connection_id <span style="color:#f92672">=</span> event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;requestContext&#39;</span>,{})<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;connectionId&#39;</span>)
+    result <span style="color:#f92672">=</span> connections<span style="color:#f92672">.</span>put_item(Item<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;id&#39;</span>: connection_id })
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;statusCode&#39;</span>: <span style="color:#ae81ff">200</span>,<span style="color:#e6db74">&#39;body&#39;</span>:<span style="color:#e6db74">&#39;ok&#39;</span>}
+</code></pre></div><p>Set the name of the DynamoDB created earlier in the environment variable &ldquo;CONNECTION_TABLE&rdquo; of Lambda. The timeout time may be 3 seconds, but I set it to 1 minute.</p>
+<h3 id="4-2-integrate-api-gateway-and-lambda">4-2. Integrate API Gateway and Lambda</h3>
+<p>Integrate the connect route of API Gateway created earlier and the above Lambda &ldquo;ac19_onConnect&rdquo;.
+<img width="491" alt="capture.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/841f2c47-ee31-2fc0-009d-b28346fb0647.png"></p>
+<p>The procedure is the same when integrating the disconnect and sendMessage routes described below with Lambda. Once integrated, don&rsquo;t forget to deploy the stage.</p>
+<h2 id="5-create-a-route-disconnect-when-disconnected">5. Create a route (disconnect) when disconnected</h2>
+<p>First, create a Lambda program and integrate it with the disconnect route of API Gateway using the same procedure as the connect route. If you don&rsquo;t consider abnormal systems, the program is simple, just grab the disconnected connection_id and delete it from DynamoDB. Other settings of Lambda (role, timeout, environment variables) are the same as the previous onConnect program.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:ac19_onDisconnect/lambda_function.py" data-lang="python:ac19_onDisconnect/lambda_function.py"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> logging
+<span style="color:#f92672">import</span> boto3
+
+dynamodb <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;dynamodb&#39;</span>)
+connections <span style="color:#f92672">=</span> dynamodb<span style="color:#f92672">.</span>Table(os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;CONNECTION_TABLE&#39;</span>])
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+    connection_id <span style="color:#f92672">=</span> event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;requestContext&#39;</span>,{})<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;connectionId&#39;</span>)
+    result <span style="color:#f92672">=</span> connections<span style="color:#f92672">.</span>delete_item(Key<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;id&#39;</span>: connection_id })<span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;statusCode&#39;</span>: <span style="color:#ae81ff">200</span>,<span style="color:#e6db74">&#39;body&#39;</span>:<span style="color:#e6db74">&#39;ok&#39;</span>}
+</code></pre></div><h2 id="6-create-a-route-sendmessage-when-receiving-sendmessage">6. Create a route (sendMessage) when receiving sendMessage</h2>
+<p>Only sendMessage has a few lines, but it&rsquo;s easy to do.
+When you receive sendMessage, you are just delivering a message to each connection registered in DynamoDB. With the same procedure as above, first create a Lambda program, create a sendMessage route in API Gateway, and integrate it with the route. After that, don&rsquo;t forget to deploy API Geteway on stage. Other Lambda settings (role, timeout, environment variables) are the same as the previous two Lambda.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:ac19_sendMessage/lambda_function.py" data-lang="python:ac19_sendMessage/lambda_function.py"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> logging
+<span style="color:#f92672">import</span> boto3
+<span style="color:#f92672">import</span> botocore
+
+dynamodb <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;dynamodb&#39;</span>)
+connections <span style="color:#f92672">=</span> dynamodb<span style="color:#f92672">.</span>Table(os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;CONNECTION_TABLE&#39;</span>])
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+
+    post_data <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;body&#39;</span>,<span style="color:#e6db74">&#39;{}&#39;</span>))<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;data&#39;</span>)
+    <span style="color:#66d9ef">print</span>(post_data)
+    domain_name <span style="color:#f92672">=</span> event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;requestContext&#39;</span>,{})<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;domainName&#39;</span>)
+    stage <span style="color:#f92672">=</span> event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;requestContext&#39;</span>,{})<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;stage&#39;</span>)
+
+    items <span style="color:#f92672">=</span> connections<span style="color:#f92672">.</span>scan(ProjectionExpression<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;id&#39;</span>)<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;Items&#39;</span>)
+    <span style="color:#66d9ef">if</span> items <span style="color:#f92672">is</span> None:
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;statusCode&#39;</span>: <span style="color:#ae81ff">500</span>,<span style="color:#e6db74">&#39;body&#39;</span>:<span style="color:#e6db74">&#39;something went wrong&#39;</span>}
+
+    apigw_management <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;apigatewaymanagementapi&#39;</span>,
+                                    endpoint_url<span style="color:#f92672">=</span>F<span style="color:#e6db74">&#34;https://{domain_name}/{stage}&#34;</span>)
+    <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> items:
+        <span style="color:#66d9ef">try</span>:
+            <span style="color:#66d9ef">print</span>(item)
+            _ <span style="color:#f92672">=</span> apigw_management<span style="color:#f92672">.</span>post_to_connection(ConnectionId<span style="color:#f92672">=</span>item[<span style="color:#e6db74">&#39;id&#39;</span>],
+                                                         Data<span style="color:#f92672">=</span>post_data)
+        <span style="color:#66d9ef">except</span>:
+            <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;statusCode&#39;</span>: <span style="color:#ae81ff">200</span>,<span style="color:#e6db74">&#39;body&#39;</span>:<span style="color:#e6db74">&#39;ok&#39;</span>}
+</code></pre></div><h2 id="7-creating-an-html-web-page">7. Creating an HTML web page</h2>
+<p>In the &ldquo;wss://&rdquo; part of the program, write the API Gateway&rsquo;s unique string that you just set. This HTML can be run even if it is placed locally on the PC, or published on AWS S3 static hosting.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html:index.html" data-lang="html:index.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span>&gt;
+&lt;<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">charset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;UTF-8&#34;</span>&gt;
+    &lt;<span style="color:#f92672">title</span>&gt;&#34;WebSocket&#34; trial chat! &lt;/<span style="color:#f92672">title</span>&gt;
+&lt;/<span style="color:#f92672">head</span>&gt;
+&lt;<span style="color:#f92672">body</span>&gt;
+&lt;<span style="color:#f92672">H3</span>&gt;Trial chat for &#34;WebSocket&#34;! &lt;/<span style="color:#f92672">H3</span>&gt;
+    &lt;<span style="color:#f92672">input</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;input&#34;</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text&#34;</span> /&gt;
+    &lt;<span style="color:#f92672">button</span> <span style="color:#a6e22e">onclick</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;send()&#34;</span>&gt;Send&lt;/<span style="color:#f92672">button</span>&gt;
+    &lt;<span style="color:#f92672">pre</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;output&#34;</span>&gt;&lt;/<span style="color:#f92672">pre</span>&gt;
+    &lt;<span style="color:#f92672">script</span>&gt;
+        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">input</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#39;input&#39;</span>);
+        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">output</span> <span style="color:#f92672">=</span> document.<span style="color:#a6e22e">getElementById</span>(<span style="color:#e6db74">&#39;output&#39;</span>);
+        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">socket</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">WebSocket</span>(<span style="color:#e6db74">&#34;wss://&lt;write the API Gateway specific string that you just set here&gt;.execute-api.ap-northeast-1.amazonaws.com/v01&#34;</span>);
+
+        <span style="color:#a6e22e">socket</span>.<span style="color:#a6e22e">onopen</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>() {
+           <span style="color:#a6e22e">output</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;Connected!\n&#34;</span>;
+        };
+
+        <span style="color:#a6e22e">socket</span>.<span style="color:#a6e22e">onmessage</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>(<span style="color:#a6e22e">e</span>) {
+            <span style="color:#a6e22e">output</span>.<span style="color:#a6e22e">innerHTML</span> <span style="color:#f92672">+=</span> <span style="color:#e6db74">&#34;Receive:&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">e</span>.<span style="color:#a6e22e">data</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;\n&#34;</span>;
+        };
+
+        <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">send</span>() {
+            <span style="color:#a6e22e">socket</span>.<span style="color:#a6e22e">send</span>(<span style="color:#a6e22e">JSON</span>.<span style="color:#a6e22e">stringify</span>(
+                {
+                    <span style="color:#e6db74">&#34;action&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;sendMessage&#34;</span>,
+                    <span style="color:#e6db74">&#34;data&#34;</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">input</span>.<span style="color:#a6e22e">value</span>
+                }
+            ));
+            <span style="color:#a6e22e">input</span>.<span style="color:#a6e22e">value</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span>;
+        };
+    &lt;/<span style="color:#f92672">script</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><p>Alright! This is completed! Let&rsquo;s try!
+<img width="594" alt="qiita Things to make.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271244/89d3b911-7909-4739-8c80-5fa1b312f2f7.png"></p>
+<p>#Reference
+Mainly, I made it while looking at the AWS page.
+<a href="https://aws.amazon.com/jp/blogs/news/announcing-websocket-apis-in-amazon-api-gateway/">https://aws.amazon.com/jp/blogs/news/announcing-websocket-apis-in-amazon-api-gateway/</a></p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>I&rsquo;m thrilled to be able to create a variety of things, because I can now set up WebSocket without an AWS server. Well then, NTT Technocross <a href="https://qiita.com/advent-calendar/2019/ntt-tx">Advent Calendar 2019</a><a href="https://qiita.com/kn-tom/items/Pleasecontinuetoenjoy5bc108bdf5068ef7be2f">Day3</a>!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

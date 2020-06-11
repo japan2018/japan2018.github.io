@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Hands-on that automatically deploys an OCR app (Python, Flask) using Microsoft&#39;s AI service Cognitive Services to Azure with a git push trigger | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Hands-on that automatically deploys an OCR app (Python, Flask) using Microsoft&rsquo;s AI service Cognitive Services to Azure with a git push trigger</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 6, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/flask">Flask</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/azure">Azure</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cognitiveservices">CognitiveServices</a></code></small>
+
+</p>
+<pre><code>The web application we will create this time is an OCR (character recognition) application that will upload an image containing characters and will recognize it and display it as a string.
+</code></pre>
+<p>The app uses Python 3, Flask, Cognitive Services from Microsoft&rsquo;s AI service, and more.
+Deployment to the cloud (Microsoft Azure) is automatic deployment of git push trigger.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/9bf43636-3b5e-52cf-ad51-a96b5e2941df.png" alt="image.png"></p>
+<h3 id="thank-you">Thank you!</h3>
+<p>This OCR app is made by Microsoft engineer <a href="https://twitter.com/geektrainer">Christopher Harrison</a>.&quot;<a href="https://github.com/geektrainer/sign-reading">sign-reading</a>&rdquo; It is a web application called.
+Let&rsquo;s do hands-on with this as a material.</p>
+<h1 id="0-install-required-software">0. Install required software</h1>
+<ol>
+<li>git <a href="https://git-scm.com/downloads">https://git-scm.com/downloads</a></li>
+<li>Python3 <a href="https://www.python.org/downloads/">https://www.python.org/downloads/</a></li>
+<li>Visual Studio Code (VSCode) <a href="https://code.visualstudio.com/download">https://code.visualstudio.com/download</a></li>
+</ol>
+<h1 id="1-first-set-up-on-the-cloud-side">1. First, set up on the cloud side</h1>
+<p>First of all, deploying the web application of the deployment destination, establishing an instance (resource) of Cognitive Services, etc.
+Let&rsquo;s set up the cloud (Azure) side.</p>
+<h2 id="create-a-free-azure-account-if-not">Create a free Azure account (if not)</h2>
+<p>If you don&rsquo;t have an account in Azure yet, create one from <a href="https://azure.com/">https://azure.com/</a>. It&rsquo;s free for the first 30 days, so this hands-on doesn&rsquo;t cost anything.</p>
+<h2 id="from-azure-portal-to-cloud-shell">From Azure portal to Cloud Shell</h2>
+<p>You can do it with the GUI screen, but this time let&rsquo;s use Azure CLI (command line interface).</p>
+<p>First, open the Microsoft Azure portal page <a href="https://portal.azure.com/?WT.mc_id=docs-StudentHackathon-machiy">portal.azure.com</a> in your web browser.</p>
+<p>There is a button at the top of the screen to open &ldquo;<strong>Cloud Shell</strong>&rdquo;, so click on it.</p>
+<p><strong>Azure Cloud Shell</strong> is a shell environment that can be used on a web browser to manage Azure resources.</p>
+<p>Reference) <strong>Azure Cloud Shell</strong> official document
+→ <a href="https://docs.microsoft.com/ja-jp/azure/cloud-shell/overview?WT.mc_id=docs-StudentHackathon-machiy">https://docs.microsoft.com/ja-jp/azure/cloud-shell/overview</a></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/02571018-bb75-80b1-1d79-353d33e55edb.png" alt="Azure Cloud Shell"></p>
+<p>If you press the &ldquo;<strong>Cloud Shell</strong>&rdquo; button at the top of the screen,
+A shell window will appear in the bottom half of the screen in your web browser.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/cfe69f58-0556-f32e-3ee4-ba762d4f3434.png" alt="Azure Cloud Shell"></p>
+<h3 id="new-to-azure-cloud-shell">New to Azure Cloud Shell</h3>
+<p>If you are new to <strong>Cloud Shell</strong>,
+<strong>Cloud Shell</strong> A screen will ask you to create a Storage Account (storage area) to start up, so follow the instructions on the screen.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/d5fb5412-0552-84ac-ea8e-49845e8719e9.png" alt="First time in Azure Cloud Shell"></p>
+<p>After a while, you&rsquo;ll be ready and you should see something like this.</p>
+<p><a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/506ac6c9-8e0f-5f83-c54e-a9e5072ec4a8.png">First time in Azure Cloud Shell</a></p>
+<h2 id="install-az-hack-with-cloud-shell">Install az hack with Cloud Shell</h2>
+<p>Here, insert the <code>az hack</code> extension (extended command) described above.
+For this hands-on,
+This is a convenient command that quickly creates an Azure resource for it.</p>
+<p><code>az extension add --name With the name of the extension you want to include</code>, you can add the specified extension.</p>
+<p>``&rsquo;&rsquo; shell
+az extension add [&ndash;name]
+[&ndash;pip-extra-index-urls]
+[&ndash;pip-proxy]
+[&ndash;source]
+[&ndash;yes]</p>
+<pre><code>
+Reference) Official document of az hack command
+→ [https://docs.microsoft.com/ja-jp/cli/azure/ext/hack/hack](https://docs.microsoft.com/ja-jp/cli/azure/ext/hack/hack?WT.mc_id=docs-StudentHackathon-machiy&amp;view=azure-cli-latest)
+
+In this hands-on, I want to use the `az hack` command for this hands-on, so let's type the following command in **Azure Cloud Shell**.
+
+``'' bash
+az extension add --name hack
+</code></pre><p>Reference) Official document of az extension
+→ <a href="https://docs.microsoft.com/ja-jp/cli/azure/extension?view=azure-cli-latest&amp;viewFallbackFrom=azure-cli-latest&amp;WT.mc_id=docs-StudentHackathon-machiy">https://docs.microsoft.com/ja-jp/cli/azure/extension</a></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/a9200cd8-c14c-074e-bebd-f0702f1af190.png" alt="Azure Cloud Shell"></p>
+<p>It has entered. (The az hack command still looks like a preview version, but it works, so it&rsquo;s ok.)</p>
+<p>``&rsquo;&rsquo; shell
+az hack create &ndash;name signdemo &ndash;runtime python &ndash;ai &ndash;location westus2 &ndash;output yaml</p>
+<pre><code>
+(The location where the resource is deployed, `--location`, is usually specified as `japaneast` (East Japan region) or `japanwest` (West Japan region), but this time, according to the hands-on created by the head office, `westus2` (Still in US West 2)
+
+If you have problems with `westus2`, try with `westus`.
+
+By the way, the Azure Location list can be displayed with `az account list-locations -o table`. [Details were written in the blog](https://qiita.com/chomado/items/beb41f7472d2bae97276) so if you are interested, please.
+
+Also, since I'm making a Python web app here, I specified `--runtime python` as an option.
+
+Hit the above command (az hack create ~) and the screen will start. I waited about 5 minutes.
+
+![Azure Cloud Shell](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/c2763348-b563-dde7-72a7-3b11a472858f.png)
+
+
+By the way.
+In the above command we specified the name of the app as `--name signdemo` and &quot;signdemo&quot;,
+This is part of the URL of the deployed web app, so to make it unique in the world, this hands-on (using the command az hack of Is attached. (Because it's hands-on, everyone puts in the same.) (In my case, it was &quot;signdemo78a6e&quot;)
+
+## Take a look at the destination web page
+
+At the end of the output of Cloud Shell, the URL of the website to deploy to is listed, so click on it.
+
+![Azure Cloud Shell](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/3f1b944d-f0ce-ad5b-d825-aaa58ce0f4df.png)
+
+The URL in my case was &quot;[https://signdemo78a6e.azurewebsites.net/](https://signdemo78a6e.azurewebsites.net/)&quot;.(I'msorryImaydeletetheresourcelater,sorryifthelinkdestinationis404)
+
+![azureCLI5.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/3ac2d640-44ce-9d27-edc5-3e72f343c75e.png)
+
+If you see a website like this, that's okay.
+It seems to run on Python 3.6.6.
+
+## Check output information
+
+Let's look at the information that was just output.
+
+↓ I think there was a yaml output like this. (Because I specified `--output yaml` in the command I hit above)
+
+``'' yaml
+Settings and keys:Note: All values are stored as environmental variables on website
+  Values:
+    COGSVCS_CLIENTURL: https://westus2.api.cognitive.microsoft.com/
+    COGSVCS_KEY: 00000000000000000000000000000000
+    DATABASE_HOST: signdemo78a6e.mysql.database.azure.com
+    DATABASE_NAME: signdemo78a6e
+    DATABASE_PASSWORD: 00000000-0000-00000-00000-0000000000000
+    DATABASE_PORT: '3306'
+    DATABASE_USER: database_admin@signdemo78a6e
+Website url: https://signdemo78a6e.azurewebsites.net
+</code></pre><p>Let&rsquo;s read.
+This one</p>
+<p>``&rsquo;&rsquo; yaml
+COGSVCS_CLIENTURL: <a href="https://westus2.api.cognitive.microsoft.com/">https://westus2.api.cognitive.microsoft.com/</a>
+COGSVCS_KEY: 00000000000000000000000000000000</p>
+<pre><code>
+Is the information about Azure Cognitive Services,
+Below that is the database information.
+
+``'' yaml
+DATABASE_HOST: signdemo78a6e.mysql.database.azure.com
+DATABASE_NAME: signdemo78a6e
+DATABASE_PASSWORD: 00000000-0000-00000-00000-0000000000000
+DATABASE_PORT: '3306'
+DATABASE_USER: database_admin@signdemo78a6e
+</code></pre><p>They are</p>
+<blockquote>
+<p>Note: All values are stored as environmental variables on website</p>
+</blockquote>
+<p>As it is, it is stored as an environment variable of the deployed web app. (That is, you don&rsquo;t have to hard-code the application)</p>
+<h2 id="see-what-was-deployed">See what was deployed</h2>
+<p>Now let&rsquo;s see what was deployed on the screen.
+Let&rsquo;s take a look at the &ldquo;resource groups&rdquo; in the portal.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/9527613f-dd14-d460-73ce-c84be9146f70.png" alt="image.png"></p>
+<p>If you click &ldquo;Resource Group&rdquo;, you can see that the resource group created by hitting the command a while ago (in my case, &ldquo;signdemo78a6e&rdquo;) is growing. ↓</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/38dfb4b1-ce58-b320-c3cd-4d60da3ae229.png" alt="image.png"></p>
+<p>Click this to see what resources are created within this resource group.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/35d76181-da84-fd93-94b0-aaa6c453a4c5.png" alt="azureCLI6.png"></p>
+<p>In my case, I had a free App Service Plan (a server running the app), so that was used,
+Some people make new ones, including that, so I think there are four of them depending on the person ↓.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/6c394aca-62b7-b267-fa09-45b4cd591bbb.png" alt="azureCLI7.png"></p>
+<p>From above,</p>
+<p>| | Service Name | Description</p>
+<ul>
+<li>&mdash;|&mdash;-|&mdash;-|&mdash;-
+1| <img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/945d3cd9-e329-75f2-fd58-4314b429d6f2.png" alt="image.png">|<a href="https://docs.microsoft.com/ja-jp/azure/app-service/overview-hosting-plans?WT.mc_id=docs-StudentHackathon-machiy">AppServicePlan</a>|Something like a web application server
+2|<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/d4a597c1-cbd9-9575-7aff-62f0b87391d3.png" alt="image.png">|<a href="https://docs.microsoft.com/ja-jp/azure/cognitive-services/?WT.mc_id=docs-StudentHackathon-machiy">CognitiveServices</a>|Microsoft AI-based services
+3| <img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/26df0483-c500-43ab-b226-0c395435ef5b.png" alt="image.png">|<a href="https://docs.microsoft.com/ja-jp/azure/mysql/?WT.mc_id=docs-StudentHackathon-machiy">AzureDatabaseforMySQL</a>|Managed MySQL on Azure
+4|<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/85de7914-58f9-2135-c9b4-ee94873814e3.png" alt="image.png">|<a href="https://docs.microsoft.com/ja-jp/azure/app-service/?WT.mc_id=docs-StudentHackathon-machiy">AppService</a>|Service to host web apps, web APIs, and mobile backends. Move on top of the App Service Plan</li>
+</ul>
+<h2 id="take-a-look-at-app-service">Take a look at App Service</h2>
+<h3 id="application-settings-environment-variables">Application settings-environment variables</h3>
+<p>Now, click <strong>App Service</strong> in this resource list and take a look inside.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/166feb85-4a90-141a-5543-f3546c423509.png" alt="image.png"></p>
+<p>From the left menu, under Settings, Configuration
+You can see the Application Settings.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/7987c3a5-d8bf-c177-9e38-f414337acbea.png" alt="azureCLI8.png"></p>
+<p>The contents you saw in the Cloud Shell output, such as database information and API key settings for Cognitive Services! (For security, the actual contents of the data are hidden, but if you want to check it, you can see it by clicking the eye mark of each value.)</p>
+<p>These values can be accessed by Python programs as environment variables.</p>
+<h3 id="deploy-center-git-push-trigger-auto-deploy">Deploy Center-Git push trigger auto-deploy</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/1271ba42-537e-db4e-3cf3-221a0d9d93b0.png" alt="azureCLI9.png"></p>
+<p>Click <strong>Deployment Center</strong> under Deployment in the menu on the left.</p>
+<p>&ldquo;Deployment Center&rdquo; (Deployment Center) is a service that is officially released in the winter of 2018, where you can configure settings for Azure App Service deployment. You can easily configure settings such as automatic deployment of web applications.</p>
+<p>Click &ldquo;Deployment Credentials&rdquo; in it.</p>
+<p>The &ldquo;Username (in my case, &ldquo;$signdemo78a6e&rdquo;)&rdquo; and &ldquo;Password&rdquo; written here will be used later.</p>
+<h1 id="2-next-try-running-the-app-locally">2. Next, try running the app locally</h1>
+<p>Once away from the Azure portal,
+Local work will begin.</p>
+<h2 id="git-clone">Git Clone</h2>
+<p>The code of the web application that runs this time is here
+<a href="https://github.com/geektrainer/sign-reading">https://github.com/geektrainer/sign-reading</a></p>
+<p>Clone this.
+Terminal, PowerShell, command prompt, etc. (By the way, <a href="https://devblogs.microsoft.com/commandline/introducing-windows-terminal/?WT.mc_id=docs-StudentHackathon-machiy">Windows Terminal</a><a href="Iusehttps://docs.microsoft.com/ja-jp/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-6&amp;WT.mc_id=docs-StudentHackathon-machiy">PowerShellCore</a> Open
+Git clone to a directory of your choice.</p>
+<p>``&rsquo;&rsquo; bash
+$ git clone <a href="https://github.com/geektrainer/sign-reading">https://github.com/geektrainer/sign-reading</a></p>
+<pre><code>![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/07dd92a0-39bf-064d-38e9-8f8a88f5f35f.png)
+
+Change to the sign-reading directory.
+
+``'' bash
+$ cd sign-reading
+````![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/9e788120-930e-69be-fbcd-6bcd2dbcb9df.png)
+
+Open this directory with Visual Studio Code.
+
+``'' bash
+$ code.
+</code></pre><p>Then you can open this directory with Visual Studio Code.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/4c58d15a-a4f6-6908-72c1-ba5a57293436.png" alt="image.png"></p>
+<p>If you don&rsquo;t already have a Python environment in the Visual Studio Code you opened, a dialog will pop up asking &ldquo;Do you want to add a Python extension?&rdquo;. Click Install to insert it.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/5adf67f1-8a50-03e5-eb23-81d1eeac3ad6.png" alt="image.png"></p>
+<h2 id="open-apppy">open app.py</h2>
+<p>First, open <code>app.py</code> which is the main body of the application.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/fca1ae50-c7fd-4c25-8e65-388c93071261.png" alt="image.png"></p>
+<p>Then, you can see that wavy lines (errors) appear at some places.</p>
+<p>This is for example
+&ldquo;I don&rsquo;t know flask&rdquo; (definition not found)
+And so on.</p>
+<p>So let&rsquo;s install these dependent packages.</p>
+<h2 id="install-dependent-packages">Install dependent packages</h2>
+<p>First, open <code>requirements.txt</code> to see what you need.</p>
+<p>``&rsquo;&rsquo; python</p>
+<h1 id="web-framework">web framework</h1>
+<p>flask</p>
+<h1 id="system-variables">System variables</h1>
+<p>python-dotenv</p>
+<h1 id="azure-sdk-components">Azure SDK components</h1>
+<p>azure-cognitiveservices-vision-computervision</p>
+<pre><code>
+
+It looks like you need these three.
+
+ First, create the environment.
+In the terminal (I'm using the Visual Studio Code terminal window)
+
+``'' bash
+$ python -m venv venv
+</code></pre><p>And hit the command to install</p>
+<p>``&rsquo;&rsquo; bash
+$ pip install -r requirements.txt</p>
+<pre><code>The installation runs steadily. By the way, if you are using mac and python2 is also installed, you may need to hit `pip3` instead of `python3` or `pip` instead of `python`.
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/4aefc3a5-837e-fa9f-1bd9-8b8ae25718c6.png)
+
+After installation, the error wavy line in `app.py` disappeared!
+
+## Add API key configuration file
+
+Now, let's create a `.env` file in the Sign-reading folder.
+
+Click the &quot;Create New File&quot; icon
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/216fc3de-b561-2024-c588-ece7de92ee17.png)
+
+Then name it `.env`.
+
+I have an empty file.
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/cd93d76b-3660-8bc0-d136-0f8adb7aab1c.png)
+
+Here, I will copy and paste the key of Cognitive Services that I made earlier in Azure.
+
+(If the output of Cloud Shell disappears due to session loss, click [Application Settings] on the [Azure Portal](https://portal.azure.com/?WT.mc_id=docs-StudentHackathon-machiy) screen. You can get it from
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/da68fa9b-b342-1984-2602-411d55a9cad5.png)
+
+``''txt:.env
+COGSVCS_CLIENTURL=https://westus2.api.cognitive.microsoft.com/
+COGSVCS_KEY=Value copied and copied
+</code></pre><p>Now you can load the API key you just defined from your app&rsquo;s <code>app.py</code></p>
+<p>↓ app.py
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/56d578c3-2ff0-aab7-632a-ffc39cf8c663.png" alt="image.png"></p>
+<h2 id="flask">Flask</h2>
+<p>Now let&rsquo;s take a look at the contents of <code>app.py</code>.</p>
+<p>``'&lsquo;python:app.py</p>
+<h1 id="apppy">app.py</h1>
+<p>import os, base64, json, requests
+from flask import Flask, render_template, request</p>
+<pre><code>
+You are importing **Flask**.
+
+Flask is a lightweight web app framework for Python.
+
+There are many frameworks for developing Python web apps,
+Others are very rich, or they can do too much
+This time, we use Flask, which is lightweight and has a low learning cost.
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/766202ba-3837-2d71-593b-a470a4854665.png)
+
+## app.py: Cognitive Services connection
+
+define a vision client,
+Use the API key you wrote in the .env file
+Connecting to Cognitive Services
+
+``''python:app.py
+# Create vision_client
+from msrest.authentication import CognitiveServicesCredentials
+from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+from azure.cognitiveservices.vision.computervision.models import ComputerVisionErrorException
+
+vision_credentials = CognitiveServicesCredentials(key)
+vision_client = ComputerVisionClient(endpoint, vision_credentials)
+</code></pre><h2 id="apppy-output-part">app.py: Output part</h2>
+<p>We are reading and outputting the texts of the analysis results returned from Cognitive Services one by one.</p>
+<p>``'&lsquo;python:app.py
+def extract_text_from_image(image, client):
+result = client.recognize_printed_text_in_stream(image=image)</p>
+<pre><code>lines=[]
+if len(result.regions) == 0:
+    lines.append(&quot;Photo contains no text&quot;)
+else:
+    for region in result.regions:
+        for line in result.regions[0].lines:
+            text = &quot;&quot;.join([word.text for word in line.words])
+            lines.append(text)
+return lines
+</code></pre>
+<pre><code>
+
+
+## Run the app locally
+
+Let's finally run the app locally.
+
+``'' bash
+$ flask run
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/c923f980-4de1-7297-4c0f-0af7e534a802.png" alt="image.png"></p>
+<p>Then the web server started in an instant!
+To the bottom</p>
+<blockquote>
+<p>Running on http://127.0.0.1:5000</p>
+</blockquote>
+<p>It says, so click on it and fly.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/f59cb64a-c0fc-8e95-0371-a5eb9a628eb2.png" alt="image.png"></p>
+<p>Oh! It works locally!</p>
+<p>So, let&rsquo;s try feeding a sample picture.</p>
+<p>Click &ldquo;Upload Photo&rdquo;</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/8b4027d8-0d2f-20c8-2322-a671d9191a63.png" alt="image.png"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/77118faa-2e48-bf41-d104-be30965353a4.png" alt="image.png"></p>
+<p>Wow! I recognized! Running!</p>
+<p>Next, deploy to the cloud!
+I&rsquo;m still running locally right now, so I can only see it</p>
+<h1 id="3-deploy-to-azure">3. Deploy to Azure</h1>
+<p>First, stop the web server running locally. (Go back to the terminal you ran on and press <code>Ctrl + C</code> to stop)</p>
+<p>So, this time I&rsquo;m working with git,
+It is possible to automatically deploy with a git push trigger. (Cool!!!!!!!!!!!!!)</p>
+<p>``&rsquo;&rsquo; bash$ git remote add azure https://git username @signdemo own number .scm.azurewebsites.net/signdemo own number .git</p>
+<pre><code>
+↑ Please enter the name of your instance of app service in the &quot;My number&quot; field. (`78a6e` in my case)
+↑ Please enter your git username in place of &quot;git username&quot;. (`chomado` in my case)
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/e9924e1f-0d89-8d8d-c722-ab1499d0d9ba.png)
+
+## Deploy with git push!
+
+``'' bash
+$ git push azure
+</code></pre><p>At the terminal.</p>
+<p>This will bring up a dialog asking for your git credentials.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/d32b1901-024e-1f6f-4914-8f18be05d128.png" alt="image.png"></p>
+<p>[Deployment center] of <a href="https://portal.azure.com/?WT.mc_id=docs-StudentHackathon-machiy">Azure portal</a>
+In the &ldquo;deployment credentials&rdquo;
+Enter your username and password respectively.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/38020c6a-fb57-d194-3991-37da26086ce4.png" alt="azureCLI11.png"></p>
+<p>Then press OK, and <code>git push azure</code> will continue.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/0201fd6c-c5bb-f788-06ef-f307495c0aae.png" alt="image.png"></p>
+<p>(If you are new to deploying from local Git to Azure and git push doesn&rsquo;t work,
+You need to configure the deployment user referring to this document → <a href="https://docs.microsoft.com/en-us/azure/app-service/deploy-local-git?WT.mc_id=docs-StudentHackathon-machiy">Local Git deployment to Azure App Service</a>)</p>
+<p>After that, let&rsquo;s actually check the website to which it is deployed.</p>
+<p>Find the website URL from the Azure portal (<a href="https://portal.azure.com/?WT.mc_id=docs-StudentHackathon-machiy)">https://portal.azure.com/?WT.mc_id=docs-StudentHackathon-machiy)</a>.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24609/687ff788-9b5d-da4f-b869-bbcb26d5e4d7.png" alt="azureCLI12.png"></p>
+<p>Click to see the updated page!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

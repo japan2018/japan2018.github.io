@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Set Expire to Redis key at once | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Set Expire to Redis key at once</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 12, 2015
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/redis"> Redis</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>It is a method to add Expire collectively when the number of Redis keys increases too much.</p>
+<p>Please note the following:</p>
+<ul>
+<li>Process multiple pipelines simultaneously</li>
+<li>Sleep several seconds after processing multiple records to avoid overloading Redis</li>
+<li>Disperse the expire time so that the load due to key deletion is not applied</li>
+</ul>
+<h2 id="get-a-list-of-keys-you-want-to-expire">Get a list of keys you want to expire</h2>
+<p>save the data obtained with keys to a file</p>
+<pre><code>$ redis-cli -h {host} -n {database} keys &quot;*&quot; &gt;keys
+</code></pre><h2 id="give-expire-to-redis-key">Give expire to Redis key</h2>
+<p>Grep specific key from file and add expire</p>
+<pre><code>$ grep {expire_key_name} keys | python set_expires.py
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-set_expires.py" data-lang="set_expires.py"> <span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">import</span> redis
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> random
+
+EXPIRATION_SECONDS_MIN <span style="color:#f92672">=</span> <span style="color:#ae81ff">86400</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span> <span style="color:#75715e"># 10 days</span>
+EXPIRATION_SECONDS_MAX <span style="color:#f92672">=</span> <span style="color:#ae81ff">86400</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">20</span> <span style="color:#75715e"># 20 days</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    set_expire_keys()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_expire_keys</span>():
+    redis_cli <span style="color:#f92672">=</span> _create_client()
+    pipe <span style="color:#f92672">=</span> redis_cli<span style="color:#f92672">.</span>pipeline()
+    line_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> sys<span style="color:#f92672">.</span>stdin:
+        key_name <span style="color:#f92672">=</span> line<span style="color:#f92672">.</span>strip()
+        <span style="color:#75715e"># Randomize the period to prevent a large number of keys from disappearing at once</span>
+        expiration_time <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span>randint(EXPIRATION_SECONDS_MIN, EXPIRATION_SECONDS_MAX)
+        pipe<span style="color:#f92672">.</span>expire(key_name, expiration_time)
+        <span style="color:#75715e"># Execute every 10,000 keys</span>
+        <span style="color:#66d9ef">if</span> line_num <span style="color:#f92672">%</span><span style="color:#ae81ff">10000</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{} lines proceeded.&#34;</span><span style="color:#f92672">.</span>format(line_num))
+            pipe<span style="color:#f92672">.</span>execute()
+            <span style="color:#75715e"># Stop for 3 seconds considering the load on Redis</span>
+            time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">3</span>)
+            pipe <span style="color:#f92672">=</span> redis_cli<span style="color:#f92672">.</span>pipeline()
+        line_num <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+    pipe<span style="color:#f92672">.</span>execute()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{} lines proceeded.&#34;</span><span style="color:#f92672">.</span>format(line_num))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;complete!!&#34;</span>)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_create_client</span>():
+    redis_cli <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>Redis(
+        host<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;localhost&#34;</span>,
+        port<span style="color:#f92672">=</span><span style="color:#ae81ff">6379</span>,
+        db<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+        )
+    <span style="color:#66d9ef">return</span> redis_cli
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

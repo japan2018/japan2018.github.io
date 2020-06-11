@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Creating an asynchronous plugin with neovim | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Creating an asynchronous plugin with neovim</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jul 2, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/vim"> Vim</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/neovim"> neovim</a></code></small>
+
+</p>
+<pre><code>## I want to do asynchronous processing with vim
+</code></pre>
+<ul>
+<li>Vim itself can not create another thread</li>
+<li>Do your best with vimproc + autocmd
+-Callback management is painful</li>
+<li>job/channel
+-You don&rsquo;t know (good looks)</li>
+<li>remote plugin
+-Today this story</li>
+</ul>
+<hr>
+<h2 id="remote-plugin-in-neovim">Remote Plugin in neovim</h2>
+<ul>
+<li>New features of neovim</li>
+<li>Start plugin in another process
+-Neovim is safe even if the plugin process dies!</li>
+<li>Mutual communication with msgpack-rpc (asynchronous)</li>
+<li>In principle, you can write in any language!
+-Farewell to <code>if_python</code> or <code>if_lua</code>! !</li>
+</ul>
+<hr>
+<h2 id="msgpack-rpc">msgpack-RPC?</h2>
+<ul>
+<li>msgpack ~= JSON binary version</li>
+<li>RPC = remote procedure call
+-Function is exposed to outside <code>int func(int)</code>
+-Client can call like function call <code>a = client.call(&quot;func&quot;, 2);</code>
+-OK as long as the server and client can convert to another language into msgpack
+-Is gRPC more popular these days?</li>
+<li>Both neovim and plugin send and receive in both directions</li>
+</ul>
+<hr>
+<h2 id="neovim-server">neovim server</h2>
+<ul>
+<li>&ldquo;The Nvim C API is automatically exposed to the RPC API by the build system&rdquo;
+-You can do anything (/・ω・)/</li>
+<li>Let&rsquo;s try it out
+-Start with <code>NVIM_LISTEN_ADDRESS=127.0.0.1:6666 nvim</code>
+-(Python client does not support UNIX socket)
+-neovim itself will also be a msgpack-RPC client -&gt; <a href="http://qiita.com/termoshtt/items/1649180e7610a5f717f1">separate article</a></li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> mprpc
+c <span style="color:#f92672">=</span> mprpc<span style="color:#f92672">.</span>RPCClient(<span style="color:#e6db74">&#34;localhost&#34;</span>, <span style="color:#ae81ff">6666</span>)
+_, info <span style="color:#f92672">=</span> c<span style="color:#f92672">.</span>call(<span style="color:#e6db74">&#34;vim_get_api_info&#34;</span>)
+<span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> info[<span style="color:#e6db74">&#34;functions&#34;</span>]:
+    <span style="color:#66d9ef">print</span>(f[<span style="color:#e6db74">&#34;name&#34;</span>], f[<span style="color:#e6db74">&#34;parameters&#34;</span>], f[<span style="color:#e6db74">&#34;return_type&#34;</span>])
+</code></pre></div><hr>
+<p>I got a list of functions I can call:</p>
+<pre><code>buffer_line_count (('Buffer','buffer'),) Integer
+buffer_get_line (('Buffer','buffer'), ('Integer','index')) String
+buffer_set_line (('Buffer','buffer'), ('Integer','index'), ('String','line')) void
+buffer_del_line (('Buffer','buffer'), ('Integer','index')) void
+buffer_get_line_slice (('Buffer','buffer'), ('Integer','start'), ('Integer','end'), ('Boolean','include_start'), ('Boolean','include_end' )) ArrayOf(String)
+buffer_get_lines (('Buffer','buffer'), ('Integer','start'), ('Integer','end'), ('Boolean','strict_indexing')) ArrayOf(String)
+buffer_set_line_slice (('Buffer','buffer'), ('Integer','start'), ('Integer','end'), ('Boolean','include_start'), ('Boolean','include_end' ), ('ArrayOf(String)','replacement')) void
+buffer_set_lines (('Buffer','buffer'), ('Integer','start'), ('Integer','end'), ('Boolean','strict_indexing'), ('ArrayOf(String)', 'replacement')) void
+buffer_get_var (('Buffer','buffer'), ('String','name')) Object
+buffer_set_var (('Buffer','buffer'), ('String','name'), ('Object','value')) Object
+buffer_del_var (('Buffer','buffer'), ('String','name')) Object
+buffer_get_option (('Buffer','buffer'), ('String','name')) Object
+buffer_set_option (('Buffer','buffer'), ('String','name'), ('Object','value')) void
+buffer_get_number (('Buffer','buffer'),) Integer
+buffer_get_name (('Buffer','buffer'),) String
+buffer_set_name (('Buffer','buffer'), ('String','name')) void
+buffer_is_valid (('Buffer','buffer'),) Boolean
+buffer_insert (('Buffer','buffer'), ('Integer','lnum'), ('ArrayOf(String)','lines')) void
+buffer_get_mark (('Buffer','buffer'), ('String','name')) ArrayOf(Integer, 2)
+buffer_add_highlight (('Buffer','buffer'), ('Integer','src_id'), ('String','hl_group'), ('Integer','line'), ('Integer','col_start' ), ('Integer','col_end')) Integer
+buffer_clear_highlight (('Buffer','buffer'), ('Integer','src_id'), ('Integer','line_start'), ('Integer','line_end')) void
+tabpage_get_windows (('Tabpage','tabpage'),) ArrayOf(Window)
+tabpage_get_var (('Tabpage','tabpage'), ('String','name')) Object
+tabpage_set_var (('Tabpage','tabpage'), ('String','name'), ('Object','value')) Object
+tabpage_del_var (('Tabpage','tabpage'), ('String','name')) Object
+tabpage_get_window (('Tabpage','tabpage'),) Window
+tabpage_is_valid (('Tabpage','tabpage'),) Boolean
+vim_command (('String','str'),) void
+vim_feedkeys (('String','keys'), ('String','mode'), ('Boolean','escape_csi')) void
+vim_input (('String','keys'),) Integer
+vim_replace_termcodes (('String','str'), ('Boolean','from_part'), ('Boolean','do_lt'), ('Boolean','special')) String
+vim_command_output (('String','str'),) String
+vim_eval (('String','str'),) Object
+vim_call_function (('String','fname'), ('Array','args')) Object
+vim_strwidth (('String','str'),) Integer
+vim_list_runtime_paths () ArrayOf(String)
+vim_change_directory (('String','dir'),) void
+vim_get_current_line () String
+vim_set_current_line (('String','line'),) void
+vim_del_current_line () void
+vim_get_var (('String','name'),) Object
+vim_set_var (('String','name'), ('Object','value')) Object
+vim_del_var (('String','name'),) Object
+vim_get_vvar (('String','name'),) Object
+vim_get_option (('String','name'),) Object
+vim_set_option (('String','name'), ('Object','value')) void
+vim_out_write (('String','str'),) void
+vim_err_write (('String','str'),) void
+vim_report_error (('String','str'),) void
+vim_get_buffers () ArrayOf(Buffer)
+vim_get_current_buffer () Buffer
+vim_set_current_buffer (('Buffer','buffer'),) void
+vim_get_windows () ArrayOf(Window)
+vim_get_current_window () Window
+vim_set_current_window (('Window','window'),) void
+vim_get_tabpages () ArrayOf(Tabpage)
+vim_get_current_tabpage () Tabpage
+vim_set_current_tabpage (('Tabpage','tabpage'),) void
+vim_subscribe (('String','event'),) voidvim_unsubscribe (('String', 'event'),) void
+vim_name_to_color (('String', 'name'),) Integer
+vim_get_color_map () Dictionary
+vim_get_api_info () Array
+window_get_buffer (('Window', 'window'),) Buffer
+window_get_cursor (('Window', 'window'),) ArrayOf(Integer, 2)
+window_set_cursor (('Window', 'window'), ('ArrayOf(Integer, 2)', 'pos')) void
+window_get_height (('Window', 'window'),) Integer
+window_set_height (('Window', 'window'), ('Integer', 'height')) void
+window_get_width (('Window', 'window'),) Integer
+window_set_width (('Window', 'window'), ('Integer', 'width')) void
+window_get_var (('Window', 'window'), ('String', 'name')) Object
+window_set_var (('Window', 'window'), ('String', 'name'), ('Object', 'value')) Object
+window_del_var (('Window', 'window'), ('String', 'name')) Object
+window_get_option (('Window', 'window'), ('String', 'name')) Object
+window_set_option (('Window', 'window'), ('String', 'name'), ('Object', 'value')) void
+window_get_position (('Window', 'window'),) ArrayOf(Integer, 2)
+window_get_tabpage (('Window', 'window'),) Tabpage
+window_is_valid (('Window', 'window'),) Boolean
+</code></pre><hr>
+<h2 id="msgpack-rpcわからないと書けないの">msgpack-RPCわからないと書けないの？</h2>
+<p>そんなことはない：各言語のSDKが開発されている</p>
+<ul>
+<li>Python : neovim/python-client</li>
+<li>Node.js : neovim/node-client</li>
+<li>他にもThrid party製のものがたくさん
+<ul>
+<li><a href="https://github.com/neovim/neovim/wiki/Related-projects#api-clients">https://github.com/neovim/neovim/wiki/Related-projects#api-clients</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="neovimpython-clientでプラグインを作る">neovim/python-clientでプラグインを作る</h2>
+<p>ここからが本題。<a href="https://github.com/termoshtt/toggl.nvim">toggl.nvim</a>を作ってみて（途中だけど）調べたことをまとめる。</p>
+<ul>
+<li><code>$runtimepath/rplugin/python3/</code>にファイルを置く
+<ul>
+<li>モジュールを置く場合空ファイルを置かないとうまく動かない</li>
+</ul>
+</li>
+</ul>
+<pre><code>rplugin/python3/toggl/...
+                toggl.py  # 空ファイル
+</code></pre><ul>
+<li>
+<p>document少なめ</p>
+<ul>
+<li>deoplete.nvimを参考に</li>
+<li>python-clientのソース見る（割と見やすい）</li>
+</ul>
+</li>
+<li>
+<p>RPC関係は全部neovim/python-clientがやってくれる|ω・)</p>
+</li>
+</ul>
+<hr>
+<h2 id="python-clientの使い方">python-clientの使い方</h2>
+<p><a href="http://github.com/termoshtt/toggl.nvim">toggl.nvim</a>より抜粋</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#a6e22e">@neovim</span><span style="color:#f92672">.</span>plugin
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Toggl</span>(object):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__init__</span>(self, nvim):
+        self<span style="color:#f92672">.</span>nvim <span style="color:#f92672">=</span> nvim
+        self<span style="color:#f92672">.</span>api_token <span style="color:#f92672">=</span> nvim<span style="color:#f92672">.</span>eval(<span style="color:#e6db74">&#34;g:toggl_api_token&#34;</span>)
+        self<span style="color:#f92672">.</span>api <span style="color:#f92672">=</span> TogglAPI(self<span style="color:#f92672">.</span>api_token)
+
+    <span style="color:#a6e22e">@neovim</span><span style="color:#f92672">.</span>autocmd(<span style="color:#e6db74">&#34;VimEnter&#34;</span>)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(self):
+        <span style="color:#66d9ef">try</span>:
+            self<span style="color:#f92672">.</span>wid <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>api<span style="color:#f92672">.</span>workspaces()[<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;id&#34;</span>]
+            self<span style="color:#f92672">.</span>projects <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>get_projects([])
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">ConnectionError</span>:
+            self<span style="color:#f92672">.</span>echo(<span style="color:#e6db74">&#34;No network, toggl.nvim is disabled.&#34;</span>)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">echo</span>(self, msg):
+        self<span style="color:#f92672">.</span>nvim<span style="color:#f92672">.</span>command(<span style="color:#e6db74">&#34;echo &#39;</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#39;&#34;</span><span style="color:#f92672">.</span>format(msg))
+
+    <span style="color:#a6e22e">@neovim</span><span style="color:#f92672">.</span>function(<span style="color:#e6db74">&#34;TogglAPIToken&#34;</span>, sync<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">api_token</span>(self, args):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>api_token
+
+    <span style="color:#a6e22e">@neovim</span><span style="color:#f92672">.</span>function(<span style="color:#e6db74">&#34;TogglGetCurrent&#34;</span>, sync<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_current</span>(self, args):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>api<span style="color:#f92672">.</span>time_entries<span style="color:#f92672">.</span>current()
+</code></pre></div><hr>
+<p>デコレータ付きでクラス＋関数を定義するだけでvimプラグインが書ける</p>
+<ul>
+<li>neovim.pluginをclassにつけるとnvimインスタンスがもらえる</li>
+<li>neovim.autocmdでautocmdを発行できる</li>
+<li>neovim.commandでvimのコマンドつくれる（引数は自動的にPythonの変数に変換される）</li>
+<li>neovim.functionでvimの関数つくれる</li>
+<li>プラグイン側は別プロセスなので自由に状態を持てる</li>
+<li>同期な関数(sync=True)と非同期な関数(sync=False, default)の両方を同じようにかける</li>
+<li>Pythonのライブラリ使える(requests)とか</li>
+</ul>
+<p>Pythonかけるけどvim scriptはちょっと…な人にオススメ！</p>
+<hr>
+<h2 id="最後に">最後に</h2>
+<ul>
+<li>Qiita slide簡単で良い</li>
+<li>osaka.vim楽しい</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

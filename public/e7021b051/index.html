@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Prepare a pseudo API server using GitHub Actions | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Prepare a pseudo API server using GitHub Actions</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 13, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/webapi">WebAPI</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/web">Web</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/githubactions">GitHubActions</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>Perhaps recently, a feature called GitHub Actions has been added.
+This is the one that can fire certain Actions (shell script executions) for certain events.
+For example, it is a function for so-called CI/CD that builds when PR of dev branch is merged and pushes it to dev-pages branch.</p>
+<p>At this time, I participated in the COVID-19 countermeasure site <a href="https://stopcovid19.hokkaido.dev/">Hokkaido version</a>, which is currently a big move, and developed using this function. Using this as an example, isn&rsquo;t it possible to tailor GitHub as a pseudo API server? I will make a proposal in this article.</p>
+<h2 id="github-actions-scheduling">GitHub Actions scheduling</h2>
+<h4 id="background-of-actions">Background of Actions</h4>
+<p><a href="https://github.com/Kanahiro/covid19hokkaido_scraping">https://github.com/Kanahiro/covid19hokkaido_scraping</a>
+This is a script that was created to handle the JSON format data that is the source of visualization when developing the countermeasure site described above. When you execute it (with the version at that time), it has the function of patrol the road website or read the static CSV file stored in the branch and output the json file (currently it reads the external CSV file) ).
+Initially, I had to manually execute main.py with the script I wrote. At that time, a member of <a href="https://stopcovid19.hokkaido.dev/about/">JUST Road IT</a>suggested&quot;CanIdoscheduling?&ldquo;Atthispoint,Ididn&rsquo;tknowifIcoulddoit,soIdidn&rsquo;treplytoitanymore,butIsecretlycheckedtheimplementationmethodanditwassurprisinglyeasy(IimplementeditasGod).</p>
+<h4 id="scheduling-method">Scheduling method</h4>
+<p>Reference site: <a href="https://mottox2.com/posts/407">Use GitHub Actions as a scheduler</a></p>
+<p>Actions are defined in yaml files. Define the timing &ldquo;on&rdquo; that fires first.
+For normal CI/CD use, you can trigger a push to a specific branch.
+However, it can be executed every 15 minutes by describing as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">
+<span style="color:#66d9ef">on</span>:
+  <span style="color:#66d9ef">schedule</span>:
+    -cron:<span style="color:#e6db74">&#39;*/15 * * * *&#39;</span>
+
+<span style="color:#75715e"># (It&#39;s a secret that it became cron?</span>
+</code></pre></div><p>The scheduling is now complete.
+Then, every 15 minutes, you should execute the above script and push the json data generated in another branch!
+So I decided to schedule with the following yaml file.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">
+<span style="color:#66d9ef">name</span>: Python application
+
+<span style="color:#66d9ef">on</span>:
+  <span style="color:#66d9ef">schedule</span>:
+    -cron:<span style="color:#e6db74">&#39;*/15 * * * *&#39;</span>
+
+<span style="color:#66d9ef">jobs</span>:
+  <span style="color:#66d9ef">build</span>:
+
+    <span style="color:#66d9ef">runs-on</span>: ubuntu-latest
+
+    <span style="color:#66d9ef">steps</span>:
+    <span style="color:#66d9ef">-uses</span>: actions/checkout@v2
+    <span style="color:#66d9ef">-name</span>: Set up Python <span style="color:#ae81ff">3.8</span>
+      <span style="color:#66d9ef">uses</span>: actions/setup-python@v1
+      <span style="color:#66d9ef">with</span>:
+        <span style="color:#66d9ef">python-version</span>: <span style="color:#ae81ff">3.8</span>
+    <span style="color:#66d9ef">-name</span>: Install dependencies
+      <span style="color:#66d9ef">run</span>: <span style="color:#e6db74">|
+</span><span style="color:#e6db74">        python -m pip install --upgrade pip</span>
+        pip install -r requirements.txt
+    <span style="color:#66d9ef">-name</span>: Run script
+      <span style="color:#66d9ef">run</span>: <span style="color:#e6db74">|
+</span><span style="color:#e6db74">        python main.py #Run main script</span>
+    <span style="color:#66d9ef">-name</span>: deploy
+      <span style="color:#66d9ef">uses</span>: peaceiris/actions-gh-pages@v3
+      <span style="color:#66d9ef">with</span>:
+        <span style="color:#66d9ef">github_token</span>: ${{ secrets.GITHUB_TOKEN }}
+        <span style="color:#66d9ef">publish_dir</span>: ./data
+        <span style="color:#66d9ef">publish_branch</span>: gh-pages
+</code></pre></div><p>I wrote it with reference to another person&rsquo;s yaml file, so I cry when asked to write it in full scratch.
+I thought it was amazing that I could install the dependency with pip.
+When main.py is executed, it outputs json files in the data directory in the same directory.
+After processing the script, push the files in the data directory to gh-pages (with secrets.GITHUB_TOKEN authority)
+Therefore, gh-pages can store json files that are generated once every 15 minutes.</p>
+<h2 id="as-a-pseudo-api-server">As a pseudo API server</h2>
+<p>It sounds like a title scam, but the pseudo-API server I propose is now complete.
+<a href="https://raw.githubusercontent.com/Kanahiro/covid19hokkaido_scraping/gh-pages/patients.json">https://raw.githubusercontent.com/Kanahiro/covid19hokkaido_scraping/gh-pages/patients.json</a>
+This is a json file automatically generated by Actions every 15 minutes on the above script repository.
+This file does not seem to be subject to CORS restrictions (although I have not verified it myself), so it can be read directly at the front desk.
+In other words, on the front side, if you get this file and &ldquo;colorize&rdquo; the elements, it may be treated as an API server!</p>
+<p>It was a proposal.
+I think that it is effective when there is no resource to build an API server separately, it is redundant, or it is troublesome.
+Also, I think that it is good that the outlook is good and it is good to complete everything on GitHub without interposing other services.</p>
+<h2 id="update-about-github-pages">Update: About GitHub Pages</h2>
+<p>Although the destination of the above-mentioned output json was on the gh-pages branch, it could not be accessed via github.io for some reason, so I was directly accessing the above raw.githubusercontent.com. However, in the comments, there is the following exchange.</p>
+<p>![Screenshot 2020-03-14 22.32.40.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/73197/7b811625-1620-aeff-33d0-(862a782d13b4.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/73197/7b811625-1620-aeff-33d0-(862a782d13b4.png)</a></p>
+<p>Hmm…? I feel like I have a familiar account name&hellip;</p>
+<pre><code class="language-yaml:" data-lang="yaml:">
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./data
+        publish_branch: gh-pages
+</code></pre><p>(This person (@peaceiris) It is the person who made the action to push to gh-pages, which is used in the script&hellip;)
+So, when I chose to output to gh-pages again from settings&hellip;</p>
+<p>![Screenshot 2020-03-14 22.48.05.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/73197/0b366d13-90d7-8f99-75fd-(3abe28a5c010.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/73197/0b366d13-90d7-8f99-75fd-(3abe28a5c010.png)</a></p>
+<p><a href="https://kanahiro.github.io/covid19hokkaido_scraping/patients.json">https://kanahiro.github.io/covid19hokkaido_scraping/patients.json</a></p>
+<p>I was able to host it on gh-pages safely, sorry (and thank you).
+So after setting Actions, you need to tamper with settings to host gh-pages again, so be careful.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

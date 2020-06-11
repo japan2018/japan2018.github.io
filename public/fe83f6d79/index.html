@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Talk to improve the bottleneck of machine learning algorithm with Cython | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Talk to improve the bottleneck of machine learning algorithm with Cython</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jun 26, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> Machine Learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning"> MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cython"> Cython</a></code></small>
+
+</p>
+<pre><code>#About this article
+</code></pre>
+<ul>
+<li>Talk about how to make Python faster</li>
+<li>Find CPU bound processing bottlenecks by profiling</li>
+<li>Improve the bottleneck you find with Cython</li>
+</ul>
+<p>#Introduction
+We recently implemented a recommendation algorithm called Bayesian Personalized Ranking (BPR).
+I tried to write the code with reference to the formula of <a href="http://arxiv.org/abs/1205.2618">this paper</a>, but when I tried to execute it, it was a bit too slow and I could not use it, so I improved the processing speed. I worked on it.
+I will summarize what I tried at that time like a memorandum.</p>
+<h1 id="techniques-and-code-used-in-this-article">Techniques and code used in this article</h1>
+<p>BPR gives the matrix factorization of a matrix of user x items.
+Decompose the user x item matrix $X$ into a user x factor matrix $U$ and an item x factor matrix $V$.</p>
+<pre><code class="language-math" data-lang="math">X = U \cdot V^T
+</code></pre><p>Please see BPR&rsquo;s <a href="http://arxiv.org/abs/1205.2618">Original Article</a> for how to solve this problem.</p>
+<p>I implemented this technique as follows. $X$ is defined in <code>scipy.sparse.lil_matrix</code>. $U$ and $V$ after decomposition are <code>numpy.array</code>.
+Bootstrap sampling of the sample used for learning is performed, and then $U,V$ is updated.</p>
+<p>For this code, I would like to improve the <code>buildModel()</code> part of the model learning.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:MFbpr.py" data-lang="py:MFbpr.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MFbpr</span>(Recommender):
+    <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">    Constructor and other processing
+</span><span style="color:#e6db74">    &#39;&#39;&#39;</span>
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">buildModel</span>(self):
+        loss_pre <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>float_info<span style="color:#f92672">.</span>max
+        nonzeros <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>trainMatrix<span style="color:#f92672">.</span>nnz
+        hr_prev <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+        sys<span style="color:#f92672">.</span>stderr<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#34;Run for BPR. </span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>)
+        <span style="color:#66d9ef">for</span> itr <span style="color:#f92672">in</span> xrange(self<span style="color:#f92672">.</span>maxIter):
+            start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+            
+            <span style="color:#75715e"># Each training epoch</span>
+            <span style="color:#66d9ef">for</span> s <span style="color:#f92672">in</span> xrange(nonzeros):
+                <span style="color:#75715e"># sample a user</span>
+                u <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>userCount)
+                itemList <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>trainMatrix<span style="color:#f92672">.</span>getrowview(u)<span style="color:#f92672">.</span>rows[<span style="color:#ae81ff">0</span>]
+                <span style="color:#66d9ef">if</span> len(itemList) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+                    <span style="color:#66d9ef">continue</span>
+                <span style="color:#75715e"># sample a positive item</span>
+                i <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span>choice(itemList)
+                
+                <span style="color:#75715e"># One SGD step update</span>
+                self<span style="color:#f92672">.</span>update_ui(u, i)
+                
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_ui</span>(self, u, i):
+        <span style="color:#75715e"># sample a negative item(uniformly random)</span>
+        j <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>itemCount)
+        <span style="color:#66d9ef">while</span> self<span style="color:#f92672">.</span>trainMatrix[u, j] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+            j <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>itemCount)
+            
+        <span style="color:#75715e"># BPR update rules</span>
+        y_pos <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>predict(u, i) <span style="color:#75715e"># target value of positive instance</span>
+        y_neg <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>predict(u, j) <span style="color:#75715e"># target value of negative instance</span>
+        mult <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>partial_loss(y_pos<span style="color:#f92672">-</span>y_neg)
+        
+        <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> xrange(self<span style="color:#f92672">.</span>factors):
+            grad_u <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>V[i, f]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>V[j, f]
+            self<span style="color:#f92672">.</span>U[u, f] <span style="color:#f92672">-=</span> self<span style="color:#f92672">.</span>lr <span style="color:#f92672">*</span> (mult <span style="color:#f92672">*</span> grad_u <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>reg <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>U[u, f])
+                
+            grad <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>U[u, f]
+            self<span style="color:#f92672">.</span>V[i, f] <span style="color:#f92672">-=</span> self<span style="color:#f92672">.</span>lr <span style="color:#f92672">*</span> (mult <span style="color:#f92672">*</span> grad <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>reg <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>V[i, f])
+            self<span style="color:#f92672">.</span>V[j, f] <span style="color:#f92672">-=</span> self<span style="color:#f92672">.</span>lr <span style="color:#f92672">*</span> (<span style="color:#f92672">-</span>mult <span style="color:#f92672">*</span> grad <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>reg <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>V[j, f])
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:exec_bpr.py" data-lang="py:exec_bpr.py"><span style="color:#f92672">from</span> MFbpr <span style="color:#f92672">import</span> MFbpr
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_data</span>(ratingFile, testRatio<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>):
+    <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">    Data loading process
+</span><span style="color:#e6db74">    &#39;&#39;&#39;</span>
+    <span style="color:#66d9ef">return</span> trainMatrix, testRatings
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    <span style="color:#75715e"># data</span>
+    trainMatrix, testRatings <span style="color:#f92672">=</span> load_data(<span style="color:#e6db74">&#39;yelp.rating&#39;</span>)
+
+    <span style="color:#75715e"># settings</span>
+    topK <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+    factors <span style="color:#f92672">=</span> <span style="color:#ae81ff">64</span>
+    maxIter <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+    maxIterOnline <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+    lr <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+    adaptive <span style="color:#f92672">=</span> False
+    init_mean <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+    init_stdev <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.1</span>
+    reg <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+    showProgress <span style="color:#f92672">=</span> False
+    showLoss <span style="color:#f92672">=</span> True
+
+    bpr <span style="color:#f92672">=</span> MFbpr(trainMatrix, testRatings, topK, factors, maxIter, lr, adaptive, reg, init_mean, init_stdev, showProgress, showLoss)
+    bpr<span style="color:#f92672">.</span>buildModel()
+
+</code></pre></div><p>The full amount of code is available on <a href="https://github.com/tn1031/bpr">github</a>.</p>
+<h1 id="try-running">Try running</h1>
+<p>I&rsquo;ll try it for now.
+###Configuration
+#####data</p>
+<ul>
+<li>Number of users: 25,677</li>
+<li>Number of items: 25,815</li>
+<li>Number of ratings (number of samples with ratings): 627,775</li>
+</ul>
+<h5 id="hyper-parameter">Hyper Parameter</h5>
+<ul>
+<li>Number of factors: 64</li>
+</ul>
+<h5 id="execution-environment">Execution environment</h5>
+<p>This is ubuntu with 2G memory and 2 processors built on VirtualBox.</p>
+<p>###Execution result
+The first brace is the time it takes for one iteration [s], the last brace is the time it takes to calculate the loss [s].</p>
+<pre><code>&gt; python exex_bpr.py
+
+Data yelp.rating
+#Users 25677, #newUser: 588
+#Items 25815
+#Ratings 627775.0 (train), 73167(test), 10056(#newTestRatings)
+Run for BPR.
+Iter=0 [128.6936481] [-]loss: 624484.357765 [8.16665792465]
+Iter=1 [137.202406883] [-]loss: 616970.769244 [7.11149096489]
+Iter=2 [131.134891987] [-]loss: 609361.307524 [7.12593793869]
+Iter=3 [134.665620804] [-]loss: 601240.628869 [8.45840716362]
+Iter=4 [134.722868919] [-]loss: 592053.155587 [7.6300880909]
+</code></pre><p>Although it calculates about 600,000 samples, it seems that it takes 130 seconds per iteration.</p>
+<p>#Profiling</p>
+<h2 id="overall-profiling">Overall profiling</h2>
+<p>First, start by identifying the time-consuming part.
+Use the Python profiler <code>cProfile</code> to measure the processing speed.
+<code>python -m cProfile -s cumulative ***.py</code>
+If you execute, the process that took time will be displayed in descending order.</p>
+<pre><code>&gt; python -m cProfile -s cumulative exex_bpr.py
+
+Data yelp.rating
+#Users 25677, #newUser: 588
+#Items 25815
+#Ratings 627775.0 (train), 73167(test), 10056(#newTestRatings)
+Run for BPR.
+Iter=0 [244.87996006] [-]loss: 624394.802988 [53.4806399345]
+Iter=1 [248.624686956] [-]loss: 616876.50976 [48.6073460579]
+Iter=2 [253.822627068] [-]loss: 609269.820414 [52.5446169376]
+Iter=3 [261.039247036] [-]loss: 601207.904104 [53.8221797943]
+Iter=4 [260.285779953] [-]loss: 592212.148141 [54.9556028843]
+         369374621 function calls (368041918 primitive calls) in 1808.492 seconds
+
+   Ordered by: cumulative time
+
+   ncalls tottime percall cumtime percall filename:lineno(function)
+        1 0.171 0.171 1808.493 1808.493 exex_bpr.py:3(&lt;module&gt;)
+        1 34.307 34.307 1532.124 1532.124 MFbpr.py:40(buildModel)
+  3067088 535.383 0.000 830.046 0.000 MFbpr.py:92(update_ui)
+  6209078 48.829 0.000 433.564 0.000 lil.py:228(__getitem__)3292937 26.140 0.000 376.631 0.000 lil.py:191(getrowview)
+  3292939 66.488 0.000 346.337 0.000 lil.py:85(__init__)
+        5 0.000 0.000 263.411 52.682 MFbpr.py:117(_showLoss)
+        5 22.098 4.420 263.410 52.682 MFbpr.py:128(loss)
+        1 9.443 9.443 242.550 242.550 exex_bpr.py:9(load_data)
+</code></pre><p>From the bottom of the line <code>Ordered by: cumulative time</code>, the function name and the time required for processing are listed. If you look at this, you can see that the function called <code>update_ui</code> is called 3,067,088 times and takes 535.383 seconds in total.
+(Well, of course, since I only call <code>update_ui</code> in the <code>buildModel</code>&hellip;)</p>
+<p>In addition, the execution time of 1 iteration is longer than before because of the overhead of cProfile.</p>
+<h2 id="line-by-line-profiling">Line-by-line profiling</h2>
+<p>If you use <a href="https://pypi.python.org/pypi/line_profiler/">line_profiler</a>, you can measure the function of interest line by line.
+You can install it with pip.</p>
+<pre><code>&gt; pip install line_profiler
+</code></pre><p>In order to profile with <code>line_profiler</code>, you need to add the <code>@profile</code> decorator to the function of interest.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:MFbpr.py" data-lang="py:MFbpr.py">    <span style="color:#a6e22e">@profile</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_ui</span>(self, u, i):
+        <span style="color:#75715e"># sample a negative item(uniformly random)</span>
+        j <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>itemCount)
+        <span style="color:#66d9ef">while</span> self<span style="color:#f92672">.</span>trainMatrix[u, j] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+            j <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>itemCount)
+
+        <span style="color:#75715e"># BPR update rules</span>
+        y_pos <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>predict(u, i) <span style="color:#75715e"># target value of positive instance</span>
+        y_neg <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>predict(u, j) <span style="color:#75715e"># target value of negative instance</span>
+        mult <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>partial_loss(y_pos<span style="color:#f92672">-</span>y_neg)
+
+        <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> xrange(self<span style="color:#f92672">.</span>factors):
+            grad_u <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>V[i, f]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>V[j, f]
+            self<span style="color:#f92672">.</span>U[u, f] <span style="color:#f92672">-=</span> self<span style="color:#f92672">.</span>lr <span style="color:#f92672">*</span> (mult <span style="color:#f92672">*</span> grad_u <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>reg <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>U[u, f])
+
+            grad <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>U[u, f]
+            self<span style="color:#f92672">.</span>V[i, f] <span style="color:#f92672">-=</span> self<span style="color:#f92672">.</span>lr <span style="color:#f92672">*</span> (mult <span style="color:#f92672">*</span> grad <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>reg <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>V[i, f])
+            self<span style="color:#f92672">.</span>V[j, f] <span style="color:#f92672">-=</span> self<span style="color:#f92672">.</span>lr <span style="color:#f92672">*</span> (<span style="color:#f92672">-</span>mult <span style="color:#f92672">*</span> grad <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>reg <span style="color:#f92672">*</span> self<span style="color:#f92672">.</span>V[j, f])
+
+</code></pre></div><p>All you have to do is execute it with the <code>kernprof</code> command.</p>
+<pre><code>&gt; kernprof -l -v exex_bpr.py
+
+Data yelp.rating
+#Users 25677, #newUser: 588
+#Items 25815
+#Ratings 627775.0 (train), 73167(test), 10056(#newTestRatings)
+Run for BPR.
+Iter=0 [953.993126154] [-]loss: 624406.940531 [7.50253987312]
+Iter=1 [962.82383585] [-]loss: 616855.373858 [7.96375918388]
+Wrote profile results to exex_bpr.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 1082.55 s
+File: MFbpr.py
+Function: update_ui at line 92
+
+Line # Hits Time Per Hit %Time Line Contents
+=================================================== ============
+    92 @profile
+    93 def update_ui(self, u, i):
+    94 # sample a negative item(uniformly random)
+    95 1226961 8241361 6.7 0.8 j = np.random.randint(self.itemCount)
+    96 1228124 39557350 32.2 3.7 while self.trainMatrix[u, j] != 0:
+    97 1163 6123 5.3 0.0 j = np.random.randint(self.itemCount)
+    98
+    99 # BPR update rules
+   100 1226961 9495381 7.7 0.9 y_pos = self.predict(u, i) # target value of positive instance
+   101 1226961 4331378 3.5 0.4 y_neg = self.predict(u, j) # target value of negative instance
+   102 1226961 10002355 8.2 0.9 mult = -self.partial_loss(y_pos-y_neg)
+   103
+   104 79752465 126523856 1.6 11.7 for f in xrange(self.factors):
+   105 78525504 161882071 2.1 15.0 grad_u = self.V[i, f]-self.V[j, f]
+   106 78525504 191293505 2.4 17.7 self.U[u, f] -= self.lr * (mult * grad_u + self.reg * self.U[u, f])
+   107
+   108 78525504 137871145 1.8 12.7 grad = self.U[u, f]
+   109 78525504 194033291 2.5 17.9 self.V[i, f] -= self.lr * (mult * grad + self.reg * self.V[i, f])
+   110 78525504 199315454 2.5 18.4 self.V[j, f] -= self.lr * (-mult * grad + self.reg * self.V[j, f])
+
+</code></pre><p>Looking at the <code>% Time</code> column, we can see that more than 90% of the processing time of <code>update_ui</code> is spent in the for statement and below**.</p>
+<p>One iteration is less than 1,000 seconds, and the overhead is tough.</p>
+<p>Speed up with #Cython
+##Implementation
+Rewrite the previous for loop with Cython.
+One of the reasons Python is slow is that it is dynamically typed. Since the type is checked every time a variable is referenced, the time taken for this operation cannot be ignored for programs that have many references to the variable.</p>
+<p>If you write it using Cython, you can define the variable type like C language. Since the type is not checked one by one, it can be expected to speed up considerably.</p>
+<p>Variables are declared with <code>cdef</code>. Define the types of all variables used in the calculation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:fastupdfn.pyx" data-lang="py:fastupdfn.pyx"><span style="color:#66d9ef">import</span> numpy <span style="color:#66d9ef">as</span> np
+<span style="color:#66d9ef">cimport</span> numpy <span style="color:#66d9ef">as</span> np
+<span style="color:#66d9ef">cimport</span> cython
+
+DOUBLE <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>float64
+<span style="color:#66d9ef">ctypedef</span> np<span style="color:#f92672">.</span>float64_t DOUBLE_t
+
+<span style="color:#66d9ef">cpdef</span> <span style="color:#a6e22e">c_upd</span>(np<span style="color:#f92672">.</span>ndarray[DOUBLE_t, ndim<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>] U,
+          np<span style="color:#f92672">.</span>ndarray[DOUBLE_t, ndim<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>] V,
+          double mult,
+          double lr,
+          double reg,
+          unsigned int u,
+          unsigned int i,
+          unsigned int j,
+          unsigned int factors):
+    <span style="color:#66d9ef">cdef</span> <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">f</span>
+    <span style="color:#66d9ef">cdef</span> <span style="color:#66d9ef">double</span> <span style="color:#a6e22e">grad_u</span>, <span style="color:#a6e22e">grad</span>
+    <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> xrange(factors):
+        grad_u <span style="color:#f92672">=</span> V[i, f]<span style="color:#f92672">-</span>V[j, f]
+        U[u, f] <span style="color:#f92672">-=</span> lr <span style="color:#f92672">*</span> (mult <span style="color:#f92672">*</span> grad_u <span style="color:#f92672">+</span> reg <span style="color:#f92672">*</span> U[u, f])
+        
+        grad <span style="color:#f92672">=</span> U[u, f]V[i, f] <span style="color:#f92672">-=</span> lr <span style="color:#f92672">*</span> (mult <span style="color:#f92672">*</span> grad <span style="color:#f92672">+</span> reg <span style="color:#f92672">*</span> V[i, f])
+        V[j, f] <span style="color:#f92672">-=</span> lr <span style="color:#f92672">*</span> (<span style="color:#f92672">-</span>mult <span style="color:#f92672">*</span> grad <span style="color:#f92672">+</span> reg <span style="color:#f92672">*</span> V[j, f])
+        
+    <span style="color:#66d9ef">return</span> U, V
+</code></pre></div><p>Rewrite the caller as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:MFbpr.py" data-lang="py:MFbpr.py"><span style="color:#f92672">import</span> fastupd <span style="color:#75715e"># add</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MFbpr</span>(Recommender):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Omission
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_ui</span>(self, u, i):
+        <span style="color:#75715e"># sample a negative item(uniformly random)</span>
+        j <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>itemCount)
+        <span style="color:#66d9ef">while</span> self<span style="color:#f92672">.</span>trainMatrix[u, j] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>:
+            j <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(self<span style="color:#f92672">.</span>itemCount)
+            
+        <span style="color:#75715e"># BPR update rules</span>
+        y_pos <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>predict(u, i) <span style="color:#75715e"># target value of positive instance</span>
+        y_neg <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>predict(u, j) <span style="color:#75715e"># target value of negative instance</span>
+        mult <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>partial_loss(y_pos<span style="color:#f92672">-</span>y_neg)
+       
+        <span style="color:#75715e"># Call Cython implementation</span>
+        self<span style="color:#f92672">.</span>U, self<span style="color:#f92672">.</span>V <span style="color:#f92672">=</span> fastupd<span style="color:#f92672">.</span>c_upd(self<span style="color:#f92672">.</span>U, self<span style="color:#f92672">.</span>V, mult, self<span style="color:#f92672">.</span>lr, self<span style="color:#f92672">.</span>reg, u, i, j, self<span style="color:#f92672">.</span>factors)
+
+</code></pre></div><p>You also need to have a <code>setup.py</code> to compile your Cython implementation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:setup.py" data-lang="py:setup.py"><span style="color:#f92672">from</span> distutils.core <span style="color:#f92672">import</span> setup
+<span style="color:#f92672">from</span> distutils.extension <span style="color:#f92672">import</span> Extension
+<span style="color:#f92672">from</span> Cython.Distutils <span style="color:#f92672">import</span> build_ext
+
+setup(
+    cmdclass<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;build_ext&#39;</span>: build_ext},
+    ext_modules<span style="color:#f92672">=</span>[Extension(<span style="color:#e6db74">&#34;fastupd&#34;</span>, [<span style="color:#e6db74">&#34;fastupdfn.pyx&#34;</span>])]]
+)
+</code></pre></div><p>Compile when ready. Compile with the following command.</p>
+<pre><code>&gt; python setup.py build_ext --inplace
+</code></pre><h2 id="execute">execute</h2>
+<p>I will do it.</p>
+<pre><code>&gt; python exec_bpr.py
+
+Data yelp.rating
+#Users 25677, #newUser: 588
+#Items 25815
+#Ratings 627775.0 (train), 73167(test), 10056(#newTestRatings)
+Run for BPR.
+Iter=0 [38.7308020592] [-]loss: 624282.459815 [8.64863014221]
+Iter=1 [36.7822458744] [-]loss: 616740.942017 [8.62252616882]
+Iter=2 [35.8996829987] [-]loss: 609119.520253 [7.9108710289]
+Iter=3 [35.1236720085] [-]loss: 600992.740207 [8.14179396629]
+Iter=4 [34.9632918835] [-]loss: 591877.909123 [8.81325411797]
+</code></pre><p>The execution time for one iteration is less than 40 seconds. This is <strong>3-4 times faster than the first</strong>.</p>
+<p>The result of <code>line_profiler</code> is also posted.</p>
+<pre><code>&gt; kernprof -l -v exex_bpr.py
+
+Data yelp.rating
+#Users 25677, #newUser: 588
+#Items 25815
+#Ratings 627775.0 (train), 73167(test), 10056(#newTestRatings)
+Run for BPR.
+Iter=0 [66.7851500511] [-]loss: 624400.680806 [7.92221903801]
+Iter=1 [62.5339269638] [-]loss: 616866.244211 [7.85720801353]
+Iter=2 [65.6408250332] [-]loss: 609235.226048 [8.48338794708]
+Iter=3 [66.0613160133] [-]loss: 601140.035318 [8.52119803429]
+Iter=4 [66.5882000923] [-]loss: 592026.927719 [8.32318806648]
+Wrote profile results to exex_bpr.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 164.139 s
+File: MFbpr.py
+Function: update_ui at line 93
+
+Line # Hits Time Per Hit %Time Line Contents
+=================================================== ============
+    93 @profile
+    94 def update_ui(self, u, i):
+    95 # sample a negative item(uniformly random)
+    96 3066856 17642519 5.8 10.7 j = np.random.randint(self.itemCount)
+    97 3069840 79530375 25.9 48.5 while self.trainMatrix[u, j] != 0:
+    98 2984 15027 5.0 0.0 j = np.random.randint(self.itemCount)
+    99
+   100 # BPR update rules
+   101 3066856 17651846 5.8 10.8 y_pos = self.predict(u, i) # target value of positive instance
+   102 3066856 10985781 3.6 6.7 y_neg = self.predict(u, j) # target value of negative instance
+   103 3066856 18993291 6.2 11.6 mult = -self.partial_loss(y_pos-y_neg)
+   104
+   105 3066856 19320147 6.3 11.8 self.U, self.V = fastupd.c_upd(self.U, self.V, mult, self.lr, self.reg, u, i, j, self.factors)
+
+</code></pre><p>The part of the matrix update that originally spent 90% or more was reduced to 11.8%. You can check the effect of Cython.</p>
+<p>#Summary
+Profiling using <code>cPrifile</code> and <code>line_profiler</code> was able to find a processing bottleneck, and it was improved using <code>Cython</code>.
+I only rewrote it in one place, but it became slightly less than 4 times faster.</p>
+<p>By the way, the code which applied Cython was put in the w_cython branch of <a href="https://github.com/tn1031/bpr">github</a>. It may be merged into master soon.</p>
+<p>#bonus?
+Since the for statement part updates the elements of the matrix independently, it can be executed completely in parallel. Cython has a function called <code>prange()</code> that executes the processing of the for statement in multi-threads, so applying this may help improve things a bit.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

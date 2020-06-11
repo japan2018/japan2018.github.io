@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Deliver private content with AWS CloudFront | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Deliver private content with AWS CloudFront</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jul 19, 2014
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/boto">boto</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cloudfront">CloudFront</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/videojs">VideoJS</a></code></small>
+
+</p>
+<pre><code>This article is a continuation of [Video Streams with AWS S3 + CloudFront](http://qiita.com/terapyon/items/b77ac981da790662e247&quot;VideoStreamswithAWSS3+CloudFront&quot;).
+</code></pre>
+<h1 id="purpose">Purpose</h1>
+<p>Connect with a time-limited URL. (One-time URL)
+I want to restrict the viewing to the video stream and distribute it. (This time I tried with images)
+Finally, I want to distribute the video using Plone authentication. (Challenge after next time)</p>
+<h1 id="s3-and-cloudfront-settings">S3 and CloudFront settings</h1>
+<p>Create a new bucket and put a trial image. Try distributing this image privately.</p>
+<h2 id="s3">S3</h2>
+<ul>
+<li>Create a new bucket (c2-video-test-private)
+<ul>
+<li>Set log</li>
+</ul>
+</li>
+<li>Upload
+<ul>
+<li>Upload image file &ldquo;terada_pythonbr.jpg&rdquo;</li>
+</ul>
+</li>
+</ul>
+<h2 id="cloundfront">CloundFront</h2>
+<ul>
+<li>Get CloudFront access ID
+<ul>
+<li>Go to IAM Web Management Console</li>
+<li>Get &ldquo;Create New Key Pair&rdquo; with &ldquo;CloudFront Key Pair&rdquo; in Details</li>
+<li>Download private and public keys</li>
+</ul>
+</li>
+<li>CloudFront Origin
+Go to &ldquo;Origin Access Identity&rdquo; from &ldquo;Private Content&rdquo; on the Web management screen of CloudFront (there is also a method to make later)
+<ul>
+<li>Click Create OAI</li>
+<li>Created by adding &ldquo;OAI for c2-video-test-private&rdquo; to the comment</li>
+</ul>
+</li>
+<li>Create a new &ldquo;Private Distribution&rdquo; (for Web)</li>
+<li>Make settings
+<ul>
+<li>Restrict Bucket Access: Yes</li>
+<li>Origin Access Identity: Use an Existing Identity</li>
+<li>Select your Identities: created in advance (or create a new one here)</li>
+<li>Grant Read Permissions on Bucket: Yes</li>
+<li>HTTPS Only:Yes</li>
+<li>Restrict Viewer Access: Yes</li>
+<li>Trusted Signers</li>
+<li>Logging: On</li>
+<li>Other Logging settings (Bucket and Path)</li>
+</ul>
+</li>
+<li>Domain Name: dn045wcqv2fv4.cloudfront.net</li>
+</ul>
+<h2 id="create-signed-url">Create Signed URL</h2>
+<p>Refer to the following boto item and try to make it in a local Python environment.</p>
+<h3 id="the-unrestricted-url-should-be-as-follows">The unrestricted URL should be as follows.</h3>
+<p><a href="https://dn045wcqv2fv4.cloudfront.net/terada_pythonbr.jpg">https://dn045wcqv2fv4.cloudfront.net/terada_pythonbr.jpg</a>
+Obviously the error is back.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-error.xml" data-lang="error.xml"><span style="color:#f92672">&lt;Error&gt;</span>
+  <span style="color:#f92672">&lt;Code&gt;</span>MissingKey<span style="color:#f92672">&lt;/Code&gt;</span>
+  <span style="color:#f92672">&lt;Message&gt;</span>Missing Key-Pair-Id query parameter<span style="color:#f92672">&lt;/Message&gt;</span>
+<span style="color:#f92672">&lt;/Error&gt;</span>
+</code></pre></div><h3 id="create-restricted-url">Create restricted URL</h3>
+<p>(Details about boto are listed below)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py">ACCESS_KEY_ID <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxxxxxxxxxxxxxxx&#34;</span>
+SECRET_ACCESS_KEY <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxxxxxxxxxxxxxxxxxxxxxxxx&#34;</span>
+YOUR_KEYPAIR_ID <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxxxxxxxxxxxx&#34;</span>
+YOUR_PRIVATE_KEY_FILE_LOCATION <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;xxxxxxxxxxxxxxxxxxxxx.pem&#34;</span>
+url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://dn045wcqv2fv4.cloudfront.net/terada_pythonbr.jpg&#34;</span>
+expire_time <span style="color:#f92672">=</span> int(time<span style="color:#f92672">.</span>time() <span style="color:#f92672">+</span><span style="color:#ae81ff">3600</span>)
+
+conn <span style="color:#f92672">=</span> CloudFrontConnection(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
+distribution <span style="color:#f92672">=</span> Distribution(connection<span style="color:#f92672">=</span>conn, config<span style="color:#f92672">=</span>None, domain_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>, id<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>, last_modified_time<span style="color:#f92672">=</span>None, status<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>)
+
+signed_url <span style="color:#f92672">=</span> distribution<span style="color:#f92672">.</span>create_signed_url(url<span style="color:#f92672">=</span>url, keypair_id<span style="color:#f92672">=</span>YOUR_KEYPAIR_ID, expire_time<span style="color:#f92672">=</span>expire_time, private_key_file<span style="color:#f92672">=</span>YOUR_PRIVATE_KEY_FILE_LOCATION)
+</code></pre></div><pre><code>&gt;&gt;&gt; print signed_url
+https://dn045wcqv2fv4.cloudfront.net/terada_pythonbr.jpg?Expires=1406023941&amp;Signature=Ihps3u0~jQ-Twkghg2tqQ-dTMEZoRC-Jb13F4FgNe~1MVAsXQ-yAbXtEKSTsIhN6OLZmuUii6E1xs7nWfe-76SGk26Jmx5edd35EgwQ8mH~2XlY4QOqP1Fgza93q02oQNhJWte1mef4tc8p3fJO6yzebpTEh4MqvQOt9s5bcKq9ad8EGSmfXfUlgL6b87z6TOAXVFQuIotttu6ajlfbCpplIUD-~r-6W~SB6n2dyB8SaoKgJBTkEKJwFiBWx2S5M20-06hsLOeV23UBJcuq6~C-pE1r1ViE8Ia-tM8L6v7zcbtLfOdw9lgFzYoMoh -KiWOAdz7pc-koYMVPXZ-9DuQ__&amp;Key-Pair-Id=APKAJAJZQHPKZI6OK5UQ
+</code></pre><h3 id="access-test-with-browser">Access test with browser</h3>
+<p><a href="https://dn045wcqv2fv4.cloudfront.net/terada_pythonbr.jpg?Expires=1406023941&amp;Signature=Ihps3u0~jQ-Twkghg2tqQ-dTMEZoRC-Jb13F4FgNe~1MVAsXQ-yAbXtEKSTsIhN6OLZmuUii6E1xs7nWfe-76SGk26Jmx5edd35EgwQ8mH~2XlY4QOqP1Fgza93q02oQNhJWte1mef4tc8p3fJO6yzebpTEh4MqvQOt9s5bcKq9ad8EGSmfXfUlgL6b87z6TOAXVFQuIotttu6ajlfbCpplIUD-~r-6W~SB6n2dyB8SaoKgJBTkEKJwFiBWx2S5M20-06hsLOeV23UBJcuq6~C-pE1r1ViE8Ia-tM8L6v7zcbtLfOdw9lgFzYoMoh">https://dn045wcqv2fv4.cloudfront.net/terada_pythonbr.jpg?Expires=1406023941&amp;Signature=Ihps3u0~jQ-Twkghg2tqQ-dTMEZoRC-Jb13F4FgNe~1MVAsXQ-yAbXtEKSTsIhN6OLZmuUii6E1xs7nWfe-76SGk26Jmx5edd35EgwQ8mH~2XlY4QOqP1Fgza93q02oQNhJWte1mef4tc8p3fJO6yzebpTEh4MqvQOt9s5bcKq9ad8EGSmfXfUlgL6b87z6TOAXVFQuIotttu6ajlfbCpplIUD-~r-6W~SB6n2dyB8SaoKgJBTkEKJwFiBWx2S5M20-06hsLOeV23UBJcuq6~C-pE1r1ViE8Ia-tM8L6v7zcbtLfOdw9lgFzYoMoh</a> -KiWOAdz7pc-koYMVPXZ-9DuQ__&amp;Key-Pair-Id=APKAJAJZQHPKZI6OK5UQ</p>
+<p>2014/07/22 I was able to access 18:14.
+2014/07/22 19:15 should not be accessible</p>
+<h1 id="boto">boto</h1>
+<p><a href="https://pypi.python.org/pypi/boto%22boto%22">boto</a> is a Python module that manipulates AWS APIs. It used to be unofficial for Amazon, but now it should be semi-official because the developer should belong to Amazon.</p>
+<h2 id="advance-preparation">Advance preparation</h2>
+<pre><code>$ pip install rsa
+$ pip install boto
+</code></pre><h2 id="how-to-get-signed-url">How to get Signed URL</h2>
+<p>The explanation was below.
+<a href="http://boto.readthedocs.org/en/latest/ref/cloudfront.html">http://boto.readthedocs.org/en/latest/ref/cloudfront.html</a></p>
+<pre><code>create_signed_url(url, keypair_id, expire_time=None, valid_after_time=None, ip_address=None, policy_url=None, private_key_file=None, private_key_string=None)
+</code></pre><ul>
+<li>url (str)</li>
+<li>keypair_id (str)</li>
+<li>expire_time (int)</li>
+<li>valid_after_time (int)</li>
+<li>ip_address (str)</li>
+<li>policy_url (str)</li>
+<li>private_key_file (str or file object.)</li>
+<li>private_key_string (str)</li>
+</ul>
+<p>Below was a sample</p>
+<p><a href="http://stackoverflow.com/questions/2573919/creating-signed-urls-for-amazon-cloudfront">http://stackoverflow.com/questions/2573919/creating-signed-urls-for-amazon-cloudfront</a></p>
+<pre><code>import boto
+from boto.cloudfront import CloudFrontConnection
+from boto.cloudfront.distribution import Distribution
+
+expire_time = int(time.time() +3000)
+conn = CloudFrontConnection('ACCESS_KEY_ID','SECRET_ACCESS_KEY')
+
+##enter the id or domain name to select a distribution
+distribution = Distribution(connection=conn, config=None, domain_name='', id='', last_modified_time=None, status='')
+signed_url = distribution.create_signed_url(url='YOUR_URL', keypair_id='YOUR_KEYPAIR_ID_example-APKAIAZVIO4BQ',expire_time=expire_time,private_key_file=&quot;YOUR_PRIVATE_KEY_FILE_LOCATION&quot;)
+</code></pre><h1 id="url-referenced-during-the-survey">URL referenced during the survey</h1>
+<ul>
+<li>
+<p>[AWS Meister Series] Content distribution by Amazon CloudFront / Amazon Elastic Transcoder
+<a href="http://www.slideshare.net/AmazonWebServicesJapan/20131120-aws-medisterregeneratecloudfrontetspublic">http://www.slideshare.net/AmazonWebServicesJapan/20131120-aws-medisterregeneratecloudfrontetspublic</a>
+Explained on P29</p>
+</li>
+<li>
+<p>Access Private Content with Amazon CloudFront Part 1
+<a href="http://dev.classmethod.jp/etc/amazon-cloudfront-private-contents-access-1/">http://dev.classmethod.jp/etc/amazon-cloudfront-private-contents-access-1/</a>
+There is a manual in English on the AWS management console, and at present, all operations can be performed from the web management console.</p>
+</li>
+<li>
+<p>Code and Examples for Creating a Signature for a Signed URL
+<a href="http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateCFSignatureCodeAndExamples.html">http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateCFSignatureCodeAndExamples.html</a>
+There is no Python information, but it seems to be helpful</p>
+</li>
+</ul>
+<h1 id="try-it-on-videocorresponding-the-above-to-the-video-stream-that-was-in-todo">Try it on videoCorresponding the above to the video stream that was in TODO</h1>
+<h2 id="preparation">Preparation</h2>
+<ul>
+<li>Add video folder to c2-video-test-private bucket</li>
+<li>Add PyConAPACTW2014terada.mp4 to video folder</li>
+<li>Added Stream-enabled Distribution to CloudFront
+<ul>
+<li>Select RTMP when creating</li>
+<li>Origin Domain Name :c2-video-test-private</li>
+<li>Restrict Bucket Access: Yes</li>
+<li>Origin Access Identity: Use an Existing Identity</li>
+<li>Select your Identities: made in advance (OAI for c2-video-test-private)</li>
+<li>Grant Read Permissions on Bucket: Yes</li>
+<li>Restrict Viewer Access: Yes</li>
+<li>Trusted Signers: Self</li>
+<li>Logging: On</li>
+<li>Other Logging settings (Bucket and Path)</li>
+</ul>
+</li>
+</ul>
+<p>Up to this point, you should be able to easily do it by reviewing the past.</p>
+<h2 id="create-signed-url-1">Create Signed URL</h2>
+<p>Work with boto as above</p>
+<ul>
+<li>url = &ldquo;rtmp://s3lse3ja7xuop9.cloudfront.net/cfx/st/&amp;mp4:video/PyConAPACTW2014terada.mp4&rdquo;</li>
+<li>policy_url = &ldquo;video/*&rdquo;
+A wild card is specified. <strong>When using rtmp</strong> Write only PATH as above (writing from rtpm:// does not work &lt;I was addicted for a few days)</li>
+</ul>
+<pre><code>&gt;&gt;&gt; url = &quot;rtmp://s3lse3ja7xuop9.cloudfront.net/cfx/st/&amp;mp4:video/PyConAPACTW2014terada.mp4&quot;
+&gt;&gt;&gt; policy_url = &quot;video/*&quot;
+&gt;&gt;&gt; signed_url = distribution.create_signed_url(url=url, keypair_id=YOUR_KEYPAIR_ID, expire_time=expire_time, private_key_file=YOUR_PRIVATE_KEY_FILE_LOCATION, policy_url=policy_url)
+&gt;&gt;&gt; print signed_url
+rtmp: //s3lse3ja7xuop9.cloudfront.net/cfx/st/&amp;mp4:? video / PyConAPACTW2014terada.mp4 Policy = eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoidmlkZW8vKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTQwNjg5OTIwMX19fV19 &amp; Signature = m10lfH4vpepAWVNLCGO9xr ~ TFs-ZCUklra-I4D6WZvqO3aHhijIbtPQOiK00BPZzTxnu-enkvTuao1aDoP ~ HSONzF5xIqGqMuP4RYJ-B0 ~ g5iQxvac1VVkb ~ 3lZXMRN3Oz45BsrRWQawyXp1o ~ 0M9sFr ~ zIVQAbM8aAji1WmTu0 ~ fY0UcfgO74DNevYw4- I4S8S2KLnSimFGeU0bz3b8bXtgxketPz0JhTyM4akK8gD7xWjskrxFOZ4pskCaLvJr3PyQ&amp;Q3QQQTQiz_QQQQQQQQQQQQQQQQQQQQQ
+</code></pre><h2 id="video-display-template">Video display template</h2>
+<p>Make the src part a Signed URL.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-html" data-lang="html">&lt;<span style="color:#f92672">Source</span> <span style="color:#a6e22e">src </span><span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;rtmp: //s3lse3ja7xuop9.cloudfront.net/cfx/st/&amp;mp4:? Video / PyConAPACTW2014terada.mp4 Policy = eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoidmlkZW8vKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTQwNjg5OTIwMX19fV19 &amp; Signature = m10lfH4vpepAWVNLCGO9xr ~ TFs-ZCUklra-I4D6WZvqO3aHhijIbtPQOiK00BPZzTxnu-enkvTuao1aDoP ~ HSONzF5xIqGqMuP4RYJ-B0 ~ g5iQxvac1VVkb ~ 3lZXMRN3Oz45BsrRWQawyXp1o ~ 0M9sFr ~ zIVQAbM8aAji1WmTu0 ~ fY0UcfgO74DNevYw4-I4S8S2KLnSimFGeU0bz3b8bXtgxketPz0JhTyM4akK8gD7xWjskrxFOZ4pskCaLvJr3Pyb9pJsqQ9T2izNsPs0Ms5pi94FnOdyejSRWezqrxp00KNttnlc3DGCOcmcCNDNYdIMxmNC6MuAfQKx ~ a1tig __ &amp; Key-Pair-Id = APKAJAJZQHPKZI6OK5UQ &#34;</span>
+                 <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#39;rtmp/mp4&#39;</span> /&gt;
+</code></pre></div><h2 id="test-page">Test page</h2>
+<p>I think that the expiry date has already passed, but confirm that you can see below.
+<a href="http://c2-video-test.s3-website-ap-northeast-1.amazonaws.com/index2.html">http://c2-video-test.s3-website-ap-northeast-1.amazonaws.com/index2.html</a></p>
+<p>#TODO after next time</p>
+<ul>
+<li>I want to restrict the viewing to the video stream and distribute it. -&gt; 20140801 Described in the &ldquo;Try it out with the video&rdquo; item above.</li>
+<li>Investigation on what happens when HLS for iOS -&gt; <a href="http://qiita.com/terapyon/items/fadecf13ed1d11dcd34d">http://qiita.com/terapyon/items/fadecf13ed1d11dcd34d</a></li>
+<li>Eventually I want to distribute the video using Plone authentication.</li>
+</ul>
+<h1 id="author-related-blog-articles">Author-related Blog articles</h1>
+<p><a href="https://www.cmscom.jp/blog/hz2f2t">Private content distribution with AWS CloudFront</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

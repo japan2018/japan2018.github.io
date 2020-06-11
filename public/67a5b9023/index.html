@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried to make a document search slack command using Kendra announced at re:Invent 2019 | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried to make a document search slack command using Kendra announced at re:Invent 2019</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/slack">Slack</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/amazontranslate">AmazonTranslate</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/amazonkendra">AmazonKendra</a></code></small>
+
+</p>
+<pre><code>Hello, this is the eighth day of [ABEJA Advent Calendar](https://qiita.com/advent-calendar/2019/abeja).
+</code></pre>
+<h2 id="introduction">Introduction</h2>
+<p>An interesting service was announced at re:Invent 2019 the other day. Yes, enterprise search service <a href="https://aws.amazon.com/jp/about-aws/whats-new/2019/12/announcing-amazon-kendra-reinventing-enterprise-search-with-machine-learning/">Amazon Kendra release</a>.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/1e587471-6abd-f438-f454-afad7d384b31.png" alt="Screenshot from 2019-12-08 07-56-38.png">
+There are various communication tools in the company. However, all of them tend to be flow information and are not well organized, and the problem that information disparities are likely to occur is emerging. This is exactly Kendra&rsquo;s task. When announced, this has no choice but to try! I was surprised. So I tried to make a slack command that can search documents with natural sentences like this.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/1505308a-cf2e-1dc0-76d0-cd1dd5916767.png" alt="Screenshot_2019-12-08 Slack yuta nakagawa ABEJA, Inc .png">
+In the following, I will introduce how Kendra was created while playing with Kendra.</p>
+<h2 id="system-configuration">System configuration</h2>
+<p>Kendra is a preview version as of December 8, 2019. Therefore, the services that can be used as a data source are limited to the following.</p>
+<ul>
+<li>Amazon S3</li>
+<li>SharePoint Online</li>
+<li>Amazon RDS</li>
+</ul>
+<p>So, I came up with a method to collect natural documents in S3 and use Kendra to enable natural sentence search.
+However, it is common practice not to go straight. Well, as you can imagine, Kendra doesn&rsquo;t support Japanese.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/120fd9a1-a509-8d69-230c-b13b44457813.png" alt="Screenshot_2019-12-08 Amazon Kendra FAQs-Amazon Web Services.png">
+Therefore, I will try to solve it by combining it with AWS&rsquo;s translation service <a href="https://aws.amazon.com/jp/translate/">Amazon Translate</a>.IfTranslateisusedtoputthedocumentintoS3andqueryit,IFcanbeusedinanylanguage,onlyEnglishprocessinginternally.(IreallywantKendratosupportJapaneseinashorttime)
+Regarding IF, I chose slack because it is easy to implement commands and communication is usual.</p>
+<p>Well, it&rsquo;s not very awkward, but the above is the architecture.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/3cb40cec-075e-9820-f3e5-396f829b214b.png" alt="Architecture.png"></p>
+<h2 id="document-preparation">Document preparation</h2>
+<p>It is the story of the upper frame of the system configuration. Basically, all you have to do is download the specified document, translate it, and upload it to S3, but Translate has a limit on the size of sentences that can be translated at a time, so I try to translate it one line at a time. For that reason, it may be translated into a slightly strange English, but since it is a verification, I proceed without worrying about it. Also, since I wanted a link to the original document when executing the slack command, I am trying to link with S3 Object metadata.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">translate_and_upload</span>(url, title, content):
+    client <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;translate&#39;</span>)
+    bucket <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)<span style="color:#f92672">.</span>Bucket(<span style="color:#e6db74">&#39;ynaka-kendra&#39;</span>)
+    <span style="color:#75715e"># Translate content to English.</span>
+    translated <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+    <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> content<span style="color:#f92672">.</span>splitlines():
+        <span style="color:#66d9ef">if</span> len(line)<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>:
+            response <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>translate_text(
+                Text<span style="color:#f92672">=</span>line,
+                SourceLanguageCode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ja&#39;</span>,
+                TargetLanguageCode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;en&#39;</span>
+            )
+            translated <span style="color:#f92672">+=</span> (response[<span style="color:#e6db74">&#39;TranslatedText&#39;</span>] <span style="color:#f92672">+</span> os<span style="color:#f92672">.</span>linesep)
+        <span style="color:#66d9ef">else</span>:
+            translated <span style="color:#f92672">+=</span> os<span style="color:#f92672">.</span>linesep
+    <span style="color:#75715e"># Upload to S3.</span>
+    file_obj <span style="color:#f92672">=</span> io<span style="color:#f92672">.</span>BytesIO(translated<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;utf-8&#39;</span>))
+    bucket<span style="color:#f92672">.</span>upload_fileobj(file_obj, title, ExtraArgs<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;Metadata&#39;</span>: {<span style="color:#e6db74">&#39;url&#39;</span>: url}})
+</code></pre></div><h2 id="document-search">Document search</h2>
+<p>This is the bottom frame of the system configuration. From here, Kendra, the protagonist of the day, is here.</p>
+<h3 id="building-kendra">Building Kendra</h3>
+<p>First, we will build Kendra, which is the basis of this search. Basically, you can build by following <a href="https://docs.aws.amazon.com/ja_jp/kendra/latest/dg/gs-console.html">Getting Started with the Console</a>.</p>
+<p>First, generate Index.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/df9fd4a2-f976-0d36-2594-03aa704a69c7.png" alt="Screenshot_2019-12-07 Kendra.png">
+It takes about 30 seconds to create a new IAM Role for Kendra.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/e348dd45-1113-25d2-a593-852ac3b882c4.png" alt="Screenshot_2019-12-07 Kendra (1).png">
+It will take about 30 minutes to generate the index, so take a long coffee break.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/e81b51ee-8c3e-8e59-a7e4-0e1749088d85.png" alt="Screenshot_2019-12-07 Kendra(1).png">
+Next is the selection of the data source. This time, select S3.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/d5e032c9-6f0d-5fbb-49ba-8abe00f4c778.png" alt="Screenshot_2019-12-07 Kendra(2).png">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/e5cfaafb-f768-e511-c680-d223ae92fc8f.png" alt="Screenshot_2019-12-07 Kendra(3).png">
+Specify the S3 path to be linked. You can also set how often you want to sync, but I made it this time so I chose &ldquo;Run on demand&rdquo;.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/6cfa3c20-4fff-c280-d3ca-b77210b51e7d.png" alt="Screenshot_2019-12-07 Kendra(4).png">
+The setting review screen appears,
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/a60e1df3-5021-466d-32dc-2b673b613f34.png" alt="Screenshot_2019-12-07 Kendra(5).png">
+Also, if you take a little longer coffee break, the construction is completed.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/2e94b3f5-cdc3-36f0-5c94-bc2eb71f19c5.png" alt="Screenshot_2019-12-07 Kendra(6).png">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/0d2496d5-77cc-37ae-31e9-eec055bdd57f.png" alt="Screenshot_2019-12-07 Kendra(7).png">
+Since the documents are already stored in S3, Sync with Kendra will be started.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/9151a58d-77ba-efe4-b20d-65cc084ae305.png" alt="Screenshot_2019-12-07 Kendra(8).png">
+However, if this is left, IAM will be insufficient and an error will occur.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/cc359908-568b-9b3f-b130-7c81eb7267a0.png" alt="Screenshot_2019-12-07 Kendra(9).png">
+So add Kendra&rsquo;s own authority and S3&rsquo;s authority.<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/2a3c48b0-6225-9782-8d5c-06675fd83089.png" alt="Screenshot_2019-12-07 IAM Management Console(4).png">
+Sync is finally successful.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/cb55385a-a828-a142-c6af-0613c416dd12.png" alt="Screenshot_2019-12-07 Kendra(11).png"></p>
+<h3 id="document-search-api">Document Search API</h3>
+<p>The linkage with slack will be implemented by <a href="https://api.slack.com/interactivity/slash-commands">Slash Commands</a>. This is a common API Gateway + Lambda configuration. Don&rsquo;t forget to add Kendra&rsquo;s permission to the role that runs Lambda. Also note that Kendra can only be used with the latest <code>boto3</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> boto3
+<span style="color:#f92672">import</span> base64
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> logging
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> urllib
+
+
+logger <span style="color:#f92672">=</span> logging<span style="color:#f92672">.</span>getLogger()
+logger<span style="color:#f92672">.</span>setLevel(logging<span style="color:#f92672">.</span>INFO)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">respond</span>(err, res<span style="color:#f92672">=</span>None):
+    <span style="color:#66d9ef">return</span> {
+        <span style="color:#e6db74">&#39;statusCode&#39;</span>: <span style="color:#e6db74">&#39;400&#39;</span> <span style="color:#66d9ef">if</span> err <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#39;200&#39;</span>,
+        <span style="color:#e6db74">&#39;response_type&#39;</span>:<span style="color:#e6db74">&#39;in_channel&#39;</span>,
+        <span style="color:#e6db74">&#39;body&#39;</span>: err<span style="color:#f92672">.</span>message <span style="color:#66d9ef">if</span> err <span style="color:#66d9ef">else</span> json<span style="color:#f92672">.</span>dumps((
+            <span style="color:#e6db74">&#39;response_type&#39;</span>:<span style="color:#e6db74">&#39;in_channel&#39;</span>,
+            <span style="color:#e6db74">&#39;text&#39;</span>: res
+        }),
+        <span style="color:#e6db74">&#39;headers&#39;</span>: {
+            <span style="color:#e6db74">&#39;Content-Type&#39;</span>:<span style="color:#e6db74">&#39;application/json&#39;</span>,
+        },
+    }
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handler</span>(event, context):
+    <span style="color:#75715e"># Prepare clients.</span>
+    translate <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;translate&#39;</span>)
+    kendra <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>client(<span style="color:#e6db74">&#39;kendra&#39;</span>)
+    s3 <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;s3&#39;</span>)
+    <span style="color:#75715e"># Parse request.</span>
+    body <span style="color:#f92672">=</span> event[<span style="color:#e6db74">&#39;body&#39;</span>]
+    params <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>parse<span style="color:#f92672">.</span>parse_qs(base64<span style="color:#f92672">.</span>b64decode(body)<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf-8&#39;</span>))
+    token <span style="color:#f92672">=</span> params[<span style="color:#e6db74">&#39;token&#39;</span>][<span style="color:#ae81ff">0</span>]
+    <span style="color:#66d9ef">if</span> token <span style="color:#f92672">!=</span> os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;VERIFY_TOKEN&#39;</span>]:
+        logger<span style="color:#f92672">.</span>error(f<span style="color:#e6db74">&#39;Request token ({token}) does not match expected.&#39;</span>)
+        <span style="color:#66d9ef">return</span> respond(<span style="color:#a6e22e">Exception</span>(<span style="color:#e6db74">&#39;Invalid request token.&#39;</span>))
+    <span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;text&#39;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> params:
+        logger<span style="color:#f92672">.</span>error(f<span style="color:#e6db74">&#39;The text should be included in command.&#39;</span>)
+        <span style="color:#66d9ef">return</span> respond(<span style="color:#a6e22e">Exception</span>(<span style="color:#e6db74">&#39;Need text.&#39;</span>))
+    query <span style="color:#f92672">=</span> params[<span style="color:#e6db74">&#39;text&#39;</span>][<span style="color:#ae81ff">0</span>]
+    <span style="color:#75715e"># Translate query to English.</span>
+    response <span style="color:#f92672">=</span> translate<span style="color:#f92672">.</span>translate_text(
+        Text<span style="color:#f92672">=</span>query,
+        SourceLanguageCode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ja&#39;</span>,
+        TargetLanguageCode<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;en&#39;</span>
+    )
+    query <span style="color:#f92672">=</span> response[<span style="color:#e6db74">&#39;TranslatedText&#39;</span>]
+    <span style="color:#75715e"># Find the most relevant document.</span>
+    response <span style="color:#f92672">=</span> kendra<span style="color:#f92672">.</span>query(IndexId<span style="color:#f92672">=</span>os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;INDEX_ID&#39;</span>], QueryText<span style="color:#f92672">=</span>query)
+    <span style="color:#75715e"># Create response message.</span>
+    message <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>
+    <span style="color:#66d9ef">for</span> i, item <span style="color:#f92672">in</span> enumerate(response[<span style="color:#e6db74">&#39;ResultItems&#39;</span>][:<span style="color:#ae81ff">3</span>]):
+        title <span style="color:#f92672">=</span> item[<span style="color:#e6db74">&#39;DocumentTitle&#39;</span>][<span style="color:#e6db74">&#39;Text&#39;</span>]
+        excerpt <span style="color:#f92672">=</span> item[<span style="color:#e6db74">&#39;DocumentExcerpt&#39;</span>][<span style="color:#e6db74">&#39;Text&#39;</span>]
+        s3_uri <span style="color:#f92672">=</span> item[<span style="color:#e6db74">&#39;DocumentId&#39;</span>]<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#39;s3://&#39;</span>, <span style="color:#e6db74">``</span>)<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;/&#39;</span>)
+        url <span style="color:#f92672">=</span> s3<span style="color:#f92672">.</span>Object(s3_uri[<span style="color:#ae81ff">0</span>],<span style="color:#e6db74">&#39;/&#39;</span><span style="color:#f92672">.</span>join(s3_uri[<span style="color:#ae81ff">1</span>:]))<span style="color:#f92672">.</span>metadata[<span style="color:#e6db74">&#39;url&#39;</span>]
+        message_i <span style="color:#f92672">=</span> f<span style="color:#e6db74">&#39;{i + 1}. *{title}*{os.linesep}url: {url}{os.linesep}```{excerpt}```{os.linesep}{os.linesep}&#39;</span>
+        message <span style="color:#f92672">+=</span> message_i
+    <span style="color:#75715e"># Return result.</span>
+    <span style="color:#66d9ef">return</span> respond(None, message)
+</code></pre></div><p>Kendra&rsquo;s SDK needs <code>IndexId</code>, so let&rsquo;s set it in the environment variable. The following three points are devised.</p>
+<ul>
+<li>Since Kendra supports English only, I am also translating queries.</li>
+<li>Since there are situations where I was actually looking for the document that others want to search, I post it on <code>in_channel</code>.</li>
+<li>Since there are many English members, some of the translated documents hit by the search are also displayed.</li>
+</ul>
+<h2 id="result">result</h2>
+<p>With Kendra + Translate, you can now search with natural sentences like this.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/48bb07bf-aa93-7e98-d3f2-b94dbdcd4b12.png" alt="Screenshot_2019-12-08 Slack yuta nakagawa ABEJA, Inc .png">
+In response to the question &ldquo;What is ABEJA&rsquo;s skill map?&rdquo;, the first answer is the skill map that is being organized, and the second is the <a href="https://tech-blog.abeja.asia/entry">Technology Stack</a>thatwasreleasedtheotherday./tech-stack-201911) It seems that it works like that when I post an article about it. As expected, a part of the document is blurred, but please feel it.</p>
+<p>By the way, of course, you can also search in English.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/10e410a1-ba98-7f08-d4f2-abafbb9d3385.png" alt="Screenshot_2019-12-08 Slack yuta nakagawa ABEJA, Inc (2).png">
+Note that Kendra may hit different places in the same document, so it seems necessary to consider how to handle this based on what you want to realize with commands.</p>
+<p>In addition, I am happy that the reaction in the company is excellent.
+![Screenshot_2019-12-08 Slack proj_tech_branding ABEJA, Inc .png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/6637c37e-6e10-c810-004a-(2c13397fcb0d.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/6637c37e-6e10-c810-004a-(2c13397fcb0d.png)</a></p>
+<h2 id="summary">Summary</h2>
+<p>I tried using Amazon Kendra announced at re:Invent 2019 the other day, and made an internal document search slack command. Although it took a long time to wait and it took a long time to solve it due to a mystery error, I felt that Kendra is a very good service because it is generally easy to use and you can search in natural sentences. This time I tried to make it using only some of the documents in the company because of the time and cost relations, but I can collect all kinds of information and search it from slack and learn it by seeing the results, search history It is possible to visualize the distribution of information and to visualize the world of structured information, which expands dreams. I wonder if they can speak Japanese quickly.
+By the way, please be aware that an Internal Server Error may be returned if you import an unexpected document such as a Japanese document into Kendra. But I got the courage to release it even if there were some errors.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/130762/347c9acc-bc9a-7a6a-412d-35df40b4162c.png" alt="Screenshot_2019-12-04 Kendra(21).png"></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

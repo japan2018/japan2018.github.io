@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Rebuild Django development environment with Docker! ! ! ! | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Rebuild Django development environment with Docker! ! ! !</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 11, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/postgresql">PostgreSQL</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker-compose">docker-compose</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I wrote this article before.
+[Build Django development environment with Docker! (Docker-compose/Django/postgreSQL/nginx)]](<a href="https://qiita.com/nokonoko_1203/items/242367a83c313a5e46bf">https://qiita.com/nokonoko_1203/items/242367a83c313a5e46bf</a>)</p>
+<p>The original article was written a long time ago (a year or so?), but now that I have enough knowledge, I thought I could make it a little better, so I decided to try it!</p>
+<p>I will not talk about installing Docker in detail, so if you are interested, please check the original article!
+(<a href="https://qiita.com/zembutsu/items/dd2209a663cae37dfa81">Here</a>)willhelp.)</p>
+<p>Also, as a clear difference from the previous article, Django thinks as an API delivery server and assumes Vue.js or React for the front end implementation, so delivery of static files and setting of template etc. are done. Please note that there is no such thing, and <code>docker-compose.yml</code> and <code>docker-compose.yml.prod</code> are created to separate the production environment from the development environment.</p>
+<h2 id="table-of-contents">table of contents</h2>
+<!-- TOC -->
+<ul>
+<li><a href="#TableofContents">Table of Contents</a></li>
+<li><a href="#Directorystructure">Directory structure</a></li>
+<li><a href="Building#djangoenvironment">Building Django environment</a></li>
+<li><a href="Build#postgresqlenvironment">Build PostgreSQL environment</a></li>
+<li><a href="Tryusing#docker-compose">Try using docker-compose</a></li>
+<li><a href="Building#nginxenvironment">Building nginx environment</a></li>
+<li><a href="#addnginxtodocker-composeyml">Add nginx to docker-compose.yml</a></li>
+</ul>
+<!-- /TOC -->
+<h2 id="directory-structure">Directory structure</h2>
+<p>Finally, the directory structure looks like this!</p>
+<pre><code class="language-shell-session" data-lang="shell-session">backend
+└── containers
+    ├── django
+    │  ├── Dockerfile
+    │  ├── Pipfile
+    │  ├── Pipfile.lock
+    │  ├── config
+    │  │  ├── __init__.py
+    │  │  ├── settings.py
+    │  │  ├── urls.py
+    │  │  └── wsgi.py
+    │  ├── entrypoint.sh
+    │  ├── manage.py
+    ├── docker-compose.yml
+    ├── nginx
+    │  ├── Dockerfile
+    │  └── nginx.conf
+    └── postgres
+        ├── Dockerfile
+        └── sql
+            └── init.sql
+</code></pre><p>Each container is placed in the containers directory under the backend directory.</p>
+<p>The postgres directory has been added compared to the previous article.</p>
+<p>So let&rsquo;s start with the top django directory!</p>
+<h2 id="building-a-django-environment">Building a Django environment</h2>
+<p>First, let&rsquo;s create three directories, backend, containers and django! Then change to the django directory.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$mkdir -p backend/containers/django
+$cd backend/containers/django
+</code></pre><p>First, let&rsquo;s create a Pipfile in the django directory. The version of each package is the latest version at the time of writing this article, and there is no particular preference. Feel free to change it. (Operation is not guaranteed)</p>
+<p>Also, if the package to be installed is arbitrary and the only purpose is to build the environment, there is no problem if only <code>django</code>, <code>gunicorn</code> and <code>django-environ</code> are included.</p>
+<pre><code class="language-ini:backend/containers/django/Pipfile" data-lang="ini:backend/containers/django/Pipfile">[[source]]
+name = &quot;pypi&quot;
+url = &quot;https://pypi.org/simple&quot;
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+django = &quot;==3.0.6&quot;
+djangorestframework = &quot;==3.11.0&quot;
+djangorestframework-simplejwt = &quot;==4.4.0&quot;
+djangorestframework-gis = &quot;==0.15&quot;
+django-cors-headers = &quot;==3.2.1&quot;
+django-environ = &quot;==0.4.5&quot;
+djoser = &quot;==2.0.3&quot;
+gunicorn = &quot;==20.0.4&quot;
+psycopg2-binary = &quot;==2.8.5&quot;
+
+[requires]
+python_version = &quot;3.8.2&quot;
+</code></pre><p>Let&rsquo;s create a virtual environment with pipenv using python3.8 system and enter the virtual environment to check the version and installed packages.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$pipenv install
+$pipenv shell
+(django) $python -V
+Python 3.8.2
+(django) $pip list
+Package Version
+- ---------------------------- -------
+asgiref 3.2.7
+Django 3.0.6
+django-cors-headers 3.2.1
+django-environ 0.4.5
+django-templated-mail 1.1.1
+djangorestframework 3.11.0
+djangorestframework-gis 0.15
+djangorestframework-simplejwt 4.4.0
+djoser 2.0.3
+gunicorn 20.0.4
+pip 20.0.2
+psycopg2-binary 2.8.5
+PyJWT 1.7.1
+pytz 2020.1
+setuptools 46.1.3
+sqlparse 0.3.1
+wheel 0.34.2
+</code></pre><p>If the character <code>(django)</code> is displayed on the left edge of the shell, it is in the virtual environment. (For the sake of simplicity, the string of <code>(django)</code> will not be described from the next time on)</p>
+<p>You have Django installed properly!</p>
+<p>After confirming that you are in the django directory, create a project using Django commands.</p>
+<pre><code class="language-console" data-lang="console">$django-admin startproject config.
+</code></pre><p>This completes the Django project creation. You should see a config directory and a file named <code>manage.py</code> created in the django directory.</p>
+<p>At this point, start the debug server with the <code>python manage.py runserver localhost:8000</code> command, connect to <code>loaclhost:8000</code> from the browser, and you should see that screen as seen from the parent&rsquo;s face.</p>
+<img width="837" alt="Screenshot 2020-05-07 17.16.32.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/203944/45948982-0da9-afea-049b-9d6c31cb11b8.png">
+<p>Next, let&rsquo;s modify the files around Django as follows.</p>
+<p>Please comment out SECRET_KEY as it will be used later.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:backend/containers/django/config/settings.py" data-lang="python:backend/containers/django/config/settings.py"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> timedelta
+<span style="color:#f92672">import</span> environ
+
+env <span style="color:#f92672">=</span> environ<span style="color:#f92672">.</span>Env()
+env<span style="color:#f92672">.</span>read_env(<span style="color:#e6db74">&#39;.env&#39;</span>)
+
+BASE_DIR <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(__file__)))
+
+SECRET_KEY <span style="color:#f92672">=</span> env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;SECRET_KEY&#39;</span>)
+
+DEBUG <span style="color:#f92672">=</span> env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DEBUG&#39;</span>)
+
+ALLOWED_HOSTS <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;localhost&#39;</span>, <span style="color:#e6db74">&#39;127.0.0.1&#39;</span>]
+
+INSTALLED_APPS <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#39;django.contrib.admin&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.auth&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.contenttypes&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.sessions&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.messages&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.staticfiles&#39;</span>,
+
+    <span style="color:#e6db74">&#39;rest_framework&#39;</span>,
+    <span style="color:#e6db74">&#39;rest_framework_gis&#39;</span>,
+    <span style="color:#e6db74">&#39;corsheaders&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.gis&#39;</span>,
+]
+
+MIDDLEWARE <span style="color:#f92672">=</span> [
+    <span style="color:#e6db74">&#39;corsheaders.middleware.CorsMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.middleware.security.SecurityMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.sessions.middleware.SessionMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.middleware.common.CommonMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.middleware.csrf.CsrfViewMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.auth.middleware.AuthenticationMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.contrib.messages.middleware.MessageMiddleware&#39;</span>,
+    <span style="color:#e6db74">&#39;django.middleware.clickjacking.XFrameOptionsMiddleware&#39;</span>,
+]
+
+ROOT_URLCONF <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;config.urls&#39;</span>
+
+TEMPLATES <span style="color:#f92672">=</span> [
+    {<span style="color:#e6db74">&#39;BACKEND&#39;</span>: <span style="color:#e6db74">&#39;django.template.backends.django.DjangoTemplates&#39;</span>,
+        <span style="color:#e6db74">&#39;DIRS&#39;</span>: [os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(BASE_DIR, <span style="color:#e6db74">&#39;templates&#39;</span>)],
+        <span style="color:#e6db74">&#39;APP_DIRS&#39;</span>: True,
+        <span style="color:#e6db74">&#39;OPTIONS&#39;</span>: {
+            <span style="color:#e6db74">&#39;context_processors&#39;</span>: [
+                <span style="color:#e6db74">&#39;django.template.context_processors.debug&#39;</span>,
+                <span style="color:#e6db74">&#39;django.template.context_processors.request&#39;</span>,
+                <span style="color:#e6db74">&#39;django.contrib.auth.context_processors.auth&#39;</span>,
+                <span style="color:#e6db74">&#39;django.contrib.messages.context_processors.messages&#39;</span>,
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;config.wsgi.application&#39;</span>
+
+DATABASES <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;default&#39;</span>: {
+        <span style="color:#e6db74">&#39;ENGINE&#39;</span>: env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DATABASE_ENGINE&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;django.db.backends.sqlite3&#39;</span>),
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DATABASE_DB&#39;</span>, default<span style="color:#f92672">=</span>os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(BASE_DIR, <span style="color:#e6db74">&#39;db.sqlite3&#39;</span>)),
+        <span style="color:#e6db74">&#39;USER&#39;</span>: env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DATABASE_USER&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;django_user&#39;</span>),
+        <span style="color:#e6db74">&#39;PASSWORD&#39;</span>: env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DATABASE_PASSWORD&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;password&#39;</span>),
+        <span style="color:#e6db74">&#39;HOST&#39;</span>: env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DATABASE_HOST&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;localhost&#39;</span>),
+        <span style="color:#e6db74">&#39;PORT&#39;</span>: env<span style="color:#f92672">.</span>get_value(<span style="color:#e6db74">&#39;DATABASE_PORT&#39;</span>, default<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;5432&#39;</span>),
+    }
+}
+
+AUTH_PASSWORD_VALIDATORS <span style="color:#f92672">=</span> [
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: <span style="color:#e6db74">&#39;django.contrib.auth.password_validation.UserAttributeSimilarityValidator&#39;</span>,
+    },
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: <span style="color:#e6db74">&#39;django.contrib.auth.password_validation.MinimumLengthValidator&#39;</span>,
+    },
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: <span style="color:#e6db74">&#39;django.contrib.auth.password_validation.CommonPasswordValidator&#39;</span>,
+    },
+    {
+        <span style="color:#e6db74">&#39;NAME&#39;</span>: <span style="color:#e6db74">&#39;django.contrib.auth.password_validation.NumericPasswordValidator&#39;</span>,
+    },
+]
+
+LANGUAGE_CODE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;ja&#39;</span>
+
+TIME_ZONE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;Asia/Tokyo&#39;</span>
+
+USE_I18N <span style="color:#f92672">=</span> True
+
+USE_L10N <span style="color:#f92672">=</span> True
+
+USE_TZ <span style="color:#f92672">=</span> True
+
+STATIC_URL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;/static/&#39;</span>
+STATICFILES_DIRS <span style="color:#f92672">=</span> (os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(BASE_DIR, <span style="color:#e6db74">&#39;static&#39;</span>),)
+
+REST_FRAMEWORK <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;DEFAULT_AUTHENTICATION_CLASSES&#39;</span>: [
+        <span style="color:#e6db74">&#39;rest_framework_simplejwt.authentication.JWTAuthentication&#39;</span>,
+    ],
+}
+
+SIMPLE_JWT <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;AUTH_HEADER_TYPES&#39;</span>: (<span style="color:#e6db74">&#39;JWT&#39;</span>,),
+    <span style="color:#e6db74">&#39;ACCESS_TOKEN_LIFETIME&#39;</span>: timedelta(minutes<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>),
+}
+
+CORS_ORIGIN_ALLOW_ALL <span style="color:#f92672">=</span> False
+CORS_ORIGIN_WHITELIST <span style="color:#f92672">=</span> (
+    <span style="color:#e6db74">&#39;http://localhost:8080&#39;</span>,
+    <span style="color:#e6db74">&#39;http://127.0.0.1:8080&#39;</span>,
+)
+</code></pre></div><p>最初にPipfileを作成したときに<code>django-environ</code>というパッケージを追加しましたが、これはSECRET_KEYやDBへの接続情報など、隠しておきたい情報を<code>.env</code>ファイルなどに記載し、ソースコードとは別に管理するためのパッケージで、<code>setting.py</code>などから</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">env <span style="color:#f92672">=</span> environ<span style="color:#f92672">.</span>Env()
+env<span style="color:#f92672">.</span>read_env(<span style="color:#e6db74">&#39;.env&#39;</span>)
+</code></pre></div><p>のように利用します。</p>
+<p>早速<code>.env</code>ファイルを作成していきましょう。</p>
+<pre><code class="language-env:backend/containers/django/.env" data-lang="env:backend/containers/django/.env">DEBUG=True
+SECRET_KEY=&lt;YOUR_SECRET_KEY&gt;
+DATABASE_ENGINE=django.contrib.gis.db.backends.postgis
+DATABASE_DB=&lt;YOUR_DB_NAME&gt;
+DATABASE_USER=&lt;YOUR_DB_USER&gt;
+DATABASE_PASSWORD=&lt;YOUR_DB_PASSWORD&gt;
+#entrypoint.shで利用
+#compose.ymlに記載のサービス名で名前解決してくれる
+DATABASE_HOST=postgres
+DATABASE_PORT=5432
+DATABASE=postgres
+</code></pre><ul>
+<li>&lt;YOUR_SECRET_KEY&gt;:setting.pyに元々記載されていたKEY</li>
+<li>&lt;YOUR_DB_NAME&gt;(USER/PASSWORD):任意のもの入れてください。詳しくはPostgreSQLコンテナを立ち上げる際に説明します</li>
+</ul>
+<p>あとはゴリゴリと関連するファイルを直していきます。backendディレクトリからのパスも記載するので、適宜必要なファイルの作成と追記・修正を行っていきます。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile:backend/containers/django/Dockerfile" data-lang="Dockerfile:backend/containers/django/Dockerfile"><span style="color:#75715e"># ubuntuのイメージをプルし、Pythonをインストールしていく</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> ubuntu:20.04</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">SHELL</span> [<span style="color:#e6db74">&#34;/bin/bash&#34;</span>, <span style="color:#e6db74">&#34;-c&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># pythonをインストール</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get update -y <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get upgrade -y <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y python3.8 python3.8-dev <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> source ~/.bashrc <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get -y install vim<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># 作業ディレクトリを設定</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">WORKDIR</span><span style="color:#e6db74"> /usr/src/app</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># 環境変数を設定</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># Pythonがpyc filesとdiscへ書き込むことを防ぐ</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> PYTHONDONTWRITEBYTECODE <span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># Pythonが標準入出力をバッファリングすることを防ぐ</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> PYTHONUNBUFFERED <span style="color:#ae81ff">1</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> DEBIAN_FRONTEND<span style="color:#f92672">=</span>noninteractive
+
+<span style="color:#75715e"># 依存関係のインストールとpipenvをインストール</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get install -y curl <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y python3.8-distutils <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> python3.8 get-pip.py <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> pip install -U pip <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y build-essential libssl-dev libffi-dev python-dev python3-dev libpq-dev<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># pipenvのインストール</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pip install pipenv<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ローカルマシンののPipfileをコンテナにコピー</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> Pipfile ./<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># Pipfile.lockを無視してPipfileに記載のパッケージをシステムにインストール</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># その後、pipenvをアンインストール</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> pipenv install --system --skip-lock <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> pip uninstall -y pipenv virtualenv-clone virtualenv<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># 地理空間ライブラリをインストールする際の依存関係</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get update -y <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get upgrade -y <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y libgeos-dev binutils libproj-dev gdal-bin libgdal-dev <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y python3-gdal<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> apt-get install -y netcat <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    <span style="color:#f92672">&amp;&amp;</span> apt-get install -y expect<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># シェルスクリプトをコピー</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># COPY ./entrypoint.sh /usr/src/app/entrypoint.sh</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> . /usr/src/app/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># シェルスクリプトを実行</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># ENTRYPOINT [&#34;/usr/src/app/entrypoint.sh&#34;]</span><span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>この段階でコンテナが動作するかどうか確認してみましょう。</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$docker build . -t pipenv_sample
+...
+$docker run -it pipenv_sample
+root@e6bdfb335bee:/usr/src/app#
+</code></pre><p>このようにコンテナにrootユーザーでログインできれば、おそらく成功です！</p>
+<pre><code class="language-shell-session" data-lang="shell-session"># python3 -V
+Python 3.8.2
+# pip list
+Package                       Version
+- ---------------------------- ----------
+appdirs                       1.4.3
+asgiref                       3.2.7
+certifi                       2020.4.5.1
+distlib                       0.3.0
+Django                        3.0.6
+django-cors-headers           3.2.1
+django-environ                0.4.5
+django-templated-mail         1.1.1
+djangorestframework           3.11.0
+djangorestframework-gis       0.15djangorestframework-simplejwt 4.4.0
+djoser 2.0.3
+filelock 3.0.12
+GDAL 3.0.4
+gunicorn 20.0.4
+numpy 1.17.4
+pip 20.1
+pipenv 2018.11.26
+psycopg2-binary 2.8.5
+PyJWT 1.7.1
+pytz 2020.1
+setuptools 46.1.3
+six 1.14.0
+sqlparse 0.3.1
+virtualenv 20.0.20
+virtualenv-clone 0.5.4
+wheel 0.34.2
+</code></pre><p>Python version is 3.8.2 and the packages are installed properly!</p>
+<p>Log out with <code>Control + d</code>.</p>
+<p>Lastly, let&rsquo;s write and save a shell script to connect to the postgres container that runs at boot time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh:backend/containers/django/entrypoint.sh" data-lang="sh:backend/containers/django/entrypoint.sh"><span style="color:#75715e">#!/bin/sh
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span><span style="color:#e6db74">&#34;</span>$DATABASE<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;postgres&#34;</span><span style="color:#f92672">]</span>
+<span style="color:#66d9ef">then</span>
+    echo <span style="color:#e6db74">&#34;Waiting for postgres...&#34;</span>
+
+    <span style="color:#66d9ef">while</span> !nc -z $DATABASE_HOST $DATABASE_PORT; <span style="color:#66d9ef">do</span>
+      sleep 0.1
+    <span style="color:#66d9ef">done</span>
+
+    echo <span style="color:#e6db74">&#34;PostgreSQL started&#34;</span>
+<span style="color:#66d9ef">fi</span>
+
+exec <span style="color:#e6db74">&#34;</span>$@<span style="color:#e6db74">&#34;</span>
+</code></pre></div><p>Then, uncomment the two comments near the last line of the Dockerfile you edited above.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile:backend/containers/django/Dockerfile" data-lang="Dockerfile:backend/containers/django/Dockerfile"><span style="color:#75715e"># this</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> ./entrypoint.sh /usr/src/app/entrypoint.sh<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> ./usr/src/app/<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#75715e"># this</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENTRYPOINT</span> [<span style="color:#e6db74">&#34;/usr/src/app/entrypoint.sh&#34;</span>]<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>That&rsquo;s it for the Django directory.</p>
+<ul>
+<li>Directory structure</li>
+</ul>
+<pre><code class="language-shell-session:tree" data-lang="shell-session:tree">backend
+└── containers
+    ├── django
+    │  ├── Dockerfile
+    │  ├── Pipfile
+    │  ├── Pipfile.lock
+    │  ├── config
+    │  │  ├── __init__.py
+    │  │  ├── settings.py
+    │  │  ├── urls.py
+    │  │  └── wsgi.py
+    │  ├── entrypoint.sh
+    │  ├── manage.py
+    └── docker-compose.yml
+</code></pre><h2 id="postgresql-environment-construction">PostgreSQL environment construction</h2>
+<p>Next we will start the PostgreSQL container.</p>
+<p>First, move to the containers directory and create the postgres directory and so on.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$cd ../../
+$mkdir -p postgres/sql/
+</code></pre><p>Now you have a postgres directory and an sql directory inside it.</p>
+<p>Let&rsquo;s add a Dockerfile to the postgres directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile:backend/containers/postgres/Dockerfile" data-lang="Dockerfile:backend/containers/postgres/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> mdillon/postgis:11</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> localedef -i ja_JP -c -f UTF-8 -A /usr/share/locale/locale.alias ja_JP.UTF-8<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">ENV</span> LANG ja_JP.UTF-8<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>In my case, I wanted to create a map application, so I will use an image of PostGIS which is an extension of PostgreSQL, but I think that any PostgreSQL image will do. (Operation has not been verified)</p>
+<p>Next, let&rsquo;s store the sql file you want to execute at container startup in the sql directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql:backend/containers/postgres/sql/init.sql" data-lang="sql:backend/containers/postgres/sql/init.sql"><span style="color:#66d9ef">CREATE</span> EXTENSION postgis;
+</code></pre></div><p>This time only the sql file for enabling the extension function is stored, but if there is data you want to initially register, please store it freely.</p>
+<p>Finally, add the .env_db file.</p>
+<p>In this, please write the same as &lt;YOUR_DB_NAME&gt;(USER/PASSWORD) described when creating the Django container.</p>
+<p>A DB is automatically created with the contents described here.</p>
+<pre><code class="language-env:backend/containers/postgres/.env_db" data-lang="env:backend/containers/postgres/.env_db">If you write in #env, DB will be created automatically
+POSTGRES_DB=&lt;YOUR_DB_NAME&gt;
+POSTGRES_USER=&lt;YOUR_DB_USER&gt;
+POSTGRES_PASSWORD=&lt;YOUR_DB_PASSWORD&gt;
+</code></pre><p>This is the end of building the postgres environment.</p>
+<ul>
+<li>Directory structure</li>
+</ul>
+<pre><code class="language-shell-session" data-lang="shell-session">backend
+└── containers
+    ├── django
+    │  ├── Dockerfile
+    │  ├── Pipfile
+    │  ├── Pipfile.lock
+    │  ├── config
+    │  │  ├── __init__.py
+    │  │  ├── settings.py
+    │  │  ├── urls.py
+    │  │  └── wsgi.py
+    │  ├── entrypoint.sh
+    │  ├── manage.py
+    ├── docker-compose.yml
+    └── postgres
+        ├── Dockerfile
+        └── sql
+            └── init.sql
+</code></pre><h2 id="try-using-docker-compose">Try using docker-compose</h2>
+<p>docker-compose is a useful tool that can be used to start multiple containers at the same time and connect them.</p>
+<p>Immediately, move to the containers directory and create a configuration file.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$cd ../
+$touch docker-compose.yml
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml:backend/containers/docker-compose.yml" data-lang="yml:backend/containers/docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#34;3.7&#34;</span>
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#66d9ef">django</span>:
+    <span style="color:#75715e"># Container name</span>
+    <span style="color:#66d9ef">container_name</span>: django
+    <span style="color:#75715e"># Directory containing the docker file to build</span>
+    <span style="color:#66d9ef">build</span>: ./django
+    <span style="color:#75715e"># Command to be executed after normal startup</span>
+    <span style="color:#66d9ef">command</span>: python3 manage.py runserver <span style="color:#ae81ff">0.0.0.0</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">volumes</span>:
+      <span style="color:#75715e"># Directory to mount</span>
+      -./django:/usr/src/app/
+    <span style="color:#66d9ef">ports</span>:
+      <span style="color:#75715e"># Host side port: Container side port</span>
+      -<span style="color:#ae81ff">8000</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">env_file</span>:
+      <span style="color:#75715e"># File to be set in environment variable</span>
+      -./django/.env
+    <span style="color:#66d9ef">depends_on</span>:
+      <span style="color:#75715e"># Service to connect</span>
+      -postgres
+
+  <span style="color:#66d9ef">postgres</span>:
+    <span style="color:#66d9ef">container_name</span>: postgres
+    <span style="color:#66d9ef">build</span>: ./postgres
+    <span style="color:#66d9ef">volumes</span>:
+      <span style="color:#75715e">#DB data is created and saved as a volume</span>
+      <span style="color:#75715e"># You can leave the actual data directly on the host OS as a directory and mount</span>
+      <span style="color:#75715e"># DB data is stored in /var/lib/postgresql/data</span>
+      -sample_postgis_data:/var/lib/postgresql/data
+      <span style="color:#75715e"># down -v Specify the file to be executed at the first startup including when there is no volume etc.</span>
+      -./postgres/sql:/docker-entrypoint-initdb.d
+    <span style="color:#66d9ef">env_file</span>: ./postgres/.env_db
+    <span style="color:#66d9ef">ports</span>:
+      <span style="color:#75715e"># The port on the host side is batting with local psql, so set it to something other than 5432</span>
+      -<span style="color:#ae81ff">5433</span>:<span style="color:#ae81ff">5432</span>
+
+<span style="color:#66d9ef">volumes</span>:
+  <span style="color:#66d9ef">sample_postgis_data</span>:
+</code></pre></div><p>After writing it, let&rsquo;s launch docker-compose.</p>
+<pre><code class="language-shlel-session" data-lang="shlel-session">$docker-compose up -d --build
+</code></pre><p>Let&rsquo;s connect to <code>localhost:8000</code> from the browser.</p>
+<p>It is successful if the initial screen of Django seen from the face of my brother is displayed.</p>
+<p>You can log in to the container with the following command.</p>
+<pre><code class="language-console" data-lang="console">$docker exec -it &lt;service name&gt; bash
+</code></pre><p>In other words, this time you can connect with the following.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$docker exec -it django bash
+Or
+$docker exec -it postgres bash
+</code></pre><p>We have confirmed that the django container has started, so let&rsquo;s check the postgres container as well.</p>
+<pre><code class="language-shell-seesion" data-lang="shell-seesion">$docker exec -it postgres bash
+#psql -U &lt;YOUR_DB_USER&gt; -d &lt;YOUR_DB_NAME&gt;
+psql (11.2 (Debian 11.2-1.pgdg90+1))
+&quot;help&quot; displays help.
+
+&lt;YOUR_DB_NAME&gt;=#
+&lt;YOUR_DB_NAME&gt;=# SELECT postgis_version();
+            postgis_version
+- --------------------------------------
+ 2.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1
+(1 line)
+</code></pre><p>It can be confirmed that it is created with the DB specified and postgis is also enabled.Stop the container and delete the image with the following command.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$docker-compose down -v
+</code></pre><h2 id="build-nginx-environment">Build nginx environment</h2>
+<p>Finally, let&rsquo;s build the nginx environment.</p>
+<p>First, create an nginx directory and create a Dockerfile.</p>
+<pre><code class="language-shll-session" data-lang="shll-session">$mkdir nginx
+$cd nginx/
+$touch Dockerfile
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile:backend/containers/nginx/Dockerfile" data-lang="Dockerfile:backend/containers/nginx/Dockerfile"><span style="color:#66d9ef">FROM</span><span style="color:#e6db74"> nginx:1.17.10</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">RUN</span> rm /etc/nginx/conf.d/default.conf<span style="color:#960050;background-color:#1e0010">
+</span><span style="color:#960050;background-color:#1e0010"></span><span style="color:#66d9ef">COPY</span> nginx.conf /etc/nginx/conf.d<span style="color:#960050;background-color:#1e0010">
+</span></code></pre></div><p>next</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-conf:backend/containers/nginx/nginx.conf" data-lang="conf:backend/containers/nginx/nginx.conf"><span style="color:#66d9ef">upstream</span> <span style="color:#e6db74">config</span> {
+    <span style="color:#75715e"># If you specify the service name of the container, it will resolve the name
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">server</span> django:<span style="color:#ae81ff">8000</span>;
+}
+
+<span style="color:#66d9ef">server</span> {
+    <span style="color:#75715e">#80 Standby on port
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">listen</span> <span style="color:#ae81ff">80</span>;
+
+    <span style="color:#f92672">location/{</span>
+        <span style="color:#e6db74">proxy_pass</span> <span style="color:#e6db74">http://config</span>;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">X-Forwarded-For</span> $proxy_add_x_forwarded_for;
+        <span style="color:#f92672">proxy_set_header</span> <span style="color:#e6db74">Host</span> $host;
+        <span style="color:#f92672">proxy_redirect</span> <span style="color:#66d9ef">off</span>;
+    }
+
+    <span style="color:#75715e"># Route static file requests statically
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">location</span> <span style="color:#e6db74">/static/</span> {
+        <span style="color:#f92672">alias</span> <span style="color:#e6db74">/usr/src/app/static/</span>;
+    }
+<span style="color:#66d9ef">}</span>
+</code></pre></div><p>I think I have all the necessary files.</p>
+<h2 id="add-nginx-to-docker-composeyml">Add nginx to docker-compose.yml</h2>
+<p>Add the nginx service as follows and change the <code>command</code> of the django service from <code>runserver</code> to <code>gunicorn</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml:backend/containers/docker-compose.yml" data-lang="yml:backend/containers/docker-compose.yml"><span style="color:#66d9ef">version</span>: <span style="color:#e6db74">&#34;3.7&#34;</span>
+<span style="color:#66d9ef">services</span>:
+  <span style="color:#66d9ef">django</span>:
+    <span style="color:#75715e"># Container name</span>
+    <span style="color:#66d9ef">container_name</span>: django
+    <span style="color:#75715e"># Directory containing the docker file to build</span>
+    <span style="color:#66d9ef">build</span>: ./django
+    <span style="color:#75715e"># Command to be executed after normal startup</span>
+    <span style="color:#66d9ef">command</span>: gunicorn config.wsgi:application --bind <span style="color:#ae81ff">0.0.0.0</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">volumes</span>:
+      <span style="color:#75715e"># Directory to mount</span>
+      -./django:/usr/src/app/
+    <span style="color:#66d9ef">ports</span>:
+      <span style="color:#75715e"># Host side port: Container side port</span>
+      -<span style="color:#ae81ff">8000</span>:<span style="color:#ae81ff">8000</span>
+    <span style="color:#66d9ef">env_file</span>:
+      <span style="color:#75715e"># File to be set in environment variable</span>
+      -./django/.env
+    <span style="color:#66d9ef">depends_on</span>:
+      <span style="color:#75715e"># Service to connect</span>
+      -postgres
+
+  <span style="color:#66d9ef">postgres</span>:
+    <span style="color:#66d9ef">container_name</span>: postgres
+    <span style="color:#66d9ef">build</span>: ./postgres
+    <span style="color:#66d9ef">volumes</span>:
+      <span style="color:#75715e">#DB data is created and saved as a volume</span>
+      <span style="color:#75715e"># You can leave the actual data directly on the host OS as a directory and mount</span>
+      <span style="color:#75715e"># DB data is stored in /var/lib/postgresql/data</span>
+      -sample_postgis_data:/var/lib/postgresql/data
+      <span style="color:#75715e"># down -v Specify the file to be executed at the first startup including when there is no volume etc.</span>
+      -./postgres/sql:/docker-entrypoint-initdb.d
+    <span style="color:#66d9ef">env_file</span>: ./postgres/.env_db
+    <span style="color:#66d9ef">ports</span>:
+      <span style="color:#75715e"># The port on the host side is batting with local psql, so set it to something other than 5432</span>
+      -<span style="color:#ae81ff">5433</span>:<span style="color:#ae81ff">5432</span>
+
+  <span style="color:#66d9ef">nginx</span>:
+    <span style="color:#66d9ef">container_name</span>: nginx
+    <span style="color:#66d9ef">build</span>: ./nginx
+    <span style="color:#66d9ef">volumes</span>:
+      -./django/static:/usr/src/app/static
+    <span style="color:#66d9ef">ports</span>:
+      -<span style="color:#ae81ff">80</span>:<span style="color:#ae81ff">80</span>
+    <span style="color:#66d9ef">depends_on</span>:
+      -django
+
+<span style="color:#66d9ef">volumes</span>:
+  <span style="color:#66d9ef">sample_postgis_data</span>:
+</code></pre></div><p>Let&rsquo;s start the container.</p>
+<pre><code class="language-shell-session" data-lang="shell-session">$docker-compose up -d --build
+</code></pre><p>If you can confirm that it can be delivered from 80 port with nginx container, the environment construction is completed.</p>
+<p>Let&rsquo;s connect to <code>localhost</code>.</p>
+<p>The screen you see from your sister&rsquo;s face is displayed.</p>
+<p>Thank you for your hard work. Then boil it or bake it any way you like!</p>
+<ul>
+<li>Final directory structure (same as above)</li>
+</ul>
+<pre><code class="language-shell-session" data-lang="shell-session">backend
+└── containers
+    ├── django
+    │  ├── Dockerfile
+    │  ├── Pipfile
+    │  ├── Pipfile.lock
+    │  ├── config
+    │  │  ├── __init__.py
+    │  │  ├── settings.py
+    │  │  ├── urls.py
+    │  │  └── wsgi.py
+    │  ├── entrypoint.sh
+    │  ├── manage.py
+    ├── docker-compose.yml
+    ├── nginx
+    │  ├── Dockerfile
+    │  └── nginx.conf
+    └── postgres
+        ├── Dockerfile
+        └── sql
+            └── init.sql
+</code></pre>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

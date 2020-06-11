@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Note that the average pairwise correlation calculation in pandas was very easy | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Note that the average pairwise correlation calculation in pandas was very easy</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jun 9, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas"> pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/finance"> Finance</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/stock-price"> stock price</a></code></small>
+
+</p>
+<pre><code>## What is average pairwise correlation
+</code></pre>
+<p>I don&rsquo;t know how many people in the world need to do this calculation.</p>
+<p>The average pairwise stock correlation is the average of the correlation coefficients of price movements between stocks. In general, during the crisis such as the Lehman shock or the European debt crisis, the market as a whole will fall sharply, and then it will rise sharply in reaction, and the correlation coefficient between stocks will increase. As stocks move in the same way as the correlation jumps, it becomes a difficult market environment for active equity investors to earn excess returns through stock selection.
+So I will use this index to adjust the risk level of the portfolio (for example, reduce the risk when there is little chance of winning). As a lesser example, active equity managers use it as an excuse to say, &ldquo;We haven&rsquo;t been able to win recently, but please bear with us in this market environment&hellip;&rdquo;</p>
+<h2 id="its-so-easy-with-pandas">It&rsquo;s so easy with pandas</h2>
+<p>First, prepare the data. Let&rsquo;s prepare a DataFrame (m x n) with the date (m days) vertically, the stock issue (n times) horizontally, and the daily stock return for each element.
+This time, I prepared the data outside and read it with csv.
+<a href="http://qiita.com/ynakayama/items/1801d374224d6914a382">This article</a>etc.asreference,downloadstockpricefromyahoousingpandasanduse<code>pct_change()</code> method for daily return You can fix it.</p>
+<p>And finally calculate the correlation coefficient,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># pairwise correlation calculation (result is Panel)</span>
+result <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>rolling(window<span style="color:#f92672">=</span><span style="color:#ae81ff">60</span>, min_periods<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>)<span style="color:#f92672">.</span>corr()
+</code></pre></div><p>Calculation of rolling pairwise correlation is completed in one line!
+What we are doing is &ldquo;calculate a correlation matrix (nxn matrix) that takes the correlation coefficient between all issues for 60 days of daily returns up to that day. However, for issues that do not have data for 30 days, <code>None</code> Repeat this for all dates.&rdquo; The resulting <code>result</code> is a <code>pandas.Panel</code> object that has a 2D <code>DataFrame</code> with one additional axis (time axis) and 3D (m x n x n).</p>
+<p>We have calculated the correlation, but it takes some effort to find the average. Since this is 1) the correlation matrix, 1 is included in the diagonal component, and it is necessary to take the average without this 2) If the correlation coefficient cannot be calculated due to data loss, the None value is included. There are two reasons why you need to take the average without this.</p>
+<p>First of all, the diagonal component is 1, but I will change it to the <code>None</code> value using <code>np.fill_diagonal()</code> of <code>Numpy</code>. It is used like <code>np.fill_diagonal(df, None)</code> for a single DataFrame, but this time it is applied to the entire <code>Panel</code> using the <code>apply()</code> method as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Convert diagonal elements to None</span>
+tmp <span style="color:#f92672">=</span> result<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: np<span style="color:#f92672">.</span>fill_diagonal(x<span style="color:#f92672">.</span>values, None), axis<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>))
+</code></pre></div><p>Next, apply the <code>mean(skipna=True)</code> method to calculate the average value ignoring the None value. This is the average pairwise correlation. This also applies with a single <code>apply()</code> method over the time axis.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e">#Ignore None and calculate average</span>
+apc <span style="color:#f92672">=</span> result<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">.</span>unstack()<span style="color:#f92672">.</span>mean(skipna<span style="color:#f92672">=</span>True), axis<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>))
+</code></pre></div><p>If you set it to <code>Panel.apply(..., axis=(1,2))</code>, you can process it sequentially while moving the time axis and extracting the correlation matrix at each time point as a DataFrame <code>x</code>.</p>
+<p>The calculation is complete! I will plot it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">apc<span style="color:#f92672">.</span>plot()
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/96897/e5a1fa91-f0a4-258a-2f05-78e141744e45.png" alt="correlation.png"></p>
+<p>It can be seen that the correlation jumps at times when the market is influenced by macro factors, which are occasionally visited.</p>
+<h2 id="in-conclusion">in conclusion</h2>
+<p>This is the only code that can be put together. It&rsquo;s easy.
+pandas was only developed by author Wes McKinney while he was at AQR Capital, a hedge fund, and it makes handling financial data very easy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#75715e"># Data read</span>
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;data.csv&#39;</span>, na_values<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>, index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, parse_dates<span style="color:#f92672">=</span>True)
+<span style="color:#75715e"># pairwise correlation calculation (result is Panel)</span>
+result <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>rolling(window<span style="color:#f92672">=</span><span style="color:#ae81ff">60</span>, min_periods<span style="color:#f92672">=</span><span style="color:#ae81ff">30</span>)<span style="color:#f92672">.</span>corr()
+<span style="color:#75715e"># Convert diagonal elements to None</span>
+tmp <span style="color:#f92672">=</span> result<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: np<span style="color:#f92672">.</span>fill_diagonal(x<span style="color:#f92672">.</span>values, None), axis<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>))
+<span style="color:#75715e">#Ignore None and calculate average</span>
+apc <span style="color:#f92672">=</span> result<span style="color:#f92672">.</span>apply(<span style="color:#66d9ef">lambda</span> x: x<span style="color:#f92672">.</span>unstack()<span style="color:#f92672">.</span>mean(skipna<span style="color:#f92672">=</span>True), axis<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>))
+<span style="color:#75715e"># Plot</span>
+apc<span style="color:#f92672">.</span>plot()
+</code></pre></div><h2 id="references">References</h2>
+<ul>
+<li>Pandas documentation. The <code>rolling</code> method has changed since pandas 0.18.0, so please use it after updating to the latest pandas.
+<a href="http://pandas.pydata.org/pandas-docs/stable/computation.html#window-functions">http://pandas.pydata.org/pandas-docs/stable/computation.html#window-functions</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Summary of multi-process processing of script language | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Summary of multi-process processing of script language</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Aug 25, 2015
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/ruby">Ruby</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/php">PHP</a></code></small>
+
+</p>
+<pre><code># Overview
+</code></pre>
+<p>The impression that programming and languages that are aware of scalability, such as parallel/parallel processing, functional type, and reactive, have recently attracted attention. Therefore, we summarized the basic writing method of multi-process processing using three script languages often used in Web development.</p>
+<p>#Environment</p>
+<h2 id="language">Language</h2>
+<ul>
+<li>Ruby 2.2</li>
+<li>Python 3.1</li>
+<li>PHP 5.6</li>
+</ul>
+<h2 id="execution-environment">Execution environment</h2>
+<ul>
+<li>Vagrant</li>
+<li>CentOS6.4</li>
+<li>memory 1024MB</li>
+<li>CPU core 4</li>
+</ul>
+<pre><code class="language-rb:Vagrantfile" data-lang="rb:Vagrantfile">config.vm.provider :virtualbox do |vb|
+    vb.customize [&quot;modifyvm&quot;, :id, &quot;--memory&quot;, &quot;1024&quot;, &quot;--cpus&quot;, &quot;4&quot;, &quot;--ioapic&quot;, &quot;on&quot;]
+  end
+</code></pre><h2 id="cpu-confirmation-command">CPU confirmation command</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">top -d1
+Press <span style="color:#75715e">#1 to display all CPUs</span>
+</code></pre></div><h1 id="ruby">Ruby</h1>
+<h2 id="sample-code">Sample code</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rb" data-lang="rb">require <span style="color:#e6db74">&#34;digest/md5&#34;</span>
+require <span style="color:#e6db74">&#34;securerandom&#34;</span>
+require<span style="color:#e6db74">&#39;benchmark&#39;</span>
+
+pcount <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">single</span>(pcount)
+    (pcount<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>times <span style="color:#66d9ef">do</span>
+        arr <span style="color:#f92672">=</span> <span style="color:#f92672">[]</span>
+        <span style="color:#ae81ff">100000</span><span style="color:#f92672">.</span>times <span style="color:#66d9ef">do</span>
+            arr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#66d9ef">Digest</span><span style="color:#f92672">::</span><span style="color:#66d9ef">MD5</span><span style="color:#f92672">.</span>digest(<span style="color:#66d9ef">SecureRandom</span><span style="color:#f92672">.</span>uuid)
+        <span style="color:#66d9ef">end</span>
+    <span style="color:#66d9ef">end</span>
+<span style="color:#66d9ef">end</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">multi</span>(pcount)
+    pids <span style="color:#f92672">=</span> <span style="color:#f92672">[]</span>
+    (pcount<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>times <span style="color:#66d9ef">do</span>
+        <span style="color:#75715e">#Process creation</span>
+        pids <span style="color:#f92672">&lt;&lt;</span> fork <span style="color:#66d9ef">do</span>
+            arr <span style="color:#f92672">=</span> <span style="color:#f92672">[]</span>
+            <span style="color:#ae81ff">100000</span><span style="color:#f92672">.</span>times <span style="color:#66d9ef">do</span>
+                arr <span style="color:#f92672">&lt;&lt;</span> <span style="color:#66d9ef">Digest</span><span style="color:#f92672">::</span><span style="color:#66d9ef">MD5</span><span style="color:#f92672">.</span>digest(<span style="color:#66d9ef">SecureRandom</span><span style="color:#f92672">.</span>uuid)
+            <span style="color:#66d9ef">end</span>
+        <span style="color:#66d9ef">end</span>
+    <span style="color:#66d9ef">end</span>
+
+    <span style="color:#66d9ef">Process</span><span style="color:#f92672">.</span>waitall
+
+<span style="color:#66d9ef">end</span>
+
+single_time <span style="color:#f92672">=</span> <span style="color:#66d9ef">Benchmark</span><span style="color:#f92672">.</span>realtime <span style="color:#66d9ef">do</span>
+    single(pcount)
+<span style="color:#66d9ef">end</span>
+print single_time<span style="color:#f92672">.</span>to_s() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>
+
+multi_time <span style="color:#f92672">=</span> <span style="color:#66d9ef">Benchmark</span><span style="color:#f92672">.</span>realtime <span style="color:#66d9ef">do</span>
+    multi(pcount)
+<span style="color:#66d9ef">end</span>
+print multi_time<span style="color:#f92672">.</span>to_s() <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>
+
+</code></pre></div><h2 id="cpu-utilization">CPU utilization</h2>
+<h3 id="single-process">Single process</h3>
+<pre><code>Cpu0: 100.0%us, 0.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu1: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu2: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu3: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+</code></pre><h3 id="multi-process">Multi-process</h3>
+<pre><code>Cpu0: 99.0%us, 1.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu1: 99.0%us, 1.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu2: 99.0%us, 1.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu3: 100.0%us, 0.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+</code></pre><h2 id="result">result</h2>
+<ul>
+<li>Single process: 4.066100899999924</li>
+<li>Multi-process: 1.2609145170000602</li>
+</ul>
+<h1 id="python">Python</h1>
+<h2 id="sample-code-1">Sample code</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> multiprocessing <span style="color:#f92672">as</span> mp
+<span style="color:#f92672">import</span> hashlib
+<span style="color:#f92672">import</span> uuid
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> os
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_hash</span>(res<span style="color:#f92672">=</span>[]):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;created:&#39;</span><span style="color:#f92672">+</span> str(os<span style="color:#f92672">.</span>getpid()))
+    <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100000</span>):
+        res<span style="color:#f92672">.</span>append(hashlib<span style="color:#f92672">.</span>md5(str(uuid<span style="color:#f92672">.</span>uuid4())<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;utf8&#39;</span>))<span style="color:#f92672">.</span>hexdigest())
+    <span style="color:#66d9ef">return</span> res
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">single</span>(pcount):
+    start_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;parent:&#39;</span><span style="color:#f92672">+</span> str(os<span style="color:#f92672">.</span>getpid()))
+    res <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(pcount):
+        res <span style="color:#f92672">=</span> create_hash(res)
+    end_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;all finished :&#39;</span><span style="color:#f92672">+</span> str(end_time<span style="color:#f92672">-</span>start_time))
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">multi</span>(pcount):
+    start_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;parent:&#39;</span><span style="color:#f92672">+</span> str(os<span style="color:#f92672">.</span>getpid()))
+    processes <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(pcount):
+        processes<span style="color:#f92672">.</span>append(mp<span style="color:#f92672">.</span>Process(target<span style="color:#f92672">=</span>create_hash, args<span style="color:#f92672">=</span>()))
+
+    <span style="color:#66d9ef">for</span> process <span style="color:#f92672">in</span> processes:
+        process<span style="color:#f92672">.</span>start()
+
+    <span style="color:#66d9ef">for</span> process <span style="color:#f92672">in</span> processes:
+        process<span style="color:#f92672">.</span>join()
+
+    end_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;all finished :&#39;</span><span style="color:#f92672">+</span> str(end_time<span style="color:#f92672">-</span>start_time))
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    pcount <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>
+    single(pcount)
+    multi(pcount)
+</code></pre></div><h2 id="cpu-utilization-1">CPU utilization</h2>
+<h3 id="simple-process">Simple process</h3>
+<pre><code>Cpu0: 100.0%us, 0.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu1: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu2: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu3: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+</code></pre><h3 id="multi-process-1">Multi-process</h3>
+<pre><code>Cpu0: 100.0%us, 0.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu1: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu2: 100.0%us, 0.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu3: 99.0%us, 1.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+
+</code></pre><h2 id="result-1">result</h2>
+<ul>
+<li>Single process: 11.234153509140015</li>
+<li>Multi-process: 3.374380588531494</li>
+</ul>
+<h1 id="php">PHP</h1>
+<h2 id="sample-code-2">Sample code</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-php" data-lang="php">// parent process + child process = 4 processes
+$pcount = 3;
+
+function single($pcount) {
+    $time_start = microtime(true);
+    $res = [];
+    echo&#39;parent :&#39;.getmypid().&#34;\n&#34;;
+
+    foreach(range(0, $pcount-1) as $i) (
+        echo&#39;created :&#39;.getmypid().&#34;\n&#34;;
+
+        foreach(range(0, 100000) as $ii) {
+            $res[] = md5(uniqid(mt_rand(), true));
+        }
+    }
+
+    $time_end = microtime(true);
+    $time = $time_end-$time_start;
+
+    echo &#34;all finished :$time\n&#34;;
+}
+
+function multi($pcount) {
+    $processes = [];
+    $time_start = microtime(true);
+    echo&#39;parent :&#39;.getmypid().&#34;\n&#34;;
+
+    foreach(range(0, $pcount-1) as $p) (
+        // Here, it is divided into parent process and child process.
+        // If the parent process succeeds in creating the child process, set the PID_ID of that process
+        // get -1 on failure
+        // child process gets 0
+        $pid = pcntl_fork();
+
+        // Failed to create child process
+        if ($pid === -1) {
+            echo&#39;Failed process fork&#39;;
+            exit;
+        }
+
+        // process child processes
+        if ($pid === 0) {
+            $res = [];
+
+            foreach(range(0, 100000) as $i) {
+                $res[] = md5(uniqid(mt_rand(), true));
+            }
+            echo&#39;created :&#39;.getmypid().&#34;\n&#34;;
+            exit;
+        }
+
+        // process the parent process
+        $processes[] = $pid;
+    }
+
+    foreach($processes as $process) {pcntl_waitpid($process, $status);
+    }
+
+    $time_end = microtime(true);
+    $time = $time_end-$time_start;
+
+    echo &#34;all finished :$time\n&#34;;
+}
+
+single($pcount);
+multi($pcount);
+</code></pre></div><h2 id="cpu-utilization-2">CPU utilization</h2>
+<h3 id="single-process-1">Single process</h3>
+<pre><code>Cpu0: 100.0%us, 0.0%sy, 0.0%ni, 0.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu1: 0.0%us, 0.0%sy, 0.0%ni,100.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu2: 0.0%us, 1.0%sy, 0.0%ni, 99.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu3: 0.0%us, 1.0%sy, 0.0%ni, 99.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+</code></pre><h3 id="multi-process-2">Multi-process</h3>
+<pre><code>Cpu0: 1.0%us, 0.0%sy, 0.0%ni, 99.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu1: 99.0%us, 0.0%sy, 0.0%ni, 1.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu2: 97.0%us, 1.0%sy, 0.0%ni, 2.0%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Cpu3: 96.1%us, 1.0%sy, 0.0%ni, 2.0%id, 0.0%wa, 0.0%hi, 1.0%si, 0.0%st
+</code></pre><h2 id="result-2">result</h2>
+<ul>
+<li>Single process: 3.6972289085388</li>
+<li>Multi-process: 1.7085299491882</li>
+</ul>
+<p>#Summary</p>
+<ul>
+<li>There is a method of processing in multi-process even in script language.</li>
+<li>If the OS was not multi-core, it did not speed up even if it was multi-processed (obviously).</li>
+<li>Under the environment of each number of CPU cores, the fastest processing is when the number of processes is the same as the number of CPU cores, and even if more processes are added, the speed is not increased (rather slow).</li>
+<li>In multi-process, memory is allocated for each process.</li>
+<li><a href="http://qiita.com/naoya@github/items/8a626a8b6c3a46b9d21b">Consideration about Elixir and Reactive System</a>and<a href="http://97thatprogrammersshouldknow.com/Essay/messagepassingeffectiveforparallelprocessing">Effectivemessagepassingforparallelprocessing</a>Toimplementarchitecture-awareimplementationasdescribedin<a href="https://github.com/grosser/parallel">process</a>,Python<a href="http://methane.github.io/gevent-tutorial-ja/">gevent</a>seemstobegoodtouse,soitisaseparatesurvey.PHPhasamodulecalled<a href="http://www.php.net/manual/en/book.pthreads.php">pthreads</a>, but since PHP is originally based on single thread, it is not possible to force it. It seems better to choose the language of.</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

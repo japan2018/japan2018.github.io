@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Vectorize sentences and search for similar sentences | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Vectorize sentences and search for similar sentences</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 26, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/word2vec">word2vec</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/doc2vec">doc2vec</a></code></small>
+
+</p>
+<pre><code>I tried searching for similar sentences with Doc2Vec, so I will introduce the implementation.
+</code></pre>
+<p>What is #Doc2Vec
+In order for a computer to process natural language, human words must first have a value that the computer can handle.
+<a href="https://deepage.net/bigdata/machine_learning/2016/09/02/word2vec_power_of_word_vector.html">Word2Vec</a> exists as a method to vectorize the meaning of words.
+For details, the link is very easy to understand, but roughly speaking, it expresses that word in a list of n words before and after.
+By doing this, for example, &ldquo;dog&rdquo; and &ldquo;cat&rdquo; are used in similar contexts, and can be thought of as &ldquo;meaning&rdquo; with similar meanings.
+Doc2Vec is an application of Word2Vec to vectorize sentences.</p>
+<h1 id="implementation-sample">Implementation sample</h1>
+<p>The following two functions are realized using Doc2Vec this time.</p>
+<ul>
+<li>Search sentences by word</li>
+<li>Search for similar sentences</li>
+</ul>
+<p>As a sample, I used the sentences from Aozora Bunko.
+The code used in this article is [published on GitHub] <a href="https://github.com/Foo-x/doc2vec-sample">GitHub</a>.
+(Although the text used for learning is also zip, please note that it is large.)</p>
+<h2 id="environment">Environment</h2>
+<ul>
+<li>Python 3</li>
+<li>MeCab</li>
+<li>gensim</li>
+</ul>
+<p>Please be able to use.</p>
+<h2 id="learning">learning</h2>
+<ol>
+<li>Get the text file</li>
+<li>Get sentence from file</li>
+<li>Delete unnecessary parts from the text</li>
+<li>Break it down into words</li>
+<li>Learning with Doc2Vec</li>
+<li>Output learning data</li>
+</ol>
+<p>Process with the flow.</p>
+<h3 id="1-get-the-text-file">1. Get the text file</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">import</span> collections
+<span style="color:#f92672">from</span> gensim <span style="color:#66d9ef">import</span> models
+<span style="color:#f92672">from</span> gensim.models.doc2vec <span style="color:#66d9ef">import</span> LabeledSentence
+</code></pre></div><p>First, import the necessary libraries.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_all_files</span>(directory):
+    <span style="color:#66d9ef">for</span> root, dirs, files <span style="color:#f92672">in</span> os<span style="color:#f92672">.</span>walk(directory):
+        <span style="color:#66d9ef">for</span> file <span style="color:#f92672">in</span> files:
+            <span style="color:#66d9ef">yield</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(root, file)
+</code></pre></div><p>Get all files under the given directory.</p>
+<h3 id="2-get-text-from-file">2. Get text from file</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_document</span>(path):
+    <span style="color:#66d9ef">with</span> open(path,<span style="color:#e6db74">&#39;r&#39;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;sjis&#39;</span>, errors<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;ignore&#39;</span>) <span style="color:#66d9ef">as</span> f:
+        <span style="color:#66d9ef">return</span> f<span style="color:#f92672">.</span>read()
+</code></pre></div><h3 id="3-delete-unnecessary-parts-from-the-text">3. Delete unnecessary parts from the text</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">trim_doc</span>(doc):
+    lines <span style="color:#f92672">=</span> doc<span style="color:#f92672">.</span>splitlines()
+    valid_lines <span style="color:#f92672">=</span> []
+    is_valid <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>
+    horizontal_rule_cnt <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    break_cnt <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> lines:
+        <span style="color:#66d9ef">if</span> horizontal_rule_cnt <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">and</span><span style="color:#e6db74">&#39;-----&#39;</span> <span style="color:#f92672">in</span> line:
+            horizontal_rule_cnt <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            is_valid <span style="color:#f92672">=</span> horizontal_rule_cnt <span style="color:#f92672">==</span> <span style="color:#ae81ff">2</span>
+            <span style="color:#66d9ef">continue</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span>(is_valid):
+            <span style="color:#66d9ef">continue</span>
+        <span style="color:#66d9ef">if</span> line <span style="color:#f92672">==</span> <span style="color:#960050;background-color:#1e0010">``</span>:
+            break_cnt <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            is_valid <span style="color:#f92672">=</span> break_cnt <span style="color:#f92672">!=</span> <span style="color:#ae81ff">3</span>
+            <span style="color:#66d9ef">continue</span>
+        break_cnt <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        valid_lines<span style="color:#f92672">.</span>append(line)
+    <span style="color:#66d9ef">return</span> <span style="color:#960050;background-color:#1e0010">``</span><span style="color:#f92672">.</span>join(valid_lines)
+</code></pre></div><p>I think that the processing changes here depending on the target sentence.
+This time I tried to ignore the explanation part of the text before and after the text.
+In the first place, it is unclear how much this affects accuracy.</p>
+<h3 id="4-break-into-words">4. Break into words</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">split_into_words</span>(doc, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>):
+    mecab <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#34;-Ochasen&#34;</span>)
+    valid_doc <span style="color:#f92672">=</span> trim_doc(doc)
+    lines <span style="color:#f92672">=</span> mecab<span style="color:#f92672">.</span>parse(doc)<span style="color:#f92672">.</span>splitlines()
+    words <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> line <span style="color:#f92672">in</span> lines:
+        chunks <span style="color:#f92672">=</span> line<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span>)
+        <span style="color:#66d9ef">if</span> len(chunks) <span style="color:#f92672">&gt;</span><span style="color:#ae81ff">3</span> <span style="color:#f92672">and</span> (chunks[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;verb&#39;</span>) <span style="color:#f92672">or</span> chunks[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;adjective&#39;</span>) <span style="color:#f92672">or</span> (chunks[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;noun&#39;</span>) <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> chunks[<span style="color:#ae81ff">3</span> ]<span style="color:#f92672">.</span>startswith(<span style="color:#e6db74">&#39;noun-number&#39;</span>))):
+            words<span style="color:#f92672">.</span>append(chunks[<span style="color:#ae81ff">0</span>])
+    <span style="color:#66d9ef">return</span> LabeledSentence(words<span style="color:#f92672">=</span>words, tags<span style="color:#f92672">=</span>[name])
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">corpus_to_sentences</span>(corpus):
+    docs <span style="color:#f92672">=</span> [read_document(x) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> corpus]
+    <span style="color:#66d9ef">for</span> idx, (doc, name) <span style="color:#f92672">in</span> enumerate(zip(docs, corpus)):
+        sys<span style="color:#f92672">.</span>stdout<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\r</span><span style="color:#e6db74"> preprocessing </span><span style="color:#e6db74">{}</span><span style="color:#e6db74"> / </span><span style="color:#e6db74">{}</span><span style="color:#e6db74">&#39;</span><span style="color:#f92672">.</span>format(idx, len(corpus)))
+        <span style="color:#66d9ef">yield</span> split_into_words(doc, name)
+</code></pre></div><p>Take sentences from a file and break them into words.
+In order to improve the accuracy, it seems that the words used for learning may be only nouns.
+This time I used verbs, adjectives and nouns (other than numbers).</p>
+<h3 id="5-learning-with-doc2vec">5. Learning with Doc2Vec</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train</span>(sentences):
+    model <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>Doc2Vec(size<span style="color:#f92672">=</span><span style="color:#ae81ff">400</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0015</span>, sample<span style="color:#f92672">=</span><span style="color:#ae81ff">1e-4</span>, min_count<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, workers<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>)
+    model<span style="color:#f92672">.</span>build_vocab(sentences)
+    <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">30</span>):
+        print(x)
+        model<span style="color:#f92672">.</span>train(sentences)
+        ranks <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> doc_id <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100</span>):
+            inferred_vector <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>infer_vector(sentences[doc_id]<span style="color:#f92672">.</span>words)
+            sims <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>docvecs<span style="color:#f92672">.</span>most_similar([inferred_vector], topn<span style="color:#f92672">=</span>len(model<span style="color:#f92672">.</span>docvecs))
+            rank <span style="color:#f92672">=</span> [docid <span style="color:#66d9ef">for</span> docid, sim <span style="color:#f92672">in</span> sims]<span style="color:#f92672">.</span>index(sentences[doc_id]<span style="color:#f92672">.</span>tags[<span style="color:#ae81ff">0</span>])
+            ranks<span style="color:#f92672">.</span>append(rank)
+        print(collections<span style="color:#f92672">.</span>Counter(ranks))
+        <span style="color:#66d9ef">if</span> collections<span style="color:#f92672">.</span>Counter(ranks)[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">&gt;=</span> PASSING_PRECISION:
+            <span style="color:#66d9ef">break</span>
+    <span style="color:#66d9ef">return</span> model
+</code></pre></div><p>Parameters at the time of learning are set in the model.Doc2Vec part.</p>
+<ul>
+<li>size: Number of dimensions when vectorized</li>
+<li>alpha: Learning rate</li>
+<li>sample: Threshold of frequency when ignoring words</li>
+<li>min_count: Minimum number of appearances of words used for learning</li>
+<li>workers: Number of threads for learning</li>
+</ul>
+<h4 id="alpha">alpha</h4>
+<p>The higher it is, the faster the convergence, but if it is too high, it diverges.
+The lower the accuracy is, the slower the convergence becomes.</p>
+<h4 id="sample">sample</h4>
+<p>Words that occur too often are likely to be meaningless words and may be ignored.
+Set the threshold.</p>
+<h4 id="min_count">min_count</h4>
+<p>Contrary to sample, words that are too infrequent may not be appropriate to describe the sentence and may be ignored.
+However, this time we targeted all words.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">30</span>):
+        print(x)
+        model<span style="color:#f92672">.</span>train(sentences)
+        ranks <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> doc_id <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100</span>):
+            inferred_vector <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>infer_vector(sentences[doc_id]<span style="color:#f92672">.</span>words)
+            sims <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>docvecs<span style="color:#f92672">.</span>most_similar([inferred_vector], topn<span style="color:#f92672">=</span>len(model<span style="color:#f92672">.</span>docvecs))
+            rank <span style="color:#f92672">=</span> [docid <span style="color:#66d9ef">for</span> docid, sim <span style="color:#f92672">in</span> sims]<span style="color:#f92672">.</span>index(sentences[doc_id]<span style="color:#f92672">.</span>tags[<span style="color:#ae81ff">0</span>])
+            ranks<span style="color:#f92672">.</span>append(rank)
+        print(collections<span style="color:#f92672">.</span>Counter(ranks))
+        <span style="color:#66d9ef">if</span> collections<span style="color:#f92672">.</span>Counter(ranks)[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">&gt;=</span> PASSING_PRECISION:
+            <span style="color:#66d9ef">break</span>
+    <span style="color:#66d9ef">return</span> model
+</code></pre></div><p>We are learning and evaluating in this part.
+For evaluation, 100 similar sentences are searched for among the learned sentences, and the number of times that the sentence with the highest similarity is oneself is evaluated.
+This time, I decided to finish the learning when the number of times is 94 or more.
+(Because I tried it several times and the accuracy did not improve further)</p>
+<h3 id="6-output-learning-data">6. Output learning data</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3">model<span style="color:#f92672">.</span>save(OUTPUT_MODEL)
+</code></pre></div><p>OUTPUT_MODEL contains the output path.</p>
+<h2 id="search-sentences-by-word">Search sentences by word</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3">model <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>Doc2Vec<span style="color:#f92672">.</span>load(<span style="color:#e6db74">&#39;doc2vec.model&#39;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">search_similar_texts</span>(words):
+    x <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>infer_vector(words)
+    most_similar_texts <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>docvecs<span style="color:#f92672">.</span>most_similar([x])
+    <span style="color:#66d9ef">for</span> similar_text <span style="color:#f92672">in</span> most_similar_texts:
+        print(similar_text[<span style="color:#ae81ff">0</span>])
+</code></pre></div><p>Since Doc2Vec also performs word vectorization (Word2Vec) at the same time, I tried to search for similar words.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">search_similar_words</span>(words):
+    <span style="color:#66d9ef">for</span> word <span style="color:#f92672">in</span> words:
+        print()
+        print(word <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;:&#39;</span>)
+        <span style="color:#66d9ef">for</span> result <span style="color:#f92672">in</span> model<span style="color:#f92672">.</span>most_similar(positive<span style="color:#f92672">=</span>word, topn<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>):print(result[<span style="color:#ae81ff">0</span>])
+</code></pre></div><h3 id="example-of-searching-for-cat">Example of searching for &ldquo;cat&rdquo;</h3>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/139954/4609c47d-c871-2592-5c3d-5ea76a51974e.png" alt="Cat.PNG"></p>
+<h3 id="example-of-searching-with-snow">Example of searching with &ldquo;snow&rdquo;</h3>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/139954/c423f1d4-65be-9cb7-caa3-8f30732ca91c.png" alt="Snow.PNG"></p>
+<h2 id="search-for-similar-sentences">Search for similar sentences</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3">model <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>Doc2Vec<span style="color:#f92672">.</span>load(<span style="color:#e6db74">&#39;doc2vec.model&#39;</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">search_similar_texts</span>(path):
+    most_similar_texts <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>docvecs<span style="color:#f92672">.</span>most_similar(path)
+    <span style="color:#66d9ef">for</span> similar_text <span style="color:#f92672">in</span> most_similar_texts:
+        print(similar_text[<span style="color:#ae81ff">0</span>])
+</code></pre></div><h3 id="soseki-natsumes-i-am-a-cat-search-example">Soseki Natsume&rsquo;s &ldquo;I am a cat&rdquo; search example</h3>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/139954/21a86770-9b52-6a70-a033-d9c8cb2eca3c.png" alt="Souseki Natsume.PNG"></p>
+<h3 id="example-of-searching-by-osamu-dazai-for-human-disqualification">Example of searching by Osamu Dazai for &ldquo;human disqualification&rdquo;</h3>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/139954/17b634f2-880d-fa1d-ea46-be37d66b0dfc.png" alt="Osamu Dazai.PNG"></p>
+<h2 id="summary">Summary</h2>
+<p>I implemented a search for similar sentences with Doc2Vec.
+I hope you find it helpful.</p>
+<h2 id="if-an-error-occurs">If an error occurs</h2>
+<p>Only the error that occurred in my environment, but I will list how to solve it.</p>
+<ul>
+<li><code>Intel MKL FATAL ERROR: Cannot load libmkl_avx2.so or libmkl_def.so.</code>
+It seems to happen when using anaconda3-4.2.0.
+Solved with <code>conda update numpy</code>.</li>
+<li>Invalid argument error
+It seems to happen when using Bash on Ubuntu on Windows.
+Solved by <code>export KMP_AFFINITY=disabled</code>.</li>
+</ul>
+<h2 id="reference">Reference</h2>
+<p>[Word2Vec: Amazing power of word vector that surprises the inventor] <a href="https://deepage.net/bigdata/machine_learning/2016/09/02/word2vec_power_of_word_vector.html">Word2Vec</a>
+[Doc2Vec mechanism and document similarity calculation tutorial using gensim] <a href="https://deepage.net/machine_learning/2017/01/08/doc2vec.html">Tutorial</a>
+[What will happen if I use machine learning with a pixiv novel [with learned model data distribution]] <a href="http://inside.pixiv.net/entry/2016/09/13/161454">pixiv</a>
+[Use TensorFlow to check the difference in movement depending on the learning rate] <a href="http://qiita.com/isaac-otao/items/6d44fdc0cfc8fed53657">Learning rate</a>
+<a href="https://radimrehurek.com/gensim/models/doc2vec.html">models.doc2vec – Deep learning with paragraph2vec</a></p>
+<!-- Link -->
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

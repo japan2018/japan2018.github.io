@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Don&#39;t directly use an instance of Python exception class as an argument of exception class! | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Don&rsquo;t directly use an instance of Python exception class as an argument of exception class!</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Aug 25, 2013
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code>*Note: The code below only works with Python 3.3 because it uses the `raise from` syntax, but the basic story remains the same for Python 2.7. *
+</code></pre>
+<p>This time, I would like to talk that it is bad to directly use an instance of the Python exception class as an argument of the exception class.</p>
+<blockquote>
+<p>I don&rsquo;t understand the situation where &ldquo;** The instance of the exception class is directly used as the argument of the exception class ** &ldquo;.</p>
+</blockquote>
+<p>I think that some people will say so, so let&rsquo;s set a little concrete situation.</p>
+<p>First, we will create a spam module in Python, prepare <code>SpamError</code> as a base class for module exceptions, and create a custom exception class <code>SpamIndexError</code> that inherits <code>SpamError</code> and Python&rsquo;s standard <code>IndexError</code>.</p>
+<p>It looks like this when actually written.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:spam.py" data-lang="py3:spam.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SpamError</span>(<span style="color:#a6e22e">Exception</span>):
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SpamIndexError</span>(SpamError, <span style="color:#a6e22e">IndexError</span>):
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>Next, in the spam module, the standard Python error occurred in the spam module needs to be able to be supplemented by users using the spam module with <code>except spam.SpamError as exception:</code> etc.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:spam.py" data-lang="py3:spam.py"><span style="color:#66d9ef">try</span>:
+    [][<span style="color:#ae81ff">0</span>] <span style="color:#75715e"># IndexError occurred</span>
+<span style="color:#66d9ef">except</span> <span style="color:#a6e22e">IndexError</span> <span style="color:#66d9ef">as</span> original:
+    <span style="color:#66d9ef">raise</span> SpamIndexError(original) <span style="color:#f92672">from</span> original
+</code></pre></div><p>I will write code like this.
+The reason that the argument of <code>SpamError</code> in the last line is <code>original</code> which is an exception caught by the except statement is to display the message equivalent to the original <code>IndexError</code>.
+This is actually the way you often see it in various sources.</p>
+<p>When I run the above code,</p>
+<pre><code class="language-py3:" data-lang="py3:">Traceback (most recent call last):
+  File &quot;./spam.py&quot;, line 16, in &lt;module&gt;
+    [][0] # IndexError occurred
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;./spam.py&quot;, line 18, in &lt;module&gt;
+    raise SpamIndexError(original) from original
+spam.SpamIndexError: list index out of range
+</code></pre><p>Is displayed.
+Both <code>IndexError</code> and <code>SpamIndexError</code> are displayed as <code>list index out of range</code>.
+There is no problem so far.</p>
+<p>But unfortunately if this was a <code>KeyError</code> instead of an <code>IndexError</code>,</p>
+<pre><code class="language-py3:" data-lang="py3:">Traceback (most recent call last):
+  File &quot;./spam.py&quot;, line 16, in &lt;module&gt;
+    {}[0] # KeyError occurred
+KeyError: 0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;./spam.py&quot;, line 18, in &lt;module&gt;
+    raise SpamKeyError(original) from original
+spam.SpamKeyError: KeyError(0,)
+</code></pre><p>Will be displayed like.
+The original <code>KeyError</code> is displayed as <code>KeyError: 0</code>, but the <code>SpamKeyError</code> is displayed as <code>spam.SpamKeyError: KeyError(0,)</code>.
+This is because <code>IndexError</code> evaluates its argument with <code>str()</code>, but <code>KeyError</code> evaluates with <code>repr()</code> when it has one argument.</p>
+<p>To avoid this,</p>
+<pre><code class="language-py3:" data-lang="py3:">    raise SpamKeyError(original) from original
+</code></pre><p>Line of</p>
+<pre><code class="language-py3:" data-lang="py3:">    raise SpamKeyError(*original.args) from original
+</code></pre><p>So instead of <code>original</code>, use the original exception argument, <code>*original.args</code>.
+Then,</p>
+<pre><code class="language-py3:" data-lang="py3:">Traceback (most recent call last):
+  File &quot;./spam.py&quot;, line 16, in &lt;module&gt;
+    {}[0] # KeyError occurred
+KeyError: 0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;./spam.py&quot;, line 18, in &lt;module&gt;
+    raise SpamKeyError(*original.args) from original
+spam.SpamKeyError: 0
+</code></pre><p>, And the <code>SpamKeyError</code> is also displayed like the original <code>KeyError</code>.</p>
+<p>However, <code>*original.args</code> can be used as an argument only when the exception to be raised inherits the class of the original exception.
+If not,</p>
+<pre><code class="language-py3:" data-lang="py3:">    raise SpamError(str(original)) from original
+</code></pre><p>It is safe to enclose the supplemented exception with <code>str()</code> and forcibly use a character string as an argument like.</p>
+<p>If you want to raise an exception class that just inherits the <code>Exception</code> class,</p>
+<pre><code class="language-py3:" data-lang="py3:">    raise SpamError(original) from original
+</code></pre><p>It is okay to say that you do not have to enclose it in <code>str()</code> like in, but in that case, the exception displayed as <code>KeyError: 0</code> is displayed as <code>spam.SpamError: 0</code>. It will be difficult to understand from the message what kind of error it is.</p>
+<p>In any case, it seems that it is not good to use only the exception class instance <code>original</code> as an argument.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Simple method to obtain MNIST correct rate of 97% or more by unsupervised learning (without transfer learning) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Simple method to obtain MNIST correct rate of 97% or more by unsupervised learning (without transfer learning)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 1, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning"> DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow"> TensorFlow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/unsupervised-learning"> unsupervised learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mutual-information"> mutual information</a></code></small>
+
+</p>
+<pre><code>First article posted as job hunting news.
+</code></pre>
+<p>I tried to read and implement a paper on IIC (Invariant Information Clustering), which is said to be highly accurate and has unsupervised learning.
+IIC is a method of clustering by maximizing mutual information.
+IIC paper <a href="https://arxiv.org/pdf/1807.06653.pdf#page9">here</a></p>
+<blockquote>
+<p>Invariant Information Clustering for Unsupervised Image Classification and Segmentation
+Xu Ji, João F. Henriques, Andrea Vedaldi</p>
+</blockquote>
+<p>The framework used is TensorFlow 2.0. The target data is familiar MNIST.</p>
+<h1 id="mutual-information">Mutual information</h1>
+<p>There are multiple interpretations of mutual information, but I will choose a simple method that is easy to explain this machine learning.</p>
+<p>The information entropy H(X) for the probability distribution X is defined below.</p>
+<pre><code class="language-math" data-lang="math">H(X) = -\sum_{i}x_{i} \ln x_{i}
+</code></pre><p>This amount increases as the distribution approaches a uniform distribution, and becomes 0 when the distribution converges to a single point.
+It can be said that the mutual information $I$ is the amount by which the sets of information entropies of two <strong>non-independent</strong> probability distributions $X$, $Y$ coincide.</p>
+<pre><code class="language-math" data-lang="math">I(X, Y) = H(X) + H(Y)-H(X,Y)
+</code></pre><div align="center">
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/38cdf473-ecb3-8c24-a4b5-5597c811ee7f.png">
+</div>
+<p>As can be seen from the figure, maximizing the mutual information $I$ brings the information entropy of $X$ and $Y$ close to each other and increases the information entropy of $X$ and $Y$.
+By making the information entropy closer, the representation learning of the network progresses, and by making the information entropy larger, clustering is concentrated at one point (degeneration).</p>
+<p>In the actual training, when the softmax output from the network for the image pair ($X$, $X'$) is ($Z$, $Z'$), the joint probability of $Z$, $Z'$ is calculated. Maximize the mutual information for the marginal probabilities $P_{x}, P_{y}$ of the symmetrized matrix $P$.
+The specific formula of the loss function is as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+I(P_{x}, P_{y}) &amp;= -\sum_{i}P_{x(i)} \ln P_{x(i)}-\sum_{j}P_{y(j)} \ ln P_{y(j)}+\sum_{i}\sum_{j}P_{(i, j)} \ln P_{(i, j)}\\
+&amp;=\sum_{i}\sum_{j}\bigl(P_{(i, j)}(-\ln P_{x(i)}-\ln P_{y(j)}+\ln P_{( i, j)})\bigr)\\
+&amp;=\sum_{i}\sum_{j}P_{(i, j)}・\ln \frac{P_{(i, j)}}{P_{x(i)} P_{y(j)} }
+\end{align}
+</code></pre><h1 id="make-a-pair-image">Make a pair image</h1>
+<p>For learning, it is necessary to make a pair of $X'$ for image $X$.
+$X$, $X'$ are a pair of data containing the same object, but it is desirable that the instance-specific details be different.
+The point is that the network outputs $Z,Z'$ are highly dependent and not independent because they are the same pair of objects.</p>
+<p>Generally, $X'$ is obtained by adding operations such as scaling, skewing, rotation, inversion, and contrast/saturation to $X$.
+This time, we performed the following 4 operations.</p>
+<table width="20">
+<tr>
+<td>original image</td>
+<td>rotation</td>
+<td>distortion</td>
+<td>Binarization</td>
+<td>noise</td>
+</tr>
+<tr>
+<tr align="center">
+<td><img width="100" alt="original .png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/48f5fed5-1ea8-6012-3e82-94a554701954.png"></td>
+<td><img width="100" alt="Rotation.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/c5eab71a-49d5-53c4-8c09-6192ec230283.png"></td>
+<td><img width="100" alt="Distortion.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/b8d66073-e143-3047-9d55-8d3cfaeee5d0.png"></td>
+<td><img width="100" alt="Binarization.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/e3a0da4c-7857-8d02-a55d-abf4f9de97fa.png"></td>
+<td><img width="100" alt="Noise.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/850f97be-6d9f-1e10-ec07-df1c80549906.png"></td>
+</tr>
+</table>
+This operation will greatly affect learning.
+<h1 id="network-structure">Network structure</h1>
+<p>Needless to say, it is better to do transfer learning, but this time it is a simple task, so I made a simple familiar form of Conv and BN.
+Output the softmax prediction vector for the input 28x28x1 image.
+The output $Z$ is the MNIST clustering, with 10 dimensions equal to the number of labels.
+The other is the output used in a method called Overclustering in the paper, which is 50 times the label, which is 5 times.
+Overclustering is a mechanism in which the network acquires more features by simultaneously performing more clustering than the expected number of clusters.
+The convolutional layer weights are shared for these two learnings, but the fully connected layer uses different weights.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_model</span>(self):
+    inputs <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Input((<span style="color:#ae81ff">28</span>,<span style="color:#ae81ff">28</span>,<span style="color:#ae81ff">1</span>))
+
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Conv2D(<span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;same&#34;</span>)(inputs)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>BatchNormalization()(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Activation(<span style="color:#e6db74">&#34;relu&#34;</span>)(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>MaxPooling2D(<span style="color:#ae81ff">2</span>)(x)
+
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Conv2D(<span style="color:#ae81ff">64</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;same&#34;</span>)(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>BatchNormalization()(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Activation(<span style="color:#e6db74">&#34;relu&#34;</span>)(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>MaxPooling2D(<span style="color:#ae81ff">2</span>)(x)
+
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Conv2D(<span style="color:#ae81ff">128</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;same&#34;</span>)(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>BatchNormalization()(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Activation(<span style="color:#e6db74">&#34;relu&#34;</span>)(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>MaxPooling2D(<span style="color:#ae81ff">2</span>)(x)
+
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Conv2D(<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">3</span>, padding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;same&#34;</span>)(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>BatchNormalization()(x)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Activation(<span style="color:#e6db74">&#34;relu&#34;</span>)(x)
+    conv_out <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>GlobalAveragePooling2D()(x)
+
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">128</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;relu&#34;</span>)(conv_out)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">64</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;relu&#34;</span>)(x)
+    Z <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">10</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;softmax&#34;</span>)(x)
+
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">128</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;relu&#34;</span>)(conv_out)
+    x <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">64</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;relu&#34;</span>)(x)
+    overclustering <span style="color:#f92672">=</span> layers<span style="color:#f92672">.</span>Dense(<span style="color:#ae81ff">50</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;softmax&#34;</span>)(x)
+
+    <span style="color:#66d9ef">return</span> Model(inputs, [Z, overclustering])
+</code></pre></div><p>#Define loss function
+The batch data $X, X'$ of the image pair is given to the model, the output of $Z, Z'$ and Overclustering is obtained, and the mutual information calculation of each is performed by the IIC method.
+An example of implementation in Pytrch is given in the paper, and the following code can be obtained by rewriting to TenosrFlow2.0.
+The amount of mutual information is maximized, but in machine learning it is minimized, so the loss function is multiplied by a negative value.
+The final loss is the average of clustering and overclustering, and this value is used for gradient calculation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">IIC</span>(self, z, z_, c<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>):
+    z <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(z, [<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, c, <span style="color:#ae81ff">1</span>])
+    z_ <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(z_, [<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>, c])
+    P <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>reduce_sum(z <span style="color:#f92672">*</span> z_, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>) <span style="color:#75715e"># joint probability</span>
+    P <span style="color:#f92672">=</span> (P <span style="color:#f92672">+</span> tf<span style="color:#f92672">.</span>transpose(P)) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#75715e"># symmetrization</span>
+    P <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>clip_by_value(P, <span style="color:#ae81ff">1e-7</span>, tf<span style="color:#f92672">.</span>float32<span style="color:#f92672">.</span>max) <span style="color:#75715e">#log bias to prevent divergence</span>
+    P <span style="color:#f92672">=</span> P <span style="color:#f92672">/</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>reduce_sum(P) <span style="color:#75715e"># normalization</span>
+    
+    <span style="color:#75715e"># Marginal probability</span>
+    Pi <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>reduce_sum(P, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+    Pi <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(Pi, [c, <span style="color:#ae81ff">1</span>])
+    Pi <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>tile(Pi, [<span style="color:#ae81ff">1</span>,c])
+    Pj <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>reduce_sum(P, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    Pj <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reshape(Pj, [<span style="color:#ae81ff">1</span>, c])
+    Pj <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>tile(Pj, [c,<span style="color:#ae81ff">1</span>])
+
+    loss <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>reduce_sum(P <span style="color:#f92672">*</span> (tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>log(Pi) <span style="color:#f92672">+</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>log(Pj)<span style="color:#f92672">-</span>tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>log(P)))
+
+    <span style="color:#66d9ef">return</span> loss
+
+<span style="color:#a6e22e">@tf.function</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train_on_batch</span>(self, X, X_):
+    <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>GradientTape() <span style="color:#66d9ef">as</span> tape:z, overclustering <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>model(X, training<span style="color:#f92672">=</span>True)
+        z_, overclustering_ <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>model(X_, training<span style="color:#f92672">=</span>True)
+        loss_cluster <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>IIC(z, z_)
+        loss_overclustering <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>IIC(overclustering, overclustering_, c<span style="color:#f92672">=</span><span style="color:#ae81ff">50</span>)
+
+        loss <span style="color:#f92672">=</span> (loss_cluster <span style="color:#f92672">+</span> loss_overclustering) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>
+
+    graidents <span style="color:#f92672">=</span> tape<span style="color:#f92672">.</span>gradient(loss, self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>trainable_weights)
+    self<span style="color:#f92672">.</span>optim<span style="color:#f92672">.</span>apply_gradients(zip(graidents, self<span style="color:#f92672">.</span>model<span style="color:#f92672">.</span>trainable_weights))
+    <span style="color:#66d9ef">return</span> loss_cluster, loss_overclustering
+</code></pre></div><h1 id="learning-result">Learning result</h1>
+<p>Learning parameters
+Optimizer is Adam&rsquo;s rate 0.0001
+Batch_size is 1000
+The following is the result of learning up to epoch100 using the image pair in each conversion operation.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/5a08f01c-58aa-d3eb-e54b-272ea18586c0.png" alt="loss.png"><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/a5caafae-4e4b-53bb-2d3e-a7ecb7a3c1f5.png" alt="Acc.png"></p>
+<p>If you look at the graph, you can see that it is better to combine multiple conversions than to perform conversions individually.
+The following is learning with an image pair that has been subjected to all four transformations that gave the best results. The matrix $P$ during learning and the test data prediction mixed matrix (the vertical axis is the true label, the horizontal axis is the output index). ) Is a recorded gif.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/eb03b236-9876-8720-f248-f01b2a5ddb2b.gif" alt="rsbn_matrix-compressor.gif"></p>
+<p>Actually, I learned more than 500 epochs, but I did not see much change for more than 100 epochs, so I think the learning is almost completed.
+In the matrix $P$, the values are arranged diagonally as the learning progresses, because $Z and Z'$ output the same distribution.
+You can also see that the value in column 1 is higher than the others.
+In the mixed matrix, labels 2 and 3 cannot be distinguished, and two columns outputting label 8 remain.
+Although not perfect, the correct answer rate was 85% without teachers.</p>
+<p>#Improvement
+Now, it is a good idea to find a transformation that makes better $X'$ in order to increase the accuracy rate, but we will improve the accuracy by devising a loss function.
+Looking at the learning process above, it seems that the marginal probabilities of the matrix $P$ are not even because of the clustering error.
+Looking at the mutual information formula, we see that the terms $H(X), H(Y)$ equalize the marginal probabilities.
+Therefore, I decided to add the weight alpha to this term and use it as a parameter.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    loss <span style="color:#66d9ef">with</span> <span style="color:#75715e">#alpha</span>
+    loss <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>reduce_sum(P <span style="color:#f92672">*</span> (alpha <span style="color:#f92672">*</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>log(Pi) <span style="color:#f92672">+</span> alpha <span style="color:#f92672">*</span> tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>log(Pj)<span style="color:#f92672">-</span>tf<span style="color:#f92672">.</span>math<span style="color:#f92672">.</span>log(P)))
+</code></pre></div><p>The result of learning with alpha set to 10 is as follows.</p>
+<img width="600" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/602cddba-9888-4cf9-3259-8934ae55542b.png">
+![rsbn_loss_matrix-compressor.gif](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/7c501a33-c153-b365-5d7e-7e8cea89fa58.gif)
+<p>Learning is stable and almost all clustering is successful.
+The highest correct answer rate was about 97.5%, which was quite accurate.</p>
+<h1 id="bonus">bonus</h1>
+<p>I&rsquo;m curious what kind of classification Overclustering has, so I&rsquo;ll check it.
+Below is the Overclustering (50 dimensional) mixing matrix in the most accurate model.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/69625e9e-d1d5-7922-e281-5d8eb79544c9.png" alt="matrix_over.png">
+It can be confirmed that all labels are classified here as well.
+Part of this is shown for columns 9, 23, and 40 of Label 7.</p>
+<table>
+<tr>
+<td>column 9</td>
+<td>column 23</td>
+<td>column 40</td>
+</tr>
+<tr>
+<tr align="center">
+<td><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/962f6a41-454a-5ba6-3d62-cee19eeb0ea1.png"></td >
+<td><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/f2dcfcda-ead9-cbd1-a47e-760938d8916b.png"></td >
+<td><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/340563/76103d3e-b8d1-77bc-af6c-926e01d7e384.png"></td >
+</tr>
+</table>
+<p>Each captures the characteristics of how to write &ldquo;7&rdquo;.
+Is the difference between row 9 and row 40 the thickness of the line?
+Looking at other numbers, it was often found that the clusters were separated due to the difference in thickness, but this seems to be due to the nature of the convolutional layer.
+It is column 23 that we want to pay attention to.
+I checked everything, but &ldquo;7&rdquo; written in two strokes, which I&rsquo;m not used to seeing myself, was almost all in row 23.
+I felt that the ability to classify and retrieve &ldquo;7&rdquo; has the potential to create new labels that are more than teacher data.</p>
+<p>The IIC paper has shown that the method can also be applied to segmentation, and it seems that it can be applied to various tasks as long as the mutual information can be calculated.
+It was a technique full of romance performance that did not require teacher data.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

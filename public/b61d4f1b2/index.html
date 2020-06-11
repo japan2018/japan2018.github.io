@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Make a washing and drying timer using RaspberryPi | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Make a washing and drying timer using RaspberryPi</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 18, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws"> AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/electronic-work"> electronic work</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/raspberrypizerow"> RaspberryPiZeroW</a></code></small>
+
+</p>
+<pre><code>Make a washing and drying timer using # RaspberryPi
+</code></pre>
+<h2 id="introduction-purpose-of-production">Introduction (purpose of production)</h2>
+<ul>
+<li>Because I work for a company, I am often absent during the day, and I can not take in the laundry when it rains. For this reason, laundry is basically dried indoors.</li>
+<li>However, since the clothes drying room is not sunny and the drying does not proceed as expected in winter, the timing of taking in may be missed, and the laundry accumulates in a snow dharma fashion, creating a vicious cycle.</li>
+<li>In order to break this vicious cycle (?), we created a mechanism to calculate the dry completion time of laundry and notify the smartphone.</li>
+</ul>
+<h2 id="items-to-prepare">Items to prepare</h2>
+<p>(1) Necessary for building the environment on the device side. It can be purchased at Akizuki Denshi.
+<a href="http://akizukidenshi.com/catalog/top.aspx">http://akizukidenshi.com/catalog/top.aspx</a></p>
+<p>(2) Necessary for server environment construction. You need an AWS and Slack account.
+AWS: <a href="https://aws.amazon.com/jp/">https://aws.amazon.com/jp/</a>
+Slack: <a href="https://slack.com/intl/ja-jp/">https://slack.com/intl/ja-jp/</a></p>
+<table>
+<thead>
+<tr>
+<th align="left">Product name</th>
+<th align="left">Quantity</th>
+<th align="left">Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">① RaspberryPi ZeroWH</td>
+<td align="left">1</td>
+<td align="left">Control microcomputer</td>
+</tr>
+<tr>
+<td align="left">① Breadboard</td>
+<td align="left">1</td>
+<td align="left">For circuit construction</td>
+</tr>
+<tr>
+<td align="left">① DHT11</td>
+<td align="left">1</td>
+<td align="left">Temperature and humidity sensor</td>
+</tr>
+<tr>
+<td align="left">① Resistance (4.7kΩ)</td>
+<td align="left">2</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">① Resistance (1kΩ)</td>
+<td align="left">1</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">① Tact Switch</td>
+<td align="left">1</td>
+<td align="left">Start/Stop Switch</td>
+</tr>
+<tr>
+<td align="left">① LED</td>
+<td align="left">1</td>
+<td align="left">Lights at startup (for visual confirmation)</td>
+</tr>
+<tr>
+<td align="left">② AWS IoT Core</td>
+<td align="left"></td>
+<td align="left">Terminates communication with the terminal. Role of MQTT broker.</td>
+</tr>
+<tr>
+<td align="left">② AWS Lambda</td>
+<td align="left"></td>
+<td align="left">IoTCore backend. Mediating communication with Slack.</td>
+</tr>
+<tr>
+<td align="left">② Slack</td>
+<td align="left"></td>
+<td align="left">Used for notification to smartphones</td>
+</tr>
+</tbody>
+</table>
+<h2 id="system-overview">System overview</h2>
+<p>RaspberryPi &mdash; AWS IoT Core &mdash; AWS Lambda &mdash; Slack &mdash; Smartphone</p>
+<ul>
+<li>RaspberryPi ~ AWS IoT Core
+-MQTT over TLS. Connect using <a href="https://docs.aws.amazon.com/ja_jp/greengrass/latest/developerguide/IoT-SDK.html">AWS IoT Device SDK for Python</a>.</li>
+<li>AWS IoT Core ~ AWS Lambda
+-Trigger Lambda when receiving MQTT topic in the action definition of AWS IoT Core.</li>
+<li>AWS Lambda ~ Slack
+-[Incoming Webhook] of Slack with Lambda function (<a href="https://slack.com/intl/ja-jp/help/articles/115005265063-Slack-%E3%81%A7%E3%81%AE-Incoming-Webhook-">https://slack.com/intl/ja-jp/help/articles/115005265063-Slack-%E3%81%A7%E3%81%AE-Incoming-Webhook-</a> Kick the API of %E3%81%AE%E5%88%A9%E7%94%A8).</li>
+<li>Slack ~ smartphone
+-Install the Slack app on your smartphone and receive notifications from Slack.</li>
+</ul>
+<h2 id="environment-construction-server">Environment construction (server)</h2>
+<h3 id="aws-iot-core">AWS IoT Core</h3>
+<h5 id="create-certificate">Create Certificate</h5>
+<p>Create an X.509 certificate required for connection authentication with AWS IoT Core. As a creation procedure, first create a policy (authorization information for AWS resources) in advance, and then attach the policy to the certificate.</p>
+<ul>
+<li>
+<p>Select AWS IoT Core service on the AWS Management Console and create a policy from &ldquo;Security&rdquo; -&gt; &ldquo;Policies&rdquo;. Set any value for the policy name. Create a policy with an arbitrary name, with &ldquo;iot:<em>&rdquo; as the action and &ldquo;</em>&rdquo; as the resource ARN.</p>
+</li>
+<li>
+<p>Create a certificate from &ldquo;Security&rdquo; → &ldquo;Certificate&rdquo;. Create a certificate from the 1-Click certificate creation menu and download &ldquo;This thing&rsquo;s certificate&rdquo; and &ldquo;Private key&rdquo; to your PC. You will need this certificate and private key later in the AWS IoT SDK configuration. For the root CA certificate that is also required, go to <a href="https://docs.aws.amazon.com/ja_jp/iot/latest/developerguide/server-authentication.html#server-authentication-certs">here</a> RSA 2048 Create the bit key contents by saving them in a text editor.</p>
+</li>
+<li>
+<p>Press &ldquo;Activate&rdquo; to activate the certificate, then attach the policy created earlier in &ldquo;Attach Policy&rdquo; to the certificate.</p>
+</li>
+</ul>
+<h5 id="device-thing-registration">Device (thing) registration</h5>
+<p>Register the device to connect to AWS IoT Core.</p>
+<ul>
+<li>Select the AWS IoT Core service from the AWS Management Console, select &ldquo;Management&rdquo; → &ldquo;Things&rdquo; → &ldquo;Create&rdquo; → &ldquo;Create a single thing&rdquo; and follow the instructions on the screen to register the device (thing) .. You will be prompted to create a new certificate, but since you will be using the certificate you created earlier, select &ldquo;Create thing without certificate&rdquo;.</li>
+<li>Click &ldquo;Security&rdquo; -&gt; &ldquo;Certificates&rdquo; and click &ldquo;Attach thing&rdquo; in the submenu on the upper right of the card of the certificate you created earlier to attach the device (thing) you created earlier to the certificate.</li>
+</ul>
+<p>This completes the settings required to connect to AWS IoT Core.</p>
+<h5 id="create-rule">Create Rule</h5>
+<p>Next, configure the settings to transfer the data received by AWS IoT Core to AWS Lambda.</p>
+<ul>
+<li>Select the AWS IoT Core service from the AWS Management Console and select &ldquo;ACT&rdquo; → &ldquo;Rule&rdquo; → &ldquo;Create Rule&rdquo; and follow the instructions on the screen to create a transfer rule.</li>
+<li>In the rule query statement, specify the condition to apply the action in SQL with respect to the received MQTT message. In this case, the Lambda function is called under the condition of topic name=&quot;condition&rdquo; and notice=1, so it is (SELECT * FROM&rsquo;condition&rsquo; WHERE notice = 1).</li>
+<li>The settings for calling the Lambda function are made from &ldquo;Set one or more actions&rdquo; → &ldquo;Add action&rdquo;.</li>
+</ul>
+<h3 id="aws-lambda">AWS Lambda</h3>
+<p>From the AWS Management Console, select the Lambda service and define the Lambda function called from AWS IoT Core. For notification to Slack, create text data in the format of &ldquo;payload=&rdquo; + json.dumps(send_data) for the Incoming Webhook URL and POST.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> urllib.request
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+
+    d <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>dumps(event)
+    post_slack(event)
+    
+    <span style="color:#66d9ef">return</span> {
+        <span style="color:#e6db74">&#39;statusCode&#39;</span>: <span style="color:#ae81ff">200</span>,
+        <span style="color:#e6db74">&#39;body&#39;</span>: json<span style="color:#f92672">.</span>dumps(<span style="color:#e6db74">&#39;Hello from Lambda!&#39;</span>)
+    }
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">post_slack</span>(event):
+    
+    t <span style="color:#f92672">=</span> event[<span style="color:#e6db74">&#34;remaining_time&#34;</span>]
+    
+    <span style="color:#75715e"># Create message</span>
+    <span style="color:#66d9ef">if</span> t <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span>:
+        message <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;The laundry is dry!&#34;</span>
+    <span style="color:#66d9ef">else</span>:
+        message <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;The laundry will dry in </span><span style="color:#e6db74">%-2i</span><span style="color:#e6db74"> minutes.&#34;</span> <span style="color:#f92672">%</span>t
+    
+    send_data <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#34;username&#34;</span> :<span style="color:#e6db74">&#34;dry_notice&#34;</span>,
+        <span style="color:#e6db74">&#34;text&#34;</span> :message,
+    }
+    
+    send_text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;payload=&#34;</span> <span style="color:#f92672">+</span> json<span style="color:#f92672">.</span>dumps(send_data)
+    
+    <span style="color:#75715e"># Notification to slack</span>
+    request <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>Request(
+        <span style="color:#e6db74">&#34;Slack Incomming Webhook URL&#34;</span>,
+        data<span style="color:#f92672">=</span>send_text<span style="color:#f92672">.</span>encode(<span style="color:#e6db74">&#39;utf-8&#39;</span>),
+        method<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;POST&#34;</span>
+    )
+    <span style="color:#66d9ef">with</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(request) <span style="color:#66d9ef">as</span> response:
+        response_body <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>read()<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+    
+</code></pre></div><h3 id="slack">Slack</h3>
+<p>Create an account in Slack and add any channels. After that, register the Incoming Webhook for the added channel.</p>
+<p>This completes the environment construction on the server side.</p>
+<h2 id="environment-construction-device">Environment construction (device)</h2>
+<h3 id="hardware-design">Hardware design</h3>
+<ul>
+<li>Use a breadboard to wire the Raspberry Pi and each part of ①. As for the pin arrangement of RaspberryPi, <a href="https://tool-lab.com/raspberrypi-startup-22/">here</a> is easy to understand and I think it will be helpful.</li>
+<li>The light blue square box becomes <a href="http://akizukidenshi.com/catalog/g/gM-07003/">DHT11</a>.Fromtheleft,5Vpowersupply,DATA,NC(unused),GND.ConnectDATAtoanyGPIO(14Pininthefigurebelow). Connect a 4.7kΩ resistor to the DATA line and pull up with 5v.</li>
+<li>In addition, connect the LED and the tact switch to any GPIO (23,24Pin in the figure below) with 1kΩ and 4.7kΩ resistors.</li>
+</ul>
+<img width="536" alt="kairozu.PNG" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/576521/4fc32144-6d71-52e8-2585-b7178ef37025.png">
+<h3 id="software-design">Software design</h3>
+<p>The overall processing flow is as follows.</p>
+<ul>
+<li>Start the monitor by using the Pull_UP event of GPIO24 as a trigger.</li>
+<li>Get temperature/humidity value every 10 seconds from dht11.</li>
+<li>Calculate the remaining time to dry from the weight of laundry and temperature/humidity values.</li>
+<li>(When remaining time is less than 10 minutes) Notify 10 minutes remaining time via AWS IoT Core.</li>
+<li>(When remaining time becomes 0) Notification of completion of drying is done via AWS IoT Core.</li>
+<li>The monitor is stopped by the completion of drying or GPIO24 Pull_UP event.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#!/usr/bin/python3</span>
+<span style="color:#75715e"># coding: UTF-8</span>
+
+<span style="color:#75715e"># Import SDK packages</span>
+<span style="color:#f92672">import</span> RPi.GPIO <span style="color:#f92672">as</span> GPIO
+<span style="color:#f92672">import</span> dht11<span style="color:#75715e">#...1</span>
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> datetime
+<span style="color:#f92672">from</span> AWSIoTPythonSDK.MQTTLib <span style="color:#f92672">import</span> AWSIoTMQTTShadowClient,AWSIoTMQTTClient
+<span style="color:#f92672">from</span> AWSIoTPythonSDK.exception <span style="color:#f92672">import</span> AWSIoTExceptions
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> logging
+
+<span style="color:#75715e"># Init logginglogging.basicConfig(filename=&#34;log file path&#34;,level=logging.INFO,format=&#39;%(asctime)s-%(name)s-%(levelname)s-%(message)s&#39;)</span>
+
+<span style="color:#75715e"># Init AWSIoTMQTTClient #...2</span>
+myAWSIoTMQTTClient <span style="color:#f92672">=</span> None
+myAWSIoTMQTTClient <span style="color:#f92672">=</span> AWSIoTMQTTClient(<span style="color:#e6db74">&#34;AWS IoT Core thing name&#34;</span>)
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureEndpoint(<span style="color:#e6db74">&#34;AWS IoT Core endpoint URL&#34;</span>, <span style="color:#ae81ff">8883</span>)
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureCredentials(<span style="color:#e6db74">&#34;Root certificate path&#34;</span>, <span style="color:#e6db74">&#34;Private key path&#34;</span>, <span style="color:#e6db74">&#34;Client certificate path&#34;</span>)
+
+<span style="color:#75715e">#AWSIoTMQTTClient connection configuration</span>
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureAutoReconnectBackoffTime(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">32</span>, <span style="color:#ae81ff">20</span>)
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureOfflinePublishQueueing(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#75715e"># Infinite offline Publish queueing</span>
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureDrainingFrequency(<span style="color:#ae81ff">2</span>) <span style="color:#75715e"># Draining: 2 Hz</span>
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureConnectDisconnectTimeout(<span style="color:#ae81ff">10</span>) <span style="color:#75715e"># 10 sec</span>
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>configureMQTTOperationTimeout(<span style="color:#ae81ff">5</span>) <span style="color:#75715e"># 5 sec</span>
+
+<span style="color:#75715e"># Connect to AWS IoT</span>
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>connect()
+logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#39;connect to AWS IoT&#39;</span>)
+
+<span style="color:#75715e"># MQTT topic #・・・3</span>
+topic_1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;condition&#34;</span>
+topic_2 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;monitermode&#34;</span>
+
+<span style="color:#75715e"># Variable</span>
+modeState <span style="color:#f92672">=</span> False <span style="color:#75715e"># Operating state (True:ON False:OFF)</span>
+v <span style="color:#f92672">=</span> <span style="color:#ae81ff">3000</span> <span style="color:#75715e"># Laundry weight</span>
+delta_v <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># Delta of Laundry weight</span>
+notice <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># Notification to Slack</span>
+flg_1 <span style="color:#f92672">=</span> True
+flg_2 <span style="color:#f92672">=</span> True
+starttime <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now()
+lasttime <span style="color:#f92672">=</span> starttime
+
+<span style="color:#75715e"># Init GPIO</span>
+LED <span style="color:#f92672">=</span> <span style="color:#ae81ff">23</span>
+SWITCH <span style="color:#f92672">=</span> <span style="color:#ae81ff">24</span>
+GPIO<span style="color:#f92672">.</span>setwarnings(True)
+GPIO<span style="color:#f92672">.</span>setmode(GPIO<span style="color:#f92672">.</span>BCM)
+GPIO<span style="color:#f92672">.</span>setup(LED,GPIO<span style="color:#f92672">.</span>OUT)
+GPIO<span style="color:#f92672">.</span>setup(SWITCH,GPIO<span style="color:#f92672">.</span>IN)
+
+<span style="color:#75715e"># Read data using pin 14</span>
+instance <span style="color:#f92672">=</span> dht11<span style="color:#f92672">.</span>DHT11(pin<span style="color:#f92672">=</span><span style="color:#ae81ff">14</span>)
+
+<span style="color:#75715e"># Action when switch is pressed</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">switch_on</span>(self):
+
+    <span style="color:#75715e"># When it is running</span>
+    <span style="color:#66d9ef">if</span> modeState:
+        GPIO<span style="color:#f92672">.</span>output(LED,<span style="color:#ae81ff">0</span>)
+        modeState <span style="color:#f92672">=</span> False
+        logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;Stop drying monitor&#34;</span>)
+        payload <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;mode&#34;</span>: <span style="color:#ae81ff">0</span>}
+
+    <span style="color:#75715e"># When stopped</span>
+    <span style="color:#66d9ef">else</span>:
+        GPIO<span style="color:#f92672">.</span>output(LED,<span style="color:#ae81ff">1</span>)
+        modeState <span style="color:#f92672">=</span> True
+        v <span style="color:#f92672">=</span> <span style="color:#ae81ff">3000</span>
+        delta_v <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        notice <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        flg_1 <span style="color:#f92672">=</span> True
+        flg_2 <span style="color:#f92672">=</span> True
+        starttime <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now()
+        lasttime <span style="color:#f92672">=</span> starttime
+        logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;Start drying monitor&#34;</span>)
+        payload <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;mode&#34;</span>: <span style="color:#ae81ff">1</span>}
+
+    myAWSIoTMQTTClient<span style="color:#f92672">.</span>publish(topic_2, json<span style="color:#f92672">.</span>dumps(payload), <span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e"># GPIO event setting #・・・4</span>
+GPIO<span style="color:#f92672">.</span>add_event_detect(SWITCH,GPIO<span style="color:#f92672">.</span>RISING,callback<span style="color:#f92672">=</span>switch_on,bouncetime<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>)
+
+
+<span style="color:#66d9ef">while</span> True:
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#75715e"># When it is running</span>
+        <span style="color:#66d9ef">if</span> modeState:
+            result <span style="color:#f92672">=</span> instance<span style="color:#f92672">.</span>read()
+            <span style="color:#66d9ef">if</span> result<span style="color:#f92672">.</span>is_valid():
+                logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;Temperature: </span><span style="color:#e6db74">%-3.1f</span><span style="color:#e6db74"> C&#34;</span> <span style="color:#f92672">%</span>result<span style="color:#f92672">.</span>temperature)
+                logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;Humidity: </span><span style="color:#e6db74">%-3.1f</span><span style="color:#e6db74"> </span><span style="color:#e6db74">%%</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>result<span style="color:#f92672">.</span>humidity)
+
+                now <span style="color:#f92672">=</span> datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now()
+                delta <span style="color:#f92672">=</span> now<span style="color:#f92672">-</span>lasttime
+                logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;delta_time: </span><span style="color:#e6db74">%-2i</span><span style="color:#e6db74"> sec&#34;</span> <span style="color:#f92672">%</span>delta<span style="color:#f92672">.</span>seconds)
+                lasttime <span style="color:#f92672">=</span> now
+
+                <span style="color:#75715e">#···Five</span>
+                ps <span style="color:#f92672">=</span> <span style="color:#ae81ff">6.11</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span> <span style="color:#f92672">**</span> (<span style="color:#ae81ff">7.5</span> <span style="color:#f92672">*</span> result<span style="color:#f92672">.</span>temperature <span style="color:#f92672">/</span> (result<span style="color:#f92672">.</span>temperature <span style="color:#f92672">+</span> <span style="color:#ae81ff">237.3</span>))
+                delta_v <span style="color:#f92672">+=</span> (<span style="color:#f92672">-</span><span style="color:#ae81ff">0.45</span> <span style="color:#f92672">*</span> ps <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>result<span style="color:#f92672">.</span>humidity <span style="color:#f92672">/</span> <span style="color:#ae81ff">100</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.25</span>) <span style="color:#f92672">*</span> delta<span style="color:#f92672">.</span>seconds <span style="color:#f92672">/</span> <span style="color:#ae81ff">60</span>
+                logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;delta_v: </span><span style="color:#e6db74">%-3i</span><span style="color:#e6db74"> g&#34;</span> <span style="color:#f92672">%</span>int(delta_v))
+
+                elapsed_time <span style="color:#f92672">=</span> lasttime<span style="color:#f92672">-</span>starttime
+                estimate_time <span style="color:#f92672">=</span> elapsed_time<span style="color:#f92672">.</span>seconds <span style="color:#f92672">*</span> v <span style="color:#f92672">/</span> (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">*</span> delta_v) <span style="color:#f92672">/</span> <span style="color:#ae81ff">60</span>
+                remaining_time <span style="color:#f92672">=</span> elapsed_time<span style="color:#f92672">.</span>seconds <span style="color:#f92672">*</span> (v <span style="color:#f92672">/</span> (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">*</span> delta_v)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">/</span> <span style="color:#ae81ff">60</span>
+                logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;estimate_time: </span><span style="color:#e6db74">%-3.1f</span><span style="color:#e6db74"> minutes&#34;</span> <span style="color:#f92672">%</span>estimate_time)
+                logging<span style="color:#f92672">.</span>info(<span style="color:#e6db74">&#34;remaining_time: </span><span style="color:#e6db74">%-3.1f</span><span style="color:#e6db74"> minutes&#34;</span> <span style="color:#f92672">%</span>remaining_time)
+
+                <span style="color:#75715e">#・・・6</span>
+                <span style="color:#66d9ef">if</span> remaining_time <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">10</span>:
+                    <span style="color:#66d9ef">if</span> flg_1:
+                        notice <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+                        flg_1 <span style="color:#f92672">=</span> False
+                    <span style="color:#66d9ef">else</span>:
+                        notice <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+                <span style="color:#66d9ef">if</span> remaining_time <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span>:
+                    <span style="color:#66d9ef">if</span> flg_2:
+                        notice <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+                        flg_2 <span style="color:#f92672">=</span> False
+                        modeState <span style="color:#f92672">=</span> False
+                    <span style="color:#66d9ef">else</span>:
+                        notice <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+                payload <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;time&#34;</span>:str(datetime<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>now()),\
+                            <span style="color:#e6db74">&#34;temperature&#34;</span>:round(result<span style="color:#f92672">.</span>temperature,<span style="color:#ae81ff">1</span>),\
+                            <span style="color:#e6db74">&#34;humidity&#34;</span>:round(result<span style="color:#f92672">.</span>humidity,<span style="color:#ae81ff">1</span>),\
+                            <span style="color:#e6db74">&#34;estimate_time&#34;</span>:round(estimate_time,<span style="color:#ae81ff">1</span>),\
+                            <span style="color:#e6db74">&#34;remaining_time&#34;</span>:round(remaining_time,<span style="color:#ae81ff">1</span>),\
+                            <span style="color:#e6db74">&#34;notice&#34;</span>:notice}
+
+                myAWSIoTMQTTClient<span style="color:#f92672">.</span>publish(topic_1, json<span style="color:#f92672">.</span>dumps(payload), <span style="color:#ae81ff">1</span>)
+        
+        <span style="color:#75715e"># When stopped</span>
+        <span style="color:#66d9ef">else</span>:
+            GPIO<span style="color:#f92672">.</span>output(LED,<span style="color:#ae81ff">0</span>)
+
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">6</span>)
+
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyboardInterrupt</span>:
+        <span style="color:#66d9ef">break</span>
+
+    <span style="color:#66d9ef">except</span>:
+        <span style="color:#66d9ef">pass</span>
+
+logging<span style="color:#f92672">.</span>warning(<span style="color:#e6db74">&#34;Exception detected. Finish application.&#34;</span>)
+GPIO<span style="color:#f92672">.</span>cleanup()
+myAWSIoTMQTTClient<span style="color:#f92672">.</span>disconnect()
+</code></pre></div><ol>
+<li>
+<p>dht11 is a library that acquires temperature and humidity values from sensors. It can be obtained from <a href="https://github.com/szazo/DHT11_Python">GitHub</a>.</p>
+</li>
+<li>
+<p>MQTT client settings to connect to AWS IoT Core. In both cases, set the contents referenced in the AWS Iot Core menu.
+-Thing name: Device name registered in “Management” → “Thing”
+-Endpoint: URL displayed in &ldquo;Settings&rdquo; -&gt; &ldquo;Custom Endpoint&rdquo;
+-Various certificates: Download the certificate attached to &ldquo;thing&rdquo; from &ldquo;security&rdquo; → &ldquo;certificates&rdquo; and store it in the Raspberry Pi.</p>
+</li>
+<li>
+<p>MQTT topic name. topic_1 (condition) is a sensor value such as temperature and humidity, and topic_2 (monitermode) is a topic for posting the monitor status.</p>
+</li>
+<li>
+<p>Monitor settings for the GPIO24 to which the tact switch is connected. Press the switch (Lo → Hi) to activate the switch_on function. The switch_on function performs LED control and parameter initialization. The monitor state is held in modeState, and the state (OFF/ON) changes each time the switch is pressed.5. This is the processing unit that calculates the drying time. The formula of the drying time is based on <a href="https://www.frame-diy.com/2017/04/01/mathematical/">this site</a>.vistheweightwhenthelaundrybasketisfulloflaundry(beforedrying-afterdrying→waterweight), and delta_v is the weight of water that has been dried since the switch was started.</p>
+</li>
+<li>
+<p>Post to topic_1 when the remaining time (remaining_time) is (1) 10 minutes or less and (2) 0 minutes or less. Post the following data to topic_1.</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th align="center">Item name</th>
+<th align="center">Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">time</td>
+<td align="center">current time</td>
+</tr>
+<tr>
+<td align="center">temperature</td>
+<td align="center">Temperature (℃)</td>
+</tr>
+<tr>
+<td align="center">humidity</td>
+<td align="center">Humidity (%)</td>
+</tr>
+<tr>
+<td align="center">estimate_time</td>
+<td align="center">Time required to complete drying (minutes)</td>
+</tr>
+<tr>
+<td align="center">remaining_time</td>
+<td align="center">Remaining time (minutes)</td>
+</tr>
+<tr>
+<td align="center">notice</td>
+<td align="center">Slack notification flag (1: notify 0: not notify)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="in-conclusion">in conclusion</h2>
+<p>If I have time, I would like to add an extension function to control the fan and reduce the drying time.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

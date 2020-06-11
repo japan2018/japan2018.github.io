@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Create a parser for binary data using Kaitai Struct | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Create a parser for binary data using Kaitai Struct</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 13, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/parser">Parser</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/zlib">zlib</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/binary">Binary</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kaitai-struct">Kaitai-Struct</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>LOCAL Student Club Advent Calendar Day 11</p>
+<p>I was so worried that I wasn&rsquo;t too weak&hellip;? I decided to throw a changing ball.
+As far as I&rsquo;ve searched, there is no Japanese literature, so people who look up this in the future will almost automatically see this article.
+I would like to ask such people.
+If you wonder, &ldquo;What are you saying? I wonder if it&rsquo;s full of wrong information,&rdquo; please leave a comment.
+I will do my best to correct it.</p>
+<p>What is # Kaitai Struct?</p>
+<h2 id="overview">Overview</h2>
+<p>Official: <a href="https://kaitai.io/">kaitai.io</a></p>
+<blockquote>
+<p>Kaitai Struct is a declarative language used to describe binary data structures.</p>
+</blockquote>
+<p>The source code of the binary data parser can be automatically generated based on the data structure written in its own language.</p>
+<details><summary> Supported languages (as of December 2, 2019)</summary><div>
+<ul>
+<li>C++ / STL</li>
+<li>C#</li>
+<li>Go (entry-level support)</li>
+<li>Java</li>
+<li>JavaScript</li>
+<li>Lua</li>
+<li>Perl</li>
+<li>PHP</li>
+<li>Python</li>
+<li>Ruby</li>
+</ul>
+</div>
+</details>
+<h2 id="license">license</h2>
+<p>The Compiler and Visualizer to be described later are GPLv3+, and the library for each language is MIT (JS is Apache v2).
+Does this mean that the source code generated using Compiler infects the GPL&hellip;?
+Please tell me more people.</p>
+<h1 id="install">Install</h1>
+<h2 id="kaitai-struct-compiler-ksc">Kaitai Struct Compiler (KSC)</h2>
+<p>More information about installation <a href="http://kaitai.io/#download">here</a>
+For Mac, it is one shot with <code>brew install kaitai-struct-compiler</code>.
+For Windows, please jump to the link above to download the installer.</p>
+<details><summary> Debian/Ubuntu based distributions can install packages from the official .deb repositories. </summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e"># Import GPG key, if you never used any BinTray repos before</span>
+sudo apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv 379CE192D401AB61
+
+<span style="color:#75715e"># Add stable repository</span>
+echo <span style="color:#e6db74">&#34;deb https://dl.bintray.com/kaitai-io/debian jessie main&#34;</span> | sudo tee /etc/apt/sources.list.d/kaitai.list
+<span style="color:#75715e"># ... or unstable repository</span>
+echo <span style="color:#e6db74">&#34;deb https://dl.bintray.com/kaitai-io/debian_unstable jessie main&#34;</span> | sudo tee /etc/apt/sources.list.d/kaitai.list
+
+sudo apt-get update
+sudo apt-get install kaitai-struct-compiler
+</code></pre></div></div></details>
+If you are using other OS, clone it from [here](https://github.com/kaitai-io/kaitai_struct_compiler) and build it.
+<h2 id="kaitai-struct-visualizer-ksv">Kaitai Struct Visualizer (KSV)</h2>
+<p>This is a simple visualizer for <code>.ksy</code> files.
+It is written in <code>Ruby</code> and available as a <code>gem</code> package.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">gem install kaitai-struct-visualizer
+</code></pre></div><p>(<a href="https://github.com/kaitai-io/kaitai_struct_visualizer">Git repository</a>)</p>
+<h1 id="try">Try</h1>
+<p>For famous files, there is a <code>.ksy</code> file in the <a href="https://github.com/kaitai-io/kaitai_struct_formats">official github repository</a>.
+(If you use the <code>.ksy</code> file that exists here, check the license described in the <code>meta/license</code> in the file.)
+If you write a new <code>.ksy</code>, send a pull request.
+(<a href="https://github.com/kaitai-io/kaitai_struct_formats/blob/master/CONTRIBUTING.md">kaitai_struct_formats/CONTRIBUTING.md</a>)</p>
+<h2 id="example-matrix">Example) matrix</h2>
+<details><summary>Save to file (np.array)</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:matrix.py" data-lang="python:matrix.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> struct
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_header</span>(<span style="color:#f92672">*</span>mats: [np<span style="color:#f92672">.</span>ndarray], magic: bytes <span style="color:#f92672">=</span> None) <span style="color:#f92672">-&gt;</span> bytes:
+    header <span style="color:#f92672">=</span> magic
+    header <span style="color:#f92672">+=</span> struct<span style="color:#f92672">.</span>pack(<span style="color:#e6db74">&#39;&lt;H&#39;</span>, len(mats))
+    length <span style="color:#f92672">=</span> len(header) <span style="color:#f92672">+</span> <span style="color:#ae81ff">8</span> <span style="color:#f92672">*</span> len(mats)
+    <span style="color:#66d9ef">for</span> mat <span style="color:#f92672">in</span> mats:
+        header <span style="color:#f92672">+=</span> struct<span style="color:#f92672">.</span>pack(<span style="color:#e6db74">&#39;&lt;HH&#39;</span>, mat<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], mat<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>])
+        header <span style="color:#f92672">+=</span> struct<span style="color:#f92672">.</span>pack(<span style="color:#e6db74">&#39;&lt;I&#39;</span>, length)
+        length <span style="color:#f92672">+=</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">*</span> mat<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">*</span> mat<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]
+    <span style="color:#66d9ef">return</span> header
+
+
+mat1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(<span style="color:#f92672">-</span><span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">1024</span>, [<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">3</span>], dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>int32)
+mat2 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(<span style="color:#f92672">-</span><span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">1024</span>, [<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">9</span>], dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>int32)
+mat3 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(<span style="color:#f92672">-</span><span style="color:#ae81ff">1024</span>, <span style="color:#ae81ff">1024</span>, [<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>], dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>int32)
+
+<span style="color:#66d9ef">with</span> open(<span style="color:#e6db74">&#39;test.matrix&#39;</span>,<span style="color:#e6db74">&#39;wb&#39;</span>) <span style="color:#66d9ef">as</span> o:
+    magic <span style="color:#f92672">=</span> <span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;THIS IS MAT FILE.</span><span style="color:#ae81ff">\x01\x02</span><span style="color:#e6db74">&#39;</span>
+    o<span style="color:#f92672">.</span>write(create_header(mat1, mat2, mat3, magic<span style="color:#f92672">=</span>magic))
+    <span style="color:#66d9ef">for</span> mat <span style="color:#f92672">in</span> [mat1, mat2, mat3]:
+        <span style="color:#66d9ef">for</span> y <span style="color:#f92672">in</span> mat:
+            <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> y:
+                o<span style="color:#f92672">.</span>write(struct<span style="color:#f92672">.</span>pack(<span style="color:#e6db74">&#39;&lt;i&#39;</span>, x))
+
+</code></pre></div></div></details>
+I'll try loading the `test.matrix` generated by the above code using KS.
+<pre><code class="language-:test.matrix" data-lang=":test.matrix">  Offset: 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+00000000: 4D 41 54 01 02 2F 03 00 03 00 03 00 20 00 00 00 MAT../..........
+00000010: 05 00 09 00 44 00 00 00 02 00 02 00 F8 00 00 00 ....D.......x...
+00000020: DC FE FF FF 49 01 00 00 A7 FF FF FF 17 02 00 00 \~..I...'.......
+00000030: 25 FC FF FF 35 FF FF FF B5 00 00 00 CF FE FF FF %|..5...5...O~..
+00000040: E2 FF FF FF 5D 00 00 00 15 FE FF FF 30 FC FF FF b...]....~..0|..
+00000050: 4C 03 00 00 C1 FF FF FF B0 FD FF FF 31 02 00 00 L...A...0}..1...
+00000060: 54 03 00 00 C4 FF FF FF 65 FF FF FF D0 FE FF FF T...D...e...P~..
+00000070: 75 01 00 00 DE FE FF FF ED 00 00 00 ED FC FF FF u...^~..m...m|..
+00000080: BE FD FF FF E5 02 00 00 EC FE FF FF 22 FE FF FF &gt;}..e...l~..&quot;~..
+00000090: C3 02 00 00 11 00 00 00 29 03 00 00 00 01 00 00 C.......)....
+000000a0: 78 00 00 00 C4 FC FF FF 4C 02 00 00 88 00 00 00 x...D|..L.......
+000000b0: 43 FF FF FF 35 FF FF FF A4 00 00 00 CF 02 00 00 C...5...$...O...
+000000c0: 3A FF FF FF 33 33 FF FF FF BD FE FF FF F9 01 00 00 :...3...=~..y...
+000000d0: 22 FF FF FF 3A 02 00 00 7C 00 00 00 15 FF FF FF &quot;...:...|........
+000000e0: D8 FE FF FF 42 00 00 00 82 02 00 00 24 02 00 00 X~..B.......$...
+000000f0: 8A FE FF FF AF FF FF FF EF 02 00 00 96 01 00 00 .~../...o.......
+00000100: 83 01 00 00 2F 02 00 00
+</code></pre><p>File structure starts from head
+1.<code>b'MAT\x01\x02/'</code>
+2. Number of existing matrices (2 bytes)
+3. shape and offset for each matrix ((8 * number of matrices) bytes)
+4. Matrix body
+Has become.</p>
+<p>Let&rsquo;s write this in <code>matrix.ksy</code>.</p>
+<p>KSY (Kaitai Struct YAML) declares a single user-defined type (translated from official).
+User-defined type is</p>
+<ul>
+<li><code>meta</code></li>
+<li><code>doc</code></li>
+<li><code>seq</code></li>
+<li><code>types</code></li>
+<li><code>instances</code></li>
+<li><code>enums</code>
+It consists of:
+You don&rsquo;t have to have everything.
+See the official reference for more information.</li>
+</ul>
+<h3 id="meta">meta</h3>
+<pre><code class="language-yaml:meta" data-lang="yaml:meta">meta:
+  id: matrix
+  endian: le
+</code></pre><p>Enter the name of the user-defined type to describe in <code>meta/id</code>. This must be present in your <code>.ksy</code> file.
+<code>meta/endian</code> describes the default endian used by the structure (<code>le</code>/<code>be</code>)### seq</p>
+<pre><code class="language-yaml:seq" data-lang="yaml:seq">seq:
+  -id: magic
+    contents: ['MAT', 1, 0x2,'/']
+  -id: header_num
+    type: u2
+  -id: headers
+    repeat: expr
+    repeat-expr: header_num
+    type: header
+</code></pre><p>Describe the data structure in <code>seq</code>.
+<code>id</code> becomes the variable name.
+If the data is a constant, write the constant in <code>contents</code>.
+If you want to get the value, describe the data type in <code>type</code> (for details, <a href="https://doc.kaitai.io/ksy_reference.html#primitive-data-types">here</a>).
+You can also use the types described in <code>types</code> below. Here we are using the <code>header</code> type.
+You can put either <code>expr</code>, <code>eos</code>, or <code>until</code> in <code>repeat</code> (For details, see <a href="https://doc.kaitai.io/ksy_reference.html#attribute-repeat">here</a>)
+If you put in <code>expr</code>, put the number of repeats in <code>repeat-expr</code>.</p>
+<h3 id="types">types</h3>
+<pre><code class="language-yaml:types" data-lang="yaml:types">types:
+  header:
+    seq:
+      -id: shape0
+        type: u2
+      -id: shape1
+        type: u2
+      -id: offset
+        type: u4
+    instances:
+      mat_body:
+        pos: offset
+        io: _root._io
+        type: matrix
+
+  matrix:
+    seq:
+      -id: dim0
+        repeat: expr
+        repeat-expr: _parent.shape0
+        type: dim1
+    types:
+      dim1:
+        seq:
+          -id: dim1
+            repeat: expr
+            repeat-expr: _parent._parent.shape0
+            type: s4
+</code></pre><p>User-defined types can be nested in <code>types</code>.
+We are using <code>instances</code> on the <code>header</code> type, but this can be used to read data other than those that are in order, such as <code>seq</code>.</p>
+<pre><code class="language-yaml:header.instances" data-lang="yaml:header.instances">instances:
+  mat_body:
+    pos: offset
+    io: _root._io
+    type: matrix
+</code></pre><p>Usage is very similar to <code>seq</code>.
+The <code>id</code> is the <code>mat_body</code> here.
+<code>io</code> is the IO stream to use.
+<code>pos</code> contains the number of bytes from the head of <code>io</code>.
+<code>type</code> is the same as for <code>seq</code>.</p>
+<h3 id="about-variables">About variables</h3>
+<p>Some fields (this time <code>repeat-expr</code>, <code>pos</code>, <code>io</code>) can reference variables as well as constant values.
+You cannot refer to the data that has not been loaded.
+The data has a tree structure (it is easy to understand if you use ksv), and you can specify the parent element with <code>_parent</code>.
+You can also specify the top element with <code>_root</code>.</p>
+<h3 id="visualize">Visualize</h3>
+<p>So far, I have been able to write the following code.</p>
+<pre><code class="language-yaml:matrix.ksy" data-lang="yaml:matrix.ksy">meta:
+  id: matrix
+  endian: le
+
+seq:
+  -id: magic
+    contents: ['MAT', 1, 0x2,'/']
+  -id: header_num
+    type: u2
+  -id: headers
+    repeat: expr
+    repeat-expr: header_num
+    type: header
+
+types:
+  header:
+    seq:
+      -id: shape0
+        type: u2
+      -id: shape1
+        type: u2
+      -id: offset
+        type: u4
+    instances:
+      mat_body:
+        pos: offset
+        io: _root._io
+        type: matrix
+
+  matrix:
+    seq:
+      -id: dim0
+        repeat: expr
+        repeat-expr: _parent.shape0
+        type: dim1
+    types:
+      dim1:
+        seq:
+          -id: dim1
+            repeat: expr
+            repeat-expr: _parent._parent.shape0
+            type: s4
+</code></pre><p>Let&rsquo;s visualize this using ksv (Kaitai Struct Visualizer).
+The usage is <code>ksv &lt;file_to_parse.bin&gt; &lt;format.ksy&gt;</code>.</p>
+<pre><code class="language-shell:shell" data-lang="shell:shell">$ ksv test.matrix matrix.ksy
+</code></pre><pre><code class="language-:ksv" data-lang=":ksv">[-] [root] 00000000: 4d 41 54 01 02 2f 03 00 03 00 03 00 20 00 00 00 | MAT../...... ...
+  [.] magic = 4d 41 54 01 02 2f 00000010: 05 00 09 00 44 00 00 00 02 00 02 00 f8 00 00 00 | ....D...........
+  [.] header_num = 3 00000020: dc fe ff ff 49 01 00 00 a7 ff ff ff 17 02 00 00 | ....I...........
+  [-] headers (3 = 0x3 entries) 00000030: 25 fc ff ff 35 ff ff ff b5 00 00 00 cf fe ff ff | %...5...........
+    [-] 0 00000040: e2 ff ff ff 5d 00 00 00 15 fe ff ff 30 fc ff ff | ....].......0...
+      [.] shape0 = 3 00000050: 4c 03 00 00 c1 ff ff ff b0 fd ff ff 31 02 00 00 | L...........1...
+      [.] shape1 = 3 00000060: 54 03 00 00 c4 ff ff ff 65 ff ff ff d0 fe ff ff | T.......e.......
+      [.] offset = 32 00000070: 75 01 00 00 de fe ff ff ed 00 00 00 ed fc ff ff | u...............
+      [-] mat_body 00000080: be fd ff ff e5 02 00 00 ec fe ff ff 22 fe ff ff | ............&quot;...
+        [-] dim0 (3 = 0x3 entries) 00000090: c3 02 00 00 11 00 00 00 29 03 00 00 00 01 00 00 | ........).......
+          [-] 0 000000a0: 78 00 00 00 c4 fc ff ff 4c 02 00 00 88 00 00 00 | x.......L.......
+            [-] dim1 (3 = 0x3 entries) 000000b0: 43 ff ff ff 35 ff ff ff a4 00 00 00 cf 02 00 00 | C...5...........
+              [.] 0 = -292 000000c0: 3a ff ff ff 33 ff ff ff bd fe ff ff f9 01 00 00 | :...3...........
+              [.] 1 = 329 000000d0: 22 ff ff ff 3a 02 00 00 7c 00 00 00 15 ff ff ff | &quot;...:...|........
+              [.] 2 = -89 000000e0: d8 fe ff ff 42 00 00 00 82 02 00 00 24 02 00 00 | ....B.......$...
+          [-] 1 000000f0: 8a fe ff ff af ff ff ff ef 02 00 00 96 01 00 00 | ................
+            [-] dim1 (3 = 0x3 entries) 00000100: 83 01 00 00 2f 02 00 00 | ..../...
+              [.] 0 = 535
+              [.] 1 = -987
+              [.] 2 = -203
+          [-] 2
+            [+] dim1
+    [-] 1
+      [.] shape0 = 5
+      [.] shape1 = 9
+      [.] offset = 68
+      [-] mat_body
+        [+] dim0
+    [+] 2
+</code></pre><p>It seems to read well.</p>
+<h2 id="file-decompression">File decompression</h2>
+<p>This is the main subject.
+I made a compressed file with the article of <a href="https://qiita.com/mueru/items/2e99832304cf8b89d3ec">here</a>.
+This time unzip this compressed file using KS.
+See the article for the file structure etc.</p>
+<pre><code class="language-yaml:mcp.ksy" data-lang="yaml:mcp.ksy">meta:
+    id: mcp
+    encoding: UTF-8
+    endian: le
+
+seq:-id: file
+    type: file
+    repeat: eos
+types:
+    file:
+        seq:
+          -id:filename_len
+            type: u4
+          -id: filebody_len
+            type: u4
+          -id: filename
+            type: str
+            size: filename_len
+          -id: filebody
+            size: filebody_len
+            process: zlib
+</code></pre><p><code>meta/encoding</code> specifies the default encoding to use with <code>type: str</code>.
+<code>repeat: eos</code> repeats until the end of the stream.
+<code>process: zlib</code> answers the read data with zlib. (Very convenient)</p>
+<ul>
+<li>For more information about <code>process</code>, <a href="https://doc.kaitai.io/ksy_reference.html#spec-process">here</a></li>
+</ul>
+<p>Generate code from <code>mcp.ksy</code> using ksc (Kaitai Struct Compiler).</p>
+<pre><code class="language-:usage" data-lang=":usage">Usage: kaitai-struct-compiler [options] &lt;file&gt;...
+
+  &lt;file&gt;... source files (.ksy)
+  -t, --target &lt;language&gt; target languages (graphviz, csharp, all, perl, java, go, cpp_stl, php, lua, python, ruby, javascript)
+  -d, --outdir &lt;directory&gt;
+                           output directory (filenames will be auto-generated)
+  -I, --import-path &lt;directory&gt;:&lt;directory&gt;:...
+                           .ksy library search path(s) for imports (see also KSPATH env variable)
+  --go-package &lt;package&gt; Go package (Go only, default: none)
+  --java-package &lt;package&gt;
+                           Java package (Java only, default: root package)
+  --java-from-file-class &lt;class&gt;
+                           Java class to be invoked in fromFile() helper (default: io.kaitai.struct.ByteBufferKaitaiStream)
+  --dotnet-namespace &lt;namespace&gt;
+                           .NET Namespace (.NET only, default: Kaitai)
+  --php-namespace &lt;namespace&gt;
+                           PHP Namespace (PHP only, default: root package)
+  --python-package &lt;package&gt;
+                           Python package (Python only, default: root package)
+  --opaque-types &lt;value&gt; opaque types allowed, default: false
+  --ksc-exceptions ksc throws exceptions instead of human-readable error messages
+  --ksc-json-output output compilation results as JSON to stdout
+  --verbose &lt;value&gt; verbose output
+  --debug enable debugging helpers (mostly used by visualization tools)
+  --help display this help and exit
+  --version output version information and exit
+</code></pre><pre><code class="language-shell:shell" data-lang="shell:shell">$ ksc -t python mcp.ksy
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:mcp.py" data-lang="python:mcp.py"><span style="color:#75715e"># This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild</span>
+
+<span style="color:#f92672">from</span> pkg_resources <span style="color:#f92672">import</span> parse_version
+<span style="color:#f92672">from</span> kaitaistruct <span style="color:#f92672">import</span> __version__ <span style="color:#66d9ef">as</span> ks_version, KaitaiStruct, KaitaiStream, BytesIO
+<span style="color:#f92672">import</span> zlib
+
+
+<span style="color:#66d9ef">if</span> parse_version(ks_version) <span style="color:#f92672">&lt;</span>parse_version(<span style="color:#e6db74">&#39;0.7&#39;</span>):
+    <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">Exception</span>(<span style="color:#e6db74">&#34;Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>(ks_version))
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Mcp</span>(KaitaiStruct):
+    <span style="color:#66d9ef">def</span> __init__(self, _io, _parent<span style="color:#f92672">=</span>None, _root<span style="color:#f92672">=</span>None):
+        self<span style="color:#f92672">.</span>_io <span style="color:#f92672">=</span> _io
+        self<span style="color:#f92672">.</span>_parent <span style="color:#f92672">=</span> _parent
+        self<span style="color:#f92672">.</span>_root <span style="color:#f92672">=</span> _root <span style="color:#66d9ef">if</span> _root <span style="color:#66d9ef">else</span> self
+        self<span style="color:#f92672">.</span>_read()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_read</span>(self):
+        self<span style="color:#f92672">.</span>file <span style="color:#f92672">=</span> []
+        i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#66d9ef">while</span> <span style="color:#f92672">not</span> self<span style="color:#f92672">.</span>_io<span style="color:#f92672">.</span>is_eof():
+            self<span style="color:#f92672">.</span>file<span style="color:#f92672">.</span>append(self<span style="color:#f92672">.</span>_root<span style="color:#f92672">.</span>File(self<span style="color:#f92672">.</span>_io, self, self<span style="color:#f92672">.</span>_root))
+            i <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">File</span>(KaitaiStruct):
+        <span style="color:#66d9ef">def</span> __init__(self, _io, _parent<span style="color:#f92672">=</span>None, _root<span style="color:#f92672">=</span>None):
+            self<span style="color:#f92672">.</span>_io <span style="color:#f92672">=</span> _io
+            self<span style="color:#f92672">.</span>_parent <span style="color:#f92672">=</span> _parent
+            self<span style="color:#f92672">.</span>_root <span style="color:#f92672">=</span> _root <span style="color:#66d9ef">if</span> _root <span style="color:#66d9ef">else</span> self
+            self<span style="color:#f92672">.</span>_read()
+
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_read</span>(self):
+            self<span style="color:#f92672">.</span>filename_len <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_io<span style="color:#f92672">.</span>read_u4le()
+            self<span style="color:#f92672">.</span>filebody_len <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_io<span style="color:#f92672">.</span>read_u4le()
+            self<span style="color:#f92672">.</span>filename <span style="color:#f92672">=</span> (self<span style="color:#f92672">.</span>_io<span style="color:#f92672">.</span>read_bytes(self<span style="color:#f92672">.</span>filename_len))<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;UTF-8&#34;</span>)
+            self<span style="color:#f92672">.</span>_raw_filebody <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>_io<span style="color:#f92672">.</span>read_bytes(self<span style="color:#f92672">.</span>filebody_len)
+            self<span style="color:#f92672">.</span>filebody <span style="color:#f92672">=</span> zlib<span style="color:#f92672">.</span>decompress(self<span style="color:#f92672">.</span>_raw_filebody)
+</code></pre></div><p>The generated code is <code>mcp.py</code>.
+Let&rsquo;s use this to write a decompression script.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:extract.py" data-lang="python:extract.py"><span style="color:#f92672">from</span> mcp <span style="color:#f92672">import</span> Mcp
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+
+mcps <span style="color:#f92672">=</span> Mcp<span style="color:#f92672">.</span>from_file(sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">1</span>])
+out <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;output/&#39;</span>
+<span style="color:#66d9ef">if</span> len(sys<span style="color:#f92672">.</span>argv) <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">3</span>:
+    out <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">2</span>]
+
+<span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> mcps<span style="color:#f92672">.</span>file:
+    <span style="color:#66d9ef">if</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(f<span style="color:#f92672">.</span>filename):
+        os<span style="color:#f92672">.</span>makedirs(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(out, os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(f<span style="color:#f92672">.</span>filename)), exist_ok<span style="color:#f92672">=</span>True)
+    <span style="color:#66d9ef">with</span> open(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(out, f<span style="color:#f92672">.</span>filename),<span style="color:#e6db74">&#39;wb&#39;</span>) <span style="color:#66d9ef">as</span> o:
+        o<span style="color:#f92672">.</span>write(f<span style="color:#f92672">.</span>filebody)
+</code></pre></div><p>You can answer with <code>python extract.py &lt;target.mcp&gt; [output_folder]</code></p>
+<p>To read the file, use <code>KaitaiStruct.from_file(file_path)</code>.
+If you want to read the bytes as they are, use <code>KaitaiStruct.from_bytes(bytes)</code>.
+For IO stream, use <code>KaitaiStruct.from_io(io)</code>.</p>
+<h1 id="at-the-end">at the end</h1>
+<p>I think KS is pretty useful.
+It&rsquo;s easy to write and it&rsquo;s available in your favorite language, so new learning costs are very low.
+The official reference is hard to read honestly, but more people like me will write articles about KS in the future (maybe).</p>
+<p>Would you like to use the KS to &ldquo;disassemble&rdquo;?</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

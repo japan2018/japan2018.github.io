@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Basics of trajectory generation (Scipy&#39;s optimize method for nonlinear optimal control problems) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Basics of trajectory generation (Scipy&rsquo;s optimize method for nonlinear optimal control problems)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 6, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scipy"> scipy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/optimization"> optimization</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/optimizer"> Optimizer</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/trajectory"> trajectory</a></code></small>
+
+</p>
+<pre><code>Description of trajectory generation, trajectory planning, and how to obtain modern numerical solutions for optimal control problems.
+</code></pre>
+<p>[Additional March 2017]
+I have released it as a python library as a development system of the contents written here.
+Please note that the theory implemented below is the Legendre-Gauss-Lobatto pseudospectral method, and the content on the current page is different from the Legendre-Gauss pseudospectral method.
+<a href="https://github.com/istellartech/OpenGoddard">https://github.com/istellartech/OpenGoddard</a>
+<a href="https://istellartech.github.io/OpenGoddard/">https://istellartech.github.io/OpenGoddard/</a></p>
+<p><a href="http://qiita.com/ina111/items/ec73bc77ad45dd65ac1e">How to use OpenGoddard 1</a>
+<a href="http://qiita.com/ina111/items/20963133988c27d84748">How to use OpenGoddard 2</a>
+<a href="http://qiita.com/ina111/items/486aa2a24a1723081b91">How to use OpenGoddard 3</a>
+<a href="http://qiita.com/ina111/items/60f75d90e5376d34a0ef">How to use OpenGoddard 4</a></p>
+<p>[Addendum here]</p>
+<p>Personally, I intend to be the basis for rocket trajectory planning and trajectory generation.</p>
+<p>Trajectory generation is, for example, to find the angle to fly to the target location with the fuel of the flying object minimized. It can be mathematically defined as an optimal control problem.
+In the rocket textbook, the method called variational method in the indirect method is adopted. This is to convert the optimal control problem into a Hamiltonian boundary value problem and solve it.</p>
+<p>Although the variational method is guaranteed to be optimal, it is not versatile because the expression transformation is different for each problem and the variable is not intuitive. A solution for smart people who can mess with mathematical expressions. The variational method seems to be used even today, but now that the computing resources are ample, the method called the direct method is also practical.</p>
+<p>The direct method discretizes the original continuous-time nonlinear optimal control problem and converts it into a nonlinear programming problem to be solved. Among the direct methods, there are a shooting method that discretizes only control variables and a direct collocation method that discretizes control variables and state variables.
+Furthermore, the Direct Collocation method, which does not monotonically divide the discretization, adopts a method called the pseudospectral method, so that the solution converges relatively stably even in a strongly nonlinear problem. The mathematical basis of the pseudospectral method is Gauss quadrature, and it is difficult to understand without mathematical education (I gave up.</p>
+<p>Here, the nonlinear continuous-time optimal control problem for trajectory generation is transformed into a nonlinear optimization problem using the pseudo-spectral method, which is a type of Direct Collocation method, in particular the Legendre-Gauss pseudo-spectral method, and the Scipy optimization module I solved it numerically using the SLSQP solver inside.</p>
+<p>By the way, I think that it is the reason why it is difficult to say that aerospace optimization problems are usually &ldquo;constrained nonlinear minimization problems&rdquo;.
+There are lots of useful solvers rolling without constraints, linear or quadratic forms, but with &ldquo;constrained non-linear&rdquo; it becomes difficult at once. As a solver, Sequential Quadratic Programming (SQP) seems to be effective in modern times.</p>
+<p>The solver for non-linear optimization problems does not simply use general-purpose ones, but it can be adapted to large-scale problems by various means, and it seems that there is a craftsmanship part because it seems to converge quickly. There are examples of using solvers such as IPOPT and SNOPT, but here the scipy.optimize solver is used because the source code is simple and priority is given here.</p>
+<p>While I was writing this, I tried to compare shooting methods, but it didn&rsquo;t converge at all, and it was only Tray. The shooting method is difficult to use. Though the idea is simple, it is better not to adopt it.</p>
+<p>#Example
+As an example, solve a simple one.
+<img src="https://qiita-image-store.s3.amazonaws.com/0/40132/65d74bd7-fe51-a7e1-6dd2-2c552eb64654.jpeg" alt="IMG_6505.JPG"></p>
+<p>A rocket that does not receive gravity or aerodynamic force on a two-dimensional plane generates an orbit with the minimum fuel (minimum flight time) in order to obtain the target altitude and lateral velocity.
+However, there is no increase or decrease in mass and the acceleration is constant. Boldly simplified.
+At this time, the initial value and the termination condition are defined, and the termination time is set to the evaluation function (the fastest trajectory).
+The optimal control problem has the following evaluation function and constraint conditions.
+(Actually, it is quite important to be able to describe the equations of motion and mathematical expressions as optimal control problems.)</p>
+<pre><code class="language-math" data-lang="math">\begin{aligned}
+{\rm minimize} &amp; :t_f \\
+{\rm subject \ to} &amp; :u(0) = v(0) = x(0) = y(0) = 0 \\
+&amp;: u(t_f) = 1,\ v(t_f) = 0, \ y(t_f) = 1 \\
+&amp; :-\frac{\pi}{2} \leq \beta \leq \frac{\pi}{2}
+\end{aligned}
+
+</code></pre><p>The equation of motion (state equation) is</p>
+<pre><code class="language-math" data-lang="math">\begin{aligned}
+\dot{u} &amp; = a \cos \beta \\
+\dot{v} &amp; = a \sin \beta \\
+\dot{x} &amp; = u \\
+\dot{y} &amp; = v
+\end{aligned}
+</code></pre><p>The source code is below. 5 points</p>
+<ul>
+<li>There is a function to find discrete time points (Legandre-Gauss node, Gauss point), weights, and differential matrix</li>
+<li>Variables to be optimized are arranged in one column with discretized values of state variables and control variables</li>
+<li>Includes constraint conditions for matching numerical integration of Direct Collocation method</li>
+<li>In the part of numerical integration, there is a constraint condition whether the result of trapezoidal integration from the beginning to the end so that the system is closed becomes (last value)-(first value)</li>
+<li>Normalize the time direction to (-1,1) in the optimization calculation? Since it is calculated, it will be returned to the original time axis later</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+<span style="color:#75715e"># Rocket optimal control problem, extremely simplified problem</span>
+<span style="color:#75715e"># Convert the optimal control problem to a nonlinear programming problem and search for the solution by Scipy&#39;s recursive least squares method (SLSQP).</span>
+<span style="color:#75715e"># The method of changing the problem is the Direct Collocation method,</span>
+<span style="color:#75715e"># Legendre-Gauss pseudospectral method is used.</span>
+<span style="color:#75715e">#</span>
+<span style="color:#75715e"># Copyright (c) 2016 Takahiro Inagawa</span>
+<span style="color:#75715e"># Released under the MIT license</span>
+<span style="color:#f92672">import</span> sys
+reload(sys)
+<span style="color:#f92672">import</span> platform
+<span style="color:#75715e"># Change the default character code.</span>
+sys<span style="color:#f92672">.</span>setdefaultencoding(<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> scipy.integrate <span style="color:#f92672">import</span> odeint
+<span style="color:#f92672">from</span> scipy.optimize <span style="color:#f92672">import</span> minimize
+<span style="color:#f92672">import</span> matplotlib <span style="color:#f92672">as</span> mpl
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> matplotlib.font_manager
+<span style="color:#f92672">from</span> matplotlib.font_manager <span style="color:#f92672">import</span> FontProperties
+<span style="color:#f92672">from</span> matplotlib.backends.backend_pdf <span style="color:#f92672">import</span> PdfPages
+<span style="color:#f92672">import</span> time
+
+<span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;Windows&#39;</span> <span style="color:#f92672">==</span> platform<span style="color:#f92672">.</span>system():
+font_path <span style="color:#f92672">=</span> <span style="color:#e6db74">r</span><span style="color:#e6db74">&#39;C:\WINDOWS\Fonts\MSGothic.ttf&#39;</span>
+
+<span style="color:#66d9ef">if</span><span style="color:#e6db74">&#39;Darwin&#39;</span> <span style="color:#f92672">==</span> platform<span style="color:#f92672">.</span>system(): <span style="color:#75715e"># for Mac</span>
+font_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/Library/Fonts/Osaka.ttf&#39;</span>
+
+font_prop <span style="color:#f92672">=</span> FontProperties(fname<span style="color:#f92672">=</span>font_path)
+mpl<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#39;font.family&#39;</span>] <span style="color:#f92672">=</span> font_prop<span style="color:#f92672">.</span>get_name()
+plt<span style="color:#f92672">.</span>close(<span style="color:#e6db74">&#39;all&#39;</span>)
+plt<span style="color:#f92672">.</span>style<span style="color:#f92672">.</span>use(<span style="color:#e6db74">&#39;ggplot&#39;</span>)
+mpl<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#39;axes.grid&#39;</span>] <span style="color:#f92672">=</span> True
+mpl<span style="color:#f92672">.</span>rcParams[<span style="color:#e6db74">&#39;savefig.dpi&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#ae81ff">300</span> <span style="color:#75715e"># Changed from default default dpi=100</span>
+
+<span style="color:#75715e"># plt.ion()</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_node_derivative_matrix</span>(n):
+From the <span style="color:#75715e"># Legendre-Gauss pseudospectral method,</span>
+<span style="color:#75715e"># Legendre-Calculate Gauss node and weights, Gauss derivative matrix (spectral derivative matrix)</span>
+<span style="color:#75715e"># tau: [-1,1] Legendre-Gauss node (collocation point)</span>
+<span style="color:#75715e"># w: Weight of Gaussian numerical integration formula (n real numbers)</span>
+<span style="color:#75715e"># D: Gauss differential matrix</span>
+beta <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">0.5</span> <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>sqrt(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>i)<span style="color:#f92672">**</span>(<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>)) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,n)])
+T <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>diag(beta,<span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>diag(beta,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#75715e"># Jacobian</span>
+D_, V <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>eig(T) <span style="color:#75715e"># eigenvalue decomposition</span>
+tau <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sort(D_) <span style="color:#75715e"># Legendre-Gauss node (Gauss point)</span>
+i <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argsort(D_)
+w <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> (V[<span style="color:#ae81ff">0</span>,i]<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>) <span style="color:#75715e"># quadrature weight</span>
+Add tau <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,tau,<span style="color:#ae81ff">1</span>)) <span style="color:#75715e"># -1,1(0,N+1)</span>
+D <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros([n,n<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]) <span style="color:#75715e"># Gauss differential matrix (Gaussian differential matrix gives the derivative at that point)</span>
+<span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,n<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+<span style="color:#66d9ef">for</span> l <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>,n<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+<span style="color:#66d9ef">if</span> k<span style="color:#f92672">==</span>l:
+D[k<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,l] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+<span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>,n<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+<span style="color:#66d9ef">if</span> m <span style="color:#f92672">!=</span> k:
+D[k<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,l] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1.0</span><span style="color:#f92672">/</span>(tau[k]<span style="color:#f92672">-</span>tau[m])
+<span style="color:#66d9ef">else</span>:
+D[k<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,l] <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span><span style="color:#f92672">/</span>(tau[l]<span style="color:#f92672">-</span>tau[k])
+<span style="color:#66d9ef">for</span> m <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>,n<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+<span style="color:#66d9ef">if</span> m <span style="color:#f92672">!=</span> k <span style="color:#f92672">and</span> m <span style="color:#f92672">!=</span> l:
+D[k<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,l] <span style="color:#f92672">*=</span> (tau[k]<span style="color:#f92672">-</span>tau[m])<span style="color:#f92672">/</span>(tau[l]<span style="color:#f92672">-</span>tau[m])
+<span style="color:#66d9ef">return</span> tau, w, D
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dynamics</span>(p, div): <span style="color:#75715e"># equation of motion</span>
+u <span style="color:#f92672">=</span> p[<span style="color:#ae81ff">1</span>:div[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+v <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>:div[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+x <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>:div[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+y <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>:div[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+beta <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>:div[<span style="color:#ae81ff">4</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+dx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(<span style="color:#ae81ff">0</span>)
+a <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span> <span style="color:#75715e"># acceleration</span>
+dx0 <span style="color:#f92672">=</span> a <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>cos(beta)
+dx1 <span style="color:#f92672">=</span> a <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>sin(beta)
+dx2 <span style="color:#f92672">=</span> u
+dx3 <span style="color:#f92672">=</span> v
+dx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((dx0, dx1, dx2, dx3))
+<span style="color:#66d9ef">return</span> dx
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">evaluation</span>(p, div): <span style="color:#75715e"># Evaluation function</span>
+<span style="color:#66d9ef">return</span> p[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">equality</span>(p, D, w, t0, div, n): <span style="color:#75715e"># 等式拘束条件</span>
+ u <span style="color:#f92672">=</span> p[<span style="color:#ae81ff">0</span>:div[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ v <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">0</span>]:div[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ x <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">1</span>]:div[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ y <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">2</span>]:div[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ beta <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">3</span>]:div[<span style="color:#ae81ff">4</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ dx <span style="color:#f92672">=</span> dynamics(p, div)
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(<span style="color:#ae81ff">0</span>)
+ derivative <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((D<span style="color:#f92672">.</span>dot(u), D<span style="color:#f92672">.</span>dot(v), D<span style="color:#f92672">.</span>dot(x), D<span style="color:#f92672">.</span>dot(y)))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, derivative <span style="color:#f92672">-</span> (p[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span>t0) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> dx))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> p[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>sum(D<span style="color:#f92672">.</span>dot(u)<span style="color:#f92672">*</span>w)))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> p[div[<span style="color:#ae81ff">0</span>]] <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>sum(D<span style="color:#f92672">.</span>dot(v)<span style="color:#f92672">*</span>w)))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> p[div[<span style="color:#ae81ff">1</span>]] <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>sum(D<span style="color:#f92672">.</span>dot(x)<span style="color:#f92672">*</span>w)))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> p[div[<span style="color:#ae81ff">2</span>]] <span style="color:#f92672">-</span> np<span style="color:#f92672">.</span>sum(D<span style="color:#f92672">.</span>dot(y)<span style="color:#f92672">*</span>w)))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, u[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">0.0</span>))
+ <span style="color:#75715e"># result = np.hstack((result, p[div[0]-1] - 1))</span>
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, v[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">0.0</span>))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">0</span>))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, x[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">0.0</span>))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, y[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">0.0</span>))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>))
+ <span style="color:#66d9ef">return</span> result
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">inequality</span>(p, D, w, t0, div, n): <span style="color:#75715e"># 不等式拘束条件</span>
+ u <span style="color:#f92672">=</span> p[<span style="color:#ae81ff">0</span>:div[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ v <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">0</span>]:div[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ x <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">1</span>]:div[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ y <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">2</span>]:div[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ beta <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">3</span>]:div[<span style="color:#ae81ff">4</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ dx <span style="color:#f92672">=</span> dynamics(p, div)
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(<span style="color:#ae81ff">0</span>)
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, beta <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>pi<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, np<span style="color:#f92672">.</span>pi<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span> <span style="color:#f92672">-</span> beta))
+ result <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hstack((result, p[div[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>))
+ <span style="color:#66d9ef">return</span> result
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;__main__&#39;</span>:
+ t0 <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># 開始時刻</span>
+ n <span style="color:#f92672">=</span> <span style="color:#ae81ff">20</span> <span style="color:#75715e"># 離散化メッシュ（Legendre-Gaussノード）の個数</span>
+ num_p <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span> <span style="color:#75715e"># 状態変数と制御変数の種類合計</span>
+ iterator <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#75715e"># 最適化の反復数 default:1</span>
+ tau, w, D <span style="color:#f92672">=</span> make_node_derivative_matrix(n)
+ div <span style="color:#f92672">=</span> [i<span style="color:#f92672">*</span>(n<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,num_p<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)] <span style="color:#75715e"># 変数の変わり目のindex</span>
+ num_variables <span style="color:#f92672">=</span> div[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> <span style="color:#75715e"># 状態変数・制御変数・静的変数の全数合計</span>
+
+ <span style="color:#75715e"># 上限・下限ベクトル</span>
+ <span style="color:#75715e"># vec_lower_limit = np.zeros(num_variables)</span>
+ <span style="color:#75715e"># vec_upper_limit = np.ones(num_variables) * 100</span>
+ <span style="color:#75715e"># vec_upper_limit[-1] = 0.5</span>
+
+ p <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones(num_variables) <span style="color:#f92672">*</span> <span style="color:#ae81ff">0.5</span> <span style="color:#75715e"># 最適化させる変数の初期値</span>
+ cons <span style="color:#f92672">=</span> ({<span style="color:#e6db74">&#39;type&#39;</span>: <span style="color:#e6db74">&#39;eq&#39;</span>,
+    <span style="color:#e6db74">&#39;fun&#39;</span>: <span style="color:#66d9ef">lambda</span> p, D, w, t0, div, n: equality(p, D, w, t0, div, n),
+    <span style="color:#e6db74">&#39;args&#39;</span>: (D, w, t0, div, n,)},
+   {<span style="color:#e6db74">&#39;type&#39;</span>: <span style="color:#e6db74">&#39;ineq&#39;</span>,
+    <span style="color:#e6db74">&#39;fun&#39;</span>: <span style="color:#66d9ef">lambda</span> p, D, w, t0, div, n: inequality(p, D, w, t0, div, n),
+    <span style="color:#e6db74">&#39;args&#39;</span>: (D, w, t0, div, n,)})
+ <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(iterator):
+  opt <span style="color:#f92672">=</span> minimize(evaluation, p, args<span style="color:#f92672">=</span>(div,), constraints<span style="color:#f92672">=</span>cons,
+         method<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;SLSQP&#39;</span>)
+  p <span style="color:#f92672">=</span> opt<span style="color:#f92672">.</span>x
+  <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;iteration: </span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> (i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>))
+
+ <span style="color:#75715e"># 結果の変数を分解</span>
+ u <span style="color:#f92672">=</span> p[<span style="color:#ae81ff">0</span>:div[<span style="color:#ae81ff">0</span>]]
+ v <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">0</span>]:div[<span style="color:#ae81ff">1</span>]]
+ x <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">1</span>]:div[<span style="color:#ae81ff">2</span>]]
+ y <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">2</span>]:div[<span style="color:#ae81ff">3</span>]]
+ beta <span style="color:#f92672">=</span> p[div[<span style="color:#ae81ff">3</span>]:div[<span style="color:#ae81ff">4</span>]]
+ tf <span style="color:#f92672">=</span> p[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+ time <span style="color:#f92672">=</span> (tf<span style="color:#f92672">-</span>t0)<span style="color:#f92672">/</span><span style="color:#ae81ff">2.0</span> <span style="color:#f92672">*</span> tau <span style="color:#f92672">+</span> (tf<span style="color:#f92672">+</span>t0)<span style="color:#f92672">/</span><span style="color:#ae81ff">2.0</span>
+
+ <span style="color:#75715e"># 結果のPLOT</span>
+ plt<span style="color:#f92672">.</span>figure()
+ plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>)
+ plt<span style="color:#f92672">.</span>plot(time,u,label<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;vel x&#34;</span>)
+ plt<span style="color:#f92672">.</span>plot(time,v,label<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;vel y&#34;</span>)
+ plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;best&#34;</span>)
+ plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;velocity [m/s]&#34;</span>)
+ plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>)
+ plt<span style="color:#f92672">.</span>plot(time,x,label<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;x&#34;</span>)
+ plt<span style="color:#f92672">.</span>plot(time,y,label<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;y&#34;</span>)
+ plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;best&#34;</span>)
+ plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;position [m]&#34;</span>)
+ plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">3</span>)
+ plt<span style="color:#f92672">.</span>plot(time,beta,label<span style="color:#f92672">=</span><span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;beta&#34;</span>)
+ plt<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;best&#34;</span>)
+ plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;angle [rad]&#34;</span>)
+ plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#34;time [s]&#34;</span>)
+ plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/40132/48412231-f7e5-6772-9a96-73487eb898a2.png" alt="最適化の基礎.png"></p>
+<h2 id="参考文献">参考文献</h2>
+<ul>
+<li>Benson, David A., et al. &ldquo;Direct trajectory optimization and costate estimation via an orthogonal collocation method.&rdquo; Journal of Guidance, Control, and Dynamics 29.6 (2006): 1435-1440.</li>
+</ul>
+<p><a href="https://goo.gl/BdLsvH">https://goo.gl/BdLsvH</a>　（PDF）
+↑手法的な元ネタの論文を読むことをオススメ。</p>
+<p>加藤 寛一郎 「工学的最適制御―非線形へのアプローチ」 1988年
+変分法を使っているので直接は関係が無いが最適制御問題を取り扱っている書籍としては有名どころらしい。</p>
+<p>土屋武司, and 鈴木真二. &ldquo;数理計画法を用いた最適制御問題解法に関する研究 (その 2) ブロック対角へシアン法の提案.&rdquo; 日本航空宇宙学会誌 46.536 (1998): 497-503.
+<a href="https://www.jstage.jst.go.jp/article/jjsass1969/46/536/46_536_497/_article/-char/ja/">https://www.jstage.jst.go.jp/article/jjsass1969/46/536/46_536_497/_article/-char/ja/</a></p>
+<p>横山信宏, 鈴木真二, and 土屋武司. &ldquo;スペースプレーンの ISS への上昇軌道最適化に関する研究.&rdquo; JOURNAL OF THE JAPAN SOCIETY FOR AERONAUTICAL AND SPACE SCIENCES 49.570 (2001): 208-213.
+<a href="https://www.jstage.jst.go.jp/article/jjsass/49/570/49_570_208/_article/-char/ja/">https://www.jstage.jst.go.jp/article/jjsass/49/570/49_570_208/_article/-char/ja/</a></p>
+<p>↑東大の鈴木・土屋研の論文はいくつかあるが、とても参考になる。</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

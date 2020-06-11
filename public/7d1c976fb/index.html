@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Python list is not a list | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Python list is not a list</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 10, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code>Python is in fashion, isn't it?
+</code></pre>
+<p>One of Python&rsquo;s strengths is <code>list</code>. Mr. <code>list</code> is a generous person who does not choose the type of object to put in, but it is strictly not a list ** as the title suggests.
+This time, I will explain about it with the source code of CPython.</p>
+<ul>
+<li>In this article, I will refer to the CPython source code, but since I will add explanations each time, I do not need detailed knowledge of C language. Perhaps.</li>
+</ul>
+<p>#First, what is a list?
+<a href="https://en.wikipedia.org/wiki/%E3%83%AA%E3%82%B9%E3%83%88_(%E6%8A%BD%E8%B1%A1%E3%83%87%E3%83%BC%E3%82%BF%E5%9E%8B)">List</a> is an &ldquo;ordered data container&rdquo;.
+In short, it&rsquo;s a set of data that is ordered.</p>
+<p>I think that many people reading this article have Pythonista, so I would like to implement it in Python, but I can not implement a strict list in Python, so I will write a minimal list program in C++.
+I don&rsquo;t want to talk about C++, so I don&rsquo;t use templates and create int lists.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C++" data-lang="C++"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">List</span> {
+<span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
+    <span style="color:#66d9ef">int</span> base; <span style="color:#75715e">// hold value
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> <span style="color:#f92672">*</span>next; <span style="color:#75715e">// address of next value
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
+    <span style="color:#75715e">/*
+</span><span style="color:#75715e">     * Various methods such as appends
+</span><span style="color:#75715e">     */</span>
+}
+</code></pre></div><p>Only this. It&rsquo;s easy?
+This is a <strong>unidirectional list</strong>, and as the name implies, it is a **unidirectional list.
+On the other hand, a <strong>bidirectional list</strong> is a list that has an address of the previous value and can be referred to backward.
+If you want to refer to the next value, just refer to the data in the <code>next</code> position. In other words, it may be a bit different from what you envision, but <strong>the data is not in memory in a row</strong>.</p>
+<h1 id="then-what-is-an-array">Then, what is an array?</h1>
+<p>I hope you found the list in the previous chapter. Then what is <a href="https://en.wikipedia.org/wiki/%E9%85%8D%E5%88%97">array</a>?
+The simple answer is <strong>just a row of data</strong>.
+I will explain it because it is a little wrong and it is not accurate.</p>
+<p>As explained in the previous chapter, the list was <strong>a column of data that holds the address of the next data</strong>. Arrays, on the other hand, are <strong>data arranged in memory</strong>.</p>
+<p>Here is a simple example.
+Suppose there is an array of alphabets starting from data <code>A</code> at address 0 of memory. (Data size is 1 for simplicity)
+Then, there should be <code>B</code> next to the first address in memory, namely <code>A</code>. An array has all the data in memory aligned in a straight line**, with <code>C</code> next to it, <code>D</code> next to it, and so on.</p>
+<p>This is the difference between a list and an array.
+And let&rsquo;s look at the Python <code>list</code> implementation from here.</p>
+<h1 id="finally-read-cpython">Finally read CPython</h1>
+<p>As you know, CPython is the official Python implementation implemented in C.
+As for the source code, the current one (2020/04/10) <a href="https://github.com/python/cpython/tree/5cd28030092eaa8eb9223afd733974fd2afc8e2c">latest</a>isused.(Butthebuilt-insourcecodedoesn&rsquo;tchangesooften,soitdoesn&rsquo;thavetobeexactlythesame.)</p>
+<h2 id="where-is-list-implemented">Where is list implemented</h2>
+<p>Looking at the CPython source code, I think that there are many directories and many people are overwhelmed.
+The basic object definition is in <code>Include/cpython/xxxobject.h</code>, so let&rsquo;s take a look at it. Then I think there is such a definition.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C:Include/cpython/listobject.h" data-lang="C:Include/cpython/listobject.h"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    PyObject_VAR_HEAD
+    <span style="color:#75715e">/* Vector of pointers to list elements. list[0] is ob_item[0], etc. */</span>
+    PyObject <span style="color:#f92672">**</span>ob_item;
+
+    <span style="color:#75715e">/* ob_item contains space for&#39;allocated&#39; elements. The number
+</span><span style="color:#75715e">     * currently in use is ob_size.
+</span><span style="color:#75715e">     * Invariants:
+</span><span style="color:#75715e">     * 0 &lt;= ob_size &lt;= allocated
+</span><span style="color:#75715e">     * len(list) == ob_size
+</span><span style="color:#75715e">     * ob_item == NULL implies ob_size == allocated == 0
+</span><span style="color:#75715e">     * list.sort() temporarily sets allocated to -1 to detect mutations.
+</span><span style="color:#75715e">     *
+</span><span style="color:#75715e">     * Items must normally not be NULL, except during construction when
+</span><span style="color:#75715e">     * the list is not yet visible outside the function that builds it.
+</span><span style="color:#75715e">     */</span>
+    Py_ssize_t allocated;
+} PyListObject;
+</code></pre></div><p>To read Python source code, you need to know PyObject. A PyObject is the underlying object for all objects and all Python objects are provided as extensions of this object.
+So this code
+<em>Definition of structure <code>PyListObject</code> with array <code>ob_item</code> of address to PyObject and acquired memory size <code>allocated</code></em>
+Will be.</p>
+<p>&ldquo;Hmm? I&rsquo;m saying a list, but I don&rsquo;t have the address of the next element!&rdquo;
+That&rsquo;s right.</p>
+<p>**Python lists are arrays. **
+Say again
+**Python lists are arrays. **</p>
+<p>&ldquo;But what makes arrays and lists so happy and sad?&rdquo;
+So, from here on, I will explain not the technical difference but how it will change concretely.</p>
+<h2 id="random-access-speed">Random access speed</h2>
+<p>Random access, as the name implies, is to access a random location in a data structure. Here, I will introduce the differences in random access of arrays and lists.</p>
+<h3 id="random-array-access">Random array access</h3>
+<p>If you want to make random access with an array, just add the position from the beginning of the element you want to access to the beginning address.
+In the previous example of the alphabet, there is an <code>A</code> at address 0, so to access the sixth <code>G</code>, simply add the <code>6</code> to the <code>A</code> position, that is, <code>0</code>.
+If the name of the alphabetic array is alphabet, such access can be written in C.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>alphabet <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;A&#39;</span>,<span style="color:#e6db74">&#39;B&#39;</span>,<span style="color:#e6db74">&#39;C&#39;</span>, ... ,<span style="color:#e6db74">&#39;X&#39;</span>,<span style="color:#e6db74">&#39;Y&#39;</span>,<span style="color:#e6db74">&#39;Z&#39;</span>};
+<span style="color:#66d9ef">char</span> a <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>(alphabet <span style="color:#f92672">+</span> <span style="color:#ae81ff">0</span>); <span style="color:#75715e">// position of A is 0
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">char</span> g <span style="color:#f92672">=</span> <span style="color:#f92672">*</span>(alphabet <span style="color:#f92672">+</span> <span style="color:#ae81ff">6</span>); <span style="color:#75715e">// G is 6
+</span></code></pre></div><p>And this can also be written in C.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C" data-lang="C"><span style="color:#66d9ef">char</span> a <span style="color:#f92672">=</span> alphabet[<span style="color:#ae81ff">0</span>];
+<span style="color:#66d9ef">char</span> g <span style="color:#f92672">=</span> alphabet[<span style="color:#ae81ff">6</span>];
+</code></pre></div><p>Isn&rsquo;t it a familiar shape? Yes, it has the same subscript access as Python.
+The form <code>name[i]</code> means <strong>get the element located <code>i</code> ahead of <code>name</code></strong>.</p>
+<p>What is done inside Python during random access? Let&rsquo;s take a look at the CPython source code again.
+Let&rsquo;s look at the same Include/cpython/listobject.h as before.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-C:Include/cpython/listobject.h" data-lang="C:Include/cpython/listobject.h"><span style="color:#75715e">/* Cast argument to PyTupleObject* type. */</span>
+<span style="color:#75715e">#define _PyList_CAST(op) (assert(PyList_Check(op)), (PyListObject *)(op))
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#define PyList_GET_ITEM(op, i) (_PyList_CAST(op)-&gt;ob_item[i])
+</span><span style="color:#75715e">#define PyList_SET_ITEM(op, i, v) (_PyList_CAST(op)-&gt;ob_item[i] = (v))
+</span><span style="color:#75715e">#define PyList_GET_SIZE(op) Py_SIZE(_PyList_CAST(op))
+</span><span style="color:#75715e">#define _PyList_ITEMS(op) (_PyList_CAST(op)-&gt;ob_item)
+</span></code></pre></div><p>On the 4th line, a macro called <code>PyList_GET_ITEM</code> is defined.
+Looking at the contents, <code>(_PyList_CAST(op)-&gt;ob_item[i])</code>
+was! Subscript access! After all, I found that it is accessed by subscript even inside Python.
+By the way, one line below is a macro that assigns a value to the specified position, but again, the subscript access is performed.</p>
+<h3 id="list-random-access">List random access</h3>
+<p>Then what happens when you randomly access a list?
+The list does not have its elements lined up in a row, so you&rsquo;ll need to follow the address of the next element one by one. Repeat <code>B</code> after <code>A</code>, <code>C</code> after <code>B</code>, and so on six times to reach <code>G</code>. It&rsquo;s less efficient than arrays, no matter what.</p>
+<p>As mentioned above, **Lists are not good at random access and arrays are good at **the data structure, so Python uses arrays. (I don&rsquo;t know why I named list)</p>
+<p>#Finally
+I hope you understand that Python&rsquo;s internal implementation of <code>list</code> is actually an array, and what makes it so appreciated.
+If you have any questions, questions, or suggestions of mistakes, please feel free to comment. If you have any questions, you can come to <a href="https://twitter.com/maki_0419lo">Twitter</a>.
+Thank you very much</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] You can deploy the management page in production as well to make maintenance easier. | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] You can deploy the management page in production as well to make maintenance easier.</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 5, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googleappengine">GoogleAppEngine</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/googlecloudplatform">GoogleCloudPlatform</a></code></small>
+
+</p>
+<pre><code>Ohashi is in a hurry with two advent calendars on the same day.
+</code></pre>
+<p>I have been working with GAE/Py for the last two years or so.
+Until now, I have touched GAE/J and GAE/Go, and since I am returning GAE/Py, I have a lot of things to think about, but I think GAE is so wonderful, I wonder if I&rsquo;m not using SQL anymore? , I&rsquo;m wondering why I shouldn&rsquo;t have forced this application into Datastore.</p>
+<p>By the way, I think there are many things that I want to directly mess with the Datastore when I create and operate the service with GAE.
+How are you doing at such times?</p>
+<p>There are roughly the following methods.</p>
+<ol>
+<li>Fix with Datastore Viewer of Cloud Console</li>
+<li>Hit from client via Remote API</li>
+<li>Deploy and hit fix batch</li>
+</ol>
+<p>Each method is not bad, but each has its own problems and can make you feel uncomfortable.</p>
+<p>This time, I would like to write about <code>google.appengine.ext.admin.application</code> that cleared the problems 1, 2, and 3.</p>
+<h2 id="pain-to-modify-data-in-datastore">Pain to modify data in Datastore</h2>
+<p>I think that you don&rsquo;t have to read the following as I&rsquo;m only writing various grudges.</p>
+<h3 id="when-modifying-with-datastore-viewer-of-cloud-console">When modifying with Datastore Viewer of Cloud Console</h3>
+<p>The Datastore Viewer on the Cloud Console has been updated a lot and in many cases it&rsquo;s possible to update the data.
+However, if you are using ndb with GAE/Py, or if you are using your own library, Goon, etc., if you update it directly with Datastore Viewer, there is a problem that <strong>memcache data is not updated</strong> ..</p>
+<p>When you run into this problem, it&rsquo;s hard to notice, and there are often gaps between memcache and Datastore that can lead to failures.</p>
+<p>In some cases, it is necessary to clear all memcache, which is quite troublesome.</p>
+<h3 id="hit-from-client-via-remote-api">Hit from client via Remote API</h3>
+<p>By using <a href="https://cloud.google.com/appengine/docs/python/tools/remoteapi">App Engine remote API</a>, you can directly execute the following code on your own PC.</p>
+<p>You can also interact with App Engine interactively like iPython by using Remote API Shell.</p>
+<pre><code> &gt;&gt;&gt; from google.appengine.ext import ndb
+ &gt;&gt;&gt;
+ &gt;&gt;&gt; # Fetch 10 keys from the datastore
+ &gt;&gt;&gt; ndb.Query().fetch(10, keys_only=True)
+</code></pre><p>This is quite convenient, but when writing a process that needs to exchange data frequently, all RPC calls such as data acquisition and writing become HTTP communication from the client to the AppEngine server, which is very slow. There is a problem.</p>
+<p>Also, in the log, there is one HTTP request per RPC call, which is annoying.</p>
+<h3 id="deploy-and-hit-fix-batch">Deploy and hit fix batch</h3>
+<p>When adding a property to large-scale model data, etc., an appropriate TaskQueue may be created and processed at once.</p>
+<p>To be honest, I don&rsquo;t want to do it when I&rsquo;m doing it because it&rsquo;s too difficult to deploy.</p>
+<h2 id="so-googleappengineextadminapplication">So <code>google.appengine.ext.admin.application</code></h2>
+<h3 id="local-amdmin-server">Local Amdmin Server</h3>
+<p>When I launch dev_appserver.py locally</p>
+<pre><code>
+INFO 2016-12-02 08:30:49,546 admin_server.py:116] Starting admin server at: http://localhost:8000
+</code></pre><p>Admin_server.py is started up for, and the administration page can be used by accessing here.
+On the management page, you can simulate the status of local Datastore, Memcache, Task Queue, and email reception.</p>
+<p>Among them is the &ldquo;Interactive Console&rdquo;, which allows you to write Python code directly and send the code to a server for execution.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/2965/2af5f8d2-14d9-558b-03eb-d7c3314a5e18.png%22Kobito.FlIaob.png%22" alt="Kobito.FlIaob.png"></p>
+<p>You can easily execute the code without writing the code in the file in the local environment and can use it for maintenance and debugging.</p>
+<h3 id="run-admin-page-in-production-environment">Run Admin page in production environment</h3>
+<p><code>google.appengine.ext.admin.application</code> is this local Admin Server made available in production and is included in Python&rsquo;s AppEngine SDK.</p>
+<p>To use <code>google.appengine.ext.admin.application</code>, add a route in app.yaml.</p>
+<pre><code>- url: /adminapplication/.*
+  script: google.appengine.ext.admin.application
+  login: admin
+</code></pre><p>Be sure to add <code>login: admin</code>.
+If you forget to add it, anyone can execute your favorite code on your GAE. Please do it at your own risk.</p>
+<p>When you deploy the application in this state, the Admin page can be displayed with the assigned path.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/2965/8d32df7f-65b7-e367-7768-e28ae25c5097.png%22Kobito.3NQ9jC.png%22" alt="Kobito.3NQ9jC.png"></p>
+<p>I think the reason why it looks a little different is that the application of this Admin page is not updated as it is old, only the Admin server side is updated.</p>
+<p>There is also an &ldquo;Intractive Console&rdquo; in this page, and you can write and execute the code directly like the local version.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/2965/8dfd2774-e6c4-aa1b-ab67-b0e23f11278c.png%22Kobito.ZGst87.png%22" alt="Kobito.ZGst87.png"></p>
+<p>Of course, all the modules and libraries used in my application can be used, and ndb etc can work without problems.
+Maintenance becomes very easy!</p>
+<h2 id="summary-and-notes">Summary and notes</h2>
+<p>Using <code>google.appengine.ext.admin.application</code> makes maintenance of the production service very easy.
+Also, when you are asked to output a bit of data with csv, you can easily extract it from here because it is displayed in the text area on the left side using a print statement etc.</p>
+<p>However, there are some points to note.
+The first is that this mechanism works the same as a normal handler, so you will be subject to the usual 60 second limit and various timeouts.
+Be careful when updating large amounts of data.</p>
+<p>The second is written above, but you need to be careful about security as it can execute any code. Be sure to specify <code>login: admin</code></p>
+<p>The third is obvious, but if you write a mess of code, all the data will be lost, which is a pain.
+It&rsquo;s a good idea to have a mechanism that allows you to try code locally, execute code, check pointing, and recover at any time.</p>
+<p>When you do it, your brain will disappear for a moment.</p>
+<p>We cannot take any responsibility for anything, so please use at your own risk.</p>
+<p>We hope that GAE operators can return home as quickly as one second.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

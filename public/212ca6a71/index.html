@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Introduction of meta-programming decorator on the subject of menu registration of maya | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Introduction of meta-programming decorator on the subject of menu registration of maya</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 19, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/maya">maya</a></code></small>
+
+</p>
+<pre><code>Nice to meet you all. The annual [Maya Advent Calender 2019](https://qiita.com/advent-calendar/2019/maya) season has come. This is the article on the 19th day. In this article, I'll introduce a technique in which a specific object in Python has information other than the code content and that information is used in a different process to make it work. In this way, operating programming one level above, that is, programming the program itself is called **metaprogramming**. In this article, we describe a decorator, which is a kind of meta-programming, and a record that applies it to the menu operation of maya, which requires complicated notation when written normally. It's not about a specific DCC function, but rather a programming topic, but I'd like you to have a little relationship. The operation sample created this time is available at https://github.com/yamahigashi/QiitaMayaAdventCalendar2019. Please refer to it if necessary.
+</code></pre>
+<p>#Introduction
+Not only programming in maya, but programming in a specific API or area has its characteristics. It means that there are frequent routines and patterns. In such a case, we will extract the features and develop them as a framework library for convenient use. Of course, if there is an existing one, use it.</p>
+<p>Then, if you write such a thing, but you can not write it obediently, it will be redundant. Suppose that happens.</p>
+<p>The thing that can (<em>may</em>) be used in such cases is metaprogramming.</p>
+<h2 id="what-is-metaprogramming">What is metaprogramming?</h2>
+<p>To quote from Wikipedia</p>
+<blockquote>
+<p>Metaprogramming is a type of programming technique. It is a method of programming with high-level logic that generates logic with a certain pattern, and a method of defining the high-level logic, rather than coding the logic directly.
+<a href="https://en.wikipedia.org/wiki/%E3%83%A1%E3%82%BF%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9F%E3%83%B3%E3%82%B0"><em>Meta programming</em></a> wikipedia</p>
+</blockquote>
+<p>a. Also, although it is a word that is rarely used, it can be said to be a type of <code>automatic programming</code> or <code>generative programming</code>. It may be called procedural programming in the word of spear (I think now). In short, it is a professional <strong>gram</strong> that aims to facilitate *generation, processing, and analysis * for a professional <strong>gramming</strong>. There are various methods for implementing this metaprogramming in each language, but typical examples include macros <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>, templates, and reflection. You can do whatever you want with a dynamically typed language.</p>
+<p>In Python, <a href="https://docs.python.org/ja/3/library/inspect.html#module-inspect"><em><strong>inspect module</strong></em></a>and<a href="https://docs.python.org/ja/3/library/ast.html"><em><strong>astmodule</strong></em></a>,abuilt-infunction<a href="https://docs.python.org/3/library/functions.html#globals">globals()</a>Or<a href="https://docs.python.org/3/library/functions.html#locals">locals()</a><sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>, etc. can be used for analysis and intervention freely. However, in this article, I will introduce ** a more convenient decorator. If you are interested in other methods, please check what you can do <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>.</p>
+<h2 id="what-is-decorator">What is Decorator</h2>
+<p>(Originally) It is a kind of design pattern <code>Decorator pattern</code>, which is a mechanism for modifying objects (that is, adding functions). Remember that there are people (objects) who can be decorated **with **people (objects). No matter how many decorations occur.</p>
+<p>When using an object-oriented language, you may come up with a specialization that uses class inheritance when you behave in a tricky way. The decoration by inheritance is only in the vertical direction, which has an inheritance relationship, but the decorator allows horizontal decoration that ignores inheritance.</p>
+<h2 id="in-python">In Python</h2>
+<p>It may be called a decorator in any form according to the purpose, but python has a dedicated syntax. This is simply referred to as a decorator. How to show the code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-decor.py" data-lang="decor.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">decorratter</span>(func):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">wrapper</span>(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        func(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;decotter&#34;</span>)
+    <span style="color:#66d9ef">return</span> wrapper
+
+<span style="color:#75715e"># This is a dedicated syntax</span>
+<span style="color:#a6e22e">@decorratter</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hoge</span>():
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;hoge&#34;</span>)
+
+<span style="color:#75715e"># But even if you write this, the operation is the same</span>
+decorated_hoge <span style="color:#f92672">=</span> decorratter(hoge)
+</code></pre></div><pre><code class="language-When" data-lang="When">
+&gt;&gt;&gt; hoge()
+hoge
+Decorator
+
+&gt;&gt;&gt; decorated_hoge()
+hoge
+Decorator
+Decotta # Displayed twice because it was decorated twice
+</code></pre><p>The reality is a function that takes a function and returns a (different) function. In the above, it is received as an alias <code>decorated_hoge</code> for clarity. Then, what kind of (different) function to return is to do different processing before and after the original function. What kind of other processing does it do? <sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup> For more detailed explanation, please refer to the following reference links.</p>
+<p><a href="https://qiita.com/mtb_beta/items/d257519b018b8cd0cc2e">https://qiita.com/mtb_beta/items/d257519b018b8cd0cc2e</a>
+<a href="https://note.crohaco.net/2014/python-decorator/">https://note.crohaco.net/2014/python-decorator/</a></p>
+<h2 id="what-you-can-do">What you can do</h2>
+<p>So what do you actually use (for maya and DCC tools)?</p>
+<ul>
+<li>Save the state before execution (selection, workspace, etc.) and restore after execution</li>
+<li>Execution result caching</li>
+<li>Monitor processing and processing results</li>
+</ul>
+<p>It can be used for If you&rsquo;ve ever touched the web framework, you&rsquo;ll notice that there are <code>@</code> scattered all around. It is often used to automatically generate a large amount of slightly different routines.</p>
+<p>I think that saving and restoring the state requires no explanation, but if you use <code>cmds.select</code> or <code>cmds.ls(sl=True)</code> in this process, for example, you can select it before and after executing the command. The situation changes unintentionally. It&rsquo;s to avoid that.</p>
+<p>For caching purposes, it is effective when applied to queries such as shotgun api and google spread sheet. (<em>Not related to maya</em>) I think this article is probably of interest to readers of this article. Before invoking the real query, it may be possible to query in advance whether there is an update or not, and if not, implement a thing that returns a cache with a decorator <sup id="fnref:5"><a href="#fn:5" class="footnote-ref" role="doc-noteref">5</a></sup>.</p>
+<h2 id="note">Note</h2>
+<p>With too sophisticated code, the appearance and actual behavior of the code will deviate. It may interfere with learning and debugging the written code. Be careful not to overdo it, try to be as plain as possible so that you can understand its behavior and purpose, and try to make it a code that others can imagine and a code that does not disappoint.</p>
+<h1 id="practice">Practice</h1>
+<p>The introduction was long, but finally the main subject.
+How do you register a command in a menu in maya?</p>
+<pre><code class="language-menu" data-lang="menu">cmds.menuItem(
+    menu_name,
+    label=safe_string(label),
+    parent=parent,
+    echoCommand=True,
+    annotation=annotation,
+    command=function,
+)
+</code></pre><p>It is general to prepare menu elements as needed by using the above code pieces. Roughly two to support multiple elements</p>
+<ul>
+<li>One by one in the code</li>
+<li>Describe command contents such as command name and parent name as data and register by rules</li>
+</ul>
+<p>It is classified as either. Solid writing isn&rsquo;t a bad thing if it&rsquo;s organized properly. (Everything is out of place? <em>Solemomataya Maya</em>)</p>
+<p>Now, let&rsquo;s think about making a menu like the one below.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/17220/aabaec41-5e07-dc90-c300-74774aed01f8.png" alt="Screenshot_223.png"></p>
+<p>If you write this in solid</p>
+<pre><code class="language-Slave" data-lang="Slave">    Abbreviation
+
+    cmds.menuItem(
+        'sugokunai_animation',
+        label='Animation',
+        subMenu=True,
+        tearOff=True,
+        parent=MENU_NAME
+    )
+
+    cmds.menuItem(
+        'anim_synoptic',
+        label='Synoptic',
+        parent='sugokunai_animation',
+        echoCommand=True,
+        command=animation.open_synoptic
+    )
+
+    cmds.menuItem(
+        'anim_studiolibrary',label='Studio Library',
+        parent='sugokunai_animation',
+        echoCommand=True,
+        command=&quot;&quot;&quot;import studiolibrary\r\nstudiolibrary.main()&quot;&quot;&quot;
+    )
+
+    Write a lot of this below
+</code></pre><p>It should look like this. As you can see, it becomes redundant. Only this can be used to register 3 menus. You can write a call in one line, but this time the visibility is extremely poor. So let&rsquo;s extract only the necessary elements, collect them as data, and rotate them in a loop.</p>
+<pre><code class="language-Create" data-lang="Create">animation_menu_items = [
+    [&quot;anim_synoptic&quot;, &quot;Synoptic&quot;, animation.open_synoptic],
+    [&quot;anim_studiolibrary&quot;, &quot;StudioLibrary&quot;, &quot;&quot;&quot;import studiolibrary\r\nstudiolibrary.main()&quot;&quot;&quot;],
+    # Prepare the menu elements by shifting them
+]
+
+def add_menu_item(name, label, parent, command):
+    cmds.menuItem(
+        name,
+        label=label,
+        parent=parent,
+        echoCommand=True,
+        command=command
+    )
+
+for name, label, command in animation_menu_items:
+    add_menu_item(name, label, parent, command)
+
+</code></pre><p>It is further divided depending on whether the data is held outside the code, but it is generally written like this. A more complicated data structure is required when defining the contents in a folder, but since it deviates from the main subject, it is omitted here <sup id="fnref:6"><a href="#fn:6" class="footnote-ref" role="doc-noteref">6</a></sup>. Then, are there any problems with the above two ways of writing <sup id="fnref:7"><a href="#fn:7" class="footnote-ref" role="doc-noteref">7</a></sup>?</p>
+<p>The first thing you will notice is that it is redundant. A large-scale description is necessary only for registration in a menu unrelated to the actual operation. The second point is the distance between the command description and the menu description (although the menu exists for the user, the code is for the developer, so the distance itself is not immediately bad. However, there are drawbacks such as difficulty in grasping and maintenance when there is a distance.</p>
+<p>Now let&rsquo;s apply meta programming.
+I would like readers to stop and think about how they can be devised before proceeding.</p>
+<p>‥
+‥
+‥</p>
+<p>‥</p>
+<p>I don&rsquo;t know, I give the function that should become a command meta information and retrieve it later. I came up with the method <sup id="fnref:8"><a href="#fn:8" class="footnote-ref" role="doc-noteref">8</a></sup>. There are several methods for assigning meta information in Python <sup id="fnref:9"><a href="#fn:9" class="footnote-ref" role="doc-noteref">9</a></sup>, but here we will introduce the method using decorator. Let&rsquo;s check the requirements.</p>
+<h2 id="requirements">Requirements</h2>
+<p>To summarize,</p>
+<ul>
+<li>I want to register a menu</li>
+<li>I want to write the function to be executed and the data required for registration in a short distance</li>
+</ul>
+<p>There are required information and optional information for composing the menu, and there are information that can be complemented later and information that must be given from outside. Information that can be calculated mechanically does not require information, so the information to be added to the function itself will be as follows.</p>
+<ul>
+<li>Label (required)</li>
+<li>Storage destination menu (*)</li>
+<li>Presence or absence of subfolders</li>
+<li>With or without divider</li>
+<li>Icon image path</li>
+</ul>
+<p>What is complementary information?</p>
+<ul>
+<li>Menu name (internal)</li>
+</ul>
+<p>This can be omitted because it may be automatically numbered from the module name or function name.</p>
+<h2 id="implementation">Implementation</h2>
+<p>First, I will show you the decorated side, not the decorator itself. I want to write the function called by the menu as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-decorated.py" data-lang="decorated.py"><span style="color:#a6e22e">@menu.command_item</span>(<span style="color:#e6db74">&#34;Synoptic&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">open_synoptic</span>():
+    <span style="color:#f92672">from</span> mgear <span style="color:#f92672">import</span> synoptic
+    synoptic<span style="color:#f92672">.</span>open()
+
+
+<span style="color:#a6e22e">@menu.command_item</span>(<span style="color:#e6db74">&#34;Studio Library&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">open_studiolibrary</span>():
+    <span style="color:#f92672">import</span> studio library
+    studiolibrary<span style="color:#f92672">.</span>main()
+
+
+<span style="color:#a6e22e">@menu.command_item</span>(<span style="color:#e6db74">&#34;Mirror selected animation&#34;</span>, divider<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mirror_selected_animation</span>():
+    <span style="color:#f92672">import</span> gml.animation <span style="color:#f92672">as</span> an
+    an<span style="color:#f92672">.</span>mirror()<span style="color:#f92672">.</span>mirror_all_animation()
+
+
+<span style="color:#a6e22e">@menu.command_item</span>(<span style="color:#e6db74">&#34;IK/FK Space Transfer&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">show_space_transfer</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;Display space transfers for characters in the currently open scene.&#34;&#34;&#34;</span>
+    <span style="color:#f92672">import</span> rigging <span style="color:#f92672">as</span> r
+    <span style="color:#f92672">import</span> scene <span style="color:#f92672">as</span> s
+    characters <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span>get_characters()
+    <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> characters:
+        r<span style="color:#f92672">.</span>show_space_transfer_ui(character)
+
+
+<span style="color:#a6e22e">@menu.command_item</span>(<span style="color:#e6db74">&#34;Edit export setting&#34;</span>, divider<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Export&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">edit_export_setting</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;Edit the export settings for the currently open scene.&#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#a6e22e">@menu.command_item</span>(<span style="color:#e6db74">&#34;debug&#34;</span>, folder<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;debug&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">debug</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;Edit the export settings for the currently open scene.&#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>The decorator is <code>@menu.command_item()</code> at the ↑ of the function declaration. Declare the menu label name, parent name, and the presence or absence of a divider here as needed. Next, let&rsquo;s look at the mechanism that prepares a mechanism that metaphorically analyzes the module that defines this function and drops it into the menu in a nice way. You can get the functions declared in the module with <code>inspect.getmembers(module)</code>, access those custom properties, collect the information needed for the menu, and issue <code>cmds.menuItem()</code>. It&rsquo;s a little long, but it&rsquo;s a key excerpt,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gather_commands.py" data-lang="gather_commands.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">register_module_menu</span>(module, menu_label, parent_menu_name):
+    <span style="color:#75715e"># type: (Callable, Text, Text) -&gt; None # noqa</span>
+    <span style="color:#e6db74">&#34;&#34;&#34;`parent_menu_name` Register the commands described in `module` below as a menu.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+
+    Abbreviation
+
+    <span style="color:#75715e"># Get the members defined in `module` using the built-in module `inspect`</span>
+    Get only menu item by <span style="color:#75715e"># if _is_menu_item (explained later)</span>
+    members <span style="color:#f92672">=</span> [o <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> inspect<span style="color:#f92672">.</span>getmembers(module) <span style="color:#66d9ef">if</span> _is_menu_item(o[<span style="color:#ae81ff">1</span>])]
+    members<span style="color:#f92672">.</span>sort(key<span style="color:#f92672">=</span>_linenumber)
+
+    <span style="color:#66d9ef">for</span> func_info <span style="color:#f92672">in</span> members:
+        If parent <span style="color:#f92672">=</span> folder <span style="color:#75715e"># subfolder is specified then parent is it, otherwise folder</span>
+
+        func_name <span style="color:#f92672">=</span> func_info[<span style="color:#ae81ff">0</span>]
+        func <span style="color:#f92672">=</span> func_info[<span style="color:#ae81ff">1</span>]
+        label <span style="color:#f92672">=</span> func<span style="color:#f92672">.</span>label
+        sub_folder_label <span style="color:#f92672">=</span> func<span style="color:#f92672">.</span>folder
+        divider <span style="color:#f92672">=</span> func<span style="color:#f92672">.</span>divider
+        annotation <span style="color:#f92672">=</span> safe_to_display(_get_annotation(func)) <span style="color:#75715e"># Use docstring for annotation</span>
+
+        Omission
+
+        cmds<span style="color:#f92672">.</span>menuItem(
+            <span style="color:#e6db74">&#34;{}_{}&#34;</span><span style="color:#f92672">.</span>format(package_path, func_name),
+            label<span style="color:#f92672">=</span>safe_to_display(label),
+            parent<span style="color:#f92672">=</span>parent,
+            echoCommand<span style="color:#f92672">=</span>True,
+            annotation<span style="color:#f92672">=</span>annotation,
+            command<span style="color:#f92672">=</span>func,
+        )
+
+</code></pre></div><p>To the above function, throw the module in which the function group you want to register in the previous menu is defined. Collect is_maya_menu_item functions defined in the module and create a menuItem according to the attribute. <a href="https://docs.python.org/ja/3/library/inspect.html"><code>inspect</code> module</a> is used for collection of functions and decorator is used for attribute assignment. So what does a decorator look like?</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-decorator.py" data-lang="decorator.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">command_item</span>(label, folder<span style="color:#f92672">=</span>None, divider<span style="color:#f92672">=</span>None):
+    <span style="color:#75715e"># type: (Text, Optional[Text], Optional[Text]) -&gt; Callable</span>
+    <span style="color:#e6db74">&#34;&#34;&#34;Decorator that appends meta data to a function for Maya command menu.&#34;&#34;&#34;</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">decorator</span>(func):
+
+        <span style="color:#a6e22e">@functools.wraps</span>(func)
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">wrap</span>(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+            <span style="color:#66d9ef">return</span> func()
+
+        setattr(wrap, <span style="color:#e6db74">&#34;linenumber&#34;</span>, inspect<span style="color:#f92672">.</span>getsourcelines(func)[<span style="color:#ae81ff">1</span>]) <span style="color:#75715e"># used to sort items</span>
+        setattr(wrap, <span style="color:#e6db74">&#34;folder&#34;</span>, folder)setattr(wrap, <span style="color:#e6db74">&#34;label&#34;</span>, label)
+        setattr(wrap, <span style="color:#e6db74">&#34;divider&#34;</span>, divider)
+        setattr(wrap, <span style="color:#e6db74">&#34;is_maya_menu_item&#34;</span>, True)
+        <span style="color:#66d9ef">return</span> wrap
+
+    <span style="color:#66d9ef">return</span> decorator
+</code></pre></div><p>This is the only body. Using the built-in function <code>setattr()</code> to force the addition of data to the function object <sup id="fnref:10"><a href="#fn:10" class="footnote-ref" role="doc-noteref">10</a></sup>. The point that needs some explanation is <code>setattr(wrap, &quot;linenumber&quot;, inspect.getsourcelines(func)[1])</code>. This is inconvenient when registering in the menu, because the collection by <code>inspect.getmember()</code> returns the results sorted in alphabetical order. Therefore, the number of lines in the source code is saved and registered in the menu in the order of description.</p>
+<pre><code class="language-Attribute" data-lang="Attribute">    members = [o for o in inspect.getmembers(module) if _is_menu_item(o[1])]
+
+    for func_info in members:
+        If parent = folder # subfolder is specified then parent is it, otherwise folder
+
+        func_name = func_info[0]
+        func = func_info[1]
+
+        label = func.label
+        sub_folder_label = func.folder
+        divider = func.divider
+        annotation = safe_to_display(_get_annotation(func)) # Use docstring for annotation
+
+</code></pre><p>The acquisition of the attribute given by the above code is performed in this way. You can simply access elements such as <strong>.label</strong>, <strong>.divider</strong>, <strong>.folder</strong>, and the subsequent processing is possible as usual.</p>
+<pre><code class="language-Add" data-lang="Add">        cmds.menuItem(
+            &quot;{}_{}&quot;.format(package_path, func_name),
+            label=safe_to_display(label),
+            parent=parent,
+            echoCommand=True,
+            annotation=annotation,
+            command=func,
+        )
+</code></pre><p>I hope you understand the operation. We were able to solve mechanically and flexibly the parts that were classified and labeled manually. Although registering to the menu is a little complicated, you can see that the decorator itself is simple. Let&rsquo;s show the whole picture including the omitted code (folder preparation and divider setting)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-register_menu_items.py" data-lang="register_menu_items.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">register_module_menu</span>(module, menu_label, parent_menu_name):
+    <span style="color:#75715e"># type: (Module, Text, Text) -&gt; None # noqa</span>
+
+    package_path <span style="color:#f92672">=</span> module<span style="color:#f92672">.</span>__name__
+    safe_package_name <span style="color:#f92672">=</span> get_folder_name_for_module(module)
+
+    folder <span style="color:#f92672">=</span> cmds<span style="color:#f92672">.</span>menuItem(
+        safe_package_name,
+        label<span style="color:#f92672">=</span>safe_to_display(menu_label),
+        subMenu<span style="color:#f92672">=</span>True,
+        tearOff<span style="color:#f92672">=</span>True,
+        parent<span style="color:#f92672">=</span>parent_menu_name
+    )
+
+    members <span style="color:#f92672">=</span> [o <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> inspect<span style="color:#f92672">.</span>getmembers(module, inspect<span style="color:#f92672">.</span>isfunction) <span style="color:#66d9ef">if</span> _is_menu_item(o[<span style="color:#ae81ff">1</span>])]
+    <span style="color:#66d9ef">for</span> klass_info <span style="color:#f92672">in</span> inspect<span style="color:#f92672">.</span>getmembers(module, inspect<span style="color:#f92672">.</span>isclass):
+        logger<span style="color:#f92672">.</span>debug(klass_info)
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> klass_info[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>__module__ <span style="color:#f92672">==</span> module<span style="color:#f92672">.</span>__name__:
+            <span style="color:#66d9ef">continue</span>
+
+        <span style="color:#66d9ef">for</span> method <span style="color:#f92672">in</span> inspect<span style="color:#f92672">.</span>getmembers(klass_info[<span style="color:#ae81ff">1</span>], inspect<span style="color:#f92672">.</span>ismethod):
+            logger<span style="color:#f92672">.</span>debug(method)
+            <span style="color:#66d9ef">if</span> _is_menu_item(method[<span style="color:#ae81ff">1</span>]):
+                members<span style="color:#f92672">.</span>append(method)
+
+    members<span style="color:#f92672">.</span>sort(key<span style="color:#f92672">=</span>_linenumber)
+
+    <span style="color:#66d9ef">for</span> func <span style="color:#f92672">in</span> members:
+        parent <span style="color:#f92672">=</span> folder
+
+        func_name <span style="color:#f92672">=</span> func[<span style="color:#ae81ff">0</span>]
+        label <span style="color:#f92672">=</span> func[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>label
+        sub_folder_label <span style="color:#f92672">=</span> func[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>folder
+        divider <span style="color:#f92672">=</span> func[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>divider
+        annotation <span style="color:#f92672">=</span> safe_to_display(_get_annotation(func[<span style="color:#ae81ff">1</span>]))
+
+        <span style="color:#66d9ef">if</span> sub_folder_label:
+            sub_folder_name <span style="color:#f92672">=</span> sub_folder_label<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34; &#34;</span>, <span style="color:#e6db74">&#34;_&#34;</span>)<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;-&#34;</span>, <span style="color:#e6db74">&#34;_&#34;</span>)
+            sub_folder_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{}_{}&#34;</span><span style="color:#f92672">.</span>format(safe_package_name, sub_folder_name)
+            exists <span style="color:#f92672">=</span> cmds<span style="color:#f92672">.</span>menuItem(sub_folder_name, exists<span style="color:#f92672">=</span>True)
+
+            <span style="color:#66d9ef">if</span> exists:
+                parent <span style="color:#f92672">=</span> sub_folder_name
+
+            <span style="color:#66d9ef">else</span>:
+                parent <span style="color:#f92672">=</span> cmds<span style="color:#f92672">.</span>menuItem(
+                    sub_folder_name,
+                    label<span style="color:#f92672">=</span>safe_to_display(sub_folder_label),
+                    subMenu<span style="color:#f92672">=</span>True,
+                    tearOff<span style="color:#f92672">=</span>True,
+                    parent<span style="color:#f92672">=</span>folder
+                )
+
+        <span style="color:#66d9ef">if</span> isinstance(divider, str) <span style="color:#f92672">or</span> isinstance(divider, unicode):
+            cmds<span style="color:#f92672">.</span>menuItem(
+                dividerLabel<span style="color:#f92672">=</span>safe_to_display(divider),
+                parent<span style="color:#f92672">=</span>parent,
+                divider<span style="color:#f92672">=</span>True
+            )
+
+        cmds<span style="color:#f92672">.</span>menuItem(
+            <span style="color:#e6db74">&#34;{}_{}&#34;</span><span style="color:#f92672">.</span>format(package_path, func_name),
+            label<span style="color:#f92672">=</span>safe_to_display(label),
+            parent<span style="color:#f92672">=</span>parent,
+            echoCommand<span style="color:#f92672">=</span>True,
+            annotation<span style="color:#f92672">=</span>annotation,
+            command<span style="color:#f92672">=</span>func[<span style="color:#ae81ff">1</span>],
+        )
+</code></pre></div><p>#Note again
+The triggering timing of the decorator is decorated when the function is defined. Be careful that it is not <em>qualified</em> when you call a function. A naive person who makes heavy use of <code>reload(Module)</code> should also keep this in mind.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>How was it? It&rsquo;s a noisy thing to do, but it&rsquo;s uselessly long and has little meaning in maya. In fact, there is no “best way”. It&rsquo;s hard to say that the method introduced this time is suitable for you. It can be said that there is a more appropriate method depending on the situation, and if the team is developing it, it is more important to determine the operation regardless of the method used. Still, if there is such a technique, I would appreciate it if you could leave it in the corner of your head.</p>
+<p>Tomorrow 20th is @tm8r&rsquo;s &ldquo;Recent tool distribution structure&rdquo;.</p>
+<h1 id="bonus">bonus</h1>
+<p>Here are some decorators I often use. Also, if you search with <code>wraps, maya.cmds</code> in code search such as github, many other written ones will be hit. If you are interested in it, please check it out as it is very helpful. Also, although not mentioned in this article, such a decorator can be used as it is as a <code>Context Manager</code>, that is, a <code>with</code> clause. Decorators decorate functions, but keep in mind that <code>contextlib.contextmanager</code> works on specific parts of your code. There are situations where it is useful just to remember such idioms and patterns in programming.</p>
+<pre><code class="language-Stop" data-lang="Stop">def viewport_off(func):
+    &quot;&quot;&quot;https://qiita.com/pontya/items/d8b180f746517287ea48
+    &quot;&quot;&quot;
+    @functools.wraps(func)
+    def wrap(*args, **kwargs):
+        # type: (List[Any], Dict[Any]) -&gt; Any
+
+        # Turn $gMainPane Off:
+        import maya.mel as mel
+        import maya.cmds as cmds
+
+        # paneLayout -managegMainPane = mel.eval('global string $gMainPane; $temp = $gMainPane;')
+        cmds.paneLayout(gMainPane, edit=True, manage=False)
+
+        # ogs
+        ogs_paused = cmds.ogs(q=True, pause=True)
+        if not ogs_paused:
+            cmds.ogs(pause=True)
+
+        # refresh
+        cmds.refresh(suspend=True)
+
+        try:
+            return func(*args, **kwargs)
+
+        except Exception:
+            import traceback
+            traceback.print_stack()
+            traceback.print_exc()
+            raise
+
+        finally:
+            cmds.paneLayout(gMainPane, edit=True, manage=True)
+            if not ogs_paused:
+                cmds.ogs(pause=True)
+            cmds.refresh(suspend=False)
+
+    return wrap
+</code></pre><p>```関数呼び出し前の<code>set_project</code>状況を保存・復元.py
+def keep_workspace(func):
+@functools.wraps(func)
+def wrap(*args, **kwargs):
+# type: (List[Any], Dict[Any]) -&gt; None
+&ldquo;&ldquo;&ldquo;Decorator - Keep current workspace while func is running.</p>
+<pre><code>    if func will fail, the error will be raised after.
+    &quot;&quot;&quot;
+
+    import maya.cmds as cmds
+    try:
+        current = cmds.workspace(query=True, fullName=True)
+        restore = True
+
+    except Exception:
+        restore = False
+
+    try:
+        return func(*args, **kwargs)
+
+    except Exception:
+        import traceback
+        traceback.print_stack()
+        traceback.print_exc()
+        raise
+
+    finally:
+        if restore:
+            cmds.workspace(current, openWorkspace=True)
+
+return wrap
+</code></pre>
+<pre><code>
+```関数呼び出し前の選択状態を保存・復元.py
+def keep_selection(func):
+    @functools.wraps(func)
+    def hoge_wrapper(*args, **kwargs):
+        &quot;&quot;&quot;Store current selection and restore that after executing func.&quot;&quot;&quot;
+
+        import maya.cmds as cmds
+        try:
+            current_selection = cmds.ls(sl=True)
+        except Exception:
+            pass
+
+        res = func(*args, **kwargs)
+
+        try:
+            cmds.select(current_selection)
+        except Exception:
+            pass
+
+        return res
+
+    return hoge_wrapper
+</code></pre><section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p><a href="https://www.amazon.co.jp/dp/4434133632/">Let Over Lambda</a> Recommended / Very good with macros in the boo language. However, it is not practical <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>It is convenient to use <code>**locals()</code> as a keyword argument of string interpolation. It&rsquo;s unnecessary because python3 contains f-strings. <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p><a href="https://www.ibm.com/developerworks/jp/analytics/library/ba-metaprogramming-python/index.html">https://www.ibm.com/developerworks/jp/analytics/library/ba-metaprogramming-python/index.html</a> Is this around? It&rsquo;s like using globals() and type() to forge a class at runtime, or using ast to force print to overwrite pprint. <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p>The argument that the original function takes <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:5" role="doc-endnote">
+<p>However, it is better to write such a thing other than python. It is overwhelmingly comfortable to use a certain amount of data such as go lang and the execution speed is orders of magnitude higher. If so, consider another option. Be prepared to inadvertently implement the cache system itself, and the cost of debugging etc. will increase enormously. <a href="#fnref:5" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:6" role="doc-endnote">
+<p>However, if you want to enter a character string, especially a multi-line character string, in the optional argument <code>command</code> of menuItem(), you can use <code>textwrap.dedent()</code> together. <a href="#fnref:6" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:7" role="doc-endnote">
+<p>If you compare the two at this point, it is hard to find either. In many cases, plain writing is easier to read than poorly abstracting data and algorithms. For example, when you try to express a nest, the difficulty level increases immediately (data preparation, algorithm, or both). <a href="#fnref:7" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:8" role="doc-endnote">
+<p>I also thought of using ast and inspect to enumerate functions of a specific module, but rejected because it is not a very clean way. <a href="#fnref:8" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:9" role="doc-endnote">
+<p>Useful in some cases even with naming and document strings <a href="#fnref:9" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:10" role="doc-endnote">
+<p>Actually, at first, I wrote a decorator that dynamically creates a command item class based on prototype rather than a function object, considering that the class would be more appropriate if it had some information as members. , Then, doctest was troublesome and side effects were large, so it was rejected. I didn&rsquo;t like to setattr a function because it was a bit uncomfortable, but I ended up with this. If you are interested, please see the dynamically generated version of the class for the github sample. <a href="#fnref:10" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

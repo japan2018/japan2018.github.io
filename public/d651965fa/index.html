@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I made a muscle training estimation application using Qore SDK | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I made a muscle training estimation application using Qore SDK</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 13, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning"> MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/time-series-analysis"> time series analysis</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/qoresdk"> QoreSDK</a></code></small>
+
+</p>
+<pre><code>## tl;dr
+</code></pre>
+<ul>
+<li>I made a muscle training estimation app</li>
+<li>Qore uses an algorithm called reservoir computing</li>
+<li>Performed a task of classifying time series data from acceleration data that can be acquired with a smartphone
+-<a href="https://github.com/hnishi/muscle_QoreSDK_AdvCal2019/blob/master/muscle_QoreSDK.ipynb">Code</a></li>
+<li>Pretty good
+-99.6% accuracy with test data</li>
+<li>This should make you a muscle engineer</li>
+</ul>
+<h2 id="strategy">Strategy</h2>
+<ul>
+<li>Collect accelerometer data with a smartphone (iphone)</li>
+<li>Time series data with three components on the x, y and z axes is available</li>
+<li>Learn with 4 types of muscle training: push-ups, abs, squats, abs</li>
+<li>You can tell what kind of muscle training you did with only your smartphone</li>
+</ul>
+<h2 id="data-collection">Data collection</h2>
+<ul>
+<li>
+<p>Do your muscle workout with your smartphone in your pants pocket
+-This time, in any muscle training, put the smartphone in the pocket in the same direction
+-It seems that it will be more difficult to estimate if it is set in a different direction</p>
+</li>
+<li>
+<p>For acceleration measurement, I used the following apps
+-<a href="https://apps.apple.com/jp/app/%E5%8A%A0%E9%80%9F%E5%BA%A6-%E3%82%B8%E3%83%A3%E3%82%A4%E3%83%AD%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97-%E7%A3%81%E5%8A%9B%E3%82%BB%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%AD%E3%82%AC%E3%83%BC/id448070865">&ldquo;Acceleration/Gyroscope/Magnetic Sensor Logger&rdquo;</a>
+-Measurement interval is 0.1 sec</p>
+</li>
+<li>
+<p>The number of muscle training done
+-Push-up: 21 times (~35 sec)
+-Abs: 20 times (~66 sec)
+-Squat: 20 times (~51 sec)
+-Abdominal muscle roller (sitting roller): 12 times (~50 sec)</p>
+</li>
+<li>
+<p>In order to increase the amount of data, we have to do more muscle training
+-Should be able to become macho</p>
+</li>
+<li>
+<p>The following is the raw acceleration data that can be actually measured.</p>
+</li>
+<li>
+<p>push ups</p>
+</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/99215/c79f9186-1783-dd99-ae45-2bafa42ecf82.png" alt="image.png"></p>
+<p>-Abs</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/99215/6601eb92-9a7e-0dd0-26a9-e6faa6331bfe.png" alt="image.png"></p>
+<ul>
+<li>Squat</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/99215/d6e4fe46-c2e8-2be3-aed4-a73d25b1a7bf.png" alt="image.png"></p>
+<ul>
+<li>Abdominal muscle roller (sitting roller)</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/99215/2aff66d9-f38b-1301-e14e-ef5492e453bb.png" alt="image.png"></p>
+<ul>
+<li>It was periodic and I got more beautiful data than I thought</li>
+</ul>
+<h2 id="data-preprocessing">Data preprocessing</h2>
+<ul>
+<li>I tried using <a href="https://qcore-info.github.io/advent-calendar-2019/index.html#module-qore_sdk.utils">qore_sdk.utils</a> provided by QoreSDK
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.utils.sliding_window">sliding_window</a>
+-Split time series into multiple small time series
+-Pre-processing required to pass data to API (3D)
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.utils.under_sample">under_sample</a>
+-Uniform number of samples per class
+-There was a bias in the number of data in the measured data
+-Normally, in machine learning, the accuracy is pulled by the data with the large number of data, so it was adjusted to the number of data of the class with the smallest number.</li>
+<li>There is a limit to the size of input data when learning
+-N*T*V &lt;150,000 &amp;&amp; N*T &lt;10,000
+-At first, I didn&rsquo;t understand the meaning of each alphabet (I thought it&rsquo;s a canonical ensemble because it&rsquo;s a biophysical system, but I think it&rsquo;s)
+-N: Number of small time series data
+-T: length of small time series (time?)
+-V: Number of features (in this case, 3 x, y, z accelerations)</li>
+</ul>
+<h2 id="learning-and-reasoning">Learning and reasoning</h2>
+<ul>
+<li>For learning and inference, <a href="https://github.com/qcore-info/advent-calendar-2019/blob/master/Qore%E3%82%B5%E3%83%B3%E3%83%97%E3%83%AB1_with_UCI.ipynb">Sample Code</a></li>
+<li>Set account information below</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">client <span style="color:#f92672">=</span> WebQoreClient(username<span style="color:#f92672">=</span>username,
+                       password<span style="color:#f92672">=</span>password,
+                       endpoint<span style="color:#f92672">=</span>endpoint)
+</code></pre></div><ul>
+<li>Learn below</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">res <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>classifier_train(X<span style="color:#f92672">=</span>X_train, Y<span style="color:#f92672">=</span>y_train)
+<span style="color:#66d9ef">print</span>(res)
+<span style="color:#75715e"># {&#39;res&#39;:&#39;ok&#39;,&#39;train_time&#39;: 7.2200915813446045}</span>
+</code></pre></div><ul>
+<li>Learning ended in about 7.2 seconds
+-Quite early</li>
+<li>Test (inference)</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">res <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>classifier_test(X<span style="color:#f92672">=</span>X_test, Y<span style="color:#f92672">=</span>y_test)
+<span style="color:#66d9ef">print</span>(res)
+{<span style="color:#e6db74">&#39;accuracy&#39;</span>: <span style="color:#ae81ff">0.9964285714285714</span>,<span style="color:#e6db74">&#39;f1&#39;</span>: <span style="color:#ae81ff">0.9964301018846474</span>,<span style="color:#e6db74">&#39;res&#39;</span>:<span style="color:#e6db74">&#39;ok&#39;</span>}
+</code></pre></div><ul>
+<li>Accuracy is 0.9964
+<ul>
+<li>high!</li>
+</ul>
+</li>
+</ul>
+<h2 id="linear-regression-simple-deep-learning-and-comparison">Linear regression, simple deep learning and comparison</h2>
+<ul>
+<li>This is also sample code</li>
+<li>Linear regression
+-Learning time: 0.28547000885009766[sec]
+-Accuracy: 0.9964285714285714</li>
+<li>MLP (Using Sklearn)
+-Learning time: 0.7626857757568359[sec]
+-Accuracy: 0.9928571428571429</li>
+<li>Both are slightly lower than Qore SDK, but still accurate</li>
+<li>Was the problem too easy?</li>
+</ul>
+<h2 id="impressions-i-tried">Impressions I tried</h2>
+<ul>
+<li>SDK was simple and easy to use</li>
+<li>Precision was high, but linear regression and MLP also showed sufficient precision
+-The problem may have been too easy
+-Want to try a more difficult estimation task</li>
+<li>This time, I want to verify what happens if I use <a href="https://qcore-info.github.io/advent-calendar-2019/index.html#module-qore_sdk.featurizer">qore_sdk.featurizer</a>thatIcouldnottry(timeifthereis)</li>
+</ul>
+<p>#The following is what you have examined and organized</p>
+<h2 id="qores-algorithm">Qore&rsquo;s algorithm</h2>
+<p>The following article (Advent Calendar Day 1) has a brief explanation.</p>
+<p><a href="https://qiita.com/ryoppippi/items/f607c8828238094eade0#qore%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6">World of Reservoir Computing ~With Qore~-Qiita</a></p>
+<blockquote>
+<p>It is a modified version of Reservoir Computing.</p>
+</blockquote>
+<blockquote>
+<p>Achieving a highly accurate model even with a small reservoir size by making original improvements and developing a unique mechanism not only for the inside of the reservoir but also for the pre-treatment and post-treatment</p>
+</blockquote>
+<p>It seems to be said.</p>
+<p>Is it based on the following paper?
+Van der Sande, Guy &amp; Brunner, Daniel &amp; Soriano, Miguel. (2017). Advances in photonic reservoir computing. Nanophotonics. 6. 561-576. 10.1515/nanoph-2016-0132.</p>
+<p>I want to read it when I have time.</p>
+<h2 id="specific-procedure-code">Specific procedure code</h2>
+<p>The jupyter notebook has been released to the following repositories.
+See the README and the notebook script for instructions.</p>
+<p><a href="https://github.com/hnishi/muscle_QoreSDK_AdvCal2019">GitHub-hnishi/muscle_QoreSDK_AdvCal2019</a></p>
+<h2 id="what-you-can-do-with-qore-sdk">What you can do with Qore SDK</h2>
+<ul>
+<li>
+<p>classification Classification task
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.client.WebQoreClient.classifier_train">classifier_train</a></p>
+</li>
+<li>
+<p>regression Regression task
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.client.WebQoreClient.regression_train">regression_train</a></p>
+</li>
+<li>
+<p>Feature extraction by time series frequency decomposition (I would like to compare with and without)
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.featurizer.Featurizer">Featurizer</a></p>
+</li>
+<li>
+<p>Divide time series into multiple small time series (easy to use)
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.utils.sliding_window">sliding_window</a></p>
+</li>
+<li>
+<p>Function to adjust the number of labels (easy to use)
+-<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#qore_sdk.utils.under_sample">under_sample</a></p>
+</li>
+<li>
+<p>Since it is a big deal, I wanted to use the full functionality of Qure SDK</p>
+</li>
+<li>
+<p>I want you to be able to detect change points and abnormalities</p>
+</li>
+</ul>
+<h2 id="official-document-link">Official document link</h2>
+<p>advent repo<a href="https://github.com/qcore-info/advent-calendar-2019">GitHub-qcore-info/advent-calendar-2019: Machine learning and applied technologies other than deep learning by QuantumCore Advent Calendar 2019</a></p>
+<p>QoreSDK doc
+<a href="https://qcore-info.github.io/advent-calendar-2019/index.html#document-index">QoreSDK 0.1.0 documentation</a></p>
+<h1 id="20191222-addendum">2019/12/22 Addendum</h1>
+<h2 id="with-featurizer-the-accuracy-is-even-higher">With Featurizer, the accuracy is even higher</h2>
+<p>Feature extraction is performed by frequency decomposition so that the number of classes is 40.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">n_filters <span style="color:#f92672">=</span> <span style="color:#ae81ff">40</span>
+featurizer <span style="color:#f92672">=</span> Featurizer(n_filters)
+X <span style="color:#f92672">=</span> featurizer<span style="color:#f92672">.</span>featurize(X, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+</code></pre></div><p>QoreSDK accuracy for test data is below</p>
+<p>acc= 1.0
+f1= 1.0
+elapsed_time:52.20956110954285[sec]</p>
+<p>Accuracy 1 result.</p>
+<p>On the contrary, logistic regression and MLP were less accurate than before using Featurizer.</p>
+<pre><code>===LogisticRegression(Using Sklearn)===
+elapsed_time:0.2480778694152832[sec]
+acc= 0.6291666666666667
+f1= 0.630372638509498
+===MLP(Using Sklearn)===
+elapsed_time:8.673331499099731[sec]
+acc= 0.95
+f1= 0.9502859082452324
+</code></pre><h2 id="added-the-condition-that-muscle-training-is-not-done">Added the condition that muscle training is not done</h2>
+<p>The state without muscle training was added to the class of the classification task.
+(Data was collected as a control while preparing for lunch.)
+In this case as well, the accuracy was 1.</p>
+<p>Click here for the notebook used for the work.
+<a href="https://github.com/hnishi/muscle_QoreSDK_AdvCal2019/blob/master/muscle_QoreSDK_v2.ipynb">https://github.com/hnishi/muscle_QoreSDK_AdvCal2019/blob/master/muscle_QoreSDK_v2.ipynb</a></p>
+<h2 id="verify-with-newly-acquired-data">Verify with newly acquired data</h2>
+<p>I created a different data set with the abdominal muscle roller than the one I used at the time of learning.
+Inferences were made using this data.</p>
+<p>Click here for the notebook used for the work.
+<a href="https://github.com/hnishi/muscle_QoreSDK_AdvCal2019/blob/master/muscle_QoreSDK_v2.ipynb">https://github.com/hnishi/muscle_QoreSDK_AdvCal2019/blob/master/muscle_QoreSDK_v2.ipynb</a></p>
+<p>As a result, the accuracy for this verification data is as follows</p>
+<ul>
+<li>QoreSDK
+-acc= 0.6855791962174941
+-f1= 0.8134642356241235</li>
+<li>LogisticRegression(Using Sklearn)
+-acc= 0.20094562647754138
+-f1= 0.3346456692913386</li>
+<li>MLP(Using Sklearn)
+-acc= 0.27423167848699764
+-f1= 0.43042671614100186</li>
+</ul>
+<p>With QoreSDK, the accuracy rate was about 70%.
+In order to improve the accuracy, it seems necessary to expand and train various patterns of training data for each type of muscle training.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

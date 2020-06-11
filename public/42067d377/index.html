@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Predict Titanic survival using Kedro, a machine learning workflow management tool | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Predict Titanic survival using Kedro, a machine learning workflow management tool</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 22, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/workflow"> Workflow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/titanic"> titanic</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kedro"> Kedro</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>In this article, I will build a Titanic survival prediction workflow using a library called Kedro.</p>
+<p>Recently, there are many types of machine learning workflow management tools and construction support tools.
+Just what I&rsquo;ve heard,</p>
+<ul>
+<li><a href="https://airflow.apache.org">Apache Airflow</a></li>
+<li><a href="https://github.com/spotify/luigi">luigi</a>
+-<a href="https://github.com/m3dev/gokart">gokart</a></li>
+<li><a href="https://dagster.readthedocs.io/en/stable/">Dagster</a></li>
+<li><a href="https://metaflow.org">Metaflow</a></li>
+<li><a href="https://www.databolt.tech">DataBolt(d6t)</a></li>
+<li><a href="https://kedro.readthedocs.io/en/stable/">Kedro</a></li>
+</ul>
+<p>And so on.</p>
+<p>Let&rsquo;s compare the performance of these tools through a common prediction project! That is the origin of this article.</p>
+<h2 id="as-a-common-project-we-chose-titanic-survival-predictionhttpswwwkagglecomctitanic-which-is-a-path-that-anyone-should-go-through-once-they-start-data-analysis">As a common project, we chose <a href="https://www.kaggle.com/c/titanic">Titanic survival prediction</a>, which is a path that anyone should go through once they start data analysis.</h2>
+<p>So, I will try from <a href="https://kedro.readthedocs.io/en/stable/">Kedro</a> first.</p>
+<p>The reasons for choosing Kedro are:</p>
+<ul>
+<li>It was popular on twitter for a while as it was easy to use</li>
+<li><a href="https://kedro.readthedocs.io/en/stable/02_getting_started/04_hello_world.html">Quick Start Project</a>and<a href="https://kedro.readthedocs.io/en/stable/03_tutorial/01_workflow.html">Tutorial</a>(html) was written firmly and it seemed easy to start</li>
+</ul>
+<p>About # Kedro</p>
+<p>kedro is a machine learning workflow management tool for Python developed by the data analysis company <a href="https://www.quantumblack.com">Quantum Black</a> under McKinsey.</p>
+<p>As shown below, it is a useful tool for experiment management at the PoC stage, but on the other hand, it has weak functions for production.</p>
+<h3 id="purpose">Purpose</h3>
+<p>Smooth development of machine learning model experiments</p>
+<h3 id="what-you-can-do">What you can do</h3>
+<ul>
+<li>Create templates for directories and Python code</li>
+<li>Command line execution of data processing to model construction based on the pipeline described according to the format</li>
+<li>Manage output results and intermediate data objects</li>
+</ul>
+<h3 id="merit">merit</h3>
+<ul>
+<li>Unify directory structure and code format</li>
+<li>Easy management of data and intermediate objects
+-Easy to read and save automatically just by writing in catalog.yml</li>
+<li>Easy text-based parameter specification
+-If you describe it in parameters.yml, you can easily read it out as a string</li>
+</ul>
+<h3 id="dont-know-what-you-can-do">Don&rsquo;t know what you can do</h3>
+<ul>
+<li>Reload model and preprocessing objects
+-What if you want to make inferences about new data?
+-In particular, can you do it with version specification?</li>
+<li>Customize directory structure etc.</li>
+</ul>
+<h3 id="things-impossible">Things impossible</h3>
+<ul>
+<li>Accuracy comparison between different models
+-Seems to be complementary to MLflow</li>
+<li>Deploy to production environment and job execution management/monitoring
+-The direction seems to be different from around Airflow and luigi</li>
+</ul>
+<h1 id="titanic-survival-prediction-example">Titanic Survival prediction example</h1>
+<p>Below, I will introduce how to use Kedro by taking Titanic, which is familiar with data analysis, as an example.</p>
+<p>Basically, it is created by referring to <a href="https://kedro.readthedocs.io/en/stable/03_tutorial/01_workflow.html">Official Tutorial</a>.
+The code is up on <a href="https://github.com/tatamiya/kedro_titanic">GitHub</a>.</p>
+<h3 id="basic-workflow-construction-flow">Basic workflow construction flow</h3>
+<ol>
+<li>Creating a project
+-From command line <code>kedro new</code>
+-Will automatically create a directory</li>
+<li>Data preparation
+-Put raw data into data/01_raw/ directory and edit catalog.yml.
+-After that, it will be read in pandas DataFrame by specifying only string.</li>
+<li>Construction of pipeline
+-Collect a group of processes into a function and define it as a node
+-Arrange nodes in Pipeline class and define processing flow</li>
+<li>Execution and saving of intermediate data
+-From command line <code>kedro run</code>
+-If you set it in catalog.yml, it will save the intermediate file.
+-Model versioning is also possible.</li>
+</ol>
+<h2 id="project-creation">Project creation</h2>
+<p>When you execute <code>kedro new</code> from the command line, you will be prompted to enter the project name, repository name, and package name as shown below.</p>
+<pre><code>$ kedro new
+
+Project Name:
+=============
+Please enter a human readable name for your new project.
+Spaces and punctuation are allowed.
+ [New Kedro Project]: Titanic with Kedro
+Repository Name:
+================
+Please enter a directory name for your new project repository.
+Alphanumeric characters, hyphens and underscores are allowed.
+Lowercase is recommended.
+ [titanic-with-kedro]: titanic-with-kedro
+Python Package Name:
+====================
+Please enter a valid Python package name for your project package.
+Alphanumeric characters and underscores are allowed.
+Lowercase is recommended. Package name must start with a letter or underscore.
+ [titanic_with_kedro]: titanic_with_kedro
+Generate Example Pipeline:
+==========================
+Do you want to generate an example pipeline in your project?
+Good for first-time users.(default=N)
+ [y/N]: N
+</code></pre><p>The project directory will be created with the name you entered in <code>Repository Name</code>.
+Looking inside, it looks like this:</p>
+<pre><code>titanic-with-kedro
+├── README.md
+├── conf
+│  ├── README.md
+│  ├── base
+│  │  ├── catalog.yml
+│  │  ├── credentials.yml
+│   │  ├── logging.yml
+│  │  └── parameters.yml
+│  └── local
+├── data
+│  ├── 01_raw
+│  ├── 02_intermediate
+│  ├── 03_primary
+│  ├── 04_features
+│  ├── 05_model_input
+│  ├── 06_models
+│  ├── 07_model_output
+│  └── 08_reporting
+├── docs
+│  └── source
+│  ├── conf.py
+│  └── index.rst
+├── errors.log
+├── info.log
+├── kedro_cli.py
+├── logs
+├── notebooks
+├── references
+├── results
+├── setup.cfg
+└── src
+    ├── requirements.txt
+    ├── setup.py
+    ├── tests
+    │  ├── __init__.py
+    │  └── test_run.py
+    └── titanic_with_kedro
+        ├── __init__.py
+        ├── nodes
+     │     └── __init__.py
+        ├── pipeline.py
+        ├── pipelines
+     │     └── __init__.py
+        └── run.py
+</code></pre><p>The&rsquo;Python Package Name&rsquo; that is heard on the way is used as the name of the directory where the pipeline code generated under <code>src</code> is placed (this time, <code>titanic_with_kedro</code>).</p>
+<p>At the end, you are asked &ldquo;Do you want to generate an example pipeline in your project?&rdquo;, but if you press y here, the code for the tutorial will be generated as a set.
+Since it is not necessary after the second time, press N without entering N.</p>
+<h2 id="data-preparation">Data preparation</h2>
+<p>This time, use the API from kaggle to get the data and put it in <code>data/01_raw/</code>.
+Registration to kaggle and acquisition of authentication token are required separately.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ cd data/01_raw/
+$ kaggle competitions download -c titanic
+$ unzip titanic.zip
+</code></pre></div><p>In addition to this, edit the data catalog as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml:conf/base/catalog.yml" data-lang="yml:conf/base/catalog.yml"><span style="color:#66d9ef">train</span>:
+    <span style="color:#66d9ef">type</span>: CSVLocalDataSet
+    <span style="color:#66d9ef">filepath</span>: data/01_raw/train.csv
+
+<span style="color:#66d9ef">test</span>:
+    <span style="color:#66d9ef">type</span>: CSVLocalDataSet
+    <span style="color:#66d9ef">filepath</span>: data/01_raw/test.csv
+</code></pre></div><p>The data names <code>train</code> and <code>test</code> are also used when reading the data.
+In <code>type:</code>, you can select the data reading format prepared by kedro in advance. <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup></p>
+<p>Let&rsquo;s make sure that we can read the data.Execute the following kedro command to launch Jupyter notebook (or IPython). The notebook will start up with the <code>catalog</code> for reading data already imported <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ kedro jupyter notebook
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python">df_train <span style="color:#f92672">=</span> catalog<span style="color:#f92672">.</span>load(<span style="color:#e6db74">&#34;train&#34;</span>)
+df_train<span style="color:#f92672">.</span>head()
+</code></pre></div><h2 id="build-pipeline">Build pipeline</h2>
+<h3 id="node-and-pipeline-definitions">node and pipeline definitions</h3>
+<p>Data preprocessing Describe the pipeline according to the kedro format.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:src/titanic_with_kedro/pipelines/data_engineering/pipeline.py" data-lang="Python:src/titanic_with_kedro/pipelines/data_engineering/pipeline.py"><span style="color:#f92672">from</span> kedro.pipeline <span style="color:#f92672">import</span> node, Pipeline
+<span style="color:#f92672">from</span> titanic_with_kedro.nodes <span style="color:#f92672">import</span> preprocess
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_pipeline</span>(<span style="color:#f92672">**</span>kwargs):
+    <span style="color:#66d9ef">return</span> Pipeline(
+        [
+            node(
+                func<span style="color:#f92672">=</span>preprocess<span style="color:#f92672">.</span>preprocess,
+                inputs<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;train&#34;</span>,
+                outputs<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;train_prep&#34;</span>,
+                name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;preprocess&#34;</span>,
+            ),
+        ],
+        tags<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;de_tag&#39;</span>],
+    )
+</code></pre></div><p>We will store <code>node</code> which is a processing unit in the <code>Pipeline</code> class prepared by kedro.</p>
+<p>The <code>node</code> function has</p>
+<ul>
+<li>func: Function that describes the process</li>
+<li>inputs: Input data name</li>
+<li>outputs: Output data name</li>
+<li>name: node name</li>
+</ul>
+<p>Specify.</p>
+<p>The process to be performed in node is specified by passing a function object to the argument <code>func</code>.</p>
+<p>In this example, the function <code>preprocess()</code> is set as one node and the missing value is complemented and the label is encoded.</p>
+<p>At this time, the data specified by the argument <code>inputs</code> is used for the input of the function <code>preprocess()</code>.
+In the above example, <code>train</code> is specified, but this points to the <code>train</code> data defined in the above data catalog <code>conf/base/catalog.yml</code>, and the data format described in the catalog. It will read and input the file based on the and path.</p>
+<p>Then, the output object is given the label specified in <code>outputs</code>. When using this object in the subsequent processing, you can specify and call this label.</p>
+<p>The preprocessing function specified in node this time is as follows. Unlike the pipeline, there is no need to take any special description method.</p>
+<p>(The function <code>_label_encoding()</code> is an auxiliary function)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:src/titanic_with_kedro/nodes/preprocess.py" data-lang="Python:src/titanic_with_kedro/nodes/preprocess.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">from</span> sklearn <span style="color:#f92672">import</span> preprocessing
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_label_encoding</span>(df: pd<span style="color:#f92672">.</span>DataFrame) <span style="color:#f92672">-&gt;</span> (pd<span style="color:#f92672">.</span>DataFrame, dict):
+    
+    df_le <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>copy()
+    <span style="color:#75715e"># Getting Dummies from all categorical vars</span>
+    list_columns_object <span style="color:#f92672">=</span> df_le<span style="color:#f92672">.</span>columns[df_le<span style="color:#f92672">.</span>dtypes <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;object&#39;</span>]
+    
+    dict_encoders <span style="color:#f92672">=</span> {}
+    <span style="color:#66d9ef">for</span> column <span style="color:#f92672">in</span> list_columns_object:
+        le <span style="color:#f92672">=</span> preprocessing<span style="color:#f92672">.</span>LabelEncoder()
+        mask_nan <span style="color:#f92672">=</span> df_le[column]<span style="color:#f92672">.</span>isnull()
+        df_le[column] <span style="color:#f92672">=</span> le<span style="color:#f92672">.</span>fit_transform(df_le[column]<span style="color:#f92672">.</span>fillna(<span style="color:#e6db74">&#39;NaN&#39;</span>))
+        
+        df_le<span style="color:#f92672">.</span>loc[mask_nan, column] <span style="color:#f92672">*=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#75715e"># transform minus for missing records</span>
+        dict_encoders[column] <span style="color:#f92672">=</span> le
+    
+    <span style="color:#66d9ef">return</span> df_le, dict_encoders
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">preprocess</span>(df: pd<span style="color:#f92672">.</span>DataFrame) <span style="color:#f92672">-&gt;</span> pd<span style="color:#f92672">.</span>DataFrame:
+    
+    df_prep <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>copy()
+    
+    drop_cols <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;Name&#39;</span>,<span style="color:#e6db74">&#39;Ticket&#39;</span>,<span style="color:#e6db74">&#39;PassengerId&#39;</span>]
+    df_prep <span style="color:#f92672">=</span> df_prep<span style="color:#f92672">.</span>drop(drop_cols, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    
+    df_prep[<span style="color:#e6db74">&#39;Age&#39;</span>] <span style="color:#f92672">=</span> df_prep[<span style="color:#e6db74">&#39;Age&#39;</span>]<span style="color:#f92672">.</span>fillna(df_prep[<span style="color:#e6db74">&#39;Age&#39;</span>]<span style="color:#f92672">.</span>mean())
+
+    <span style="color:#75715e"># Filling missing Embarked values with most common value</span>
+    df_prep[<span style="color:#e6db74">&#39;Embarked&#39;</span>] <span style="color:#f92672">=</span> df_prep[<span style="color:#e6db74">&#39;Embarked&#39;</span>]<span style="color:#f92672">.</span>fillna(df_prep[<span style="color:#e6db74">&#39;Embarked&#39;</span>]<span style="color:#f92672">.</span>mode()[<span style="color:#ae81ff">0</span>])
+
+    df_prep[<span style="color:#e6db74">&#39;Pclass&#39;</span>] <span style="color:#f92672">=</span> df_prep[<span style="color:#e6db74">&#39;Pclass&#39;</span>]<span style="color:#f92672">.</span>astype(str)
+
+    <span style="color:#75715e"># Take the frist alphabet from Cabin</span>
+    df_prep[<span style="color:#e6db74">&#39;Cabin&#39;</span>] <span style="color:#f92672">=</span> df_prep[<span style="color:#e6db74">&#39;Cabin&#39;</span>]<span style="color:#f92672">.</span>str[<span style="color:#ae81ff">0</span>]
+
+    <span style="color:#75715e"># Label Encoding for str columns</span>
+    df_prep, _ <span style="color:#f92672">=</span> _label_encoding(df_prep)
+    
+    <span style="color:#66d9ef">return</span> df_prep
+</code></pre></div><h3 id="multiple-pipeline-integration">Multiple pipeline integration</h3>
+<p>You can also combine multiple created pipelines.</p>
+<p>This time I defined the model construction in another pipeline<code>src/titanic_with_kedro/pipelines/data_science/pipeline.py</code>.</p>
+<p>To combine this with the previous preprocessing, do the following:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:src/titanic_with_kedro/pipeline.py" data-lang="Python:src/titanic_with_kedro/pipeline.py"><span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> Dict
+
+<span style="color:#f92672">from</span> kedro.pipeline <span style="color:#f92672">import</span> Pipeline
+<span style="color:#f92672">from</span> titanic_with_kedro.pipelines.data_engineering <span style="color:#f92672">import</span> pipeline <span style="color:#66d9ef">as</span> de
+<span style="color:#f92672">from</span> titanic_with_kedro.pipelines.data_science <span style="color:#f92672">import</span> pipeline <span style="color:#66d9ef">as</span> ds
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_pipelines</span>(<span style="color:#f92672">**</span>kwargs) <span style="color:#f92672">-&gt;</span> Dict[str, Pipeline]:
+    <span style="color:#e6db74">&#34;&#34;&#34;Create the project&#39;s pipeline.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Args:
+</span><span style="color:#e6db74">        kwargs: Ignore any additional arguments added in the future.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    Returns:
+</span><span style="color:#e6db74">        A mapping from a pipeline name to a ``Pipeline`` object.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+
+    de_pipeline <span style="color:#f92672">=</span> de<span style="color:#f92672">.</span>create_pipeline()
+    ds_pipeline <span style="color:#f92672">=</span> ds<span style="color:#f92672">.</span>create_pipeline()
+
+    <span style="color:#66d9ef">return</span> {
+        <span style="color:#e6db74">&#34;de&#34;</span>: de_pipeline,
+        <span style="color:#e6db74">&#34;ds&#34;</span>: ds_pipeline,
+        <span style="color:#e6db74">&#34;__default__&#34;</span>: de_pipeline <span style="color:#f92672">+</span> ds_pipeline,
+    }
+</code></pre></div><p>The model building pipeline is defined as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:src/titanic_with_kedro/pipelines/data_science/pipeline.py" data-lang="Python:src/titanic_with_kedro/pipelines/data_science/pipeline.py"><span style="color:#f92672">from</span> kedro.pipeline <span style="color:#f92672">import</span> node, Pipeline
+<span style="color:#f92672">from</span> titanic_with_kedro.nodes <span style="color:#f92672">import</span> modeling
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_pipeline</span>(<span style="color:#f92672">**</span>kwargs):
+    <span style="color:#66d9ef">return</span> Pipeline(
+        [
+            node(
+                func<span style="color:#f92672">=</span>modeling<span style="color:#f92672">.</span>split_data,
+                inputs<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;train_prep&#34;</span>, <span style="color:#e6db74">&#34;parameters&#34;</span>],
+                outputs<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;X_train&#34;</span>, <span style="color:#e6db74">&#34;X_test&#34;</span>, <span style="color:#e6db74">&#34;y_train&#34;</span>, <span style="color:#e6db74">&#34;y_test&#34;</span>],
+            ),
+            node(func<span style="color:#f92672">=</span>modeling<span style="color:#f92672">.</span>train_model,
+                 inputs<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;X_train&#34;</span>, <span style="color:#e6db74">&#34;y_train&#34;</span>],
+                 outputs<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;clf&#34;</span>),
+            node(
+                func<span style="color:#f92672">=</span>modeling<span style="color:#f92672">.</span>evaluate_model,
+                inputs<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;clf&#34;</span>, <span style="color:#e6db74">&#34;X_test&#34;</span>, <span style="color:#e6db74">&#34;y_test&#34;</span>],
+                outputs<span style="color:#f92672">=</span>None,
+            ),
+        ],
+        tags<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;ds_tag&#34;</span>],
+    )
+</code></pre></div><p>In this way, multiple nodes can be placed in one pipeline.</p>
+<h1 id="execute-and-save-intermediate-data">Execute and save intermediate data</h1>
+<p>After defining the pipeline, issue the execution command from the root of the project.</p>
+<pre><code>$ kedro run
+</code></pre><p>By doing this, <code>src/&lt;project_name&gt;/pipeline.py</code> is called and the process is executed.</p>
+<p>At this time, if you want to save the intermediate data after preprocessing and the created model (random forest this time), add the following to the data catalog.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:conf/base/catalog.yml" data-lang="yaml:conf/base/catalog.yml"><span style="color:#66d9ef">train_prep</span>:
+    <span style="color:#66d9ef">type</span>: CSVLocalDataSet
+    <span style="color:#66d9ef">filepath</span>: data/02_intermediate/train_prep.csv
+
+<span style="color:#66d9ef">clf</span>:
+    <span style="color:#66d9ef">type</span>: PickleLocalDataSet
+    <span style="color:#66d9ef">filepath</span>: data/06_models/classifier.pickle
+    <span style="color:#66d9ef">versioned</span>: <span style="color:#66d9ef">true</span>
+````train_prep` and `clf` refer to the preprocessed data and the trained model respectively, but recognize the name specified in the `outputs` argument of the `node` function when defining the pipeline as it is, and to the prescribed format/path Will save.
+
+Also, if `versioned` is set to <span style="color:#66d9ef">true</span>, it will be saved in a different directory each time it is executed [^<span style="color:#ae81ff">4</span>].
+
+<span style="color:#66d9ef">[^4]</span>: In this case, a new time is created at the time of execution under `data/06_models/classifier.pickle/`, and `data/06_models/classifier.pickle/<span style="color:#e6db74">2020-02-22</span>T06<span style="color:#ae81ff">.26.54</span>.486Z It is saved like /classifier.pickle`.
+
+<span style="color:#75715e"># Other useful functions</span>
+
+The basic functions are as above, but there are also the following functions.
+
+<span style="color:#75715e">### Create node directly from Jupyter notebook</span>
+
+When creating the execution code, I think that there are many people who continue to write it by executing it one by one with Jupyter notebook instead of writing it as a .py file from the beginning.
+
+In this case, it is troublesome to rewrite the code collectively in .py afterwards, but if you use kedro<span style="color:#e6db74">&#39;s cli, only the specified part of the code will be discharged in .py.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">First of all, launch Jupyter from kedro&#39;</span>s cli.
+
+```shell
+$ kedro jupyter notebook
+</code></pre></div><p>Next, add the <code>node</code> tag only to the cells you want to write to .py.
+To tag, select <code>View&gt; Cell Toolbar&gt; Tags</code> from the menu at the top of the screen. Since the tag input window is displayed at the top of each cell, type in <code>node</code> to add it.</p>
+<img width="300" alt="Screenshot 2020-02-23 19.31.18.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/210366/7165aaa8-e41f-c232-c125-865554126b1c.png">
+<img width="600" alt="Screenshot 2020-02-23 19.33.06.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/210366/24f102ae-e86d-05d6-a7c5-89cfef5e3da5.png">
+<p>Then, if you execute the following from the command line, only the tagged part will be extracted and <code>src/&lt;project name&gt;/nodes/&lt;notebook name&gt;.py</code> will be generated.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kedro jupyter convert notebooks/&lt;notebook name&gt;.ipynb
+</code></pre></div><Reference>
+https://kedro.readthedocs.io/en/latest/04_user_guide/11_ipython.html
+<h3 id="parameter-management">Parameter management</h3>
+<p>You can also read the parameters specified in the external file when defining the pipeline.</p>
+<p>Looking again at the model building parameters above, there are places where <code>&quot;parameters&quot;</code> is specified in inputs.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:src/titanic_with_kedro/pipelines/data_science/pipeline.py" data-lang="Python:src/titanic_with_kedro/pipelines/data_science/pipeline.py"><span style="color:#75715e"># Omitted</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">create_pipeline</span>(<span style="color:#f92672">**</span>kwargs):
+    <span style="color:#66d9ef">return</span> Pipeline(
+        [
+            node(
+                func<span style="color:#f92672">=</span>modeling<span style="color:#f92672">.</span>split_data,
+                inputs<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;train_prep&#34;</span>, <span style="color:#e6db74">&#34;parameters&#34;</span>],
+                outputs<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;X_train&#34;</span>, <span style="color:#e6db74">&#34;X_test&#34;</span>, <span style="color:#e6db74">&#34;y_train&#34;</span>, <span style="color:#e6db74">&#34;y_test&#34;</span>],
+
+<span style="color:#75715e"># Omitted</span>
+</code></pre></div><p>The above is the part divided into learning data and test data.</p>
+<p><code>&quot;parameters&quot;</code> refers to the <code>parameters.yml</code> file under the <code>conf/base</code> directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:conf/base/parameters.yml" data-lang="yaml:conf/base/parameters.yml"><span style="color:#66d9ef">test_size</span>: <span style="color:#ae81ff">0.2</span>
+<span style="color:#66d9ef">random_state</span>: <span style="color:#ae81ff">17</span>
+</code></pre></div><p>By doing this, you can automatically pass it as a dictionary type object to the argument of the node function and refer to it as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#75715e"># Omitted</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">split_data</span>(data: pd<span style="color:#f92672">.</span>DataFrame, parameters: Dict) <span style="color:#f92672">-&gt;</span> List:
+    <span style="color:#e6db74">&#34;&#34;&#34;Splits data into training and test sets.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Args:
+</span><span style="color:#e6db74">            data: Source data.
+</span><span style="color:#e6db74">            parameters: Parameters defined in parameters.yml.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">        Returns:
+</span><span style="color:#e6db74">            A list containing split data.
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    target_col <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Survived&#39;</span>
+    X <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>drop(target_col, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>values
+    y <span style="color:#f92672">=</span> data[target_col]<span style="color:#f92672">.</span>values
+
+    X_train, X_test, y_train, y_test <span style="color:#f92672">=</span> train_test_split(
+        X, y, test_size<span style="color:#f92672">=</span>parameters[<span style="color:#e6db74">&#34;test_size&#34;</span>], random_state<span style="color:#f92672">=</span>parameters[<span style="color:#e6db74">&#34;random_state&#34;</span>]
+    )
+
+    <span style="color:#66d9ef">return</span> [X_train, X_test, y_train, y_test]
+
+<span style="color:#75715e"># Omitted</span>
+</code></pre></div><p>#Summary</p>
+<p>Above, I introduced Titanic prediction after introducing how to use Kedro.</p>
+<h3 id="issue-preprocessing-object-storage-and-version-control">Issue: Preprocessing object storage and version control</h3>
+<p>The above forecast flow is flawed.</p>
+<p>If you are accustomed to data analysis, you may have noticed,</p>
+<ul>
+<li>Pre-processing before separating training/test data</li>
+<li>No inference flow when given new data</li>
+</ul>
+<p>There are things.</p>
+<p>Especially for the former, there is a possibility of Leakage because the information of the test data is mixed with the training data at the time of complementing the missing values and label encoding.</p>
+<p>Both problems can be solved by writing the preprocessing part in a class, fixing the instance with pickle so that it can be read and used later.</p>
+<p>The solution is not so difficult, and it is expected to be realized by adding a preprocessing object to the output of node, editing catalog.yml and saving it at runtime.</p>
+<p>However, there is a version control issue.</p>
+<p>If both the preprocessing part and the model are saved with version control, how should the preprocessing object of the version corresponding to each model be linked?</p>
+<p>For example, suppose you want to rewrite the preprocessing part to create a model and later infer with the old model.
+At this time, if the new preprocessing code is not compatible with the old model, the preprocessing object also needs to be replaced with the old model.</p>
+<p>In order to do this without trouble, some kind of tagging or giving an execution ID is necessary, but it is unconfirmed whether it can be done with Kedro. <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup></p>
+<h3 id="other-thoughts">Other thoughts</h3>
+<p>In addition, when I touched Kedro and wondered &ldquo;I wish this feature&hellip;&rdquo;</p>
+<ul>
+<li>Can you customize the directory structure and code provided as templates?</li>
+<li>Is it possible to collectively record the output prediction accuracy and compare each model and parameter?</li>
+</ul>
+<p>there is.</p>
+<p>The former may possibly be tampered with.</p>
+<p>The latter is probably out of Kedro&rsquo;s coverage, so it seems to be used with other tools.
+Specifically, <a href="https://www.mlflow.org/docs/latest/index.html">MLflow</a> from Databricks seems to be just right.
+In fact, <a href="https://medium.com/@QuantumBlack/deploying-and-versioning-data-pipelines-at-scale-942b1d81b5f5">Article written by Kedro&rsquo;s developer QuantumBlack</a>alsodiscussesusingwithMLflow.Thereisalsoalibrarycalled<a href="https://github.com/Minyus/pipelinex">PipelineX</a> that combines both.</p>
+<h1 id="reference-link">Reference link</h1>
+<ul>
+<li><a href="https://medium.com/@QuantumBlack/introducing-kedro-the-open-source-library-for-production-ready-machine-learning-code-d1c6d26ce2cf">Introducing Kedro: The open source library for production-ready Machine Learning code</a></li>
+<li><a href="https://qiita.com/Minyus86/items/70622a1502b92ac6b29c">Python Pipeline package comparison: Airflow, Luigi, Gokart, Metaflow, Kedro, PipelineX</a></li>
+</ul>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>You can also apply a custom data loading function. <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>By default, execution may fail due to a module load error. In that case, open <code>src/&lt;project-name&gt;/pipeline.py</code> and delete the module import for Tutorial. <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>In MLflow and Metaflow, you can specify the execution ID to read the model or intermediate object. If combined well with these, it might be possible&hellip; <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

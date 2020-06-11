@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [TensorFlow 2.x supported version] TensorFlow (Keras) using TFRecord &amp; DataSet to learn a large amount of data | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [TensorFlow 2.x supported version] TensorFlow (Keras) using TFRecord &amp; DataSet to learn a large amount of data</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 12, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/keras"> Keras</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow"> TensorFlow</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>It is an updated version of the previous article.
+<a href="https://qiita.com/everylittle/items/1d8a6267b0967346767a">How to train a large amount of data using TFRecord &amp; DataSet with TensorFlow &amp; Keras-Qiita</a></p>
+<p>One thing I want to do is &ldquo;I want an efficient way to learn huge data that does not fit in memory.&rdquo;
+It&rsquo;s a method that allows CPU data reading and GPU calculation to be processed in parallel.
+Using the DataSet API, you can efficiently learn from the data saved in a specific format.</p>
+<p>With the release of TensorFlow 2, the module names have changed and some operations have become easier to write than in previous versions of the article. This article introduces how to write in TensorFlow 2, focusing on the differences from the previous one. Also, let&rsquo;s change Keras to use the one included in TensorFlow.</p>
+<h1 id="advance-preparation">Advance preparation</h1>
+<p>This article uses Python 3.6.9 + TensorFlow 2.1.0 on Linux (Ubuntu 18.04).</p>
+<p>From TensorFlow 1.15/2.1, the CPU and GPU versions of the pip package have been integrated. Therefore, there are people who want to easily try with a CPU and those who want to turn it seriously with a GPU.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip3 install tensorflow<span style="color:#f92672">==</span>2.1.0
+</code></pre></div><p>This is OK. If you want to use GPU, please set up CUDA 10.1.
+<a href="https://www.tensorflow.org/install/gpu">GPU support | TensorFlow</a></p>
+<h1 id="data-preparation">Data preparation</h1>
+<p>There is a unique data format (TFRecord) for efficient calculation with TensorFlow. Let&rsquo;s create a TFRecord from existing data using the DataSet API.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3:data2tfrecord.py" data-lang="python3:data2tfrecord.py"><span style="color:#75715e">#!/usr/bin/env python3</span>
+
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">from</span> tensorflow.keras.datasets <span style="color:#f92672">import</span> mnist
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">feature_float_list</span>(l):
+    <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>Feature(float_list<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>FloatList(value<span style="color:#f92672">=</span>l))
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">record2example</span>(r):
+    <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>Example(features<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>train<span style="color:#f92672">.</span>Features(feature<span style="color:#f92672">=</span>(
+        <span style="color:#e6db74">&#34;x&#34;</span>: feature_float_list(r[<span style="color:#ae81ff">0</span>:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]),
+        <span style="color:#e6db74">&#34;y&#34;</span>: feature_float_list([r[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]])
+    }))
+
+filename_train <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;train.tfrecords&#34;</span>
+filename_test <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;test.tfrecords&#34;</span>
+
+<span style="color:#75715e"># === Read MNIST data ===</span>
+<span style="color:#75715e">#For simplicity, let&#39;s assume that the same validation data is used as the validation data during learning</span>
+(x_train, y_train), (x_test, y_test) <span style="color:#f92672">=</span> mnist<span style="color:#f92672">.</span>load_data()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;x_train :&#34;</span>, x_train<span style="color:#f92672">.</span>shape) <span style="color:#75715e"># x_train :(60000, 28, 28)</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;y_train :&#34;</span>, y_train<span style="color:#f92672">.</span>shape) <span style="color:#75715e"># y_train :(60000,)</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;x_test :&#34;</span>, x_test<span style="color:#f92672">.</span>shape) <span style="color:#75715e"># x_test :(10000, 28, 28)</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;y_test :&#34;</span>, y_test<span style="color:#f92672">.</span>shape) <span style="color:#75715e"># y_test :(10000,)</span>
+
+<span style="color:#75715e"># Pre-process</span>
+<span style="color:#75715e"># Pixels are converted to float32 type of [0, 1]</span>
+<span style="color:#75715e">#Furthermore, to make it a TFRecord, the feature quantity should be one-dimensional (rows correspond to records).</span>
+x_train <span style="color:#f92672">=</span> x_train<span style="color:#f92672">.</span>reshape((<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">28</span><span style="color:#f92672">*</span><span style="color:#ae81ff">28</span>))<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;float32&#34;</span>) <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>
+x_test <span style="color:#f92672">=</span> x_test<span style="color:#f92672">.</span>reshape((<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">28</span><span style="color:#f92672">*</span><span style="color:#ae81ff">28</span>))<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;float32&#34;</span>) <span style="color:#f92672">/</span> <span style="color:#ae81ff">255.0</span>
+<span style="color:#75715e"># Label also float32 type</span>
+y_train <span style="color:#f92672">=</span> y_train<span style="color:#f92672">.</span>reshape((<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;float32&#34;</span>)
+y_test <span style="color:#f92672">=</span> y_test<span style="color:#f92672">.</span>reshape((<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;float32&#34;</span>)
+<span style="color:#75715e"># Combine feature and label to make TFRecord</span>
+data_train <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>c_[x_train, y_train]
+data_test <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>c_[x_test, y_test]
+
+<span style="color:#75715e"># Actually, it is created by converting the data you want to learn into the same format.</span>
+<span style="color:#75715e">#If all the data cannot fit in the memory,</span>
+<span style="color:#75715e"># Make and write little by little and repeat.</span>
+
+<span style="color:#75715e">#Write learning data to TFRecord</span>
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>TFRecordWriter(filename_train) <span style="color:#66d9ef">as</span> writer:
+    <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> data_train:
+        ex <span style="color:#f92672">=</span> record2example(r)
+        writer<span style="color:#f92672">.</span>write(ex<span style="color:#f92672">.</span>SerializeToString())
+
+<span style="color:#75715e">#Write evaluation data to TFRecord</span>
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>TFRecordWriter(filename_test) <span style="color:#66d9ef">as</span> writer:
+    <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> data_test:
+        ex <span style="color:#f92672">=</span> record2example(r)
+        writer<span style="color:#f92672">.</span>write(ex<span style="color:#f92672">.</span>SerializeToString())
+</code></pre></div><p>It is almost the same as the last time, but with the version upgrade of TensorFlow, the package <code>tensorflow.python_io</code> has disappeared and the functions related to TFRecord are in <code>tensorflow.io</code>.
+Also, because Keras included in TensorFlow is used, <code>import</code> has changed, but the method of reading the MNIST data set itself has not changed.</p>
+<p>If you don&rsquo;t have a GPU calculation library, CUDA-related WARNING (libcublas not found, etc.) will appear, but those who just want to try it lightly on the CPU do not have to worry.</p>
+<p>#Learning</p>
+<p>It is a little different from the last time. First I&rsquo;ll introduce the code and then I&rsquo;ll explain the differences.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3:train.py" data-lang="python3:train.py"><span style="color:#75715e">#!/usr/bin/env python3</span>
+
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> tensorflow <span style="color:#f92672">as</span> tf
+<span style="color:#f92672">from</span> tensorflow.keras.layers <span style="color:#f92672">import</span> Dense, Input
+<span style="color:#f92672">from</span> tensorflow.keras.optimizers <span style="color:#f92672">import</span> RMSprop
+<span style="color:#f92672">from</span> tensorflow.keras.callbacks <span style="color:#f92672">import</span> ModelCheckpoint
+<span style="color:#f92672">from</span> tensorflow.keras.models <span style="color:#f92672">import</span> Model
+
+<span style="color:#75715e"># Learning settings</span>
+batch_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">32</span>
+epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+<span style="color:#75715e">#Set feature</span>
+num_classes <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#75715e"># Label types. 10 kinds of 0-9</span>
+feature_dim <span style="color:#f92672">=</span> <span style="color:#ae81ff">28</span><span style="color:#f92672">*</span><span style="color:#ae81ff">28</span> <span style="color:#75715e"># Feature dimension. Treated as one-dimensional for simplicity</span>
+<span style="color:#75715e"># Number of learning/evaluation data. Check in advance.</span>
+<span style="color:#75715e"># When using multiple TFRecords, note that the number below is the sum of all files.</span>
+num_records_train <span style="color:#f92672">=</span> <span style="color:#ae81ff">60000</span>
+num_records_test <span style="color:#f92672">=</span> <span style="color:#ae81ff">10000</span>
+<span style="color:#75715e">#1 Number of mini batches per epoch. Used during learning.</span>
+steps_per_epoch_train <span style="color:#f92672">=</span> (num_records_train<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">//</span> batch_size <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+steps_per_epoch_test <span style="color:#f92672">=</span> (num_records_test<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">//</span> batch_size <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># Decode 1 TF Record</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">parse_example</span>(example):
+    features <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>parse_single_example(
+        example,
+        features<span style="color:#f92672">=</span>{
+            <span style="color:#75715e"># Specify the number of dimensions when reading a list</span>
+            <span style="color:#e6db74">&#34;x&#34;</span>: tf<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>FixedLenFeature([feature_dim], dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32),
+            <span style="color:#e6db74">&#34;y&#34;</span>: tf<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>FixedLenFeature([], dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+        })
+    x <span style="color:#f92672">=</span> features[<span style="color:#e6db74">&#34;x&#34;</span>]
+    y <span style="color:#f92672">=</span> features[<span style="color:#e6db74">&#34;y&#34;</span>]
+    <span style="color:#66d9ef">return</span> x, y
+
+<span style="color:#75715e"># === Prepare TFRecord file data for learning/evaluation ===</span>
+
+dataset_train <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>TFRecordDataset([<span style="color:#e6db74">&#34;train.tfrecords&#34;</span>]) \
+    <span style="color:#f92672">.</span>map(parse_example) \
+    <span style="color:#f92672">.</span>shuffle(batch_size <span style="color:#f92672">*</span> <span style="color:#ae81ff">100</span>)\
+    <span style="color:#f92672">.</span>batch(batch_size)<span style="color:#f92672">.</span>repeat(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+When using multiple TFRecord files on <span style="color:#75715e">#, specify a list of file names.</span>
+<span style="color:#75715e"># dataset_train = tf.data.TFRecordDataset([&#34;train.tfrecords.{}&#34;.format(i) for i in range(10)]) \</span>
+
+dataset_test <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>TFRecordDataset([<span style="color:#e6db74">&#34;test.tfrecords&#34;</span>]) \
+    <span style="color:#f92672">.</span>map(parse_example) \
+    <span style="color:#f92672">.</span>batch(batch_size)
+
+<span style="color:#75715e"># === model definition ===</span>
+<span style="color:#75715e">#This time, only one 512-dimensional middle layer is specified</span>
+layer_input <span style="color:#f92672">=</span> Input(shape<span style="color:#f92672">=</span>(feature_dim,))
+fc1 <span style="color:#f92672">=</span> Dense(<span style="color:#ae81ff">512</span>, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;relu&#34;</span>)(layer_input)
+layer_output <span style="color:#f92672">=</span> Dense(num_classes, activation<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;softmax&#34;</span>)(fc1)
+model <span style="color:#f92672">=</span> Model(layer_input, layer_output)
+model<span style="color:#f92672">.</span>summary()
+
+<span style="color:#75715e"># You can learn with loss=&#34;sparse_categorical_crossentropy&#34; even if the label is a categorical variable</span>
+Loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;categorical_crossentropy&#34;</span> when the <span style="color:#75715e"># label is one-hot vectorized</span>
+model<span style="color:#f92672">.</span>compile(
+    loss<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sparse_categorical_crossentropy&#34;</span>,
+    optimizer<span style="color:#f92672">=</span>RMSprop(),
+    metrics<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;accuracy&#34;</span>])
+
+<span style="color:#75715e"># === Learning ===</span>
+
+<span style="color:#75715e"># Save the model on the waycp_cb = ModelCheckpoint(</span>
+    filepath<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;weights.{epoch:02d}-{loss:.4f}-{val_loss:.4f}.hdf5&#34;</span>,
+    monitor<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;val_loss&#34;</span>,
+    verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,
+    save_best_only<span style="color:#f92672">=</span>True,
+    mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;auto&#34;</span>)
+model<span style="color:#f92672">.</span>fit(
+    x<span style="color:#f92672">=</span>dataset_train,
+    epochs<span style="color:#f92672">=</span>epochs,
+    verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,
+    steps_per_epoch<span style="color:#f92672">=</span>steps_per_epoch_train,
+    validation_data<span style="color:#f92672">=</span>dataset_test,
+    validation_steps<span style="color:#f92672">=</span>steps_per_epoch_test,
+    callbacks<span style="color:#f92672">=</span>[cp_cb])
+</code></pre></div><h2 id="difference-from-last-time">Difference from last time</h2>
+<p><code>tensorflow.keras.Model.fit()</code> was changed so that it could take a DataSet for training data.
+<a href="https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit">tf.keras.Model | TensorFlow Core v2.1.0</a></p>
+<blockquote>
+<p>x: Input data.It could be:
+(Omitted)
+Atf.data dataset. Should return a tuple of either (inputs, targets) or (inputs, targets, sample_weights).</p>
+</blockquote>
+<p>Previously, when we learned from a DataSet, we had to insert the data into the <code>Input</code> layer, so there was the troublesome procedure of creating two models that share weights, one for training and one for evaluation. In TensorFlow 2.x (included Keras), you can give a DataSet to <code>Model.fit()</code>, so you only need one model. You no longer need to create your own iterator with <code>make_one_shot_iterator()</code>. I did it!</p>
+<p>Furthermore, it was possible to give a DataSet for evaluation to the <code>validation_data</code> argument of <code>tensorflow.keras.Model.fit()</code>. Therefore, it is no longer necessary to create a callback for evaluation by yourself (the progress bar at the time of evaluation will not appear&hellip; but you can write your own learning loop).</p>
+<h1 id="performance-improvement-with-multiple-tfrecords">Performance improvement with multiple TFRecords</h1>
+<p>By loading multiple files in parallel, you may be able to increase the GPU usage (= speed up learning).</p>
+<p>The learning data is divided and written in the same way as the last time. The difference from the last time is that <code>tf.python_io</code> is changed to <code>tf.io</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3:data2tfrecord.py" data-lang="python3:data2tfrecord.py"><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+    <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>TFRecordWriter(filename_train <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;.&#34;</span> <span style="color:#f92672">+</span> str(i)) <span style="color:#66d9ef">as</span> writer:
+        <span style="color:#66d9ef">for</span> r <span style="color:#f92672">in</span> data_train[i::<span style="color:#ae81ff">10</span>]:
+            ex <span style="color:#f92672">=</span> record2example(r)
+            writer<span style="color:#f92672">.</span>write(ex<span style="color:#f92672">.</span>SerializeToString())
+</code></pre></div><p>At the time of learning, the method of creating <code>dataset_train</code> changes as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3:train.py" data-lang="python3:train.py">dataset_train <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>Dataset<span style="color:#f92672">.</span>from_tensor_slices([<span style="color:#e6db74">&#34;train.tfrecords.{}&#34;</span><span style="color:#f92672">.</span>format(i) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>)]) \
+    <span style="color:#f92672">.</span>interleave(
+        <span style="color:#66d9ef">lambda</span> filename: tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>TFRecordDataset(filename)<span style="color:#f92672">.</span>map(parse_example, num_parallel_calls<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>),
+        cycle_length<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>) \
+    <span style="color:#f92672">.</span>shuffle(batch_size <span style="color:#f92672">*</span> <span style="color:#ae81ff">100</span>)\
+    <span style="color:#f92672">.</span>batch(batch_size) \
+    <span style="color:#f92672">.</span>prefetch(<span style="color:#ae81ff">1</span>) \
+    <span style="color:#f92672">.</span>repeat(<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><p>The function equivalent to <code>tf.contrib.data.parallel_interleave()'' (later </code>tf.data.experimental.parallel_interleave()<code>) in the previous article was officially incorporated as a DataSet method. So, the description is a little easier. However, since it works like </code>sloppy=False<code>, it seems that you need to specify options with </code>with_options()<code>to get the same behavior as</code>sloppy=True``.
+<a href="https://www.tensorflow.org/api_docs/python/tf/data/experimental/parallel_interleave">tf.data.experimental.parallel_interleave | TensorFlow Core v2.1.0</a></p>
+<h1 id="lets-move-to-tensorflow-2">Let&rsquo;s move to TensorFlow 2</h1>
+<p>Although there are some changes, it is generally easier to write, so I feel like I do not have to be afraid.
+You can expect that the performance of the core is also improved (is it true?), and let&rsquo;s plunge a lot of data into TensorFlow 2 as well!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

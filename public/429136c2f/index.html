@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Learning Graph Convolutional Networks with PyTorch | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Learning Graph Convolutional Networks with PyTorch</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 7, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning"> DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch">PyTorch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/gcn">GCN</a></code></small>
+
+</p>
+<pre><code>** [Twitter](https://twitter.com/omiita_atiimo)introducesartificialintelligenceandarticleswritteninothermedia**,soifyouwanttoknowmoreaboutartificialintelligence,**Pleasefeelfreetofollowus(https://twitter.com/omiita_atiimo)! **
+</code></pre>
+<h1 id="learning-with-pytorch-graph-convolutional-networks">Learning with PyTorch Graph Convolutional Networks</h1>
+<p>In this article, I will explain GCN, which has been attracting a lot of attention as a neural network that can vectorize (embed) graph structures in recent years, and PyTorch Geometric, a library that can easily use GCN. The fields of application range from biology to traffic jam prediction and recommender systems.
+This article is <a href="http://tkipf.github.io/graph-convolutional-networks/">GCN creator&rsquo;s blog article</a>and[PyTorchGeometricofficialtutorial](<a href="https://pytorch-geometric.readthedocs.io/en(/latest/index.html)">https://pytorch-geometric.readthedocs.io/en(/latest/index.html)</a> is used as a reference.</p>
+<p>**If you think that you have learned something even if you read it, it would be a great encouragement for me to get likes and comments. Thank you! **</p>
+<h2 id="1-what-is-graph-convolutional-networks">1. What is Graph Convolutional Networks?</h2>
+<h3 id="11-what-is-a-graph">1.1 What is a graph?</h3>
+<p>Defined by nodes and edges. Note that it&rsquo;s not a line graph or histogram. Examples are Facebook friendships (people are nodes and friendships are edges) and enzyme structures (atoms are nodes and bond relationships are edges). (Here, it is a weightless undirected graph.)</p>
+<p><img src="https://imgur.com/64WkDhx.png" alt="Simple graph"></p>
+<p>Each has its own characteristics.
+A graph can be mathematically represented by a matrix, and in this GCN, an adjacency matrix and a feature matrix are used.</p>
+<ul>
+<li>Adjacency matrix: Matrix that represents the connection between nodes</li>
+<li>Feature matrix: Matrix that represents the feature vector of each node</li>
+</ul>
+<p>If the adjacency matrix and the feature matrix are used to represent the example of the above figure, the following is obtained.
+Orange letters represent each node. For example, in the adjacency matrix, the first row and the third column contain 1 because node a and node c are connected. In the feature matrix, $x_1 and x_2$ indicate the features, respectively.</p>
+<p><img src="https://imgur.com/75ANn9O.png" alt="Simple graph matrix"></p>
+<h3 id="12-what-is-gcn">1.2 What is GCN?</h3>
+<h4 id="121-overview">1.2.1 Overview</h4>
+<p>GCN (=Graph Neural Networks) is a neural network created to digitize (vectorize, embed) each node while firmly adding the graph structure.
+The goal of GCN is to <strong>numerize each node in consideration of the structure</strong>.</p>
+<p><img src="https://imgur.com/LyU1GAa.png" alt="Goal of GCN"></p>
+<p>Here, while adding the structure, it can be said that **numericalization is performed while taking into account what kind of node the node of interest (the node you want to quantify) is attached to.
+The following figure when we specifically consider node c.</p>
+<p><img src="https://imgur.com/CqdpmNp.png" alt="Attention node and adjacent node"></p>
+<p>Similarly, the following figure when coloring is applied to other nodes.</p>
+<p><img src="https://imgur.com/djJ88DV.png" alt="Attention node and neighboring nodes"></p>
+<p>Do this for all nodes.
+In a nutshell, GCN is a network that is embedded by looking at the neighbors of a node.</p>
+<p>GCN takes two kinds of matrices as input and outputs one matrix.</p>
+<ul>
+<li>Input
+<ul>
+<li>Adjacency matrix $\mathbf{A} \in \mathbb{R}^{n\times n}$: A matrix that shows which nodes are connected to which nodes.</li>
+<li>Feature matrix $\mathbf{F}_{in} \in \mathbb{R}^{n\times |F|}$: Matrix representing the feature vector of each node.</li>
+</ul>
+</li>
+<li>Output
+<ul>
+<li>Latent matrix $\mathbf{H}_{out} \in \mathbb{R}^{n\times |H|}$: Matrix representing latent expression vector of each node. (Converted by GCN)</li>
+</ul>
+</li>
+</ul>
+<h4 id="122-formula">1.2.2 Formula</h4>
+<p>Promptly, but if GCN is expressed in a mathematical formula, it becomes as follows.</p>
+<p>$$
+\mathbf{H}^{(l+1)} = f(\mathbf{H}^{(l)}, \mathbf{A})
+$$
+It&rsquo;s a sequel.
+However, $H^{(0)}=X$.</p>
+<p>This is the end of the definition of GCN itself, but I do not understand the meaning a little, so I will take a look at a concrete example.
+Here, let&rsquo;s take an example of a one-layer GCN whose activation function is ReLU. Here is the GCN diagram again. Here, it is assumed that ReLU is used as the activation function.</p>
+<p><img src="https://imgur.com/LyU1GAa.png" alt="Goal of GCN"></p>
+<p>Expressing this mathematically,</p>
+<p>$$
+f(H^{(0)}, A) = f(X, A) = \mathrm{ReLU}(AX\cdot W)
+$$</p>
+<p>Becomes $W$ is a weight, just like a normal neural network. $A and X$ are adjacency matrix and feature matrix (input), respectively. Now think about the meaning of <strong>$AX$</strong>.
+This can be understood by actually calculating AX, so I will try it.
+Again use the graph below.</p>
+<p><img src="https://imgur.com/64WkDhx.png" alt="Simple graph"></p>
+<p><img src="https://imgur.com/75ANn9O.png" alt="Simple graph matrix"></p>
+<p>Let&rsquo;s calculate $AX$. In the figure below, only the areas where the adjacency matrix is 1 are colored.</p>
+<p><img src="https://imgur.com/TlCRVS5.png" alt="AX calculation result"></p>
+<p>For example, looking at the calculation results for node c, it can be seen that the original features of adjacent a and b are added together.
+From this, it can be seen that $AX$, that is, the <strong>adjacency matrix $\times$ feature matrix is the sum of feature quantities of nodes connected to a node</strong>. By using $AX$, we can obtain features that take into account the surrounding nodes, and then multiply it by the weight $W$ like a normal neural network, and apply the nonlinear activation function $\mathrm{ReLU}$. I&rsquo;m just</p>
+<p>Although it is strong to some extent at this point, there are actually two problems. The GCN that is commonly used is the solution of the two. Now let&rsquo;s look at the problems and their solutions.</p>
+<h4 id="123-problems-and-solutions">1.2.3 Problems and solutions</h4>
+<p>It&rsquo;s a sequel.</p>
+<ol>
+<li><strong>The information of the own node is not included</strong>. (Only information of neighboring nodes)</li>
+<li>Due to the multiplication of $AX$ matrix, <strong>the scale of each node is very different</strong>.</li>
+</ol>
+<p>How to solve these two problems is very easy.</p>
+<ol>
+<li><strong>Add information of the own node by adding the unit matrix $I$ to the adjacency matrix $A$ and setting $\hat{A}=A+I$</strong>. Here, $I$ is a matrix whose diagonal elements are 1 and other elements are 0.</li>
+<li>** The adjacency matrix $\hat{A}$ is converted to $\hat{D}^{-\frac{1}{2}}\hat{A}\hat{D}^{-\frac{1} Normalized as {2}}$**. In other words, the total value of each line is 1. Where $\hat{D}$ is the degree matrix of $\hat{A}$. A degree matrix is a matrix whose diagonal element is the degree of each node and is 0 otherwise.</li>
+</ol>
+<p>Thus, the final GCN equation becomes the following equation.</p>
+<p>$$
+f(H^{(0)}, A) = \mathrm{ReLU}(\hat{D}^{-\frac{1}{2}}\hat{A}\hat{D}^{-\ frac{1}{2}}X\cdot W)
+$$</p>
+<h3 id="13-gcn-example">1.3 GCN example</h3>
+<p>Using the GCN realized by the above equation, the karate club network (<a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.336.9454&amp;rep=rep1&amp;type=pdf">Zachary (1977)</a>) Embed each node in the vector space. First of all, the original network is shown below. Nodes are members of the karate club, and Edges are friends.</p>
+<p><img src="https://imgur.com/6BSc8M3.png" alt="Karate Club Network"></p>
+<blockquote>
+<p>Image Credit: <a href="https://arxiv.org/pdf/1609.02907.pdf">Kipf, T. et al. (2017)</a></p>
+</blockquote>
+<p>The same color represents the same cluster, and it can be seen that there are four clusters. Below is the result of embedding each node in the two-dimensional space using a three-layer GCN. **You can see that the same clusters are close to each other, and the different clusters are buried far from each other.</p>
+<p><img src="https://imgur.com/x7OP7Q3.png" alt="Embedding Karate Club Network in Vector Space"></p>
+<blockquote>
+<p>Image Credit: <a href="https://arxiv.org/pdf/1609.02907.pdf">Kipf, T. et al. (2017)</a></p>
+</blockquote>
+<h3 id="14-why-gcn-works">1.4 Why GCN works?</h3>
+<p>This is away from the subject PyTorch Geometric, so I would like you to refer to <a href="https://arxiv.org/pdf/1609.02907.pdf">References</a>formoredetails.Weisfeiler-Lehmanalgorithmcanbeconsideredasaspecialcasebyadding(1)parameterand(2) differentiability.</p>
+<p><em><strong>(In the Weisfeiler-Lehman algorithm, the latent representation of a node is obtained using an arbitrary hash function of $\mathrm{hash}(AX)$, but in GCN it is $\mathrm{ReLU}(\hat{D }^{-\frac{1}{2}}\hat{A}\hat{D}^{-\frac{1}{2}}X\cdot W )$ parametric and differentiable function Is considered to be used.)</strong></em></p>
+<h2 id="2-lets-use-gcn">2. Let&rsquo;s use GCN</h2>
+<p>Let&rsquo;s actually touch GCN with PyTorch Geometric (PyG). <a href="https://pytorch-geometric.readthedocs.io/en/latest/index.html">PyG tutorial</a>
+I gave a lot of Japanese comments to the notebook on <a href="https://github.com/omiita/PyTorchGeometric-Tutorial">this Github</a>, so I hope that you can read it while running it for a better understanding. think.</p>
+<p>Here, only the <strong>installation</strong> and the actual <strong>using the GCN layer</strong> are introduced. Please refer to <a href="https://github.com/omiita/PyTorchGeometric-Tutorial/blob/master/PyTorch_Geometric_Tutorial.ipynb">Notebook</a> on Github for more detailed data preparation.</p>
+<h3 id="21-installing-pyg">2.1 Installing PyG</h3>
+<p>Make sure your pytorch version is 1.2.0 or higher. If pytorch is not included</p>
+<pre><code class="language-shell$" data-lang="shell$"></code></pre><p>Let&rsquo;s install it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ python -c <span style="color:#e6db74">&#34;import torch; print(torch.__version__)&#34;</span>
+&gt;&gt;&gt; 1.2.0
+</code></pre></div><p>Next, let&rsquo;s install PyTorch Geometric.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ pip install --verbose --no-cache-dir torch-scatter
+$ pip install --verbose --no-cache-dir torch-sparse
+$ pip install --verbose --no-cache-dir torch-cluster
+$ pip install --verbose --no-cache-dir torch-spline-conv <span style="color:#f92672">(</span>optional<span style="color:#f92672">)</span>
+$ pip install torch-geometric
+</code></pre></div><h3 id="22-graph-data">2.2 Graph data</h3>
+<p>Since PyG has a benchmark-like dataset, this time, please refer to <a href="https://relational.fit.cvut.cz/dataset/CORA">Cora dataset</a>**whichshowsthecitednetworkofthepaper.use.Coraincludes2708papers,eachofwhichisdividedinto7classes.Usingthisdataset,<strong>Predictthecategoryofeachnode(paper)</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> torch_geometric.datasets <span style="color:#f92672">import</span> Planetoid
+dataset <span style="color:#f92672">=</span> Planetoid(root<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/tmp/Cora&#39;</span>, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Cora&#39;</span>)
+</code></pre></div><h3 id="23-try-using-the-gcn-layer">2.3 Try using the GCN layer.</h3>
+<p>It&rsquo;s basically the same notation as PyTorch, so if you&rsquo;ve used PyTorch before, you may not have any problems. If you do not know PyTorch, <a href="https://pytorch.org/tutorials/beginner/blitz/tensor_tutorial.html#sphx-glr-beginner-blitz-tensor-tutorial-py">official tutorial (English)</a> is easy to understand.</p>
+<p>Write the NN structure and the forward method in the Net class. Simply call <code>GCNConv</code> in it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">import</span> torch.nn.functional <span style="color:#f92672">as</span> F
+<span style="color:#f92672">from</span> torch_geometric.nn <span style="color:#f92672">import</span> GCNConv
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Net</span>(torch<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self):
+        super(Net, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>conv1 <span style="color:#f92672">=</span> GCNConv(dataset<span style="color:#f92672">.</span>num_node_features, <span style="color:#ae81ff">16</span>)
+        self<span style="color:#f92672">.</span>conv2 <span style="color:#f92672">=</span> GCNConv(<span style="color:#ae81ff">16</span>, dataset<span style="color:#f92672">.</span>num_classes)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, data):
+        x, edge_index <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>x, data<span style="color:#f92672">.</span>edge_index
+
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv1(x, edge_index)
+        x <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>relu(x)
+        x <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>dropout(x, training<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>training)
+        x <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>conv2(x, edge_index)
+
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>log_softmax(x, dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><h3 id="24-learning-gcn">2.4 Learning GCN</h3>
+<p>Learning is the same as PyTorch, but I will touch it carefully just in case.
+The procedure for learning is to repeat the following 5 times only epoch times.</p>
+<ol>
+<li>Gradient initialization of <a href="https://qiita.com/omiita/items/1735c1d048fe5f611f80">optimizer</a></li>
+<li>Get the predicted value from the model</li>
+<li>Take a loss with the predicted value and the correct value</li>
+<li>Loss pack prop</li>
+<li>Parameter update by <a href="https://qiita.com/omiita/items/1735c1d048fe5f611f80">optimizer</a></li>
+</ol>
+<p>That is,</p>
+<ol>
+<li><strong>Slope initialization</strong></li>
+<li><strong>Predicted value</strong></li>
+<li><strong>Loss</strong></li>
+<li><strong>Backprop</strong></li>
+<li><strong>Update</strong></li>
+</ol>
+<p>So if you write it in code,
+1.` ``optimizer.zero_grad()<code>2. </code>output=model(input)<code>3. </code>loss=Loss(output, target)<code>4. </code>loss.backward()<code>5. </code>optimizer.step()```</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">device <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>device(<span style="color:#e6db74">&#39;cuda&#39;</span> <span style="color:#66d9ef">if</span> torch<span style="color:#f92672">.</span>cuda<span style="color:#f92672">.</span>is_available() <span style="color:#66d9ef">else</span><span style="color:#e6db74">&#39;cpu&#39;</span>)
+model <span style="color:#f92672">=</span> Net()<span style="color:#f92672">.</span>to(device)
+data <span style="color:#f92672">=</span> dataset[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>to(device)
+optimizer <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>optim<span style="color:#f92672">.</span>Adam(model<span style="color:#f92672">.</span>parameters(), lr<span style="color:#f92672">=</span><span style="color:#ae81ff">0.01</span>, weight_decay<span style="color:#f92672">=</span><span style="color:#ae81ff">5e-4</span>)
+
+model<span style="color:#f92672">.</span>train() <span style="color:#75715e"># Put the model in training mode.</span>
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">200</span>):
+    optimizer<span style="color:#f92672">.</span>zero_grad()
+    out <span style="color:#f92672">=</span> model(data)
+    loss <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>nll_loss(out[data<span style="color:#f92672">.</span>train_mask], data<span style="color:#f92672">.</span>y[data<span style="color:#f92672">.</span>train_mask])
+    loss<span style="color:#f92672">.</span>backward()
+    optimizer<span style="color:#f92672">.</span>step()
+</code></pre></div><p>This completes the learning.</p>
+<h3 id="25-evaluation">2.5 Evaluation</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">model<span style="color:#f92672">.</span>eval() <span style="color:#75715e"># Put the model in evaluation mode.</span>
+_, pred <span style="color:#f92672">=</span> model(data)<span style="color:#f92672">.</span>max(dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+correct <span style="color:#f92672">=</span> float(pred[data<span style="color:#f92672">.</span>test_mask]<span style="color:#f92672">.</span>eq(data<span style="color:#f92672">.</span>y[data<span style="color:#f92672">.</span>test_mask])<span style="color:#f92672">.</span>sum()<span style="color:#f92672">.</span>item())
+acc <span style="color:#f92672">=</span> correct <span style="color:#f92672">/</span> data<span style="color:#f92672">.</span>test_mask<span style="color:#f92672">.</span>sum()<span style="color:#f92672">.</span>item()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Acc: {:.4f}&#39;</span> <span style="color:#f92672">.</span>format(acc))
+
+<span style="color:#f92672">&gt;&gt;&gt;</span> Accuracy: <span style="color:#ae81ff">0.8150</span>
+</code></pre></div><p>With this, the evaluation was completed.
+It can be seen that even in such a simple network, the node class can be guessed well.</p>
+<p>Please refer to <a href="https://github.com/omiita/PyTorchGeometric-Tutorial/blob/master/PyTorch_Geometric_Tutorial.ipynb">Notebook</a> for more detailed explanation.</p>
+<p>By the way, when the nodes of the Cora dataset are vectorized using the two-layer GCN and visualized with t-SNE, it becomes as shown in the figure below, and it can be seen that <strong>data of the same class is firmly gathered</strong>. Colors represent each class.</p>
+<p><img src="https://imgur.com/EDFutRS.png" alt="Visualization of Cora by GCN"></p>
+<blockquote>
+<p>Kipf, T. et al. &ldquo;Semi-Supervised Classification with Graph Convolutional Networks&rdquo; (2017)</p>
+</blockquote>
+<h2 id="3-summary-and-impressions">3. Summary and impressions</h2>
+<p>I gave a brief explanation of GCN and a simple usage of PyTorch Geometric.
+I would like to continue to pay attention to GCN, which has more potential.</p>
+<p>**If you think that you have learned something even if you read it, it would be a great encouragement for me to get likes and comments. Thank you! **</p>
+<h2 id="4-reference">4. Reference</h2>
+<ul>
+<li>
+<p><a href="https://arxiv.org/pdf/1609.02907.pdf">Kipf, T. et al. &ldquo;Semi-Supervised Classification with Graph Convolutional Networks&rdquo; (2017)</a>
+(Papers) Prototypes of GCN, which are widely used today.</p>
+</li>
+<li>
+<p><a href="https://pytorch-geometric.readthedocs.io/en/latest/index.html">PyTorch Geometric Documentation</a>
+(English) PyTorch Geometric official documentation</p>
+</li>
+<li>
+<p><a href="http://tkipf.github.io/graph-convolutional-networks/">GRAPH CONVOLUTIONAL NETWORKS</a>
+(English) GCN creator&rsquo;s blog post. It&rsquo;s incredibly helpful.</p>
+</li>
+<li>
+<p><a href="https://products.sint.co.jp/aisia/blog/vol1-20">Semi-Supervised Learning (Vol.20)</a>
+He has a simple summary of semi-supervised learning.</p>
+</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

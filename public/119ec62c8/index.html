@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [AWS SAM] Create API with DynamoDB&#43;Lambda&#43;API Gateway | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [AWS SAM] Create API with DynamoDB+Lambda+API Gateway</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws">AWS</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/dynamodb">DynamoDB</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lambda">lambda</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/aws-sam-cli">aws-sam-cli</a></code></small>
+
+</p>
+<pre><code># Content
+</code></pre>
+<p>Build an API that fetches DynamoDB data with AWS SAM</p>
+<p>In short, from a table like this&hellip;</p>
+<table>
+<thead>
+<tr>
+<th>group(Hash)</th>
+<th>name(Range)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>group1</td>
+<td>name1</td>
+</tr>
+<tr>
+<td>group1</td>
+<td>name2</td>
+</tr>
+<tr>
+<td>group2</td>
+<td>name3</td>
+</tr>
+</tbody>
+</table>
+<p>I want to make it look like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">curl https://hogehoge/Prod/dynamo-api/v1/?group<span style="color:#f92672">=</span>group1&amp;name<span style="color:#f92672">=</span>name1
+
+<span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;result&#34;</span>: <span style="color:#f92672">[</span>
+        <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;group1&#34;</span>,
+            <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;name1&#34;</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">]</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>#Environment</p>
+<ul>
+<li>macOS Mojave -10.14</li>
+<li>python3.7.4</li>
+<li>sam 0.38.0</li>
+</ul>
+<h1 id="table-of-contents">table of contents</h1>
+<ol>
+<li>Application environment construction</li>
+<li>Write template.yaml</li>
+<li>Write the execution script</li>
+<li>Deploy</li>
+<li>Verification</li>
+</ol>
+<h1 id="1-application-environment-construction">1. Application environment construction</h1>
+<p>Please refer to the previous <a href="https://qiita.com/al_tarte/items/f43b7cfa70e46e414571">[AWS SAM] Python version introduction</a> for building.
+(This is the procedure for initializing the AWS SAM application using Pipenv.)</p>
+<h1 id="2-write-templateyaml">2. Write template.yaml</h1>
+<h3 id="resources">Resources</h3>
+<p>The resources created this time are as follows</p>
+<ul>
+<li>Table (DynamoDB)</li>
+<li>Role (IAM) for Lambda</li>
+<li>Lambda</li>
+</ul>
+<h3 id="resource-definition">Resource definition</h3>
+<p>Now, let&rsquo;s write template.yaml that creates the above resource.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-template.yaml" data-lang="template.yaml"><span style="color:#66d9ef">AWSTemplateFormatVersion</span>: <span style="color:#e6db74">&#39;2010-09-09&#39;</span>
+<span style="color:#66d9ef">Transform</span>: AWS::Serverless<span style="color:#ae81ff">-2016-10-31</span>
+Description:<span style="color:#e6db74">&gt;
+</span><span style="color:#e6db74">  dynamo-api</span>
+
+  Sample SAM Template for dynamo-api
+
+<span style="color:#75715e"># Lambda timeout settings</span>
+<span style="color:#66d9ef">Globals</span>:
+  <span style="color:#66d9ef">Function</span>:
+    <span style="color:#66d9ef">Timeout</span>: <span style="color:#ae81ff">60</span>
+
+<span style="color:#75715e">#Define table name, function name, etc.</span>
+<span style="color:#66d9ef">Parameters</span>:
+  <span style="color:#66d9ef">DynamoAPIFunctionName</span>:
+    <span style="color:#66d9ef">Type</span>: String
+    <span style="color:#66d9ef">Default</span>: dynamo-api
+  <span style="color:#66d9ef">DynamoTableName</span>:
+    <span style="color:#66d9ef">Type</span>: String
+    <span style="color:#66d9ef">Default</span>: DynamoApiTable
+
+<span style="color:#75715e"># Resource definition</span>
+Resources
+  <span style="color:#66d9ef">DynamoTable</span>:
+    <span style="color:#66d9ef">Type</span>: AWS::DynamoDB::Table
+    <span style="color:#66d9ef">Properties</span>:
+      <span style="color:#66d9ef">TableName</span>: !Ref DynamoTableName
+      <span style="color:#75715e"># Hash key and Range key definition (column name and type)</span>
+      <span style="color:#66d9ef">AttributeDefinitions</span>:
+        <span style="color:#66d9ef">-AttributeName</span>: group
+          <span style="color:#66d9ef">AttributeType</span>: S
+        <span style="color:#66d9ef">-AttributeName</span>: name
+          <span style="color:#66d9ef">AttributeType</span>: S
+      <span style="color:#66d9ef">KeySchema</span>:
+        <span style="color:#66d9ef">-AttributeName</span>: group
+          <span style="color:#66d9ef">KeyType</span>: HASH
+        <span style="color:#66d9ef">-AttributeName</span>: name
+          <span style="color:#66d9ef">KeyType</span>: RANGE
+      <span style="color:#75715e">#Specify charge mode (PAY_PER_REQUEST is pay as you go)</span>
+      <span style="color:#66d9ef">BillingMode</span>: PAY_PER_REQUEST
+
+  <span style="color:#66d9ef">DynamoAPIFunctionRole</span>:
+    <span style="color:#66d9ef">Type</span>: AWS::IAM::Role
+    <span style="color:#66d9ef">Properties</span>:
+      <span style="color:#66d9ef">AssumeRolePolicyDocument</span>:
+        <span style="color:#66d9ef">Version</span>: <span style="color:#e6db74">&#39;2012-10-17&#39;</span>
+        <span style="color:#66d9ef">Statement</span>:
+          <span style="color:#66d9ef">-Effect</span>: Allow
+            <span style="color:#66d9ef">Principal</span>:
+              <span style="color:#66d9ef">Service</span>:
+                -<span style="color:#e6db74">&#39;lambda.amazonaws.com&#39;</span>
+            <span style="color:#66d9ef">Action</span>:
+              -<span style="color:#e6db74">&#39;sts:AssumeRole&#39;</span>
+      <span style="color:#66d9ef">ManagedPolicyArns</span>:
+        -<span style="color:#e6db74">&#39;arn:aws:iam::aws:policy/CloudWatchLogsFullAccess&#39;</span>
+      <span style="color:#75715e"># Permission to read the DynamoDB table (This way, you can only allow reading of the table created this time)</span>
+      <span style="color:#66d9ef">Policies</span>:
+        -PolicyName:<span style="color:#e6db74">&#39;DynamoApiTablePolicy&#39;</span>
+          <span style="color:#66d9ef">PolicyDocument</span>:
+            <span style="color:#66d9ef">Version</span>: <span style="color:#e6db74">&#39;2012-10-17&#39;</span>
+            <span style="color:#66d9ef">Statement</span>:
+              <span style="color:#66d9ef">-Effect</span>: Allow
+                <span style="color:#66d9ef">Action</span>:
+                  -dynamodb:Get*
+                  -dynamodb:Query
+                <span style="color:#66d9ef">Resource</span>: !GetAtt DynamoTable.Arn
+
+  <span style="color:#66d9ef">DynamoAPIFunction</span>:
+    <span style="color:#66d9ef">Type</span>: AWS::Serverless::Function
+    <span style="color:#66d9ef">Properties</span>:
+      <span style="color:#66d9ef">FunctionName</span>: !Ref DynamoAPIFunctionName
+      <span style="color:#66d9ef">Role</span>: !GetAtt DynamoAPIFunctionRole.Arn
+      The directory path where <span style="color:#75715e">#app.py is located</span>
+      <span style="color:#66d9ef">CodeUri</span>: dynamo-api/
+      <span style="color:#75715e"># Handler path (it&#39;s easy to make mistakes if you change it too much, it&#39;s good to leave it alone)</span>
+      <span style="color:#66d9ef">Handler</span>: app.lambda_handler
+      <span style="color:#66d9ef">Runtime</span>: python3<span style="color:#ae81ff">.7</span>
+      <span style="color:#75715e"># API Gateway settings (SAM unique description)</span>
+      <span style="color:#66d9ef">Events</span>:
+        <span style="color:#66d9ef">DynamoApi</span>:
+          <span style="color:#66d9ef">Type</span>: Api
+          <span style="color:#66d9ef">Properties</span>:
+            <span style="color:#66d9ef">Path</span>: /dynamo-api/v1/
+            <span style="color:#66d9ef">Method</span>: get
+
+The parameter specified in <span style="color:#75715e"># Outputs has an original function of passing data to another template.</span>
+<span style="color:#75715e">#This time it is used to output the API endpoint when the deployment is completed.</span>
+<span style="color:#66d9ef">Outputs</span>:
+  <span style="color:#66d9ef">DynamoApi</span>:
+    <span style="color:#66d9ef">Description</span>: <span style="color:#e6db74">&#34;API Gateway endpoint URL for Prod stage for Dynamo API function&#34;</span>
+    <span style="color:#66d9ef">Value</span>: !Sub <span style="color:#e6db74">&#34;https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/dynamo-api/v1/&#34;</span>
+
+</code></pre></div><p>Lambda and API Gateway settings are almost the same as the template, so you can write them easily.</p>
+<h1 id="3-write-the-execution-script">3. Write the execution script</h1>
+<h3 id="library-installation">Library installation</h3>
+<p>First, install the required libraries.</p>
+<pre><code>$ pipenv install requests boto3
+</code></pre><h3 id="write-api-processing">Write API processing</h3>
+<p>Next, we will create the process that actually fetches data from the Dynamo table.
+Search the Dynamo table with the <code>group</code> and <code>name</code> specified in the GET parameter and return its value
+That is a simple mechanism.
+I tried to enable <code>name</code> to be forward one.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-app.py" data-lang="app.py"><span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> json
+<span style="color:#f92672">import</span> boto3
+<span style="color:#f92672">from</span> boto3.dynamodb.conditions <span style="color:#f92672">import</span> Key
+<span style="color:#f92672">from</span> http <span style="color:#f92672">import</span> HTTPStatus <span style="color:#66d9ef">as</span> status
+
+
+DYNAMODB_TABLE_NAME <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;DynamoApiTable&#39;</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lambda_handler</span>(event, context):
+
+    table <span style="color:#f92672">=</span> boto3<span style="color:#f92672">.</span>resource(<span style="color:#e6db74">&#39;dynamodb&#39;</span>)<span style="color:#f92672">.</span>Table(DYNAMODB_TABLE_NAME)
+
+    params <span style="color:#f92672">=</span> event<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;queryStringParameters&#39;</span>)
+
+    results <span style="color:#f92672">=</span> dynamo_search(table, params)
+
+    <span style="color:#66d9ef">if</span> results <span style="color:#f92672">is</span> None:
+        <span style="color:#66d9ef">return</span> {
+            <span style="color:#e6db74">&#34;statusCode&#34;</span>: status<span style="color:#f92672">.</span>BAD_REQUEST,
+            <span style="color:#e6db74">&#34;body&#34;</span>: json<span style="color:#f92672">.</span>dumps({
+                <span style="color:#e6db74">&#34;error&#34;</span>: <span style="color:#e6db74">&#34;Bad Request&#34;</span>
+            }, ensure_ascii<span style="color:#f92672">=</span>False),
+        }
+
+    <span style="color:#66d9ef">return</span> {
+        <span style="color:#e6db74">&#34;statusCode&#34;</span>: status<span style="color:#f92672">.</span>OK,
+        <span style="color:#e6db74">&#34;body&#34;</span>: json<span style="color:#f92672">.</span>dumps({
+            <span style="color:#e6db74">&#34;results&#34;</span>: results
+        }, ensure_ascii<span style="color:#f92672">=</span>False),
+    }
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dynamo_search</span>(table, params):
+    <span style="color:#66d9ef">if</span> params<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;group&#39;</span>):
+        keyConditionExpression <span style="color:#f92672">=</span> Key(<span style="color:#e6db74">&#39;group&#39;</span>)<span style="color:#f92672">.</span>eq(params<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;group&#39;</span>))
+        <span style="color:#66d9ef">if</span> params<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;name&#39;</span>):
+            keyConditionExpression <span style="color:#f92672">&amp;=</span> Key(<span style="color:#e6db74">&#39;name&#39;</span>)<span style="color:#f92672">.</span>begins_with(params<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;name&#39;</span>))
+        <span style="color:#66d9ef">return</span> table<span style="color:#f92672">.</span>query(
+            KeyConditionExpression<span style="color:#f92672">=</span>keyConditionExpression)<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#39;Items&#39;</span>, [])
+
+    <span style="color:#66d9ef">return</span> None
+
+</code></pre></div><h1 id="4-deploy">4. Deploy</h1>
+<h3 id="aside-pipfile-to-requirementstxt">(Aside) Pipfile to requirements.txt</h3>
+<p>I want to convert from <code>Pipfile</code> to <code>requirements.txt</code>&hellip;
+In such a case, you can convert with this command.
+(Boto3 is also included in Lambda from the beginning, and it may not be used very much&hellip; :thinking:)</p>
+<pre><code>$ pipenv lock -r&gt; requirements.txt
+</code></pre><p>This time, the default <code>requirements.txt</code> can be left as is: sweat_smile:</p>
+<h3 id="build">build</h3>
+<pre><code>$ sam build
+</code></pre><pre><code>Building resource'DynamoAPIFunction'Running PythonPipBuilder:ResolveDependencies
+Running PythonPipBuilder:CopySource
+
+Build Succeeded
+
+Built Artifacts: .aws-sam/build
+Built Template: .aws-sam/build/template.yaml
+
+Commands you can use next
+=========================
+[*] Invoke Function: sam local invoke
+[*] Deploy: sam deploy --guided
+</code></pre><h3 id="deploy">Deploy</h3>
+<p>If you have separate settings in <code>~/.aws/credentials</code>, add the &ndash;profile option.
+The <code>--guided</code> option is OK only the first time. (Because the settings are saved in <code>samconfig.toml</code>)</p>
+<pre><code>$ sam deploy --guided
+</code></pre><pre><code>Stack dynamo-api-stack outputs:
+- ------------------------------------------------- -------------------------------------------------- -------------------------------------------------- -------------------------------------------------- ---
+OutputKey-Description OutputValue
+- ------------------------------------------------- -------------------------------------------------- -------------------------------------------------- -------------------------------------------------- ---
+DynamoApi-API Gateway endpoint URL for Prod stage for Dynamo API function https://hogehoge/Prod/dynamo-api/v1/
+- ------------------------------------------------- -------------------------------------------------- -------------------------------------------------- -------------------------------------------------- ---
+</code></pre><p>The endpoint is also output properly~</p>
+<h1 id="5-verification">5. Verification</h1>
+<h3 id="register-data-to-dynamo">Register data to Dynamo</h3>
+<p>This time (also) I registered the recommended group name and name.</p>
+<table>
+<thead>
+<tr>
+<th>group(Hash)</th>
+<th>name(Range)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Honey Strap</td>
+<td>Suo Patra</td>
+</tr>
+<tr>
+<td>Honey Straps</td>
+<td>Miko Yashiro</td>
+</tr>
+<tr>
+<td>Holo Live</td>
+<td>Shirakami Fubuki</td>
+</tr>
+<tr>
+<td>&hellip;</td>
+<td>&hellip;</td>
+</tr>
+</tbody>
+</table>
+<h3 id="try-hitting-the-api">Try hitting the API</h3>
+<p>Let&rsquo;s send a request to the output endpoint. It&rsquo;s hard to see, so let&rsquo;s format it with <code>jq</code>.
+(Because <code>curl</code> is a hassle, people use the browser:</p>
+<p>First, specify the <code>group</code> (Hash key).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl https://hogehoge/Prod/dynamo-api/v1/ <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>- -get <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>- -data-urlencode<span style="color:#e6db74">&#39;group=honeystrap&#39;</span> | jq
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">
+<span style="color:#f92672">{</span>
+  <span style="color:#e6db74">&#34;results&#34;</span>: <span style="color:#f92672">[</span>
+    <span style="color:#f92672">{</span>
+      <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Suo Patra&#34;</span>,
+      <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;Honey strap&#34;</span>
+    <span style="color:#f92672">}</span>,
+    <span style="color:#f92672">{</span>
+      <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Yashiro Miko&#34;</span>,
+      <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;Honey strap&#34;</span>
+    <span style="color:#f92672">}</span>,
+    <span style="color:#f92672">{</span>
+      <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Shimamura Charlotte&#34;</span>,
+      <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;Honey strap&#34;</span>
+    <span style="color:#f92672">}</span>,
+    <span style="color:#f92672">{</span>
+      <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Mary Saionji&#34;</span>,
+      <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;Honey strap&#34;</span>
+    <span style="color:#f92672">}</span>
+  <span style="color:#f92672">]</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>Got it: clap:</p>
+<p>Of course, you can also search for <code>name</code> (Range key) by prefix matching.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ curl https://hogehoge/Prod/dynamo-api/v1/ <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>- -get <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>- -data-urlencode<span style="color:#e6db74">&#39;group=honey strap&#39;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>- -data-urlencode<span style="color:#e6db74">&#39;name=Suo&#39;</span> | jq
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#f92672">{</span>
+  <span style="color:#e6db74">&#34;results&#34;</span>: <span style="color:#f92672">[</span>
+    <span style="color:#f92672">{</span>
+      <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;Suo Patra&#34;</span>,
+      <span style="color:#e6db74">&#34;group&#34;</span>: <span style="color:#e6db74">&#34;Honey strap&#34;</span>
+    <span style="color:#f92672">}</span>
+  <span style="color:#f92672">]</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>I got it! It&rsquo;s perfect!</p>
+<h1 id="at-the-end">At the end</h1>
+<p>This time, I made a simple API. Next time I&rsquo;ll try a test with <code>pytest</code>.
+Thank you for reading until the end!</p>
+<h3 id="last-time">last time</h3>
+<p><a href="https://qiita.com/al_tarte/items/f43b7cfa70e46e414571">[AWS SAM] Python version introduction</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Handle various date formats with pandas | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Handle various date formats with pandas</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 28, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pandas"> pandas</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/new-programmer-support"> new programmer support</a></code></small>
+
+</p>
+<pre><code>Since it is during the new life support period, I would like to take up how to use &quot;pandas&quot;, especially the date format. There is a reputation that &quot;Python is strong in data analysis&quot;, but this is realized by the following &quot;standard&quot; packages.
+</code></pre>
+<blockquote>
+<p>-&ldquo;pandas&rdquo; for representing and analyzing data
+-&ldquo;NumPy&rdquo; for basic numeriacal computation
+-&ldquo;SciPy&rdquo; for scientific computation including statistics
+-&ldquo;StatsModels&rdquo; for regression and other statistical analysis
+-&ldquo;matplotlib&rdquo; for visualization
+(The above is quoted from &ldquo;Think Stats&rdquo;.)</p>
+</blockquote>
+<p>pandas is a package for operating Series objects (one-dimensional data structure) and DataFrame objects (two-dimensional data structure), and originally supports the functions necessary to handle economic data such as stock prices. It can be said that it is a strong library for so-called time series data.</p>
+<p>However, looking at the time series data that are actually available, there are cases where the date column contains &ldquo;2016-03-28&rdquo; in a standard format, but in some cases &ldquo;28-Mar-16&rdquo; In some cases, such as is difficult to handle. In this article, I would like to confirm how to deal with various dates.</p>
+<p>(The programming environment is Python 2.7.11 + Jupyter + IPython kernel and Python 3.5.1 + Jupyter + IPython kernel, pandas 0.18.0.)</p>
+<h2 id="convert-dates-when-entering-data-as-much-as-possible">Convert dates when entering data as much as possible</h2>
+<p>Here, it is assumed that the time series data will be read as a CSV (comma separated values) file. When analyzing time series data, I think that time and date will be used as indexes of the data structure. In pandas, read_csv() is used as follows.</p>
+<p>If you want to input the following CSV file,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Date,Open,High,Low,Close
+2014/12/31,17702.11914,17713.75977,17450.76953,17450.76953
+2014/12/30,17702.11914,17713.75977,17450.76953,17450.76953
+2014/12/29,17914.55078,17914.55078,17525.66016,17729.83984
+2014/12/26,17778.91016,17843.73047,17769.00977,17818.96094
+ ...
+(Omitted)
+</code></pre></div><p>If you use the following code,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df1 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./pandas_date_ex/example1.csv&#39;</span>, index_col<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Date&#39;</span>, parse_dates<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Date&#39;</span>)
+df1<span style="color:#f92672">.</span>head() <span style="color:#75715e"># for check</span>
+</code></pre></div><p>The contents input to df1 are as follows.
+<img src="https://qiita-image-store.s3.amazonaws.com/0/74152/5a9345a5-1d9e-ee7f-8f8f-84afd659e41d.png" alt="pandas_date_index1.PNG"></p>
+<p>The point to be confirmed here is that the leftmost &ldquo;Date&rdquo; must be of the Timestamp type for treating Date as a numeric value, not of the character string type. (I don&rsquo;t want to use the &ldquo;character string&rdquo; index when performing interpolation or regression analysis in the flow of analysis work.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">&gt;&gt;&gt;</span> type(df1<span style="color:#f92672">.</span>index[<span style="color:#ae81ff">0</span>])
+pandas<span style="color:#f92672">.</span>tslib<span style="color:#f92672">.</span>Timestamp
+</code></pre></div><p>As you can see, the date is properly converted to Pandas.Timestamp type. This is because the following options specified by read_csv() worked correctly.</p>
+<ul>
+<li>index_col='Date&rsquo;: Let&rsquo;Date&rsquo; column be the index of DataFrame.</li>
+<li>parse_dates='Date&rsquo;: scan&rsquo;Date&rsquo; column and convert to Datetime.</li>
+</ul>
+<p>As above, the standard date data format (ex. &lsquo;2014-12-31&rsquo;) worked well.</p>
+<h2 id="a-little-difficult-date-format-situation">A little difficult date format situation</h2>
+<p>Next, handle the following &ldquo;example2.csv&rdquo;. First, to check the contents, input a file without adding options.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df20 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./pandas_date_ex/example2.csv&#39;</span>)
+df20<span style="color:#f92672">.</span>head()
+
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/74152/8f007ded-585b-1b0e-e36c-eb244527f9f8.png" alt="pandas_date_index2.PNG"></p>
+<p>At this point,&lsquo;Date&rsquo; is not indexed and the variable type is still string (str). As you can see, this time it is a little difficult to decipher like &lsquo;15-Mar-16&rsquo;. There are various date formats in the world including this example, so it seems that it is necessary to consider the correspondence.</p>
+<h4 id="various-cases-of-date-notation">Various cases of date notation</h4>
+<ul>
+<li>Case where the order of year, month and day changes.</li>
+<li>When the month and day are 1-digit numbers, they are padded with zeros to 2 digits, or displayed as 1 digit.</li>
+<li>Year display is 4 digits or last 2 digits.</li>
+<li>Case where the month is represented by numbers and alphabets (3 letters abbreviation)</li>
+</ul>
+<p>Now, try the method used in &ldquo;example1.csv&rdquo; for &ldquo;example2.csv&rdquo;. The options are changed a little, but this is just the specification of the column from the column name (&lsquo;Date&rsquo;) to the column number (=0).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df2 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./pandas_date_ex/example2.csv&#39;</span>, index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, parse_dates<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+df2<span style="color:#f92672">.</span>head()
+
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/74152/0f840613-b167-b5d6-7092-c92ce2601fb1.png" alt="pandas_date_index3.PNG"></p>
+<p>I thought it was difficult to interpret the date, but it worked unexpectedly. The date parser used by pandas.read_csv() looks pretty good.</p>
+<p>Actually, I prepared the following code in anticipation that the date conversion would not work. (&hellip; Created by referring to the Q&amp;A site / stackoverflow.)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">f2 <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">-%b-%y&#39;</span>
+my_parser <span style="color:#f92672">=</span> <span style="color:#66d9ef">lambda</span> date: pd<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>strptime(date, f2)
+df21 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;example2.csv&#39;</span>, index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, parse_dates<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>,
+                    date_parser<span style="color:#f92672">=</span>my_parser)
+</code></pre></div><p>The method is to prepare your own parser and use it with read_csv(). But this time there was no place for this code, as it worked well with the above method.</p>
+<h2 id="what-is-the-date-format-including-japanese">What is the date format including Japanese?</h2>
+<p>I don&rsquo;t think there are many, but I would like to investigate date formats including Japanese. Try the same method as before.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df31 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./pandas_date_ex/example3.csv&#39;</span>, index_col<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Date&#39;</span>, parse_dates<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Date&#39;</span>)
+df31<span style="color:#f92672">.</span>head()
+
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/74152/9bf305ec-929f-9a26-c163-5e8d34a54f2b.png" alt="pandas_date_index4.PNG"></p>
+<p>It seems that it has been indexed, but Japanese is included in the Date column.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">&gt;&gt;&gt;</span> type(df31<span style="color:#f92672">.</span>index[<span style="color:#ae81ff">0</span>])
+str
+</code></pre></div><p>Again, the&rsquo;Date&rsquo; column remained a string type. In other words, the parse_dates option specified by read_csv() is not working. (It does not seem to be a specification that interrupts work by generating an exception.)</p>
+<p>In this case, you still need your own parser.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">f3 <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;%Y years %m months </span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> days&#39;</span>
+my_parser <span style="color:#f92672">=</span> <span style="color:#66d9ef">lambda</span> date: pd<span style="color:#f92672">.</span>datetime<span style="color:#f92672">.</span>strptime(date, f3)
+df3 <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(<span style="color:#e6db74">&#39;./pandas_date_ex/example3.csv&#39;</span>, index_col<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, parse_dates<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>,
+                    date_parser<span style="color:#f92672">=</span>my_parser)
+df3<span style="color:#f92672">.</span>head()
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/74152/27c13da6-36a8-c024-74fd-cc34a9f3d8b7.png" alt="pandas_date_index5.PNG"></p>
+<p>It went well. Finally, let&rsquo;s plot (part of) this data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">df3[[<span style="color:#e6db74">&#39;High&#39;</span>,<span style="color:#e6db74">&#39;Low&#39;</span>]]<span style="color:#f92672">.</span>plot(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">4</span>), grid<span style="color:#f92672">=</span>True)
+
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/74152/cf49f792-72d5-2ba5-76d8-f138d81b1ba1.png" alt="pandas_date_index6.png"></p>
+<p>It doesn&rsquo;t seem to matter. (The plot function of pandas is a wrapper of the matplotlib library, so it looks like the above figure.)</p>
+<p>As mentioned above, the date parser in pandas&rsquo; read_csv() seems to be able to support a fairly wide range. Also, we found that special cases such as &ldquo;year&rdquo; and &ldquo;month&rdquo; such as dates containing Japanese can be handled by preparing your own parser. (As an application, it should be possible to write a parser to convert the year with the Japanese era to the Christian era.)</p>
+<p>In addition, it is necessary to specify the read format in the own parser, which is in compliance with the C language strftime() specifications.
+(Reference: <a href="https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior">https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior</a> ).</p>
+<p>For details, see the document, and I will extract the date formats that are likely to be used frequently. (The role of directives changes depending on the case.)</p>
+<table>
+<thead>
+<tr>
+<th align="center">Directive</th>
+<th align="left">Meaning</th>
+<th align="left">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">%d</td>
+<td align="left">Day of the month as a decimal number with zero padding.</td>
+<td align="left">01, 02, &hellip;, 31</td>
+</tr>
+<tr>
+<td align="center">%B</td>
+<td align="left">Displays the month name of the locale.</td>
+<td align="left">January, February, &hellip;,</td>
+</tr>
+<tr>
+<td align="center">%m</td>
+<td align="left">Month as a zero-padded decimal number.</td>
+<td align="left">01, 02, &hellip;, 12</td>
+</tr>
+<tr>
+<td align="center">%y</td>
+<td align="left">Year with century (two digits) expressed as a zero-padded decimal number.</td>
+<td align="left">00, 01, &hellip;, 99</td>
+</tr>
+<tr>
+<td align="center">%Y</td>
+<td align="left">Represents the year (4 digits) in decimal notation.</td>
+<td align="left">2011, 2012, 2013, &hellip;</td>
+</tr>
+</tbody>
+</table>
+<p>I went into a little detail, but pandas is very versatile and is used not only for time series data but also in various places. First, I think that the work flow of preprocessing data using pandas and inputting the formatted data to machine learning or Deep Learning framework is also often done.</p>
+<h3 id="comments-on-understanding-date-related-classes">(Comments on understanding date-related classes)</h3>
+<p>Among the date related classes handled in Python, the following are the most frequently encountered.</p>
+<ul>
+<li>datetime.datetime class</li>
+<li>numpy.datetime64 class</li>
+<li>pandas.Timestamp class</li>
+</ul>
+<p>With my poor understanding, I wrote this article assuming that the actual situation of these three classes (especially datetime.datetime and pandas.Timestamp) is almost the same. But if you think closely, they may not be the same. (I don&rsquo;t think it affects the code in the article, but I would like to correct the article if there is a mistake or an inaccurate description. If you have any suggestions, please do.)</p>
+<h2 id="references-website">References (website)</h2>
+<ul>
+<li>Think Stats 2nd Edition-O&rsquo;reilly Media</li>
+<li>Python for Data Analysis-O&rsquo;reilly Media</li>
+<li>pandas documentation (0.18.0)
+<a href="http://pandas.pydata.org/pandas-docs/stable/">http://pandas.pydata.org/pandas-docs/stable/</a></li>
+<li>Python 3 documentation-8.1 datetime
+<a href="https://docs.python.org/3/library/datetime.html">https://docs.python.org/3/library/datetime.html</a></li>
+<li>Can pandas automatically recognize dates?&ndash; stackoverflow
+<a href="http://stackoverflow.com/questions/17465045/can-pandas-automatically-recognize-dates">http://stackoverflow.com/questions/17465045/can-pandas-automatically-recognize-dates</a></li>
+<li>Converting between datetime, Timestamp and datetime64-stackoverflow
+<a href="http://stackoverflow.com/questions/13703720/converting-between-datetime-timestamp-and-datetime64">http://stackoverflow.com/questions/13703720/converting-between-datetime-timestamp-and-datetime64</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

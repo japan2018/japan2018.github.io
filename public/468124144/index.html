@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [Python] I made a class to play the sin wave in the background with pyaudio. | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [Python] I made a class to play the sin wave in the background with pyaudio.</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 7, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pyaudio">Pyaudio</a></code></small>
+
+</p>
+<pre><code>(Edited 20/03/07 11:52)
+</code></pre>
+<p>In response to your suggestions, we have changed the variable declaration. Besides, I changed to display the error message only once in the createData function.
+(20/03/07 18:52 edit)
+Added the close function.</p>
+<p>#Introduction
+I tried to play sine wave while executing other tasks in Python, but I couldn&rsquo;t find such a library, so I tried using threading.
+The function that returns the microphone input is also included as a bonus lol
+#Python code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:sinwave.py" data-lang="Python:sinwave.py"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> pyaudio
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> struct
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SinWave</span>():
+    <span style="color:#75715e"># settings</span>
+    INPUT <span style="color:#f92672">=</span> True
+    OUT_FORMAT <span style="color:#f92672">=</span> pyaudio<span style="color:#f92672">.</span>paInt16
+    IN_FORMAT <span style="color:#f92672">=</span> pyaudio<span style="color:#f92672">.</span>paFloat32
+    RATE <span style="color:#f92672">=</span> <span style="color:#ae81ff">44100</span>
+    CHUNK <span style="color:#f92672">=</span> <span style="color:#ae81ff">1024</span>
+
+    L <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+    R <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+    LR <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>pos <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        self<span style="color:#f92672">.</span>flagl <span style="color:#f92672">=</span> False
+        self<span style="color:#f92672">.</span>flagr <span style="color:#f92672">=</span> False
+        self<span style="color:#f92672">.</span>fvpp_list <span style="color:#f92672">=</span> [[<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">3</span>]]
+        self<span style="color:#f92672">.</span>stream_state <span style="color:#f92672">=</span> True
+
+        self<span style="color:#f92672">.</span>pa <span style="color:#f92672">=</span> pyaudio<span style="color:#f92672">.</span>PyAudio()
+        self<span style="color:#f92672">.</span>out_stream <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>pa<span style="color:#f92672">.</span>open(format<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>OUT_FORMAT,
+                                       channels<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>,
+                                       rate<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>RATE,
+                                       input<span style="color:#f92672">=</span>False,
+                                       output<span style="color:#f92672">=</span>True,
+                                       frames_per_buffer<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>CHUNK)
+        self<span style="color:#f92672">.</span>thread <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>output)
+        self<span style="color:#f92672">.</span>thread<span style="color:#f92672">.</span>start()
+
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>INPUT:
+            self<span style="color:#f92672">.</span>in_stream <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>pa<span style="color:#f92672">.</span>open(format<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>IN_FORMAT,
+                                          channels<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>,
+                                          rate<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>RATE,
+                                          input<span style="color:#f92672">=</span>True,
+                                          output<span style="color:#f92672">=</span>False,
+                                          frames_per_buffer<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>CHUNK)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">output</span>(self):
+        <span style="color:#66d9ef">while</span> self<span style="color:#f92672">.</span>stream_state:
+            data, self<span style="color:#f92672">.</span>pos <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>createData(
+                self<span style="color:#f92672">.</span>fvpp_list, start_pos<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>pos)
+            self<span style="color:#f92672">.</span>update(self<span style="color:#f92672">.</span>out_stream, data)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update</span>(self, stream, data): <span style="color:#75715e"># Playback function, with stream and waveform data as arguments</span>
+        sp <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># Play position pointer</span>
+        buffer <span style="color:#f92672">=</span> data[sp:sp <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>CHUNK <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>]
+        <span style="color:#66d9ef">while</span> buffer:
+            stream<span style="color:#f92672">.</span>write(buffer)
+            sp <span style="color:#f92672">=</span> sp <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>CHUNK <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>
+            buffer <span style="color:#f92672">=</span> data[sp:sp <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>CHUNK <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>]
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">createData</span>(self, fvpp, start_pos<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>): <span style="color:#75715e">#Oscillator</span>
+        datal <span style="color:#f92672">=</span> []
+        datar <span style="color:#f92672">=</span> []
+
+        end_pos <span style="color:#f92672">=</span> start_pos <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.05</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">44100</span>
+        <span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> np<span style="color:#f92672">.</span>arange(start_pos, end_pos):
+            sl <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span> <span style="color:#75715e"># Clear waveform data to zero</span>
+            sr <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.0</span>
+            <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> fvpp:
+                sl <span style="color:#f92672">+=</span> np<span style="color:#f92672">.</span>sin(<span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> f[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">*</span> n <span style="color:#f92672">/</span>
+                             <span style="color:#ae81ff">44100</span> <span style="color:#f92672">+</span> f[<span style="color:#ae81ff">2</span>]) <span style="color:#f92672">*</span> f[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> (f[<span style="color:#ae81ff">3</span>] <span style="color:#f92672">%</span><span style="color:#ae81ff">2</span>)
+                sr <span style="color:#f92672">+=</span> np<span style="color:#f92672">.</span>sin(<span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> f[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">*</span> n <span style="color:#f92672">/</span>
+                             <span style="color:#ae81ff">44100</span> <span style="color:#f92672">+</span> f[<span style="color:#ae81ff">2</span>]) <span style="color:#f92672">*</span> f[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">*</span> (f[<span style="color:#ae81ff">3</span>] <span style="color:#f92672">//</span> <span style="color:#ae81ff">2</span>)
+                <span style="color:#75715e"># Clipping when the amplitude is large</span>
+                <span style="color:#66d9ef">if</span> sl<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1.0</span>:
+                    sl <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>
+                    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>flagl:
+                        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;WARNING! Left Max Volume!!&#34;</span>)
+                        self<span style="color:#f92672">.</span>flagl <span style="color:#f92672">=</span> False
+                <span style="color:#66d9ef">if</span> sr<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1.0</span>:
+                    sr <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.0</span>
+                    <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>flagr:
+                        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;WARNING! Right Max Volume!!&#34;</span>)
+                        self<span style="color:#f92672">.</span>flagr <span style="color:#f92672">=</span> False
+                <span style="color:#66d9ef">if</span> sl <span style="color:#f92672">&lt;-</span><span style="color:#ae81ff">1.0</span>:
+                    sl <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1.0</span>
+                <span style="color:#66d9ef">if</span> sr <span style="color:#f92672">&lt;-</span><span style="color:#ae81ff">1.0</span>:
+                    sr <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1.0</span>
+
+            datal<span style="color:#f92672">.</span>append(sl) <span style="color:#75715e"># Append to the end</span>
+            datar<span style="color:#f92672">.</span>append(sr)
+        datal <span style="color:#f92672">=</span> [int(x <span style="color:#f92672">*</span> <span style="color:#ae81ff">32767.0</span>) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> datal] <span style="color:#75715e"># Set the value between 32767 and -32767</span>
+        datar <span style="color:#f92672">=</span> [int(x <span style="color:#f92672">*</span> <span style="color:#ae81ff">32767.0</span>) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> datar]
+        s_data <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([datal, datar])<span style="color:#f92672">.</span>T<span style="color:#f92672">.</span>flatten()
+        data <span style="color:#f92672">=</span> s_data<span style="color:#f92672">.</span>tolist()
+        <span style="color:#75715e"># Convert to binary</span>
+        data <span style="color:#f92672">=</span> struct<span style="color:#f92672">.</span>pack(<span style="color:#e6db74">&#34;h&#34;</span> <span style="color:#f92672">*</span> len(data), <span style="color:#f92672">*</span>data) <span style="color:#75715e"># Expand argument by adding * to list</span>
+
+        <span style="color:#66d9ef">return</span> data, end_pos
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">play</span>(self, freq, vol, phase, pan):
+        self<span style="color:#f92672">.</span>fvpp_list<span style="color:#f92672">.</span>append([freq, abs(vol), phase, pan])
+        self<span style="color:#f92672">.</span>flagl <span style="color:#f92672">=</span> True
+        self<span style="color:#f92672">.</span>flagr <span style="color:#f92672">=</span> True
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">stop</span>(self, freq):
+        <span style="color:#66d9ef">if</span> freq <span style="color:#f92672">in</span> [row[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> row <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>fvpp_list]:
+            <span style="color:#66d9ef">del</span> self<span style="color:#f92672">.</span>fvpp_list[[row[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> row <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>fvpp_list]<span style="color:#f92672">.</span>index(freq)]
+            <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;This frequency is not played!&#34;</span>)
+            <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">input</span>(self):
+        ret <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>in_stream<span style="color:#f92672">.</span>read(self<span style="color:#f92672">.</span>CHUNK, exception_on_overflow<span style="color:#f92672">=</span>False)
+        ret <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>fromstring(ret, np<span style="color:#f92672">.</span>float32)
+
+        <span style="color:#66d9ef">return</span> ret
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">close</span>(self):
+        <span style="color:#75715e">#Thread stop</span>
+        self<span style="color:#f92672">.</span>stream_state <span style="color:#f92672">=</span> False
+        self<span style="color:#f92672">.</span>thread<span style="color:#f92672">.</span>join()
+        end of <span style="color:#75715e"># stream</span>
+        self<span style="color:#f92672">.</span>out_stream<span style="color:#f92672">.</span>stop_stream()
+        self<span style="color:#f92672">.</span>out_stream<span style="color:#f92672">.</span>close()
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>INPUT:
+            self<span style="color:#f92672">.</span>in_stream<span style="color:#f92672">.</span>stop_stream()
+            self<span style="color:#f92672">.</span>in_stream<span style="color:#f92672">.</span>close()
+        self<span style="color:#f92672">.</span>pa<span style="color:#f92672">.</span>terminate()
+</code></pre></div><h1 id="how-to-use">How to use</h1>
+<p>Import this class from another python file in the same directory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:main.py" data-lang="Python:main.py"><span style="color:#f92672">from</span> sinwave <span style="color:#f92672">import</span> SinWave
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+sw <span style="color:#f92672">=</span> SinWave()
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:main.py" data-lang="Python:main.py"><span style="color:#75715e"># Play sound</span>
+sw<span style="color:#f92672">.</span>play (frequency, volume (<span style="color:#ae81ff">0</span> to <span style="color:#ae81ff">1</span>), phase (<span style="color:#ae81ff">0</span> to <span style="color:#ae81ff">2</span><span style="color:#960050;background-color:#1e0010">π</span>), LR specified)
+<span style="color:#75715e">#Example: 440Hz, maximum volume, phase 0, left ear only</span>
+sw<span style="color:#f92672">.</span>play(<span style="color:#ae81ff">440</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>,sw<span style="color:#f92672">.</span>L)
+<span style="color:#75715e">#Example: 880Hz, volume 80%, phase π, both ears</span>
+sw<span style="color:#f92672">.</span>play(<span style="color:#ae81ff">880</span>,<span style="color:#ae81ff">0.8</span>,np<span style="color:#f92672">.</span>pi,sw<span style="color:#f92672">.</span>LR)
+
+<span style="color:#75715e"># Stop sound</span>
+sw<span style="color:#f92672">.</span>stop (frequency)
+<span style="color:#75715e">#Example: Stop sound at 880Hz</span>
+sw<span style="color:#f92672">.</span>stop(<span style="color:#ae81ff">880</span>)<span style="color:#75715e">#return value is 0</span>
+<span style="color:#75715e">#Example: Stop 440Hz sound</span>
+sw<span style="color:#f92672">.</span>stop(<span style="color:#ae81ff">440</span>)<span style="color:#75715e">#return value is 0</span>
+</code></pre></div><p>When I try to stop the 440Hz sound that is no longer ringing with</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:main.py" data-lang="Python:main.py">sw<span style="color:#f92672">.</span>stop(<span style="color:#ae81ff">440</span>)
+</code></pre></div><p>&ldquo;This frequency is not played!&rdquo; is displayed on the command line. The return value of the function is -1.
+When exiting the program</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python:main.py" data-lang="Python:main.py">sw<span style="color:#f92672">.</span>close()
+</code></pre></div><p>Stop the thread and stream with this code.I think it&rsquo;s a beginner coding bare, but I hope it will be helpful.</p>
+<h3 id="references">References</h3>
+<p><a href="https://teratail.com/questions/111762">I want to generate and play a waveform in real time with teratail&ndash;python</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

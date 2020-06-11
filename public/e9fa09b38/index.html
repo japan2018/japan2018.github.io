@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Analyzing the amount of pollen dispersal, the vegetation of Sugi and the effect of wind from open data (Visualization) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Analyzing the amount of pollen dispersal, the vegetation of Sugi and the effect of wind from open data (Visualization)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 10, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/open-data"> open data</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/visualization"> visualization</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/weather-data"> weather data</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This is a sequel to the previous &ldquo;Visualizing the amount of pollen dispersal and the vegetation of Sugi and the effect of wind from open data (pretreatment)&rdquo;.
+The previous article is from the link below.
+<a href="https://qiita.com/TakuTaku36/items/40cb590b0ae0c6340f8c">https://qiita.com/TakuTaku36/items/40cb590b0ae0c6340f8c</a>
+This time, we will visualize and analyze winds that may be affecting pollen dispersal amounts, sugi vegetation, and prevalence of pollinosis by prefecture at each observation point in Japan.</p>
+<p>#Wind visualization
+There is a little time left from the previous preprocessing of the data before the compilation of this visualization, and during that time it has been slightly improved so that it can be handled easily by merging the data, so it is not exactly the same, but it is not bad.
+The table below shows the desired data after preprocessing and aggregation of multiple data. The wind direction observed every hour during the period from February 15, 2019 to April 30, 2019 has been added as a column with the percentage of the target period as a whole. There are 16 azimuths per observation point, and there are 116 observation points.</p>
+<p>| Prefecture | City | Wind direction | Latitude | Longitude | Percentage of observed wind direction in all directions (%) |
+|&mdash;&mdash;:|&mdash;&mdash;:|:&mdash;:|:&mdash;-:|:&mdash;-:|:&mdash;&mdash;&mdash;&mdash; &mdash;-:|
+| Mie Prefecture | Yokkaichi City | North | 34.97|136.6| 14.270|
+| Mie Prefecture | Yokkaichi City | North-East | 34.97|136.6| 5.584|
+| Mie Prefecture | Yokkaichi City | North-West | 34.97|136.6| 19.853|
+|・・・ |・・・ |・・・ |・・・|・・・| ・・・|
+| Mie Prefecture | Yokkaichi City | West | 34.97|136.6| 6.148|
+| Mie Prefecture | Yokkaichi City | West Northwest | 34.97|136.6| 5.697|
+| Mie Prefecture | Yokkaichi City | WSW | 34.97|136.6| 8.009|
+| Mie Prefecture | Tsu City | North | 34.72|136.5| 2.115|
+| Mie Prefecture | Tsu City | North-northeast | 34.72|136.5| 2.449|
+| Mie Prefecture | Tsu City | North-West | 34.72|136.5| 5.342|</p>
+<h3 id="visualize-the-ratio-of-wind-directions-by-municipality-with-each-observation-point-on-a-radar-chart">Visualize the ratio of wind directions by municipality with each observation point on a radar chart</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">
+<span style="color:#75715e">#Preparing the radar chart framework</span>
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+<span style="color:#75715e"># Start from 0 of the unit circle, and specify 16 directions in the counterclockwise direction from the 3 o&#39;clock direction in the alphabet.</span>
+labels<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;E&#39;</span>,<span style="color:#e6db74">&#39;ENE&#39;</span>,<span style="color:#e6db74">&#39;NE&#39;</span>,<span style="color:#e6db74">&#39;NNE&#39;</span>,<span style="color:#e6db74">&#39;N&#39;</span>,<span style="color:#e6db74">&#39;NNW&#39;</span>,<span style="color:#e6db74">&#39;NW&#39;</span>,<span style="color:#e6db74">&#39;WNW&#39;</span>,<span style="color:#e6db74">&#39;W&#39;</span>,<span style="color:#e6db74">&#39;WSW&#39;</span>,<span style="color:#e6db74">&#39;SW&#39;</span>,<span style="color:#e6db74">&#39;SSW&#39;</span> ,<span style="color:#e6db74">&#39;S&#39;</span>,<span style="color:#e6db74">&#39;SSE&#39;</span>,<span style="color:#e6db74">&#39;SE&#39;</span>,<span style="color:#e6db74">&#39;ESE&#39;</span>]
+<span style="color:#75715e"># Set each direction of data up to 25%, 5% each</span>
+markers <span style="color:#f92672">=</span> [<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">15</span>, <span style="color:#ae81ff">20</span>, <span style="color:#ae81ff">25</span>]
+<span style="color:#75715e"># Display</span>
+str_markers <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;0&#34;</span>, <span style="color:#e6db74">&#34;5&#34;</span>, <span style="color:#e6db74">&#34;10&#34;</span>, <span style="color:#e6db74">&#34;15&#34;</span>, <span style="color:#e6db74">&#34;20&#34;</span>, <span style="color:#e6db74">&#34;25&#34;</span>]
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_radar_chart</span>(name, stats, attribute_labels <span style="color:#f92672">=</span> labels, plot_markers <span style="color:#f92672">=</span> markers, plot_str_markers <span style="color:#f92672">=</span> str_markers):
+
+    labels <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(attribute_labels)
+
+    angles <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linspace(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>pi, len(labels), endpoint<span style="color:#f92672">=</span>False)
+    stats <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((stats,[stats[<span style="color:#ae81ff">0</span>]]))
+    angles <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate((angles,[angles[<span style="color:#ae81ff">0</span>]]))
+
+    fig<span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure()
+    ax <span style="color:#f92672">=</span> fig<span style="color:#f92672">.</span>add_subplot(<span style="color:#ae81ff">111</span>, polar<span style="color:#f92672">=</span>True)
+    <span style="color:#75715e">#ax.plot(angles, stats,&#39;o-&#39;, linewidth=1)</span>
+    ax<span style="color:#f92672">.</span>fill(angles, stats, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.8</span>)
+    ax<span style="color:#f92672">.</span>set_thetagrids(angles <span style="color:#f92672">*</span> <span style="color:#ae81ff">180</span><span style="color:#f92672">/</span>np<span style="color:#f92672">.</span>pi, labels)
+    plt<span style="color:#f92672">.</span>yticks(markers)
+    <span style="color:#75715e">#ax.set_title(name)</span>
+    ax<span style="color:#f92672">.</span>grid(False) <span style="color:#75715e"># True to include grid lines</span>
+    
+    <span style="color:#75715e"># Erase axis memory label</span>
+    plt<span style="color:#f92672">.</span>tick_params(labelbottom<span style="color:#f92672">=</span>False, labelleft<span style="color:#f92672">=</span>False, labelright<span style="color:#f92672">=</span>False, labeltop<span style="color:#f92672">=</span>False)
+           
+    <span style="color:#75715e"># Erase the axis memory line</span>
+    plt<span style="color:#f92672">.</span>tick_params(bottom<span style="color:#f92672">=</span>False, left<span style="color:#f92672">=</span>False, right<span style="color:#f92672">=</span>False, top<span style="color:#f92672">=</span>False)
+
+    Save the location specified <span style="color:#f92672">in</span> <span style="color:#75715e"># city as the file name of the image as it is</span>
+    fig<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#34;</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">.png&#34;</span> <span style="color:#f92672">%</span>name, transparent<span style="color:#f92672">=</span>True) <span style="color:#75715e"># True to make the margins transparent</span>
+
+    <span style="color:#66d9ef">return</span> plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p>Later we will see that the list is multidimensional and difficult to handle, so here we define a function that flattens to one dimension.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">
+<span style="color:#75715e"># Function to flatten a 3D array</span>
+<span style="color:#f92672">import</span> collections
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">flatten</span>(l):
+    <span style="color:#66d9ef">for</span> el <span style="color:#f92672">in</span> l:
+        <span style="color:#66d9ef">if</span> isinstance(el, collections<span style="color:#f92672">.</span>abc<span style="color:#f92672">.</span>Iterable) <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> isinstance(el, (str, bytes)):
+            <span style="color:#66d9ef">yield</span> <span style="color:#f92672">from</span> flatten(el)
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">yield</span> el
+</code></pre></div><p>Since the table at the beginning has rows for 16 directions for each observation point, turn the for statement so that the next observation point skips 16 lines.
+The code below extracts data for 16 bearings, flattens the list, and creates a radar chart for that observation point, as many times as there are observation points. This time, 116 images of radar chart will be automatically created and saved.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">
+<span style="color:#75715e"># Retrieve data according to the wind direction of the specified municipality</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">116</span>):
+    <span style="color:#75715e"># Every 16 lines, the municipality becomes the next one, so skip the 16 lines and automate the extraction and graph creation.</span>
+    city <span style="color:#f92672">=</span> count_wind[<span style="color:#e6db74">&#39;city&#39;</span>]<span style="color:#f92672">.</span>iloc[i <span style="color:#f92672">*</span> <span style="color:#ae81ff">16</span>]
+
+    E <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;East&#39;</span>), [<span style="color:#e6db74">&#39;Observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    ENE <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;east-northeast&#39;</span>), [<span style="color:#e6db74">&#39;Observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    NE <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;City&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;Wind Direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;Northeast&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    NNE <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;North-northeast&#39;</span>), [<span style="color:#e6db74">&#39;Observed wind direction in all directions ( %)&#39;</span>]]<span style="color:#f92672">.</span>values
+    N <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;north&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    NNW <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;north-northwest&#39;</span>), [<span style="color:#e6db74">&#39;percentage of observed wind direction in all directions ( %)&#39;</span>]]<span style="color:#f92672">.</span>values
+    NW <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;northwest&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    WNW <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;west-northwest&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    W <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;west&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    WSW <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;west-southwest&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions ( %)&#39;</span>]]<span style="color:#f92672">.</span>values
+    SW <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;southwest&#39;</span>), [<span style="color:#e6db74">&#39;Observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    SSW <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;southwest&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    S <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;south&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    SSE <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;southeast&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    SE <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;southeast&#39;</span>), [<span style="color:#e6db74">&#39;Percentage of observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    ESE <span style="color:#f92672">=</span> count_wind<span style="color:#f92672">.</span>loc[(count_wind[<span style="color:#e6db74">&#39;city&#39;</span>] <span style="color:#f92672">==</span> city) <span style="color:#f92672">&amp;</span> (count_wind[<span style="color:#e6db74">&#39;wind direction&#39;</span>] <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;SESE&#39;</span>), [<span style="color:#e6db74">&#39;Observed wind direction in all directions (% )&#39;</span>]]<span style="color:#f92672">.</span>values
+    
+    <span style="color:#75715e"># Store the extracted data by wind direction of the specified municipality in a list#Store in this order because the start position is the 3 o&#39;clock direction like the unit circle</span>
+    wind_data <span style="color:#f92672">=</span> [E, ENE, NE, NNE, N, NNW, NW, WNW, W, WSW, SW, SSW, S, SSE, SE, ESE]
+    
+    <span style="color:#75715e"># Flatten list dimension</span>
+    wind_data <span style="color:#f92672">=</span> list(flatten(wind_data))
+    
+    <span style="color:#75715e">#Create radar chart</span>
+    make_radar_chart(city, wind_data)
+</code></pre></div><p>Here is the radar chart showing the wind direction in Yokkaichi from 2019/2/15 to 2019/4/30 with the direction labels and grid lines attached. It seems that this radar chart is a wind pattern in the meteorological neighborhood. Large NNW means that there was a lot of wind from north-northwest during the target period.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515144/2e226f81-6436-9cf4-d43b-e5e38c86ecd5.png" alt="Yokkaichi.png"></p>
+<p>The grid lines etc. of this radar chart are erased and only the blue figure inside is taken out by the number of 116 observation points by trimming the image. This work is manual. I would like to know if you can do it by program. .. ..</p>
+<h3 id="for-the-time-being-plot-the-observation-points-on-a-map-of-japan">For the time being, plot the observation points on a map of Japan</h3>
+<p>I found that a library called folium is suitable for plotting markers by specifying latitude and longitude on a map of Japan, so I tried it. I mainly referred to here (<a href="https://qiita.com/nanakenashi/items/824c0cb16860ca59a424)">https://qiita.com/nanakenashi/items/824c0cb16860ca59a424)</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">
+<span style="color:#f92672">import</span> folium
+
+<span style="color:#75715e"># Set Akashi City, Hyogo Prefecture as the map standard</span>
+japan_location <span style="color:#f92672">=</span> [<span style="color:#ae81ff">35</span>, <span style="color:#ae81ff">135</span>]
+
+<span style="color:#75715e">#Specify the reference point and the initial magnification and create a map</span>
+map <span style="color:#f92672">=</span> folium<span style="color:#f92672">.</span>Map(location<span style="color:#f92672">=</span>japan_location, tiles<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;cartodbpositron&#39;</span>, zoom_start<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>)
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">116</span>):
+    latitude <span style="color:#f92672">=</span> count_wind[<span style="color:#e6db74">&#39;latitude&#39;</span>]<span style="color:#f92672">.</span>iloc[i <span style="color:#f92672">*</span> <span style="color:#ae81ff">16</span>]
+    longitude <span style="color:#f92672">=</span> count_wind[<span style="color:#e6db74">&#39;longitude&#39;</span>]<span style="color:#f92672">.</span>iloc[i <span style="color:#f92672">*</span> <span style="color:#ae81ff">16</span>]
+    city <span style="color:#f92672">=</span> count_wind[<span style="color:#e6db74">&#39;city&#39;</span>]<span style="color:#f92672">.</span>iloc[i <span style="color:#f92672">*</span> <span style="color:#ae81ff">16</span>]
+
+    folium<span style="color:#f92672">.</span>CircleMarker(location<span style="color:#f92672">=</span>[latitude, longitude], radius<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>, popup<span style="color:#f92672">=</span>city, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#3186cc&#39;</span>, fill_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;#3186cc&#39;</span>)<span style="color:#f92672">.</span>add_to(map)
+    
+map<span style="color:#f92672">.</span>save(<span style="color:#e6db74">&#34;pollen_ovservation.html&#34;</span>)
+map
+</code></pre></div><p>116 observation points nationwide except Hokkaido and Okinawa were plotted.
+<img width="1680" alt="Screenshots 2019-12-19 17.58.32.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515144/40c313c6-56b2-35e4-56db-929bfb7e6909.png"></p>
+<h3 id="plot-the-wind-pattern-on-a-map-of-japan">Plot the wind pattern on a map of Japan</h3>
+<p>Then you can automatically plot the wind distribution map at this point by specifying the latitude and longitude! I couldn&rsquo;t think so. Please let me know if there is any way. .. ..
+After all, I decided to manually place and paste the wind distribution map at the position of each observation point.
+Since it is difficult to work if it is small, I focused on eastern Japan. There are other reasons as well.
+<img width="1036" alt="Wind Map 2019_0215_0430.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515144/222f5735-8e99-2fa1-0ec4-948bff6a8f6f.png">
+You can see that the wind is blowing from the thin and long ones, and there is a tendency in the direction in each area.</p>
+<h3 id="visualize-the-wind-direction-more-easily">Visualize the wind direction more easily</h3>
+<p>Anyone who knows the wind-blowing pattern can anybody understand how to interpret it by looking at this diagram? ! So I replaced it with an arrow. This is also a manual task as I do not know how to automate it.
+<img width="1036" alt="copy of observation point.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/515144/df75bac8-a253-9177-7275-51f08de7c9ad.png">
+The tip of the arrow is leeward, and the base of the arrow is upwind.
+I think that you have seen such a figure in the weather forecast, etc., but that is the data of a certain time at a certain date and time observed in AMeDAS. On the other hand, which wind is blowing when you look at it comprehensively over a long period of time? ! Is a story. This completes the visualization of the wind direction for the target period.</p>
+<h1 id="finally">Finally</h1>
+<p>Last time we did pre-processing of the data, and this time we did wind visualization. Since the materials are almost ready, I will try to interpret the phenomenon and its factors by arranging a few more figures next time.</p>
+<h1 id="relation">Relation</h1>
+<p>Visualize the amount of pollen dispersal and the effects of sugi vegetation and wind from open data (pretreatment)
+<a href="https://qiita.com/TakuTaku36/items/40cb590b0ae0c6340f8c">https://qiita.com/TakuTaku36/items/40cb590b0ae0c6340f8c</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

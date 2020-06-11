@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried to implement Attention Seq2Seq in PyTorch | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried to implement Attention Seq2Seq in PyTorch</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/seq2seq"> seq2seq</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch"> PyTorch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/attention"> Attention</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p><a href="https://qiita.com/m__k/items/b18756628575b177b545">Last time</a> Following the implementation of Seq2Seq, this time I tried to implement Attention Seq2Seq which added Attention to Seq2Seq with PyTorch.</p>
+<p>Even beginners like me can&rsquo;t find the source code that implements Attention in PyTorch so easily, and there is also <a href="https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html">PyTorch Attention Tutorial</a>.Thereis,butitseemsthatIhavenotlearnedmini-batch(?),andIwantedtotryimplementingsimplerplain(?) Attention with such feeling that it was customized for this task. I tried to implement Attention by myself.
+It would be greatly appreciated if we could provide some helpful information to those who are having trouble implementing Attention.</p>
+<p>Attention mechanism is still <a href="https://www.amazon.co.jp/%E3%82%BC%E3%83%AD%E3%81%8B%E3%82%89%E4%BD%9C%E3%82%8BDeep-Learning-%E2%80%95%E8%87%AA%E7%84%B6%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86%E7%B7%A8-%E6%96%8E%E8%97%A4-%E5%BA%B7%E6%AF%85/dp/4873118360/ref=sr_1_2?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;keywords=%E3%82%BC%E3%83%AD%E3%81%8B%E3%82%89%E4%BD%9C%E3%82%8B&amp;qid=1568304570&amp;s=gateway&amp;sr=8-2">Deep Learning from scratch ❷-Natural language processing</a> was overwhelmingly easy to understand.</p>
+<p>Since the implementation example I will introduce from now is just a scratch implementation of Zero work 2 (it should be), I highly recommend reading zero work 2 if this article is hard to understand. ..</p>
+<h3 id="supplement">Supplement</h3>
+<p>I think there are various kinds of Attention, such as soft Attention and hard Attention, but here Attention is <a href="https://www.amazon.co.jp/%E3%82%BC%E3%83%AD%E3%81%8B%E3%82%89%E4%BD%9C%E3%82%8BDeep-Learning-%E2%80%95%E8%87%AA%E7%84%B6%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86%E7%B7%A8-%E6%96%8E%E8%97%A4-%E5%BA%B7%E6%AF%85/dp/4873118360/ref=sr_1_2?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;keywords=%E3%82%BC%E3%83%AD%E3%81%8B%E3%82%89%E4%BD%9C%E3%82%8B&amp;qid=1568304570&amp;s=gateway&amp;sr=8-2">Deep Learning ❷-Natural Language Processing Edition from scratch</a>(soft) I will refer to Attention.</p>
+<h1 id="attention-mechanism">Attention mechanism</h1>
+<h4 id="seq2-seq-challenges">Seq2 Seq challenges</h4>
+<p>The problem with Seq2Seq is that the Encoder will convert it to a fixed-length vector regardless of the length of the input sequence, so the characteristics of long sequences cannot be captured.
+Attention provides a mechanism that can consider the length of the input sequence on the Encoder side in order to solve this problem.</p>
+<h4 id="explain-roughly">Explain roughly</h4>
+<p>If you explain Attention roughly</p>
+<ol>
+<li>** Pass all the values of each hidden layer on the encoder side to each layer on the decoder side **</li>
+<li>** In each layer on the Decoder side, select the vector of the most attention from the hidden layer vectors passed from the Encoder side and add it to the feature **</li>
+</ol>
+<p>I will do the operation.
+In 1., the number of hidden layer vectors on the encoder side depends on the length of the sequence that is the input on the encoder side, so the length of the sequence is taken into consideration.
+In 2., the operation of selecting cannot be differentiated, but the operation of selecting where to pay attention to each element is stochastically weighted with $softmax$.</p>
+<h4 id="explain-the-flow-of-attention-processing-in-a-little-more-detail-using-the-figure">Explain the flow of Attention processing in a little more detail using the figure</h4>
+<p>For the sake of simplicity, the figure below deals with two cases where the encoder side input sequence is w1, w2, and w3, and the decoder side w'1 and w'2.</p>
+<p>① When the value of each hidden layer on the Encoder side is $h_1$, $h_2$, $\cdots$, $h_n$, $hs=[h_1, h_2,\cdots, h_n]$ is each layer on the Decoder side Pass to.</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/bba184fd-37d1-b51d-016c-50ec34f46c4c.png">
+<p>(2) Calculate the inner product of each hidden layer vector on the decoder side (here, $d_i$) and each vector $h_1, h_2,\cdots$ of $hs$. This means that we are calculating how similar each vector on the Decoder side and each vector of $hs$ are. (The dot product is represented by $(\cdot,\cdot)$.)</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/178907e6-f38e-2417-2edf-6bc123f9ad46.png">
+<p>③ Convert the inner product calculated in ② into a probability expression with $softmax$ (this is called attention weight)</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/419d8101-6391-80d5-1038-a9de22e84dd0.png">
+<p>④We weight each element of $hs$ with attention weight and add them all together to make one vector (this is called a context vector)</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/ae7ac9aa-1aeb-d5a3-364e-3c4e60ec905c.png" width=60%>
+<p>⑤ Combine the context vector and $d_i$ into one vector</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/5a0d0271-c44f-a79d-b93f-a7784449a326.png">
+<h1 id="implementation">Implementation</h1>
+<ul>
+<li>It is completed by adding the processing of 1 to 5 explained above to the Decoder side. Handles date format conversion issues as in Zero Works 2. (Because it is easy to confirm the certainty when the attention weight is visualized)</li>
+<li>The following is implemented on Google Colab.</li>
+<li><a href="https://qiita.com/m__k/items/b18756628575b177b545">Previous</a> is explained by adding Attention processing to the implementation of Seq2Seq explained in most, so most of the sources are reused. Please also refer to the previous source code.
+-<a href="https://qiita.com/m__k/items/b18756628575b177b545">I implemented Seq2Seq with PyTorch</a></li>
+</ul>
+<h2 id="problem-setting">Problem setting</h2>
+<p>Attention seq2seq can be used to solve the task of converting various date formats to the YYYY-MM-DD format as shown below.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Before conversion</th>
+<th align="center">After conversion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Nobenver, 30, 1995</td>
+<td align="center">1995-11-30</td>
+</tr>
+<tr>
+<td align="center">Monday, July 9, 2001</td>
+<td align="center">2001-07-09</td>
+</tr>
+<tr>
+<td align="center">1/23/01</td>
+<td align="center">2001-01-23</td>
+</tr>
+<tr>
+<td align="center">WEDNESDAY, AUGUST 1, 2001</td>
+<td align="center">2001-08-01</td>
+</tr>
+<tr>
+<td align="center">sep 7, 1981</td>
+<td align="center">1981-09-07</td>
+</tr>
+</tbody>
+</table>
+<h2 id="data-preparation">Data preparation</h2>
+<p>Borrow data from Github repository of Zero work 2.
+<a href="https://github.com/oreilly-japan/deep-learning-from-scratch-2/tree/master/dataset">https://github.com/oreilly-japan/deep-learning-from-scratch-2/tree/master/dataset</a></p>
+<ul>
+<li>date.txt</li>
+</ul>
+<p>Put this file in Google Drive and divide it before and after conversion with the following feeling.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> sklearn.model_selection <span style="color:#f92672">import</span> train_test_split
+<span style="color:#f92672">import</span> random
+<span style="color:#f92672">from</span> sklearn.utils <span style="color:#f92672">import</span> shuffle
+
+<span style="color:#75715e"># Mount Google Drive in advance and store date.txt in the following location</span>
+file_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;drive/My Drive/Colab Notebooks/date.txt&#34;</span>
+
+input_date <span style="color:#f92672">=</span> [] <span style="color:#75715e"># Date data before conversion</span>
+output_date <span style="color:#f92672">=</span> [] <span style="color:#75715e"># Date data after conversion</span>
+
+Read <span style="color:#75715e"># date.txt line by line, divide before and after conversion, and divide by input and output</span>
+<span style="color:#66d9ef">with</span> open(file_path, <span style="color:#e6db74">&#34;r&#34;</span>) <span style="color:#66d9ef">as</span> f:
+  date_list <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>readlines()
+  <span style="color:#66d9ef">for</span> date <span style="color:#f92672">in</span> date_list:
+    date <span style="color:#f92672">=</span> date[:<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+    input_date<span style="color:#f92672">.</span>append(date<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;_&#34;</span>)[<span style="color:#ae81ff">0</span>])
+    output_date<span style="color:#f92672">.</span>append(<span style="color:#e6db74">&#34;_&#34;</span> <span style="color:#f92672">+</span> date<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;_&#34;</span>)[<span style="color:#ae81ff">1</span>])
+
+Get the length of <span style="color:#75715e"># input and output series</span>
+<span style="color:#75715e"># All have the same length, so len is taken at the 0th element</span>
+input_len <span style="color:#f92672">=</span> len(input_date[<span style="color:#ae81ff">0</span>]) <span style="color:#75715e"># 29</span>
+output_len <span style="color:#f92672">=</span> len(output_date[<span style="color:#ae81ff">0</span>]) <span style="color:#75715e">#10</span>
+
+Assign an ID to every character that appears <span style="color:#f92672">in</span> <span style="color:#75715e">#date.txt</span>
+char2id <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> input_chars, output_chars <span style="color:#f92672">in</span> zip(input_date, output_date):
+  <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> input_chars:
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> c <span style="color:#f92672">in</span> char2id:
+      char2id[c] <span style="color:#f92672">=</span> len(char2id)
+  <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> output_chars:
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> c <span style="color:#f92672">in</span> char2id:
+      char2id[c] <span style="color:#f92672">=</span> len(char2id)
+
+input_data <span style="color:#f92672">=</span> [] <span style="color:#75715e"># ID date data before conversion</span>
+output_data <span style="color:#f92672">=</span> [] <span style="color:#75715e"># ID date data after conversionfor input_chars, output_chars in zip(input_date, output_date):</span>
+  input_data<span style="color:#f92672">.</span>append([char2id[c] <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> input_chars])
+  output_data<span style="color:#f92672">.</span>append([char2id[c] <span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> output_chars])
+
+<span style="color:#75715e">#7:3 divide into train and test</span>
+train_x, test_x, train_y, test_y <span style="color:#f92672">=</span> train_test_split(input_data, output_data, train_size<span style="color:#f92672">=</span> <span style="color:#ae81ff">0.7</span>)
+
+<span style="color:#75715e"># Define a function to batch the data</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train2batch</span>(input_data, output_data, batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>):
+    input_batch <span style="color:#f92672">=</span> []
+    output_batch <span style="color:#f92672">=</span> []
+    input_shuffle, output_shuffle <span style="color:#f92672">=</span> shuffle(input_data, output_data)
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>, len(input_data), batch_size):
+      input_batch<span style="color:#f92672">.</span>append(input_shuffle[i:i<span style="color:#f92672">+</span>batch_size])
+      output_batch<span style="color:#f92672">.</span>append(output_shuffle[i:i<span style="color:#f92672">+</span>batch_size])
+    <span style="color:#66d9ef">return</span> input_batch, output_batch
+</code></pre></div><h2 id="encoder">Encoder</h2>
+<ul>
+<li>Encoder side is almost the same as seq2seq implemented last time.</li>
+<li>I want to enjoy it a little, so I changed LSTM to GRU.</li>
+<li>Since the value of each hidden layer of GRU is used for Attention on the Decoder side, the first return value ($hs$) of GRU is also received.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">import</span> torch.nn <span style="color:#f92672">as</span> nn
+<span style="color:#f92672">import</span> torch.optim <span style="color:#f92672">as</span> optim
+
+<span style="color:#75715e"># Various parameters</span>
+embedding_dim <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span>
+hidden_dim <span style="color:#f92672">=</span> <span style="color:#ae81ff">128</span>
+BATCH_NUM <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+vocab_size <span style="color:#f92672">=</span> len(char2id)
+device <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>device(<span style="color:#e6db74">&#34;cuda&#34;</span> <span style="color:#66d9ef">if</span> torch<span style="color:#f92672">.</span>cuda<span style="color:#f92672">.</span>is_available() <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#34;cpu&#34;</span>)
+
+<span style="color:#75715e"># Encoder class</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Encoder</span>(nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self, vocab_size, embedding_dim, hidden_dim):
+        super(Encoder, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>hidden_dim <span style="color:#f92672">=</span> hidden_dim
+        self<span style="color:#f92672">.</span>word_embeddings <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Embedding(vocab_size, embedding_dim, padding_idx<span style="color:#f92672">=</span>char2id[<span style="color:#e6db74">&#34; &#34;</span>])
+        self<span style="color:#f92672">.</span>gru <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>GRU(embedding_dim, hidden_dim, batch_first<span style="color:#f92672">=</span>True)
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, sequence):
+        embedding <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>word_embeddings(sequence)
+        <span style="color:#75715e"># hs is the vector of hidden layer of GRU of each series</span>
+        <span style="color:#75715e"># Attentioned elements</span>
+        hs, h <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>gru(embedding)
+        <span style="color:#66d9ef">return</span> hs, h
+</code></pre></div><h2 id="decoder">Decoder</h2>
+<ul>
+<li>Like this time on the Encoder side, LSTM is changed to GRU compared to the previous time.</li>
+<li>You can sort out your mind by writing on paper or writing which axis of each layer&rsquo;s tensor means.</li>
+<li>I also listed the size of each tensor in the Attention layer to help understanding even a little.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Attention Decoder class</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AttentionDecoder</span>(nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self, vocab_size, embedding_dim, hidden_dim, batch_size):
+        super(AttentionDecoder, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>hidden_dim <span style="color:#f92672">=</span> hidden_dim
+        self<span style="color:#f92672">.</span>batch_size <span style="color:#f92672">=</span> batch_size
+        self<span style="color:#f92672">.</span>word_embeddings <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Embedding(vocab_size, embedding_dim, padding_idx<span style="color:#f92672">=</span>char2id[<span style="color:#e6db74">&#34; &#34;</span>])
+        self<span style="color:#f92672">.</span>gru <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>GRU(embedding_dim, hidden_dim, batch_first<span style="color:#f92672">=</span>True)
+        <span style="color:#75715e"># hidden_dim*2 is set because the length is doubled by connecting the context vector calculated in the hidden layer and Attention layer of GRU of each series with torch.cat.</span>
+        self<span style="color:#f92672">.</span>hidden2linear <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Linear(hidden_dim <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>, vocab_size)
+        <span style="color:#75715e">#Dim=1 because we want to transform the column direction</span>
+        self<span style="color:#f92672">.</span>softmax <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Softmax(dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, sequence, hs, h):
+        embedding <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>word_embeddings(sequence)
+        output, state <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>gru(embedding, h)
+
+       <span style="color:#75715e"># Attention layer</span>
+       <span style="color:#75715e"># hs.size() = ([100, 29, 128])</span>
+       <span style="color:#75715e"># output.size() = ([100, 10, 128])</span>
+
+       In order to calculate the matrix of the output (hs) on the Encoder side <span style="color:#f92672">and</span> the output (output) on the Decoder side <span style="color:#66d9ef">for</span> each batch using <span style="color:#75715e"># bmm, the output of the Decoder side is fixed to batch and the transposed matrix is taken.</span>
+        t_output <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>transpose(output, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>) <span style="color:#75715e"># t_output.size() = ([100, 128, 10])</span>
+
+        Batch calculation <span style="color:#66d9ef">with</span> <span style="color:#75715e">#bmm considering batch</span>
+        s <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>bmm(hs, t_output) <span style="color:#75715e"># s.size() = ([100, 29, 10])</span>
+
+        <span style="color:#75715e"># Take softmax in column direction (dim=1) and convert to probability expression</span>
+        <span style="color:#75715e"># Return this value with return, as it will be used later for visualization of Attention</span>
+        attention_weight <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>softmax(s) <span style="color:#75715e"># attention_weight.size() = ([100, 29, 10])</span>
+
+        <span style="color:#75715e"># Prepare a container to put together the context vector</span>
+        c <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>zeros(self<span style="color:#f92672">.</span>batch_size, <span style="color:#ae81ff">1</span>, self<span style="color:#f92672">.</span>hidden_dim, device<span style="color:#f92672">=</span>device) <span style="color:#75715e"># c.size() = ([100, 1, 128])</span>
+
+        <span style="color:#75715e">#I didn&#39;t know how to collectively calculate the context vector for the GRU layer of each Decoder,</span>
+        <span style="color:#75715e"># Take out the attention weight in each layer (the GRU layer on the decoder side has 10 characters because the generated character string is 10 characters) and create one context vector in the for loop</span>
+        <span style="color:#75715e"># Batch direction can be calculated collectively, so batch is as it is</span>
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(attention_weight<span style="color:#f92672">.</span>size()[<span style="color:#ae81ff">2</span>]): <span style="color:#75715e"># Loop 10 times</span>
+
+          <span style="color:#75715e"># attention_weight[:,:,i].size() = ([100, 29])</span>
+          <span style="color:#75715e"># Take out the attention weight for the i-th GRU layer, but unsqueeze it to make the tensor size equal to hs</span>
+          unsq_weight <span style="color:#f92672">=</span> attention_weight[:,:,i]<span style="color:#f92672">.</span>unsqueeze(<span style="color:#ae81ff">2</span>) <span style="color:#75715e"># unsq_weight.size() = ([100, 29, 1])</span>
+
+          Weight each vector of <span style="color:#75715e">#hs with attention weight</span>
+          weighted_hs <span style="color:#f92672">=</span> hs <span style="color:#f92672">*</span> unsq_weight <span style="color:#75715e"># weighted_hs.size() = ([100, 29, 128])</span>
+
+          Create a context vector by adding all the hs vectors weighted by <span style="color:#75715e"># attention weight</span>
+          weight_sum <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>sum(weighted_hs, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>unsqueeze(<span style="color:#ae81ff">1</span>) <span style="color:#75715e"># weight_sum.size() = ([100, 1, 128])</span>
+
+          c <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat([c, weight_sum], dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>) <span style="color:#75715e"># c.size() = ([100, i, 128])</span>
+
+        <span style="color:#75715e"># Since the zero element prepared as a box remains, slice it and delete it</span>
+        c <span style="color:#f92672">=</span> c[:,<span style="color:#ae81ff">1</span>:,:]
+        
+        output <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat([output, c], dim<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>) <span style="color:#75715e"># output.size() = ([100, 10, 256])</span>
+        output <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>hidden2linear(output)
+        <span style="color:#66d9ef">return</span> output, state, attention_weight
+</code></pre></div><h2 id="model-declaration-loss-function-optimization">Model declaration, loss function, optimization</h2>
+<ul>
+<li>No change from last time</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">
+encoder <span style="color:#f92672">=</span> Encoder(vocab_size, embedding_dim, hidden_dim)<span style="color:#f92672">.</span>to(device)
+attn_decoder <span style="color:#f92672">=</span> AttentionDecoder(vocab_size, embedding_dim, hidden_dim, BATCH_NUM)<span style="color:#f92672">.</span>to(device)
+
+<span style="color:#75715e">#Loss function</span>
+criterion <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>CrossEntropyLoss()
+
+<span style="color:#75715e"># optimisation</span>
+encoder_optimizer <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>Adam(encoder<span style="color:#f92672">.</span>parameters(), lr<span style="color:#f92672">=</span><span style="color:#ae81ff">0.001</span>)
+attn_decoder_optimizer <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>Adam(attn_decoder<span style="color:#f92672">.</span>parameters(), lr<span style="color:#f92672">=</span><span style="color:#ae81ff">0.001</span>)
+</code></pre></div><h2 id="learning">learning</h2>
+<ul>
+<li>Don&rsquo;t forget to pass Encoder output $hs$ to Attention Decoder</li>
+<li>Since there is no change in the input and output of both Encoder and Decoder, it is almost the same as the previous Seq2Seq OK</li>
+<li>Loss will decrease with tremendous momentum-In the following, the lower limit of loss is set to 0.1, but it will already be reached at 16 epoch.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">BATCH_NUM<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>
+EPOCH_NUM <span style="color:#f92672">=</span> <span style="color:#ae81ff">100</span>
+
+all_losses <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;training ...&#34;</span>)
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>, EPOCH_NUM<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+    epoch_loss <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#75715e"># Divide data into mini-batches</span>
+    input_batch, output_batch <span style="color:#f92672">=</span> train2batch(train_x, train_y, batch_size<span style="color:#f92672">=</span>BATCH_NUM)
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(input_batch)):
+        
+        <span style="color:#75715e">#Gradient initialization</span>
+        encoder_optimizer<span style="color:#f92672">.</span>zero_grad()
+        attn_decoder_optimizer<span style="color:#f92672">.</span>zero_grad()
+        
+        <span style="color:#75715e">#Convert data to tensor</span>
+        input_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor(input_batch[i], device<span style="color:#f92672">=</span>device)
+        output_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor(output_batch[i], device<span style="color:#f92672">=</span>device)
+        
+        <span style="color:#75715e">#Encoder forward propagation</span>
+        hs, h <span style="color:#f92672">=</span> encoder(input_tensor)
+
+        <span style="color:#75715e"># Attention Decoder input</span>
+        source <span style="color:#f92672">=</span> output_tensor[:, :<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+        
+        Correct data <span style="color:#66d9ef">for</span> <span style="color:#75715e">#Attention Decoder</span>
+        target <span style="color:#f92672">=</span> output_tensor[:, <span style="color:#ae81ff">1</span>:]
+
+        loss <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        decoder_output, _, attention_weight<span style="color:#f92672">=</span> attn_decoder(source, hs, h)
+        <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(decoder_output<span style="color:#f92672">.</span>size()[<span style="color:#ae81ff">1</span>]):
+            loss <span style="color:#f92672">+=</span> criterion(decoder_output[:, j, :], target[:, j])
+
+        epoch_loss <span style="color:#f92672">+=</span> loss<span style="color:#f92672">.</span>item()
+        
+        <span style="color:#75715e"># Error backpropagation</span>
+        loss<span style="color:#f92672">.</span>backward()
+
+        <span style="color:#75715e">#Parameter update</span>
+        encoder_optimizer<span style="color:#f92672">.</span>step()
+        attn_decoder_optimizer<span style="color:#f92672">.</span>step()
+    
+    <span style="color:#75715e"># Show loss</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Epoch </span><span style="color:#e6db74">%d</span><span style="color:#e6db74">: </span><span style="color:#e6db74">%.2f</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span>(epoch, epoch_loss))
+    all_losses<span style="color:#f92672">.</span>append(epoch_loss)
+    <span style="color:#66d9ef">if</span> epoch_loss <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0.1</span>: <span style="color:#66d9ef">break</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Done&#34;</span>)
+<span style="color:#75715e"># training ...</span>
+<span style="color:#75715e"># Epoch 1: 1500.33</span>
+<span style="color:#75715e"># Epoch 2: 77.53</span>
+<span style="color:#75715e"># Epoch 3: 12.98</span>
+<span style="color:#75715e"># Epoch 4: 3.40</span>
+<span style="color:#75715e"># Epoch 5: 1.78</span>
+<span style="color:#75715e"># Epoch 6: 1.13</span>
+<span style="color:#75715e"># Epoch 7: 0.78</span>
+<span style="color:#75715e"># Epoch 8: 0.56</span>
+<span style="color:#75715e"># Epoch 9: 0.42</span>
+<span style="color:#75715e"># Epoch 10: 0.32</span>
+<span style="color:#75715e"># Epoch 11: 0.25</span>
+<span style="color:#75715e"># Epoch 12: 0.20</span>
+<span style="color:#75715e"># Epoch 13: 0.16</span>
+<span style="color:#75715e"># Epoch 14: 0.13</span>
+<span style="color:#75715e"># Epoch 15: 0.11</span>
+<span style="color:#75715e"># Epoch 16: 0.09</span>
+<span style="color:#75715e"># Done</span>
+</code></pre></div><h3 id="loss-visualization">Loss visualization</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">%</span>matplotlib inline
+plt<span style="color:#f92672">.</span>plot(all_losses)
+</code></pre></div><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/3f53a8a1-aff1-961a-726e-6a51e82331bb.png" width=50%>
+<h2 id="forecast">Forecast</h2>
+<ul>
+<li>I am predicting with almost the same method as the previous Seq2Seq.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+Returns the maximum index of an element <span style="color:#f92672">from</span> the output tensor of <span style="color:#75715e"># Decoder. That is, the generated character</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_max_index</span>(decoder_output):
+  results <span style="color:#f92672">=</span> []
+  <span style="color:#66d9ef">for</span> h <span style="color:#f92672">in</span> decoder_output:
+    results<span style="color:#f92672">.</span>append(torch<span style="color:#f92672">.</span>argmax(h))
+  <span style="color:#66d9ef">return</span> torch<span style="color:#f92672">.</span>tensor(results, device<span style="color:#f92672">=</span>device)<span style="color:#f92672">.</span>view(BATCH_NUM, <span style="color:#ae81ff">1</span>)
+    
+<span style="color:#75715e">#Evaluation data</span>
+test_input_batch, test_output_batch <span style="color:#f92672">=</span> train2batch(test_x, test_y)
+input_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor(test_input_batch, device<span style="color:#f92672">=</span>device)
+
+predicts <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(test_input_batch)):
+  <span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+    hs, encoder_state <span style="color:#f92672">=</span> encoder(input_tensor[i])
+    
+    First, <span style="color:#e6db74">&#34;_&#34;</span> representing the start of character string generation <span style="color:#f92672">is</span> input to <span style="color:#75715e"># Decoder, so create a &#34;_&#34; tensor for the batch size.</span>
+    start_char_batch <span style="color:#f92672">=</span> [[char2id[<span style="color:#e6db74">&#34;_&#34;</span>]] <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(BATCH_NUM)]
+    decoder_input_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor(start_char_batch, device<span style="color:#f92672">=</span>device)
+
+    decoder_hidden <span style="color:#f92672">=</span> encoder_state
+    batch_tmp <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>zeros(<span style="color:#ae81ff">100</span>,<span style="color:#ae81ff">1</span>, dtype<span style="color:#f92672">=</span>torch<span style="color:#f92672">.</span>long, device<span style="color:#f92672">=</span>device)
+    <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(output_len<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+      decoder_output, decoder_hidden, _ <span style="color:#f92672">=</span> attn_decoder(decoder_input_tensor, hs, decoder_hidden)
+      <span style="color:#75715e">#While acquiring the predicted character, it becomes the input of the next decoder as it is.</span>
+      decoder_input_tensor <span style="color:#f92672">=</span> get_max_index(decoder_output<span style="color:#f92672">.</span>squeeze())
+      batch_tmp <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat([batch_tmp, decoder_input_tensor], dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+    predicts<span style="color:#f92672">.</span>append(batch_tmp[:,<span style="color:#ae81ff">1</span>:])
+
+
+<span style="color:#75715e">#When looking at the prediction result, if the ID remains as it is, the readability is poor, so define a dictionary to convert the ID to the original string to restore the original string.</span>
+id2char <span style="color:#f92672">=</span> {}
+<span style="color:#66d9ef">for</span> k, v <span style="color:#f92672">in</span> char2id<span style="color:#f92672">.</span>items():
+  id2char[v] <span style="color:#f92672">=</span> k
+
+row <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(test_input_batch)):
+  batch_input <span style="color:#f92672">=</span> test_input_batch[i]
+  batch_output <span style="color:#f92672">=</span> test_output_batch[i]
+  batch_predict <span style="color:#f92672">=</span> predicts[i]
+  <span style="color:#66d9ef">for</span> inp, output, predict <span style="color:#f92672">in</span> zip(batch_input, batch_output, batch_predict):
+    x <span style="color:#f92672">=</span> [id2char[idx] <span style="color:#66d9ef">for</span> idx <span style="color:#f92672">in</span> inp]
+    y <span style="color:#f92672">=</span> [id2char[idx] <span style="color:#66d9ef">for</span> idx <span style="color:#f92672">in</span> output[<span style="color:#ae81ff">1</span>:]]
+    p <span style="color:#f92672">=</span> [id2char[idx<span style="color:#f92672">.</span>item()] <span style="color:#66d9ef">for</span> idx <span style="color:#f92672">in</span> predict]
+    
+    x_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(x)
+    y_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(y)
+    p_str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(p)
+    
+    judge <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;O&#34;</span> <span style="color:#66d9ef">if</span> y_str <span style="color:#f92672">==</span> p_str <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#34;X&#34;</span>
+    row<span style="color:#f92672">.</span>append([x_str, y_str, p_str, judge])
+predict_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(row, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#34;input&#34;</span>, <span style="color:#e6db74">&#34;answer&#34;</span>, <span style="color:#e6db74">&#34;predict&#34;</span>, <span style="color:#e6db74">&#34;judge&#34;</span>])
+predict_df<span style="color:#f92672">.</span>head()
+</code></pre></div><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/66785ba7-4151-bcaf-dec1-4be9943db866.png" width=50%>
+<h3 id="correct-answer-rate">Correct answer rate</h3>
+<ul>
+<li>It happened not to be 100% this time, but I think it will be about 100%.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">print</span>(len(predict_df<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;judge == &#34;O&#34;&#39;</span>)) <span style="color:#f92672">/</span> len(predict_df))
+<span style="color:#75715e">#0.9999333333333333</span>
+
+predict_df<span style="color:#f92672">.</span>query(<span style="color:#e6db74">&#39;judge == &#34;X&#34;&#39;</span>)<span style="color:#f92672">.</span>head(<span style="color:#ae81ff">10</span>)
+</code></pre></div><ul>
+<li>I made only one mistake</li>
+<li>When I make a mistake in this task, I feel that there are many slash-separated date formats as shown below.</li>
+</ul>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/55de51e0-26dc-4180-a5de-1acac15e0796.png" width=50%>
+<h2 id="attention-weight-visualization">Attention weight Visualization</h2>
+<ul>
+<li>Let&rsquo;s visualize the attention weight, which is one of the great things about attention.</li>
+<li>You can check the accuracy of learning by looking at the attention weight.</li>
+<li>Because heatmap is often used for visualization of attention weight, it is visualized with heatmap of seaborn.</li>
+<li>Running the first mini-batch of the test data divided into 7:3 divided into 3 batches.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> seaborn <span style="color:#f92672">as</span> sns
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+
+input_batch, output_batch <span style="color:#f92672">=</span> train2batch(test_x, test_y, batch_size<span style="color:#f92672">=</span>BATCH_NUM)
+input_minibatch, output_minibatch <span style="color:#f92672">=</span> input_batch[<span style="color:#ae81ff">0</span>], output_batch[<span style="color:#ae81ff">0</span>]
+
+<span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+  <span style="color:#75715e">#Convert data to tensor</span>
+  input_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor(input_minibatch, device<span style="color:#f92672">=</span>device)
+  output_tensor <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>tensor(output_minibatch, device<span style="color:#f92672">=</span>device)hs, h <span style="color:#f92672">=</span> encoder(input_tensor)
+  source <span style="color:#f92672">=</span> output_tensor[:, :<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+  decoder_output, _, attention_weight<span style="color:#f92672">=</span> attn_decoder(source, hs, h)
+
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">3</span>):
+  <span style="color:#66d9ef">with</span> torch<span style="color:#f92672">.</span>no_grad():
+    df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(data<span style="color:#f92672">=</span>torch<span style="color:#f92672">.</span>transpose(attention_weight[i], <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>cpu()<span style="color:#f92672">.</span>numpy(),
+                      columns<span style="color:#f92672">=</span>[id2char[idx<span style="color:#f92672">.</span>item()] <span style="color:#66d9ef">for</span> idx <span style="color:#f92672">in</span> input_tensor[i]],
+                      index<span style="color:#f92672">=</span>[id2char[idx<span style="color:#f92672">.</span>item()] <span style="color:#66d9ef">for</span> idx <span style="color:#f92672">in</span> output_tensor[i][<span style="color:#ae81ff">1</span>:]])
+    plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">8</span>))
+    sns<span style="color:#f92672">.</span>heatmap(df, xticklabels <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, yticklabels <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, square<span style="color:#f92672">=</span>True, linewidths<span style="color:#f92672">=.</span><span style="color:#ae81ff">3</span>,cbar_kws <span style="color:#f92672">=</span> dict(use_gridspec<span style="color:#f92672">=</span>False,location<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;top&#34;</span>))
+</code></pre></div><h3 id="introduce-some-visualization">Introduce some visualization</h3>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/2b425ca3-6034-bdb0-3f0f-24d537c5f4d1.png" width=70%>
+<p>It&rsquo;s a bit hard to see, but the letters &ldquo;Tuesday, March 27, 2012&rdquo; in the lower part of the figure above are the unconverted character strings (input of Encoder), and &ldquo;2012-03-27&rdquo; that is arranged vertically on the left is generated. It is a character.
+This is how to read the heatmap, but when you look at the characters generated by the Decoder one by one, it means that it is the character generated with the most attention to the character with the brightest box color on the left. I think (Please point out if it is different&hellip;)
+(Of course, if you add all the values in the box to the left, you get 1.)</p>
+<p>In the example above, you may find the following.</p>
+<ul>
+<li>You can see that you are paying attention to the year part when generating YYYY and the month part when generating MM as a whole.</li>
+<li>This task does not convert YYYY-MM-DD, that is, the day of the week is not converted, so we do not pay attention to any generated characters in &ldquo;Tuesday&rdquo;.</li>
+<li>&ldquo;0&rdquo; is attention to &ldquo;a&rdquo; part of &ldquo;March&rdquo;. If it is &ldquo;May&rdquo;, it is &ldquo;05&rdquo;, if it is &ldquo;March&rdquo;, it is &ldquo;04&rdquo;, but if the letters &ldquo;Ma&rdquo; are lined up, the generation of &ldquo;0&rdquo; is confirmed, and then the letters &ldquo;rch&rdquo; are lined up. Feeling that 3 is paying attention to &ldquo;h&rdquo; in this?</li>
+</ul>
+<p>*This time, I am displaying the correct character that should be generated. This time, the percentage of correct answers is almost 100%, so I think that it is the same, but I think that it is better to aggregate the characters generated by the Decoder one by one and create an attention weight if doing properly. Sorry for the omission&hellip;</p>
+<p>Attention is also like this ↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/859bda1f-a7f3-930f-a759-d8f6f94e63b5.png" width=60%>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/045256f2-1ccc-419a-6042-4e776bcbdb4c.png" width=60%></p>
+<h1 id="in-conclusion">in conclusion</h1>
+<ul>
+<li>As noted in Zero work 2, there seems to be various patterns in Attention.</li>
+<li>Next, we will handle Self-Attention, which is more versatile than Attention!</li>
+</ul>
+<p>end</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

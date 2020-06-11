@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Introduction of ALBERT (using MeCab&#43;Sentencepiece) model that learned large-scale Japanese business news corpus | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Introduction of ALBERT (using MeCab+Sentencepiece) model that learned large-scale Japanese business news corpus</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 17, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mecab"> mecab</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/nlp"> NLP</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/albert"> albert</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Previously, Japanese <a href="https://qiita.com/mkt3/items/3c1278339ff1bcc0187f">BERT pre-learned model</a>and<a href="https://qiita.com/mkt3/items/4d0ae36f3f212aee8002">XLNetpre-learnedmodel</a> It is the stockmark Morinaga who posted the introduction articles such as.
+Thank you for reading the article on model release to many people.</p>
+<p>This time, we will release the pre-learned Japanese model of ALBERT.
+Now, while various pre-learned models have been proposed, why do you publish ALBERT Japanese model?ALBERT is not just SOTA as described as A Lite BERT , Because it is a model that makes the BERT lighter while maintaining and improving accuracy.</p>
+<p>Increasing the size of the pretrained model tends to improve performance, but it also increases learning time, out of memory, and more constraints on creation (and cost). Therefore, you can create a model in a relatively short time, and ALBERT with a small model size is very easy to use.</p>
+<p>What is #ALBERT
+ALBERT is a model proposed to be able to learn BERT lightweight and fast by using the following methods.</p>
+<ul>
+<li>Parameter reduction using factorization and parameter sharing
+-Contributes to reducing model size and learning time</li>
+<li>Changed Bert&rsquo;s Next Sentence Prediction task to Sentence Order Prediction task
+-Contributes to improved model accuracy</li>
+</ul>
+<p>Only the parameters/experimental settings of the created model will be described here, and the detailed description of the model called ALBERT will be omitted.</p>
+<h1 id="features-of-our-albert-pre-trained-model">Features of our ALBERT pre-trained model</h1>
+<h2 id="learning-source-data">Learning source data</h2>
+<p>Similar to the BERT pre-learned model that was previously published, the training data is a Japanese business news article. Therefore, this model is effective mainly in business domains.</p>
+<h2 id="tokenizer">tokenizer</h2>
+<p>We tokenize sentences using MeCab + NEologd and Sentencepiece as tokenizer.
+First, by using MeCab, it is correctly divided as morphemes, and then Sentencepiece is performed on it to expand the vocabulary coverage.</p>
+<h2 id="details-of-pre-learned-model">Details of pre-learned model</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Pretraining data</th>
+<th align="left">Tokenizer</th>
+<th align="left">Vocabulary number</th>
+<th align="left">Normalization</th>
+<th align="left">Sequence length</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Japanese Business News Articles (3 million articles)</td>
+<td align="left">MeCab + NEologd and Sentencepiece</td>
+<td align="left">32,000 words</td>
+<td align="left">NFKD *</td>
+<td align="left">128</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The reason why the normalization is NFKD is because <a href="https://github.com/google-research/ALBERT/blob/4c601a1c096e85b1639460ea6b890ba5a8d2b3ee/tokenization.py#L98">official implementation</a>isNFKDandthelibraryismodifiedorMethodoverridingisrequired,and<a href="https://qiita.com/mkt3/items/4d0ae36f3f212aee8002#nfkd%E3%81%A8nfkc%E3%81%AE%E6%AF%94%E8%BC%83">whenwecreatedtheXLNetmodel</a> had no clear difference in the results between NFKD and NFKC.</li>
+</ul>
+<p>#download
+We will publish the models available in <a href="https://github.com/google-research/ALBERT">Official (TensorFlow)</a>and<a href="https://github.com/huggingface/transformers">PyTorchversion</a>.</p>
+<p><a href="https://drive.google.com/open?id=1ZbK7kCTepZ8hSeKMTNNHQZ6D6XP8AY-A">Download link</a>
+The breakdown of the model is as follows.</p>
+<ul>
+<li>TensorFLow version
+-model.ckpt.meta, model.ckpt.index, model.ckpt.data-00000-of-00001, checkpoint
+-config.json
+-spiece.model (Sentencepiece model)</li>
+<li>PyTorch version
+-pytorch_model.bin
+-config.json
+-spiece.model (Sentencepiece model)</li>
+</ul>
+<p>#How to Use
+When using the pre-learned model, it works with the sample script published in TensorFlow version and PyTorch version, but please write the input data (input sentence) in MeCab+NEologd.</p>
+<p>Impressions of using the # ALBERT Japanese pre-learned model</p>
+<h2 id="comparison-with-bert">Comparison with BERT</h2>
+<p>In our verification task (article classification), ALBERT-base had a performance that was about 1% lower than BERT-base, but with ALBERT, the number of parameters was significantly reduced compared to BERT. This accuracy is practical enough.
+Similarly in the paper, the performance of ALBERT is reported to be slightly lower in the comparison of base models, but the great thing about ALBERT is that ALBERT-large with a smaller number of parameters (model size) than BERT-base model, BERT-base Exceeds the performance of.
+(Refer to Table 2 in <a href="https://arxiv.org/pdf/1909.11942.pdf">Papers</a>forspecificnumericalvalues.)</p>
+<p>In the future, we will create and use an ALBERT model with the same parameter size as ALBERT-large, xlarge, and xxlarge.</p>
+<h2 id="about-model-size">About model size</h2>
+<p>It was very easy to use because the model size can be suppressed to about 50 to 500MB while the resources are limited. (If the model size is large, the waiting time will increase&hellip;)</p>
+<ul>
+<li>Capacity reduction of HDD, SSD at the time of pre-learning/verification/inference</li>
+<li>Faster deployment (model download speed, etc.)</li>
+</ul>
+<p>#Summary
+Until the end Thank you for reading.
+I am very pleased that the ALBERT pre-learned model, which was released like BERT and XLNet, can contribute to the excitement of natural language processing.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

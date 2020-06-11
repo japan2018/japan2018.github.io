@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Static type checking that starts loosely in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Static type checking that starts loosely in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mypy">mypy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pipenv">Pipenv</a></code></small>
+
+</p>
+<pre><code>I had been writing TypeScript for about a year, but I started to work on Python3 for about a month.
+</code></pre>
+<p>Although Python is simple and fun, there are places that I inherited from other people, and it is hard to develop and have no type.</p>
+<p>The hardest part is reading the code, and what does this function return? Do not know at first glance what this variable contains. &hellip;&hellip;There is no type as a document.
+I decided to introduce type annotations and mypy because I would like to introduce them if they do not exist.</p>
+<p>Even if you suddenly introduce a mold to the mold, it will be harder on the contrary, so I adopted the method of introducing the mold without overdoing it from a state without a mold, and I was able to introduce it quite well, so this time the procedure at that time I will introduce Tips.</p>
+<h2 id="environment">Environment</h2>
+<p>This time I&rsquo;m testing in the environment of pipenv, but I think that mypy does not change particularly with pip etc.</p>
+<p>python3.7.5
+pipenv, version 2018.11.26</p>
+<p>Please refer to here for the introduction of pipenv
+<a href="https://pipenv-ja.readthedocs.io/ja/translate-ja/index.html">https://pipenv-ja.readthedocs.io/ja/translate-ja/index.html</a></p>
+<h2 id="install">Install</h2>
+<p>Install mypy under your project directory.</p>
+<pre><code>cd ./myproject
+pipenv install mypy -d
+</code></pre><h2 id="perform-static-type-checking">Perform static type checking</h2>
+<p>If mypy is installed in the global pip and you want to perform static type checking on the code under the src directory, you can type check with <code>mypy ./src</code>, but if mypy is only included in pipenv, an error will occur. Become.</p>
+<pre><code>$ mypy ./src
+Command'mypy' not found, but can be installed with:
+
+sudo apt install mypy
+</code></pre><p>If you enter the virtual environment of pipenv, you can execute it without problems.</p>
+<pre><code>$ pipenv shell
+(myproject) $ mypy ./src
+Success: no issues found in 2 source files
+</code></pre><p>It is troublesome to enter the virtual environment every time, so let&rsquo;s register the script in Pipfile.</p>
+<pre><code class="language-Pipfile" data-lang="Pipfile">[scripts]
+type-check = &quot;mypy ./src&quot;
+</code></pre><p>Reference <a href="https://pipenv-ja.readthedocs.io/ja/translate-ja/advanced.html#custom-script-shortcuts">https://pipenv-ja.readthedocs.io/ja/translate-ja/advanced.html#custom-script-shortcuts</a></p>
+<p>The command executed by the script is executed under the environment of pipenv, so you can execute mypy without executing <code>pipenv shell</code>.</p>
+<pre><code>$ pipenv run type-check
+mypy.ini: No [mypy] section in config file
+Success: no issues found in 1 source files
+</code></pre><p>Use this command to perform type checking on CI etc.</p>
+<h2 id="python3-built-in-type">Python3 built-in type</h2>
+<p>I think most people know it, but let&rsquo;s review the basic types.
+Of the official documents, I think that at most the following eight types can be used for regular inspection.
+<a href="https://docs.python.org/ja/3.7/library/stdtypes.html">https://docs.python.org/ja/3.7/library/stdtypes.html</a></p>
+<p>If you get lost, you can put it in the built-in function type() and see the result, so you don&rsquo;t even have to remember it.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Type Type</th>
+<th align="right">Type Name</th>
+<th align="right">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Boolean type</td>
+<td align="right">bool</td>
+<td align="right">True</td>
+</tr>
+<tr>
+<td align="left">integer type</td>
+<td align="right">int</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td align="left">Float type</td>
+<td align="right">float</td>
+<td align="right">1.2</td>
+</tr>
+<tr>
+<td align="left">Text sequence type (String type)</td>
+<td align="right">str</td>
+<td align="right">&lsquo;hoge&rsquo;</td>
+</tr>
+<tr>
+<td align="left">List type</td>
+<td align="right">list</td>
+<td align="right">[1, 2, 3]</td>
+</tr>
+<tr>
+<td align="left">tuple type</td>
+<td align="right">tuple</td>
+<td align="right">(&lsquo;a&rsquo;,&lsquo;b&rsquo;)</td>
+</tr>
+<tr>
+<td align="left">Dictionary type (mapping type)</td>
+<td align="right">dict</td>
+<td align="right">{&lsquo;a&rsquo;:&lsquo;hoge&rsquo;,&lsquo;b&rsquo;:&lsquo;fuga&rsquo;}</td>
+</tr>
+<tr>
+<td align="left">Set type</td>
+<td align="right">set</td>
+<td align="right">{&lsquo;j&rsquo;,&lsquo;k&rsquo;,&lsquo;l&rsquo;}</td>
+</tr>
+</tbody>
+</table>
+<h2 id="adding-a-type-to-an-untyped-function">Adding a type to an untyped function</h2>
+<p>First, let&rsquo;s create an untyped function.
+Create <code>my_module.py</code> under ./src.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-my_module.py" data-lang="my_module.py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_greeting</span>(time):
+  <span style="color:#66d9ef">if</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">&lt;=</span> time <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">10</span>:
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;Good morning!&#39;</span>
+  <span style="color:#66d9ef">elif</span> <span style="color:#ae81ff">10</span> <span style="color:#f92672">&lt;=</span> time <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">14</span>:
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;Hello!&#39;</span>
+  <span style="color:#66d9ef">elif</span> <span style="color:#ae81ff">14</span> <span style="color:#f92672">&lt;=</span> time <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">24</span>:
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;Goog afternoon.&#39;</span>
+  <span style="color:#66d9ef">elif</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">&lt;=</span> time <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">4</span>:
+    <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;zzz..&#39;</span>
+  <span style="color:#66d9ef">else</span>:
+    <span style="color:#66d9ef">return</span> <span style="color:#e6db74">``</span>
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    <span style="color:#66d9ef">print</span>(get_greeting(<span style="color:#e6db74">&#39;morning&#39;</span>))
+</code></pre></div><p>I made a function that takes the time from 0 to 24 and returns a greeting.
+Now when I run the type check&hellip;</p>
+<pre><code>$ pipenv run type-check
+Success: no issues found in 1 source file
+</code></pre><p>No error occurs!
+The reason is that since the type annotation is not done, the return value and the argument of the function will be the basic Any type (anything that exists).
+(If there is an existing code base, I don&rsquo;t have to worry about errors when introducing types, so I think this is fine.)
+So next, let&rsquo;s add a type annotation.</p>
+<pre><code>def get_greeting(time: int) -&gt; str:
+  if 4 &lt;= time &lt;10:
+    return'Good morning!'
+  elif 10 &lt;= time &lt;14:
+    return'Hello!'
+  elif 14 &lt;= time &lt;20:
+    return'Goog afternoon.'
+  elif 0 &lt;= time &lt;4:
+    return'zzz..'
+  else:
+    return None
+
+if __name__ == &quot;__main__&quot;:
+    print(get_greeting('morning'))
+</code></pre><p>On the first line, we added a type annotation that means &ldquo;receive an integer type and return a string type&rdquo;.
+Try to run the type check again in this state.</p>
+<pre><code>$ pipenv run type-check
+src/my_module.py:14: error: Argument 1 to &quot;get_greeting&quot; has incompatible type &quot;str&quot;; expected &quot;int&quot;
+Found 1 error in 1 file (checked 1 source file)
+</code></pre><p>I got an error this time.
+When I read the error message, I passed a string when calling the function get_greeting on line 14. If you run it as it is, a runtime error will occur.
+If I change the code to pass an integer type and run the type check again, the error goes away.</p>
+<pre><code>    print(get_greeting(10))
+</code></pre><p>By adding type annotations, the code became easier to understand and run-time errors could be prevented.</p>
+<h2 id="using-the-configuration-file-mypyini">Using the configuration file mypy.ini</h2>
+<p>Even so, there are times when you want to force type annotations.
+In that case, create a configuration file.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-mypy.ini" data-lang="mypy.ini"><span style="color:#66d9ef">[mypy]</span>
+<span style="color:#a6e22e">python_version</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">3.7</span>
+<span style="color:#a6e22e">disallow_untyped_calls</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">True</span>
+<span style="color:#a6e22e">disallow_untyped_defs</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">True</span>
+</code></pre></div><p>Modify the script to also specify the configuration file.</p>
+<pre><code class="language-Pipfile" data-lang="Pipfile">[scripts]
+type-check = &quot;mypy ./src --config-file ./mypy.ini&quot;
+</code></pre><p>If you do this, an error will be returned if you forget to add the type annotation.</p>
+<pre><code>$ pipenv run type-check
+src/my_module.py:1: error: Function is missing a type annotation
+src/my_module.py:14: error: Call to untyped function &quot;get_greeting&quot; in typed context
+Found 2 errors in 1 file (checked 1 source file)
+</code></pre><p>Reference <a href="https://mypy.readthedocs.io/en/latest/config_file.html">https://mypy.readthedocs.io/en/latest/config_file.html</a></p>
+<h2 id="techniques-i-would-like-to-use-to-loosely-introduce">Techniques I would like to use to loosely introduce</h2>
+<p>Although it can be introduced into an existing code base with Any acceptance, if the original code base is large, it is inevitable that a large number of errors will occur during the installation.
+Please wait a moment before you feel like breaking your heart.
+90% of the errors should go away just by executing the following two.</p>
+<p>Reference <a href="https://mypy.readthedocs.io/en/latest/existing_code.html#start-small">https://mypy.readthedocs.io/en/latest/existing_code.html#start-small</a></p>
+<h3 id="ignore-import-of-untyped-module">ignore import of untyped module</h3>
+<p>For example, if you have the following code:</p>
+<pre><code>import request
+</code></pre><p>The type check returns an error of 3 lines.</p>
+<pre><code>$ pipenv run type-check
+src/my_module.py:1: error: Cannot find implementation or library stub for module named'request'
+src/my_module.py:1: note: See https://mypy.readthedocs.io/en/latest/running_mypy.html#missing-imports
+Found 1 error in 1 file (checked 1 source file)
+</code></pre><p>This is because there is no type definition file (stub) for the imported module.</p>
+<p>Since it is difficult to prepare all type definition files at the time of introduction, it is <strong>ignored</strong> in the settings of mypy.ini.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-mypy.ini" data-lang="mypy.ini"><span style="color:#66d9ef">[mypy-request.*]</span>
+<span style="color:#a6e22e">ignore_missing_imports</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">True</span>
+</code></pre></div><p>This will ignore the lack of stub for imports from <code>request</code>.</p>
+<pre><code>$ pipenv run type-check
+Success: no issues found in 1 source file
+</code></pre><p>Now peace is back.</p>
+<h3 id="ignore-that-line">ignore that line</h3>
+<p>Although it is not recommended so much, it is a method often used when you want to assign the wrong type in test etc.
+Add a <code>#type: ignore</code> comment at the end of the line of code you want to ignore.</p>
+<pre><code>    print(get_greeting('hoge')) #type: ignore
+</code></pre><p>You can suppress the type error that would have occurred on this line.## Bonus: Automatically generate stub</p>
+<p>I think there are times when I want to use a stub. However, there is no guarantee that the developers of third-party modules have stubs available.
+It&rsquo;s a hassle to make it yourself.
+In that case, let&rsquo;s generate it automatically.</p>
+<p>You can use stub by specifying the file or directory with the stubgen command, which will be usable when you put mypy.</p>
+<pre><code>$ stubgen foo.py bar.py
+</code></pre><p>If it is an imported module, you can check the path of the module with <code>*.__path__</code>, so you can directly specify the path and create a stub.</p>
+<pre><code>&gt;&gt;&gt; import request
+&gt;&gt;&gt; request.__path__
+['/home/username/.local/share/virtualenvs/myproject-xxxxxxxx/lib/python3.7/site-packages/request']
+&gt;&gt;&gt;
+</code></pre><p>Once you know the path, run stubgen.</p>
+<pre><code>(myproject) $ stubgen /home/username/.local/share/virtualenvs/myproject-xxxxxxxx/lib/python3.7/site-packages/request
+Processed 1 modules
+Generated out/request/__init__.pyi
+</code></pre><p>Running stubgen will create an out directory in your project root, so specify this path in mypy.ini so mypy will see it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-mypy.ini" data-lang="mypy.ini"><span style="color:#66d9ef">[mypy]</span>
+<span style="color:#a6e22e">python_version</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">3.7</span>
+<span style="color:#a6e22e">mypy_path</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">./out</span>
+
+</code></pre></div><p>Type check is now passed.</p>
+<pre><code>$ pipenv run type-check
+Success: no issues found in 1 source file
+</code></pre><p>The types generated by stubgen are not perfect.
+You will need to modify the stub file yourself if you want to use it seriously because it will be almost any type.</p>
+<p>Reference <a href="https://github.com/python/mypy/blob/master/docs/source/stubgen.rst">https://github.com/python/mypy/blob/master/docs/source/stubgen.rst</a></p>
+<h2 id="evolving-types-that-are-often-used">Evolving types that are often used</h2>
+<p>Since there are types that are often used in addition to the built-in types, I will introduce them.
+In mypy, classes other than built-in types are used by calling classes of those types from the <code>typing</code> module or the <code>typing_extensions</code> module.
+Although it is a little different from typescript in terms of usability, most types including generic types are covered in these modules, so it seems that people who want to type program can be satisfied.</p>
+<p>Reference <a href="https://mypy.readthedocs.io/en/latest/">https://mypy.readthedocs.io/en/latest/</a></p>
+<h3 id="optional">Optional</h3>
+<p>Functions such as returning an integer and returning None when receiving an incorrect value are common.
+The return value in that case is int or None, but this can be represented by Optional.</p>
+<pre><code>from typing import Optional
+
+def sample(time: int) -&gt; Optional[int]:
+  if 24 &lt;time:
+    return None
+  else:
+    return time
+</code></pre><h3 id="list-dict">List, Dict</h3>
+<p>A list of integers and a list of strings can be represented by List.</p>
+<pre><code>from typing import List
+
+# List of integers
+intList: List[int] = [1, 2, 3, 4]
+
+# List of strings
+strList: List[str] = ['a','b','c']
+</code></pre><p>Similarly, if you use Dict, you can also create a dictionary type expression such as &ldquo;key is a character and value is an integer&rdquo;.</p>
+<pre><code>from typing import Dict
+
+#key is a character and value is an integer dictionary
+strIntDict: Dict[str, int] = {'a': 1,'b': 2,'c': 3,'d': 4}
+
+</code></pre><h3 id="union">Union</h3>
+<p>You can create a union type that combines multiple people.</p>
+<pre><code>from typing import Union
+
+strOrInt: Union[str, int] = 1 # OK
+strOrInt ='hoge' # OK
+strOrInt = None # error: Incompatible types in assignment (expression has type &quot;None&quot;, variable has type &quot;Union[str, int]&quot;)
+</code></pre><h3 id="any">Any</h3>
+<p>If you do not want to specify the type, of course Any type is also possible</p>
+<pre><code>from typing import Any
+
+string: str ='hoge'
+
+any: Any = string
+any = 10 # OK
+
+notAny = string
+notAny = 10 # error: Incompatible types in assignment (expression has type &quot;int&quot;, variable has type &quot;str&quot;)
+</code></pre><h3 id="callable">Callable</h3>
+<p>You can express the type of the function with Callable.</p>
+<pre><code>from typing import Callable
+
+#Function type definition that receives one integer type argument and returns a string type
+func: Callable[[int], str]
+
+def sample(num: int) -&gt; str:
+  return str(num)
+
+func = sample
+</code></pre><h3 id="typeddict">TypedDict</h3>
+<p>You may want to specify a key value in a map and specify what type of value that key has. The typescript is represented by interface.</p>
+<p>For example, suppose there is a dictionary type value called movie.</p>
+<pre><code>movie = {'name':'Blade Runner','year': 1982}
+</code></pre><p>move has a key called name and year, but it would be a problem if you accidentally put an integer in name or a character string in year when overwriting it.
+TypedDict makes it easy to express as a type.</p>
+<pre><code>from typing_extensions import TypedDict
+
+Movie = TypedDict('Movie', {'name': str,'year': int})
+
+movie1: Movie = {'name':'Blade Runner','year': 1982} # OK
+
+movie2: Movie = {'name':'Blade Runner','year': '1982'} # error: Incompatible types (expression has type &quot;str&quot;, TypedDict item &quot;year&quot; has type &quot;int&quot;)
+</code></pre><p>It can also be expressed in the form of a class. I personally like the TS interface, so I prefer this one.</p>
+<pre><code>from typing_extensions import TypedDict
+
+class Movie(TypedDict):
+    name: str
+    year: int
+</code></pre><p>Please check the official document for details.
+<a href="https://mypy.readthedocs.io/en/latest/more_types.html#typeddict">https://mypy.readthedocs.io/en/latest/more_types.html#typeddict</a></p>
+<h2 id="summary">Summary</h2>
+<p>What did you think?
+I hope you find it surprisingly low to start typing in Python.</p>
+<p>If you don&rsquo;t have a type in Python and it&rsquo;s painful, introduce it now! I am happy because I have more than I expected.</p>
+<p>The dissatisfaction point is that the support of the editor is not so solid.
+I&rsquo;m using Pyright as an extension of VS-Code, but I would like to switch if there is a better one.</p>
+<p>Let&rsquo;s have a good year end!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

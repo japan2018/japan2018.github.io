@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Summarize the method of preprocessing text (natural language processing) with tf.data.Dataset api | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Summarize the method of preprocessing text (natural language processing) with tf.data.Dataset api</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 26, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> Natural Language Processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow"> TensorFlow</a></code></small>
+
+</p>
+<pre><code>It is the 11th day of [TensorFlow2.0 Advent Calendar 2019](https://qiita.com/advent-calendar/2019/tensorflow2).
+</code></pre>
+<p>I would like to summarize the method of preprocessing text using <a href="https://www.tensorflow.org/guide/data">tf.data.Dataset API</a>.</p>
+<p>This article will explain in the following order.</p>
+<ol>
+<li>Explain what the tf.data.Dataset API is and how effective it is</li>
+<li>Explain the actual text preprocessing procedure</li>
+<li>Summary of tips for improving performance</li>
+</ol>
+<p>Since the explanation is long (the code is long&hellip;) If you want to take a bird&rsquo;s eye view by looking at only the code, <a href="https://github.com/tokusumi/nlp-dnn-baselines/blob/master/nlp-dnn-Youcanrefertoitfrombaselines/preprocess/tfdata.py">here</a>.</p>
+<p>(Note that the contents of this article have not been fully verified. The code works, but there are some things I am not sure about whether it is contributing to performance improvement. I&rsquo;ll do it, but I hope you keep it for reference only.)</p>
+<p>The following articles are related to the Advent Calendar. I think this should also be used as a reference.</p>
+<ul>
+<li>
+<p>Day 3: Basic introduction of tf.data.Dataset API (<a href="https://qiita.com/Suguru_Toyohara/items/820b0dad955ecd91c7f3">The story that the dataset function that can be used with TensorFlow was strong</a>)</p>
+</li>
+<li>
+<p>Day 7: The tf.data.Dataset API shows you how to use Mecab to divide your text (<a href="https://qiita.com/masahikoofjoyto/items/b444262405ad7371c78a">Mecab and tf.data to divide your livedoor news corpus</a>)</p>
+</li>
+<li>
+<p>Day 10: Parallelized with joblib to speed up map. In this article, I will introduce the parallelization function of .map itself of tf.data, but I would like to verify which is faster. (Or rather, it seems that they can be combined) ([[TF2.0 Application] A case in which general-purpose Data Augmentation is parallelized and realized at high speed with the strong dataset function of TF example]](<a href="https://qiita.com/Suguru_Toyohara/items/528447a73fc6dd20ea57">https://qiita.com/Suguru_Toyohara/items/528447a73fc6dd20ea57</a>)))</p>
+</li>
+</ul>
+<h1 id="1-tfdatadataset-api">1. tf.data.Dataset API</h1>
+<p>I think the typical learning process is as follows.</p>
+<ol>
+<li>Read data: Read from local storage, in-memory, cloud storage</li>
+<li>Pre-processing: CPU processing</li>
+<li>Pass data to device for learning: Pass to GPU, TPU</li>
+<li>Learning: Processing with GPU, TPU</li>
+</ol>
+<p>As the data set grows larger, resources will run out as you perform steps 1 to 4 one by one.
+(Especially for images, it is a few GB, so it is not possible to process them at once even by reading the data.)
+Therefore, the processes from 1 to 4 are divided into batches (for example, for every several images) and are performed in one go. It is recommended to repeat that. This is called pipeline processing.</p>
+<p>With a straightforward pipeline, this series of processes can result in wasted latency in the overhead part:
+<img width="668" alt="idle.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/23accdff-134f-6722-9634-83892194ef80.png">
+<a href="https://www.tensorflow.org/guide/data_performance">https://www.tensorflow.org/guide/data_performance</a></p>
+<p>The tf.data.Dataset API has a function to reduce overhead by distributing overhead processing as follows.</p>
+<ul>
+<li>prefetch: parallel processing on CPU and GPU/TPU</li>
+<li>map: preprocessing parallel processing</li>
+<li>read_file: Read parallel processing</li>
+</ul>
+<p>These will be discussed later. First of all, I will write about text preprocessing in order to know how to use the tf.data.Dataset API.</p>
+<h1 id="2-flow-of-text-preprocessing">2. Flow of text preprocessing</h1>
+<p>Let&rsquo;s try preprocessing the text using the tf.data.Dataest API.
+I think that the order may change, but I think the standard text preprocessing flow is as follows.</p>
+<ol>
+<li>load: text loading/shuffle</li>
+<li>standarize: stop word deletion, replacement, unification to lower case, etc.</li>
+<li>tokenize: Separated words (for Japanese)
+4.Replace with encode: id</li>
+<li>split: split data for train and test</li>
+<li>padding: zero padding</li>
+<li>batch: Acquire as batch data</li>
+</ol>
+<h2 id="21-load">2.1. load</h2>
+<p>First, create a dataset loader. The process flow is as follows.</p>
+<ol>
+<li>Download data to local disc</li>
+<li>Specify local disc data</li>
+<li>Labeling</li>
+<li>Shuffle data</li>
+</ol>
+<h3 id="download-data-to-local-disc">Download data to local disc</h3>
+<p>Since the size of the dataset we are dealing with is getting bigger these days, I don&rsquo;t think there are many cases where there is data on the local disc from the beginning. Therefore, the following cases are possible.</p>
+<ul>
+<li>Download from external storage</li>
+<li>Download from cloud storage</li>
+<li>Get from Database</li>
+</ul>
+<p>Here is an example of simply getting data from external storage (without authentication).
+Below you can download the text files cowper.txt, derby.txt, butler.txt to your local disc. (Because it is easy to download, I will use the English text data here, but actually assume preprocessing for Japanese)
+In addition, it is a function that returns the list of downloaded local disc paths. If you change the download method appropriately and arrange the output, you can use the same procedure below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">download_file</span>(directory_url: List[str], file_names: List[str]) <span style="color:#f92672">-&gt;</span> List[str]:
+    file_paths <span style="color:#f92672">=</span> [
+        tf<span style="color:#f92672">.</span>keras<span style="color:#f92672">.</span>utils<span style="color:#f92672">.</span>get_file(file_name, directory_url <span style="color:#f92672">+</span> file_name)
+        <span style="color:#66d9ef">for</span> file_name <span style="color:#f92672">in</span> file_names
+    ]
+    <span style="color:#66d9ef">return</span> file_paths
+
+<span style="color:#75715e"># download dataset in local disk</span>
+directory_url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://storage.googleapis.com/download.tensorflow.org/data/illiad/&#39;</span>
+file_names <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;cowper.txt&#39;</span>,<span style="color:#e6db74">&#39;derby.txt&#39;</span>,<span style="color:#e6db74">&#39;butler.txt&#39;</span>]
+file_paths <span style="color:#f92672">=</span> download_file(directory_url, file_names)
+</code></pre></div><h3 id="specify-local-disc-data--label--shuffle-data">Specify local disc data &amp; label &amp; shuffle data</h3>
+<p>The rest of the processing can be summarized as follows. Now we have a Dataset that iterates the text and label.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_dataset</span>(file_paths: List[str], file_names: List[str], BUFFER_SIZE<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>):
+    <span style="color:#75715e"># specify multiple files to load</span>
+    files <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>Dataset<span style="color:#f92672">.</span>list_files(file_paths)
+    <span style="color:#75715e"># Apply map function for each file (labeling_map_fn will be described later (reading and labeling data))</span>
+    datasets <span style="color:#f92672">=</span> files<span style="color:#f92672">.</span>interleave(
+        labeling_map_fn(file_names),
+    )
+    <span style="color:#75715e"># data shuffle</span>
+    all_labeled_data <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>shuffle(
+        BUFFER_SIZE, reshuffle_each_iteration<span style="color:#f92672">=</span>False
+    )
+    <span style="color:#66d9ef">return</span> all_labeled_data
+
+datasets <span style="color:#f92672">=</span> load_dataset(file_paths, file_names)
+text, label <span style="color:#f92672">=</span> next(iter(datasets))
+<span style="color:#66d9ef">print</span>(text)
+<span style="color:#75715e"># &lt;tf.Tensor: id=99928, shape=(), dtype=string, numpy=b&#39;Comes furious on, but speeds not, kept aloof&#39;&gt;</span>
+<span style="color:#66d9ef">print</span>(label)
+<span style="color:#75715e"># &lt;tf.Tensor: id=99929, shape=(), dtype=int64, numpy=0&gt;</span>
+</code></pre></div><p>Let&rsquo;s look at the processing in detail.</p>
+<h4 id="tfdatadatasetlist_files-specify-multiple-files-to-load">tf.data.Dataset.list_files(): specify multiple files to load</h4>
+<p>The files created by tf.data.Dataset.list_files are Dataset instances that have the path of the local disc as a value as shown below. It&rsquo;s tedious, but you need to iterate over the Dataset instance to see what&rsquo;s inside. Even more cumbersome, you can get the value using the <code>.numpy()</code> method.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(files)
+<span style="color:#75715e"># &lt;DatasetV1Adapter shapes: (), types: tf.string&gt;</span>
+
+next(iter(files))
+<span style="color:#75715e"># &lt;tf.Tensor: id=99804, shape=(), dtype=string, numpy=b&#39;/Users/username/.keras/datasets/cowper.txt&#39;&gt;</span>
+
+next(iter(files))<span style="color:#f92672">.</span>numpy()
+<span style="color:#75715e">#b&#39;/Users/username/.keras/datasets/cowper.txt&#39;</span>
+</code></pre></div><h4 id="interleave-apply-a-map-function-for-each-file-and-return-a-flat-dataset">.interleave(): Apply a map function for each file and return a flat Dataset</h4>
+<p>After applying the map function to the dataset, flatten and combine the results. In this usage, we first define a map funciton that reads a text file and returns a Dataset that iterates line by line. Then, passing it to <code>.interleave()</code> does not create a separate Dataset for each file, but creates a flat Dataset that iterates line by line from all files.Reference: <a href="https://www.tensorflow.org/api_docs/python/tf/data/Dataset#interleave">Official Document</a></p>
+<h4 id="shuffle-shuffle-for-data">.shuffle(): shuffle for data</h4>
+<p>As you can see from the name, it will shuffle the Dataset. Data is randomly extracted from buffer_size at iteration. If iteration is repeated and buffer_size is exceeded, data is extracted from the next buffer_size. Therefore, a larger buffer_size will guarantee the clutter. However, if the buffer_size is large, it consumes resources correspondingly, which is a trade-off.</p>
+<p>Also, if you set <code>reshuffle_each_iteration=False</code>, it shuffles in the same order no matter how many times you start iteration. Since it is True in default, after calling <code>.shuffle()</code>, you can write <code>next(iter(dataset))</code> or <code>for data in dataset:</code> Will be iterationd in different order. Be careful whether it&rsquo;s good or bad.</p>
+<h4 id="labeling_map_fn-data-reading--labeling">labeling_map_fn: data reading &amp; labeling</h4>
+<p>I will show you how to read a .txt file in which the file name is a label and each line is one text data.
+I think that it is a standard process, but I would like to replace it appropriately depending on the data format.</p>
+<p>Here, the following map function is passed to <code>.interleave()</code> to get a Dataset with flat text and labels.</p>
+<ol>
+<li>Create a Dataset instance by loading the file with <code>tf.data.TextLineDataset()</code> for each file.</li>
+<li>Use <code>.map(labeler)</code> to refer to the file name and the same label id.</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">labeling_map_fn</span>(file_names):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_get_label</span>(datasets):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Parse the file name from the dataset value (file path),
+</span><span style="color:#e6db74">        Set the index number of file_names as label ID
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        filename <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>numpy()<span style="color:#f92672">.</span>decode()<span style="color:#f92672">.</span>rsplit(<span style="color:#e6db74">&#39;/&#39;</span>, <span style="color:#ae81ff">1</span>)[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+        label <span style="color:#f92672">=</span> file_names<span style="color:#f92672">.</span>index(filename)
+        <span style="color:#66d9ef">return</span> label
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_labeler</span>(example, label):
+        <span style="color:#e6db74">&#34;&#34;&#34;Add label to dataset&#34;&#34;&#34;</span>
+        <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>cast(example, tf<span style="color:#f92672">.</span>string), tf<span style="color:#f92672">.</span>cast(label, tf<span style="color:#f92672">.</span>int64)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_labeling_map_fn</span>(file_path: str):
+        <span style="color:#e6db74">&#34;&#34;&#34;main map function&#34;&#34;&#34;</span>
+        <span style="color:#75715e"># Read line by line from text file</span>
+        datasets <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>TextLineDataset(file_path)
+        <span style="color:#75715e"># convert file path to label ID</span>
+        label <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>py_function(_get_label, inp<span style="color:#f92672">=</span>[file_path], Tout<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>int64)
+        Add <span style="color:#75715e">#label ID to Dataset</span>
+        labeled_dataset <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>map(<span style="color:#66d9ef">lambda</span> ex: _labeler(ex, label))
+        <span style="color:#66d9ef">return</span> labeled_dataset
+    <span style="color:#66d9ef">return</span> _labeling_map_fn
+</code></pre></div><p>On the way, I am using a function called <code>tf.py_function</code> (<a href="https://www.tensorflow.org/api_docs/python/tf/py_function">doc</a>).ThisisbecausetheDatasetAPI&rsquo;smapfunctionargumentisaTensorobject.Tensorobjectcannotdirectlyreferencethevalueinpython,butifyouwrapitwithtf.py_function,thesametypevaluewillbepassedastheargument<code>next(iter(dataset))</code>.Soyoucanreferencethevaluewith<code>.numpy()</code> and write the familiar python process.
+However, it seems that performance is a little difficult, so I would like to avoid using it as much as possible.</p>
+<h2 id="22-standarize--23-tokenize">2.2. standarize &amp; 2.3. tokenize</h2>
+<p>Here, various processes are performed at once. It is supposed to use a python library or a solid one.
+tensorflow also has a lot of processing for text, but since it is quite difficult, I will assume that you use the one written in python as it is. At least it is not possible to write a word in tensorflow, so I think it will be an essential process in Japanese.</p>
+<h3 id="example-using-janome">Example (using janome)</h3>
+<p><a href="https://mocobeta.github.io/janome/">janome</a> is a morphological analyzer implemented in python, so it&rsquo;s convenient because you can use it only by pip install. You can flexibly build a standardized pipeline called analyzer as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> janome.tokenizer <span style="color:#f92672">import</span> Tokenizer
+<span style="color:#f92672">from</span> janome.analyzer <span style="color:#f92672">import</span> Analyzer
+<span style="color:#f92672">from</span> janome.charfilter <span style="color:#f92672">import</span> (
+    RegexReplaceCharFilter <span style="color:#75715e"># string replacement</span>
+)
+<span style="color:#f92672">from</span> janome.tokenfilter <span style="color:#f92672">import</span> (
+    CompoundNounFilter, <span style="color:#75715e"># compound noun</span>
+    POSStopFilter, <span style="color:#75715e"># remove specific parts of speech</span>
+    Convert to LowerCaseFilter <span style="color:#75715e"># lowercase</span>
+)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">janome_tokenizer</span>():
+    <span style="color:#75715e"># standarize texts</span>
+    char_filters <span style="color:#f92672">=</span> [RegexReplaceCharFilter(<span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;meander&#39;</span>, <span style="color:#e6db74">u</span><span style="color:#e6db74">&#39;janome&#39;</span>)]
+    tokenizer <span style="color:#f92672">=</span> Tokenizer()
+    token_filters <span style="color:#f92672">=</span> [CompoundNounFilter(), POSStopFilter([<span style="color:#e6db74">&#39;symbol&#39;</span>,<span style="color:#e6db74">&#39;particle&#39;</span>]], LowerCaseFilter()]
+    analyze <span style="color:#f92672">=</span> Analyzer(char_filters, tokenizer, token_filters)<span style="color:#f92672">.</span>analyze
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_tokenizer</span>(text, label):
+        tokenized_text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join([wakati<span style="color:#f92672">.</span>surface <span style="color:#66d9ef">for</span> wakati <span style="color:#f92672">in</span> analyze(text<span style="color:#f92672">.</span>numpy()<span style="color:#f92672">.</span>decode())])
+        <span style="color:#66d9ef">return</span> tokenized_text, label
+    <span style="color:#66d9ef">return</span> _tokenizer
+</code></pre></div><p>With this alone, it will be standardized and separated as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">text, _ <span style="color:#f92672">=</span> janome_tokenizer()(<span style="color:#e6db74">&#39;The eyes are a morphological analyzer. Easy to Use.&#39;</span>, <span style="color:#ae81ff">0</span>)
+<span style="color:#66d9ef">print</span>(text)
+<span style="color:#75715e">#&#39;janome morphological analyzer easy to use.&#39;</span>
+</code></pre></div><h3 id="wrap-with-tfpy_function">Wrap with tf.py_function</h3>
+<p>The above function is called from Datset api.
+To do so, again convert using tf.py_function. You must specify the type of output. Then you can call that function by passing it to dataset with <code>.map()</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">tokenize_map_fn</span>(tokenizer):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    convert python function for tf.data map
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_tokenize_map_fn</span>(text: str, label: int):
+        <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>py_function(tokenizer, inp<span style="color:#f92672">=</span>[text, label], Tout<span style="color:#f92672">=</span>(tf<span style="color:#f92672">.</span>string, tf<span style="color:#f92672">.</span>int64))
+    <span style="color:#66d9ef">return</span> _tokenize_map_fn
+
+datasets <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>map(tokenize_map_fn(janome_tokenizer()))
+
+</code></pre></div><h2 id="24-encode">2.4. encode</h2>
+<p>Use <a href="https://www.tensorflow.org/datasets/api_docs/python/tfds/features/Text">tensorflow_datasets.text API</a>toencode(convertstringtoID).
+Especially for encoding, <code>tfds.features.text.Tokenizer()</code> and <code>tfds.features.text.TokenTextEncoder</code> are useful.</p>
+<h3 id="create-vocabulary">Create vocabulary</h3>
+<p>First, we need to create a vocabulary. If you make it first, you can omit the following.
+Here, create a vocabulary from the learning data. Use <code>tfds.features.text.Tokenizer()</code> to get token and set() to remove duplicates.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> tensorflow_datasets <span style="color:#f92672">as</span> tfds
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_vocabulary</span>(datasets) <span style="color:#f92672">-&gt;</span> Set[str]:
+    tokenizer <span style="color:#f92672">=</span> tfds<span style="color:#f92672">.</span>features<span style="color:#f92672">.</span>text<span style="color:#f92672">.</span>Tokenizer()<span style="color:#f92672">.</span>tokenize
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_tokenize_map_fn</span>(text, label):
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_tokenize</span>(text, label):
+            <span style="color:#66d9ef">return</span> tokenizer(text<span style="color:#f92672">.</span>numpy()), label
+        <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>py_function(_tokenize, inp<span style="color:#f92672">=</span>[text, label], Tout<span style="color:#f92672">=</span>(tf<span style="color:#f92672">.</span>string, tf<span style="color:#f92672">.</span>int64))
+
+    dataset <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>map(_tokenize_map_fn)
+    vocab <span style="color:#f92672">=</span> {g<span style="color:#f92672">.</span>decode() <span style="color:#66d9ef">for</span> f, _ <span style="color:#f92672">in</span> dataset <span style="color:#66d9ef">for</span> g <span style="color:#f92672">in</span> f<span style="color:#f92672">.</span>numpy()}
+    <span style="color:#66d9ef">return</span> vocab
+
+vocab_set <span style="color:#f92672">=</span> get_vocabulary(datasets)
+<span style="color:#66d9ef">print</span>(vocab_set)
+<span style="color:#75715e"># {&#39;indomitable&#39;,&#39;suspicion&#39;,&#39;wer&#39;, ...}</span>
+</code></pre></div><h3 id="encodehere-we-use-tfdsfeaturestexttokentextencoder-to-convert-the-token-contained-in-the-vocabulary-into-an-id-use-the-following-encode_map_fn-for-datasetsmap">encodeHere, we use <code>tfds.features.text.TokenTextEncoder()</code> to convert the token contained in the vocabulary into an ID. Use the following <code>encode_map_fn()</code> for <code>datasets.map()</code>.</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">encoder</span>(vocabulary_set: Set[str]):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    encode text to numbers. must set vocabulary_set
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    encoder <span style="color:#f92672">=</span> tfds<span style="color:#f92672">.</span>features<span style="color:#f92672">.</span>text<span style="color:#f92672">.</span>TokenTextEncoder(vocabulary_set)<span style="color:#f92672">.</span>encode
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_encode</span>(text: str, label: int):
+        encoded_text <span style="color:#f92672">=</span> encoder(text<span style="color:#f92672">.</span>numpy())
+        <span style="color:#66d9ef">return</span> encoded_text, label
+    <span style="color:#66d9ef">return</span> _encode
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">encode_map_fn</span>(encoder):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    convert python function for tf.data map
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_encode_map_fn</span>(text: str, label: int):
+        <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>py_function(encoder, inp<span style="color:#f92672">=</span>[text, label], Tout<span style="color:#f92672">=</span>(tf<span style="color:#f92672">.</span>int64, tf<span style="color:#f92672">.</span>int64))
+    <span style="color:#66d9ef">return</span> _encode_map_fn
+
+datasets <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>map(encode_map_fn(encoder(vocab_set)))
+<span style="color:#66d9ef">print</span>(next(iter(datasets))[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>numpy())
+<span style="color:#75715e"># [111, 1211, 4, 10101]</span>
+</code></pre></div><h2 id="25-split">2.5. split</h2>
+<p>Split the dataset into train and test. If it is understood from the beginning, the following can be omitted.
+With the Dataset API, partitioning a dataset can be implemented very easily as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">split_train_test</span>(data, TEST_SIZE: int, BUFFER_SIZE: int, SEED<span style="color:#f92672">=</span><span style="color:#ae81ff">123</span>):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    TEST_SIZE = number of test data
+</span><span style="color:#e6db74">    note: because of reshuffle_each_iteration = True (default),
+</span><span style="color:#e6db74">    train_data is reshuffled if you reuse train_data.
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    train_data <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>skip(TEST_SIZE)<span style="color:#f92672">.</span>shuffle(BUFFER_SIZE, seed<span style="color:#f92672">=</span>SEED)
+    test_data <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>take(TEST_SIZE)
+    <span style="color:#66d9ef">return</span> train_data, test_data
+</code></pre></div><h2 id="26-padding--27-batch">2.6. padding &amp; 2.7. batch</h2>
+<p>With tf.data.Dataset api, padding and batching can be done at the same time.
+As is, epochs is the number of epochs and BATCH_SIZE is the batch size.
+The points to note are the following.</p>
+<ul>
+<li>If you set <code>drop_remainder=True</code>, when you batch data, you will not use the last data of iteration that did not reach the batch size.</li>
+<li>You can specify the padding size (= maximum length) with padded_shapes. If you don&rsquo;t specify this argument, it will be padded to the maximum length per batch.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">train_data <span style="color:#f92672">=</span> train_data<span style="color:#f92672">.</span>padded_batch(BATCH_SIZE, padded_shapes<span style="color:#f92672">=</span>([max_len], []), drop_remainder<span style="color:#f92672">=</span>True)
+test_data <span style="color:#f92672">=</span> test_data<span style="color:#f92672">.</span>padded_batch(BATCH_SIZE, padded_shapes<span style="color:#f92672">=</span>([max_len], []), drop_remainder<span style="color:#f92672">=</span>False)
+</code></pre></div><p>Here, max_len can be calculated from the dataset as shown below, or can be entered decisively.</p>
+<h3 id="get-maximum-document-length">Get maximum document length</h3>
+<p>Most models require a maximum token length. Now get it from the dataset. If you decide to enter it, you can skip the following process.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_max_len</span>(datasets) <span style="color:#f92672">-&gt;</span> int:
+    tokenizer <span style="color:#f92672">=</span> tfds<span style="color:#f92672">.</span>features<span style="color:#f92672">.</span>text<span style="color:#f92672">.</span>Tokenizer()<span style="color:#f92672">.</span>tokenize
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_get_len_map_fn</span>(text: str, label: int):
+        <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_get_len</span>(text: str):
+            <span style="color:#66d9ef">return</span> len(tokenizer(text<span style="color:#f92672">.</span>numpy()))
+        <span style="color:#66d9ef">return</span> tf<span style="color:#f92672">.</span>py_function(_get_len, inp<span style="color:#f92672">=</span>[text, ], Tout<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>int32)
+
+    dataset <span style="color:#f92672">=</span> datasets<span style="color:#f92672">.</span>map(_get_len_map_fn)
+    max_len <span style="color:#f92672">=</span> max({f<span style="color:#f92672">.</span>numpy() <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> dataset})
+    <span style="color:#66d9ef">return</span> max_len
+</code></pre></div><h2 id="summary-of-the-flow-of-text-preprocessing">Summary of the flow of text preprocessing</h2>
+<p>I looked at the implementation using the tf.data.Dataset API in the following flow.</p>
+<ol>
+<li>load: text loading/shuffle</li>
+<li>standarize: stop word deletion, replacement, unification to lower case, etc.</li>
+<li>tokenize: Separated words (for Japanese)
+4.Replace with encode: id</li>
+<li>split: split data for train and test</li>
+<li>padding: zero padding</li>
+<li>batch: Acquire as batch data</li>
+</ol>
+<p>When learning, just pass it to the <code>.fit()</code> method as shown below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">model<span style="color:#f92672">.</span>fit(train_data,
+      epochs<span style="color:#f92672">=</span>epochs,
+      validation_data<span style="color:#f92672">=</span>test_data
+)
+</code></pre></div><h1 id="3-tips-for-improving-performance">3. Tips for improving performance</h1>
+<p>As mentioned at the beginning, the pre-processing sequence can result in wasted latency in the overhead part as follows:
+<img width="668" alt="idle.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/23accdff-134f-6722-9634-83892194ef80.png">
+<a href="https://www.tensorflow.org/guide/data_performance">https://www.tensorflow.org/guide/data_performance</a></p>
+<p>The tf.data.Dataset API has a function to reduce overhead by distributing overhead processing as follows.</p>
+<ul>
+<li>prefetch: parallel processing on CPU and GPU/TPU</li>
+<li>map: preprocessing parallel processing</li>
+<li>read_file: Read parallel processing</li>
+</ul>
+<p>Reference: <a href="https://www.tensorflow.org/guide/data_performance">Optimizing input pipelines with tf.data</a></p>
+<h2 id="prefetch">prefetch</h2>
+<p>The CPU and GPU/TPU execute processing in parallel.
+Adjusted automatically with tf.experiments.AUTOTUNE.
+<img width="664" alt="pipeline.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/9b70af79-11f2-6bd1-e07f-1439b1debfa4.png">
+<a href="https://www.tensorflow.org/guide/data_performance">https://www.tensorflow.org/guide/data_performance</a></p>
+<p>No hassle required. Just add the following process at the end. (In this article, train_data and test_data are used)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataset <span style="color:#f92672">=</span> dataset<span style="color:#f92672">.</span>prefetch(buffer_size<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>experimental<span style="color:#f92672">.</span>AUTOTUNE)
+</code></pre></div><h2 id="map">map</h2>
+<p>The map function can also be distributed.
+This also automatically adjusts with tf.experiments.AUTOTUNE.
+You can also use the <code>.batch()</code> method first and then pass it if it is too slow.
+<img width="564" alt="map.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/937988fe-554e-d2da-a715-60a80f795a0b.png">
+<a href="https://www.tensorflow.org/guide/data_performance">https://www.tensorflow.org/guide/data_performance</a></p>
+<p>Just add an argument to the <code>.map()</code> method as shown below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataset <span style="color:#f92672">=</span> dataset<span style="color:#f92672">.</span>map(map_func, num_parallel_calls<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>experimental<span style="color:#f92672">.</span>AUTOTUNE)
+</code></pre></div><h2 id="read-file">read file</h2>
+<p>Even when reading multiple files, the processing can be distributed and read simultaneously.
+Especially when reading data from remote storage, I/O is likely to become a bottleneck.
+(In this article, it is read from local disc, so it may not be very effective.)</p>
+<img width="590" alt="io.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246552/5123a659-2604-a5d0-e014-a0531b55a7f8.png">
+https://www.tensorflow.org/guide/data_performance
+<p>You need to add an argument to the <code>.interleave()</code> method as shown below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataset <span style="color:#f92672">=</span> files<span style="color:#f92672">.</span>interleave(
+    tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>TFRecordDataset, cycle_length<span style="color:#f92672">=</span>FLAGS<span style="color:#f92672">.</span>num_parallel_reads,
+    num_parallel_calls<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>data<span style="color:#f92672">.</span>experimental<span style="color:#f92672">.</span>AUTOTUNE)
+</code></pre></div><h2 id="cache">cache</h2>
+<p>The context changes, but <code>.cache()</code> is effective for improving performance.
+If you write as follows, it will be cached in memory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataset <span style="color:#f92672">=</span> dataset<span style="color:#f92672">.</span>cache()
+</code></pre></div><p>Passing a string as an argument as shown below will save it in a file instead of in memory.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">dataset <span style="color:#f92672">=</span> dataset<span style="color:#f92672">.</span>cache(<span style="color:#e6db74">&#39;tfdata&#39;</span>)
+</code></pre></div><p>#SummaryAlthough it has become long, I have introduced a method of preprocessing text using the tf.data.Dataset API. You can refer to the complete code from <a href="https://github.com/tokusumi/nlp-dnn-baselines/blob/master/nlp-dnn-baselines/preprocess/tfdata.py">here</a>.
+In particular, I have introduced the tf.data.Dataset API, text preprocessing procedures, and tips for improving performance.
+It took a long time to explain, but thank you for reading to the end!
+I would be happy if it could be helpful for anything!</p>
+<h1 id="refs">refs</h1>
+<ul>
+<li><a href="https://www.tensorflow.org/guide/data">tf.data.Dataset API</a></li>
+<li><a href="https://www.tensorflow.org/datasets/api_docs/python/tfds/features/Text">tensorflow_datasets.text API</a></li>
+<li><a href="https://www.tensorflow.org/guide/data_performance">Optimizing input pipelines with tf.data</a></li>
+<li><a href="https://www.tensorflow.org/tutorials/load_data/text">Load text</a></li>
+<li><a href="https://qiita.com/Suguru_Toyohara/items/820b0dad955ecd91c7f3">The story that the dataset function that can be used with TensorFlow was strong</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

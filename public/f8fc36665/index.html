@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] (Translation) Python to Hadoop file system (HDFS) native connection | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] (Translation) Python to Hadoop file system (HDFS) native connection</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 30, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/hdfs">Hdfs</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/arrow">Arrow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pyarrow">PyArrow</a></code></small>
+
+</p>
+<pre><code>In the beginning: Wes McKinney, creator of pandas, wrote a very interesting blog about data tools in Python, so I asked if I could translate it and publish it in the Japanese PyData community. I have received it, so I will translate it little by little and publish it.
+</code></pre>
+<p>Source: <a href="http://wesmckinney.com/blog/python-hdfs-interfaces/">Native Hadoop file system (HDFS) connectivity in Python </a></p>
+<p>2017/1/3</p>
+<p>So far, many Python libraries have been developed to interact with Hadoop File System or HDFS. Some are via HDFS&rsquo;s WebHDFS gateway, while others are native Protocol Buffer based RPC interfaces. In this post, I&rsquo;ll give an overview of the existing libraries and share what I&rsquo;ve done to provide a high performance HDFS interface within Arrow&rsquo;s ecosystem development.</p>
+<p>This blog is a follow-up to a post on the 2017 Roadmap.</p>
+<h1 id="hadoop-file-system-protocol">Hadoop file system protocol</h1>
+<p>HDFS is part of Apache Hadoop, and its design was originally based on the Google File System mentioned in the original MapReduce paper. HDFS uses Google&rsquo;s Protocol Buffers (sometimes called &ldquo;protobufs&rdquo; for short) as the native wire protocol for remote procedure calls, or RPCs.</p>
+<p>Systems that interact with HDFS will typically implement the Protobuf messaging format and the RPC protocol, as well as the main Java client. WebHDFS was developed to allow low-load applications to easily read and write files, which provides an HTTP or HTTPS gateway that can use PUT or GET requests instead of protobufs RPCs.</p>
+<p>For light load applications, WebHDFS and native protobufs RPC have comparable data throughput, but native connections are generally considered to be more scalable and suitable for production use.</p>
+<p>Python has two WebHDFS interfaces I have used:</p>
+<p>-pywebhdfs
+-hdfscli</p>
+<p>In the rest of this article, I&rsquo;ll focus on the native RPC client interface.</p>
+<p>#Access from Python with native RPC</p>
+<p>When connecting to HDFS in a native way from a C friendly language like Python, the &ldquo;official&rdquo; way with Apache Hadoop is to use libhdfs. libhdfs is a JNI-based C wrapper for the HDFS Java client. The main advantage of libhdfs is that it is distributed and supported by major Hadoop vendors and is part of the Apache Hadoop project. The downside is that you are using JNI (the JVM is started from within the Python process) and you need a complete Hadoop Java distribution on the client side. This is an unacceptable condition for some clients, and unlike other clients, it requires production level support. For example, C++ application Apache Impala (Incubation Project) uses libhdfs to access data on HDFS.</p>
+<p>Since libhdfs is inherently heavy, alternative native interfaces to HDFS have been developed.</p>
+<p>-libhdfs3 is a pure C++ library currently part of Apache HAWQ (Incubation Project). libhdfs3 was developed by Pivotal Labs for use in HAWQ for SQL-on-Hadoop systems. The convenience of libhdfs3 is that it is highly compatible with libhdfs at the C API level. At one point libhdfs3 was officially likely to be part of Apache Hadoop, but now it&rsquo;s unlikely (see the new C++ library under HDFS-8707, see).</p>
+<p>-snakebite: Pure Python implementation of Hadoop&rsquo;s protobuf RPC interface, developed by Spotify.</p>
+<p>Since snakebite doesn&rsquo;t provide a comprehensive API for the client (eg you can&rsquo;t write files) and it doesn&rsquo;t perform well (purely implemented in Python), I&rsquo;ll focus on libhdfs and libhdfs3 from here. I will do it.</p>
+<h1 id="python-interface-to-libhdfs-and-libhdfs3">Python interface to libhdfs and libhdfs3</h1>
+<p>There have been many attempts in the past to build a C-level interface to the JNI library, libhdfs. Among them are cyhdfs (using Cython), libpyhdfs (normal Python C extension), pyhdfs (using SWIG), etc. One of the challenges in building a C extension to libhdfs is that the shared library libhdfs.so is included in the Hdoop distribution, so make sure the $LD_LIBRARY_PATH is appropriate to load this shared library. Must be set to. In addition, the import must also be able to load the JVM libjvm.so. When these conditions are combined, you end up in &ldquo;setting hell&rdquo;.</p>
+<p>While I was thinking of building a C++ HDFS interface for use with Apache Arrow (and also via Python via PyArrow), I found an implementation of libhdfs in Turi&rsquo;s SFrame project. This was such that when loading the JVM and libhdfs at runtime, both would find a sensible approach to both. I took this approach with Arrow and it worked. Using this implementation, Arrow&rsquo;s data serialization tools (like Apache Parquet) have very low I/O overhead and also provide a convenient Python file interface.</p>
+<p>The libhdfs and libhdfs3 driver libraries have almost the same C API, so I was able to switch drivers according to Python keyword arguments.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> pyarrow <span style="color:#f92672">import</span> HdfsClient
+
+use <span style="color:#75715e">#libhdfs</span>
+hdfs <span style="color:#f92672">=</span> HdfsClient(host, port, username, driver<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;libhdfs&#39;</span>)
+
+use <span style="color:#75715e">#libhdfs3</span>
+hdfs_alt <span style="color:#f92672">=</span> HdfsClient(host, port, username, driver<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;libhdfs3&#39;</span>)
+
+<span style="color:#66d9ef">with</span> hdfs<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#39;/path/to/file&#39;</span>) <span style="color:#66d9ef">as</span> f:
+    <span style="color:#f92672">...</span>
+</code></pre></div><p>In parallel with this, the developers of the Dask project created hdfs3, a pure Python interface to libhdfs3. It used ctypes to avoid C extensions. hdfs3 provides access to other features of libhdfs3 as well as the Python file interface.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> hdfs3 <span style="color:#f92672">import</span> HDFileSystem
+
+hdfs <span style="color:#f92672">=</span> HDFileSystem(host, port, user)
+<span style="color:#66d9ef">with</span> hdfs<span style="color:#f92672">.</span>open(<span style="color:#e6db74">&#39;/path/to/file&#39;</span>,<span style="color:#e6db74">&#39;rb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+    <span style="color:#f92672">...</span>
+</code></pre></div><p>#pyarrow.HdfsClient and hdfs3 data access performance</p>
+<p>For the local CDH 5.6.0 HDFS cluster, I calculated the aggregate average read performance of files from 4KB to 100MB in size with 3 different settings.</p>
+<p>-hdfs3 (always use libhdfs3)
+-pyarrow.HdfsClient with driver='libhdfs&rsquo;
+-pyarrow.HdfsClient with driver='libhdfs3&rsquo;</p>
+<p>You can get all of these packages with:</p>
+<p>conda install pyarrow hdfs3 libhdfs3 -c conda-forge</p>
+<p>Note: pyarrow&rsquo;s conda-forge package is currently only available on Linux. In theory, this issue should have been resolved by January 20, 2017. If anyone can help with Windows support, please let us know.</p>
+<p>Performance numbers are megabytes per second (&ldquo;throughput&rdquo;). The benchmark code is at the end of this post. I&rsquo;m interested in what happens to this result with more versatile production environments and Hadoop configurations.</p>
+<p>HDFS RPC data perf<img src="https://qiita-image-store.s3.amazonaws.com/0/37652/4bba62d6-0baa-1b5b-09df-7278f19859fd.png%22libhdfs_perf_linear.png%22" alt="libhdfs_perf_linear.png"></p>
+<p>At least the tests I did have some interesting results:</p>
+<p>-libhdfs showed the highest throughput in this test, despite being Java and JNI based.
+-libhdfs3 had poor performance for small size reads. This may be due to RPC latency or an issue that I&rsquo;m not aware of.
+-Strictly compared with libhdfs3, pyarrow outperforms hdfs310-15%. This is probably due to memory handling/copying due to the difference between ctypes (hdfs3) and C++ (pyarrow).</p>
+<p>The following is the logarithmic scale of time.</p>
+<p>HDFS RPC data perf<img src="https://qiita-image-store.s3.amazonaws.com/0/37652/50dd6bfb-d050-b19a-fe13-736bfe865052.png%22libhdfs_perf_log.png%22" alt="libhdfs_perf_log.png"></p>
+<h1 id="native-c-io-on-apache-arrowone-reason-to-build-hdfs-like-io-interfaces-within-the-pyarrow-library-is-that-they-all-use-a-common-layer-of-memory-management-with-only-a-very-low-possibly-zero-copy-overhead--because-you-can-pass-the-data-on-the-other-hand-a-library-that-only-exposes-pythons-file-interface-has-some-overhead-because-it-handles-memory-with-byte-objects-in-the-python-interpreter">Native C++ I/O on Apache ArrowOne reason to build HDFS-like I/O interfaces within the pyarrow library is that they all use a common layer of memory management, with only a very low (possibly zero) copy overhead. , Because you can pass the data. On the other hand, a library that only exposes Python&rsquo;s file interface has some overhead because it handles memory with byte objects in the Python interpreter.</h1>
+<p>The details of Arrow&rsquo;s C++ I/O system are beyond the scope of this article, but I&rsquo;ll leave a post about it on this blog in the future.</p>
+<p>Benchmark code</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> gc
+<span style="color:#f92672">import</span> random
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> pyarrow <span style="color:#f92672">as</span> pa
+<span style="color:#f92672">import</span> hdfs3
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> seaborn <span style="color:#f92672">as</span> sns
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+DATA_SIZE <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span> <span style="color:#f92672">*</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">&lt;&lt;</span> <span style="color:#ae81ff">20</span>)
+data <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;a&#39;</span> <span style="color:#f92672">*</span> DATA_SIZE
+
+hdfs <span style="color:#f92672">=</span> pa<span style="color:#f92672">.</span>HdfsClient(<span style="color:#e6db74">&#39;localhost&#39;</span>, <span style="color:#ae81ff">20500</span>,<span style="color:#e6db74">&#39;wesm&#39;</span>)
+hdfscpp <span style="color:#f92672">=</span> pa<span style="color:#f92672">.</span>HdfsClient(<span style="color:#e6db74">&#39;localhost&#39;</span>, <span style="color:#ae81ff">20500</span>,<span style="color:#e6db74">&#39;wesm&#39;</span>, driver<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;libhdfs3&#39;</span>)
+hdfs3_fs <span style="color:#f92672">=</span> hdfs3<span style="color:#f92672">.</span>HDFileSystem(<span style="color:#e6db74">&#39;localhost&#39;</span>, port<span style="color:#f92672">=</span><span style="color:#ae81ff">20500</span>, user<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;wesm&#39;</span>)
+
+hdfs<span style="color:#f92672">.</span>delete(path)
+path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/tmp/test-data-file-1&#39;</span>
+<span style="color:#66d9ef">with</span> hdfs<span style="color:#f92672">.</span>open(path,<span style="color:#e6db74">&#39;wb&#39;</span>) <span style="color:#66d9ef">as</span> f:
+    f<span style="color:#f92672">.</span>write(data)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read_chunk</span>(f, size):
+    <span style="color:#75715e"># do a random seek</span>
+    f<span style="color:#f92672">.</span>seek(random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">0</span>, size))
+    <span style="color:#66d9ef">return</span> f<span style="color:#f92672">.</span>read(size)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">ensemble_average</span>(runner, niter<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>):
+    start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>clock()
+    gc<span style="color:#f92672">.</span>disable()
+    data_chunks <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(niter):
+        data_chunks<span style="color:#f92672">.</span>append(runner())
+    elapsed <span style="color:#f92672">=</span> (time<span style="color:#f92672">.</span>clock()<span style="color:#f92672">-</span>start) <span style="color:#f92672">/</span> niter
+    gc<span style="color:#f92672">.</span>enable()
+    <span style="color:#66d9ef">return</span> elapsed
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_test_func</span>(fh, chunksize):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">runner</span>():
+        <span style="color:#66d9ef">return</span> read_chunk(fh, chunksize)
+    <span style="color:#66d9ef">return</span> runner
+
+KB <span style="color:#f92672">=</span> <span style="color:#ae81ff">1024</span>
+MB <span style="color:#f92672">=</span> <span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> KB
+chunksizes <span style="color:#f92672">=</span> [<span style="color:#ae81ff">4</span> <span style="color:#f92672">*</span> KB, MB, <span style="color:#ae81ff">10</span> <span style="color:#f92672">*</span> MB, <span style="color:#ae81ff">100</span> <span style="color:#f92672">*</span> MB]
+iterations <span style="color:#f92672">=</span> [<span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">100</span>, <span style="color:#ae81ff">10</span>]
+
+handles <span style="color:#f92672">=</span> {
+    (<span style="color:#e6db74">&#39;pyarrow&#39;</span>,<span style="color:#e6db74">&#39;libhdfs&#39;</span>): hdfs<span style="color:#f92672">.</span>open(path),
+    (<span style="color:#e6db74">&#39;pyarrow&#39;</span>,<span style="color:#e6db74">&#39;libhdfs3&#39;</span>): hdfscpp<span style="color:#f92672">.</span>open(path),
+    (<span style="color:#e6db74">&#39;hdfs3&#39;</span>,<span style="color:#e6db74">&#39;libhdfs3&#39;</span>): hdfs3_fs<span style="color:#f92672">.</span>open(path,<span style="color:#e6db74">&#39;rb&#39;</span>)
+}
+
+timings <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> (library, driver), handle <span style="color:#f92672">in</span> handles<span style="color:#f92672">.</span>items():
+    <span style="color:#66d9ef">for</span> chunksize, niter <span style="color:#f92672">in</span> zip(chunksizes, iterations):
+        tester <span style="color:#f92672">=</span> make_test_func(handle, chunksize)
+        timing <span style="color:#f92672">=</span> ensemble_average(tester, niter<span style="color:#f92672">=</span>niter)
+        throughput <span style="color:#f92672">=</span> chunksize <span style="color:#f92672">/</span> timing
+
+        result <span style="color:#f92672">=</span> (library, driver, chunksize, timing, throughput)
+        <span style="color:#66d9ef">print</span>(result)
+        timings<span style="color:#f92672">.</span>append(result)
+
+results <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame<span style="color:#f92672">.</span>from_records(timings, columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;library&#39;</span>,<span style="color:#e6db74">&#39;driver&#39;</span>,<span style="color:#e6db74">&#39;read_size&#39;</span>,<span style="color:#e6db74">&#39;timing&#39;</span>,<span style="color:#e6db74">&#39;throughput&#39;</span>])
+results[<span style="color:#e6db74">&#39;MB/s&#39;</span>] <span style="color:#f92672">=</span> results[<span style="color:#e6db74">&#39;throughput&#39;</span>] <span style="color:#f92672">/</span> MB
+results
+results[<span style="color:#e6db74">&#39;type&#39;</span>] <span style="color:#f92672">=</span> results[<span style="color:#e6db74">&#39;library&#39;</span>] <span style="color:#f92672">+</span><span style="color:#e6db74">&#39;+&#39;</span> <span style="color:#f92672">+</span> results[<span style="color:#e6db74">&#39;driver&#39;</span>]
+It<span style="color:#e6db74">&#39;s a sequel.</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">6</span>))
+g <span style="color:#f92672">=</span> sns<span style="color:#f92672">.</span>factorplot(y<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;read_size&#39;</span>, x<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;MB/s&#39;</span>, hue<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;type&#39;</span>, data<span style="color:#f92672">=</span>results, kind<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;bar&#39;</span>, orient<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;h&#39;</span>, size<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>))
+g<span style="color:#f92672">.</span>despine(left<span style="color:#f92672">=</span>True)
+<span style="color:#75715e">#g.fig.get_axes()[0].set_xscale(&#39;log&#39;, basex=2)</span>
+g<span style="color:#f92672">.</span>fig<span style="color:#f92672">.</span>set_size_inches(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">4</span>)
+
+plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#39;results2.png&#39;</span>)
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

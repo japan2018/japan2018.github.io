@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Python data structure and internal implementation -List- | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Python data structure and internal implementation -List-</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 12, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/c"> C</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3"> Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/data-structure"> data structure</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I use Qiita a lot, but this is my first post! Nice to meet you!</p>
+<p>There are many useful articles on Python, but I don&rsquo;t think many articles mention Python&rsquo;s internal implementation so much, so I&rsquo;m motivated to be able to link various data structure explanations with internal implementation.
+This time I will write about Python list.</p>
+<h3 id="about-this-article">About this article</h3>
+<p>This article wrote about the Python list mechanism.
+However, it is impossible to write how all the methods in the list work, so mainly</p>
+<ul>
+<li>What kind of data structure is a list? Isn&rsquo;t it an array?</li>
+<li>What is the internal implementation of list type?</li>
+<li>What is a variable length array? What rules do you use to change the size?</li>
+</ul>
+<p>I wrote an article that can solve such questions.</p>
+<ul>
+<li>Python version of the execution environment: 3.8.0</li>
+<li>&ldquo;Python&rdquo; in this article refers to &ldquo;CPython&rdquo;.</li>
+</ul>
+<h3 id="target-audience">Target audience</h3>
+<ul>
+<li>Those who have the above questions</li>
+<li>People who want to know more about Python by reading introductory books and tutorials</li>
+<li>I want to know more, but it is a painful person to read the official documentation or cpython code</li>
+</ul>
+<h1 id="data-structure">data structure</h1>
+<p>Let&rsquo;s see what kind of data structure is the Python list type.</p>
+<h2 id="review">review</h2>
+<p>What is a list</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;&gt;&gt;</span> x <span style="color:#f92672">=</span> [<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>]
+<span style="color:#f92672">&gt;&gt;&gt;</span> x<span style="color:#f92672">.</span>append(<span style="color:#ae81ff">4</span>)
+<span style="color:#f92672">&gt;&gt;&gt;</span> x
+[<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">4</span>]
+</code></pre></div><p>This is familiar.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">x<span style="color:#f92672">.</span>sort()
+x<span style="color:#f92672">.</span>append(element)
+x<span style="color:#f92672">.</span>clear()
+x<span style="color:#f92672">.</span>extend(element)
+x<span style="color:#f92672">.</span>index(element)
+x<span style="color:#f92672">.</span>insert(element)
+x<span style="color:#f92672">.</span>pop()
+x<span style="color:#f92672">.</span>remove(element)
+x<span style="color:#f92672">.</span>reverse()
+</code></pre></div><p>There are many such methods (miscellaneous).</p>
+<h2 id="linked-list-and-array">linked list and array</h2>
+<p>It&rsquo;s a basic story so if you know it please skip it</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/443577/6b602ffd-7130-8204-6bbe-5aa89b8c85fb.png" alt="array_vs_linkedlist.png"></p>
+<p>The array is</p>
+<ul>
+<li>Allocate a continuous area in memory and insert elements into it</li>
+<li>It takes O(1) to access the element and O(N) to insert or delete the element</li>
+</ul>
+<p>The linked list (unidirectional) is</p>
+<ul>
+<li>One node has an element and a pointer to the next element</li>
+<li>It takes O(N) to access the element and O(1) to insert or delete the element</li>
+</ul>
+<p>There is a feature.</p>
+<h2 id="list-data-structure">list data structure</h2>
+<p>list is a standard data structure and is one of the sequence types. Some people think that it is implemented using a linked list because it is called a list, but Python&rsquo;s list is implemented as a variable length array (dynamic array). So <strong>Python list is an array</strong>. The name is confusing. ..</p>
+<p>The list is a contiguous array with references to other objects. The structure at the head of the list (<code>PyListObject</code>) has a pointer to this array and a length.
+Actually looking at the code of cpython (<code>Include/cpython/listobject.h</code>) (comment omitted)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c:listobject.h" data-lang="c:listobject.h"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    PyObject_VAR_HEAD
+    PyObject <span style="color:#f92672">**</span>ob_item;
+    Py_ssize_t allocated;
+} PyListObject;
+</code></pre></div><p>It is defined like this.
+The list is <code>PyListObject</code>, the elements in the list are of type <code>PyObject</code>, which are represented internally.
+(<code>PyObject</code> is the base type for all Python object types.)
+<code>ob_item</code> is an array of pointers to the elements in the list, and <code>allocated</code> is the allocated size.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/443577/4c34dfa4-62ef-3e62-372d-e75f9d1bbee9.png" alt="Untitled Diagram (2).png"></p>
+<p>The element can be <code>PyObject</code>, so you can have elements of different data types in the same list.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">x <span style="color:#f92672">=</span> [<span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#34;a&#34;</span>,[<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>]]
+</code></pre></div><h1 id="variable-length-array">Variable length array</h1>
+<p>I mentioned that Python list is a variable length array.
+In the variable-length array, the size of the referenced array is changed when elements are added or deleted. However, the size of the array is not changed every time. In a nice way, I decide when to increase the size and the size.</p>
+<h2 id="change-size">Change size</h2>
+<p>The process when changing the size of the array to add a new element is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/443577/df034d7b-05f3-9793-0623-1493166e7cb9.png" alt="array_expansion.png"></p>
+<p>If there is no free space, allocate new space, copy all current elements, and add new elements.</p>
+<h2 id="growth-factor">growth factor</h2>
+<p>How much to grow when the array is full depends on the <strong>growth factor</strong> (approximately how many times the size of the existing array). <strong>Growth factor</strong> varies by language. (For example, Python is 1.125, C is 2)</p>
+<p>For example, when the growth factor is 2, the size (capacity) will be as follows when elements are added to the array in order.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/443577/47e8eeda-73dc-e2d4-c3c1-b43943e1f5fa.png" alt="DinamicArray.png"></p>
+<p>Even when deleting an element, a reduction similar to enlargement is performed.</p>
+<h2 id="calculation-amount">Calculation amount</h2>
+<p>When expanding the array, all elements are copied, so the calculation amount is O(k) when the current number of elements is k.</p>
+<p>Now consider that the amount of computation of <code>list.append(element)</code> is O(1).
+Conclusion This is O(1) considering the amount of computation.</p>
+<p>When n elements are sequentially added to an empty array, the growth amount is 2 if the growth factor is 2.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+O(n+2+2^2+2^3+\cdots+2^{logn}) \\
+= O(n+2\times2^{logn})\\
+= O(n)
+\end{align}
+</code></pre><p>Therefore, the calculation amount when adding n elements is O(n).
+Therefore, the calculation amount of <code>list.append(element)</code> is O(1).</p>
+<h2 id="view-implementation">View implementation</h2>
+<p>The growth factor of Python is 1.125, but we will see how to expand it concretely.
+Operations on list are written in <code>Objects/listobject.c</code>.
+Here is the important part of the resizing function:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c:listobject.c" data-lang="c:listobject.c"><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span>
+<span style="color:#a6e22e">list_resize</span>(PyListObject <span style="color:#f92672">*</span>self, Py_ssize_t newsize)
+{
+    <span style="color:#75715e">/* This over-allocates proportional to the list size, making room
+</span><span style="color:#75715e">     * for additional growth.The over-allocation is mild, but is
+</span><span style="color:#75715e">     * enough to give linear-time amortized behavior over a long
+</span><span style="color:#75715e">     * sequence of appends() in the presence of a poorly-performing
+</span><span style="color:#75715e">     * system realloc().
+</span><span style="color:#75715e">     * Add padding to make the allocated size multiple of 4.
+</span><span style="color:#75715e">     * The growth pattern is: 0, 4, 8, 16, 24, 32, 40, 52, 64, 76, ...
+</span><span style="color:#75715e">     * Note: new_allocated won&#39;t overflow because the largest possible value
+</span><span style="color:#75715e">     * is PY_SSIZE_T_MAX * (9 / 8) + 6 which always fits in a size_t.
+</span><span style="color:#75715e">     */</span>
+    new_allocated <span style="color:#f92672">=</span> ((size_t)newsize <span style="color:#f92672">+</span> (newsize <span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">3</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">6</span>) <span style="color:#f92672">&amp;</span> <span style="color:#f92672">~</span>(size_t)<span style="color:#ae81ff">3</span>;
+}
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">    new_allocated <span style="color:#f92672">=</span> ((size_t)newsize <span style="color:#f92672">+</span> (newsize <span style="color:#f92672">&gt;&gt;</span> <span style="color:#ae81ff">3</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">6</span>) <span style="color:#f92672">&amp;</span> <span style="color:#f92672">~</span>(size_t)<span style="color:#ae81ff">3</span>;
+</code></pre></div><p>Somehow the mask calculation in the latter half is difficult to understand.</p>
+<p>The point is that the current size is multiplied by $\frac{9}{8}$ and added. Certainly the growth factor is 1.125.</p>
+<p>#Summary</p>
+<ul>
+<li>Python list is an array</li>
+<li>list is of type PyListObject internally and has pointers to PyObjects.</li>
+<li>Python growth factor is 1.125</li>
+</ul>
+<h1 id="references">References</h1>
+<ul>
+<li><a href="https://github.com/python/cpython">git repositories for cpython</a></li>
+<li><a href="https://docs.python.org/ja/3/">python Japanese document</a></li>
+<li><a href="https://www.amazon.co.jp/dp/B079Z2GX64/ref=dp-kindle-redirect?_encoding=UTF8&amp;btkr=1">Expert Python programming</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

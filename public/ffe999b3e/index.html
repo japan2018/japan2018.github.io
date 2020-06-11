@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Understand the TensorFlow namespace and master shared variables | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Understand the TensorFlow namespace and master shared variables</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 9, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> Machine Learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning"> MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow"> TensorFlow</a></code></small>
+
+</p>
+<pre><code>## Intro
+</code></pre>
+<p>This is the 9th day article of TensorFlow Advent Calendar 2016.</p>
+<p>TensorFlow was released in November 2015, but the &ldquo;namespace&rdquo; function was supported from the beginning. This is used in graph visualization with TensorBoard, but of course it&rsquo;s not the only one. Namespaces are very useful for managing identifiers. I recall C++ when it comes to strong &ldquo;namespace&rdquo; support, but I&rsquo;ll quote it from a C++ instruction book (self-study C++).</p>
+<blockquote>
+<p>The purpose of the namespace is to localize identifier names and avoid name conflicts. In the C++ programming environment, names of variables, functions, and classes have continued to proliferate. Prior to the advent of namespaces, all of these names were competing for place in the global namespace, creating many conflicts.</p>
+</blockquote>
+<p>On the other hand, Python&rsquo;s variable scope has the minimum of local, global (<code>global</code>), and +α (<code>nonlocal</code>), so the Google engineer who wrote the core part of TensorFlow in C++, It seems natural to implement C++ level namespace support in TensorFlow.</p>
+<p>Name management is not a problem in MLP (Multi-Layer Perceptron) etc. where Neural Network does not have many layers, but there is also weight sharing for large models found in deep CNN and RNN, so proper variables A scope is required. Also, considering scale-up (I have little experience with it), the code must be applied to distributed environments such as Multi-Device (GPU) and clusters. Again, we need a variable scope.</p>
+<p>In this article, I would like to confirm the related APIs for the purpose of firmly understanding the &ldquo;namespace&rdquo; of TensorFlow.
+(The programming environment is TensorFlow 0.11.0, Python 3.5.2, Ubuntu 16.04LTS.)</p>
+<h2 id="tensorflow-variable-scope-catching-point">TensorFlow Variable scope catching point</h2>
+<p>Variable scope is not difficult if you read the document properly, but I think that the following points will be caught if you understand &ldquo;ambiguity&rdquo;.</p>
+<ul>
+<li>There are tf.name_scope() and tf.variable_scope() for scope definition. What is the difference?</li>
+<li>I remember using tf.Variable() for the variable definition of TensorFlow, but when should tf.get_variable() be used?</li>
+</ul>
+<p>I will write the answer first, but the answer to question 1 is that tf.name_scope() is a more general-purpose scope definition, and tf.variable_scope() is a dedicated scope definition for managing variables (identifiers). It becomes. The answer to question 2 is that tf.Variable() is a more primitive (low-level) variable definition, whereas tf.get_variable() is a variable that takes variable scope into account (higher-level). It is a definition.
+(Related document, TesorFlow-&ldquo;HOW TO&rdquo;-&ldquo;Sharing Variable&rdquo; explains the shared variable relation in detail.)</p>
+<p>Below, I would like to move the code and examine the details.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e">#tf.name_scope</span>
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#34;my_scope&#34;</span>):
+    v1 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#34;var1&#34;</span>, [<span style="color:#ae81ff">1</span>], dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+    v2 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>Variable(<span style="color:#ae81ff">1</span>, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;var2&#34;</span>, dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+    a <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>add(v1, v2)
+
+<span style="color:#66d9ef">print</span>(v1<span style="color:#f92672">.</span>name) <span style="color:#75715e"># var1:0</span>
+<span style="color:#66d9ef">print</span>(v2<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope/var2:0</span>
+<span style="color:#66d9ef">print</span>(a<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope/Add:0</span>
+
+</code></pre></div><p>First, I used <code>tf.name_scope()</code> to define variables in it. The identifier managed by TensorFlow is output in the latter half, but the output is displayed as a comment to the right of the print statement. The scope of &ldquo;my_scope&rdquo; is properly defined for the variable v2 defined by <code>tf.Variable()</code> and the addition operation a. On the other hand, v1 defined by <code>tf.get_varible()</code> nicely ignored the scope.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"> <span style="color:#75715e"># tf.variable_scope</span>
+<span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;my_scope&#34;</span>):
+    v1 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#34;var1&#34;</span>, [<span style="color:#ae81ff">1</span>], dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+    v2 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>Variable(<span style="color:#ae81ff">1</span>, name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;var2&#34;</span>, dtype<span style="color:#f92672">=</span>tf<span style="color:#f92672">.</span>float32)
+    a <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>add(v1, v2)
+
+<span style="color:#66d9ef">print</span>(v1<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope/var1:0</span>
+<span style="color:#66d9ef">print</span>(v2<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope_1/var2:0 ... The scope name has been updated.</span>
+<span style="color:#66d9ef">print</span>(a<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope_1/Add:0 ... The scope name after update is maintained.</span>
+
+</code></pre></div><p>Next, I used <code>tf.variable_sope()</code>. (Please note that the previous snippet and this snippet are moving continuously.)
+The variable v1 defined by <code>tf.get_variable()</code> was created with the identifier &ldquo;my_scope&rdquo; appended to the variable name as intended. In addition, the variable v2 and the operation a under it have &ldquo;my_scope_1&rdquo; added (although tf.variable_scope(&ldquo;my_scope&rdquo;) is used). The reason for this is that &ldquo;my_scope&rdquo; should have been added originally (in the initial state of the program), but the same identifier (&ldquo;my_scope/var2:0&rdquo;) had already been used in the previous code snippet, so it was automatically Because it was updated to &ldquo;my_scope_1&rdquo;. (The statement <code>a = tf.add(v1, v2)</code> after the update of the scope name (&ldquo;my_scope&rdquo; -&gt; &ldquo;my_scope_1&rdquo;) seems to maintain this scope (&ldquo;my_scope_1&rdquo;).)</p>
+<p>It&rsquo;s getting complicated, so let&rsquo;s sort out a little.</p>
+<ul>
+<li>tf.name_scope() is a name scope definition for general use. (As you know, this identifier setting is used for output to TensorBoard.)</li>
+<li>tf.variable_scope() is a scope definition used for managing variables. (The function name variable_scope remains the same&hellip;)</li>
+<li>tf.get_variable() defines variables while managing the identifiers of variable names (new or new?). Be sure to use it together with tf.variable_scope().</li>
+</ul>
+<p>In the above two snippets, the situation was complicated due to the experiment, but it is not particularly difficult if the basic &ldquo;tf.get_variable() is used in combination with tf.variable_scope()&rdquo; is followed.</p>
+<p>Now, let&rsquo;s see how to use shared variables with tf.get_variable().</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;my_scope2&#34;</span>):
+    v4_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>constant_initializer([<span style="color:#ae81ff">4.</span>])
+    v4 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#34;var4&#34;</span>, shape<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>], initializer<span style="color:#f92672">=</span>v4_init)
+
+<span style="color:#66d9ef">print</span>(v4<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope2/var4:0</span>
+</code></pre></div><p>First, we defined the variable v4 in the scope &ldquo;my_scope2&rdquo;. <code>tf.get_variable()</code> defines a variable by specifying a variable initializer. Here, we used a constant initializer to make the statement in which v4 contains 4. For the identifier to TensorFlow, &ldquo;var4&rdquo; was specified as the first argument.</p>
+<p>Next, try to reserve a variable with the same identifier.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;my_scope2&#34;</span>):
+    v5 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#34;var4&#34;</span>, shape<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>], initializer<span style="color:#f92672">=</span>v4_init)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">ValueError: Variable my_scope2/var4 already exists, disallowed. Did you mean to set reuse=True in VarScope? Originally defined at:
+
+  File &#34;name_scope_ex.py&#34;, line 47, in &lt;module&gt;
+    v4 = tf.get_variable(&#34;var4&#34;, shape=[1], initializer=v4_init)
+
+</code></pre></div><p>As planned A ValueError has occurred. The error is &ldquo;isn&rsquo;t it wrong to take a variable with the same identifier?&rdquo; To reassign a variable with the same identifier, use the <code>reuse</code> option as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;my_scope2&#34;</span>, reuse<span style="color:#f92672">=</span>True):
+    v5 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#34;var4&#34;</span>, shape<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>])
+<span style="color:#66d9ef">print</span>(v5<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope2/var4:0</span>
+</code></pre></div><p>Alternatively, the following is ok.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#34;my_scope2&#34;</span>):
+    tf<span style="color:#f92672">.</span>get_variable_scope()<span style="color:#f92672">.</span>reuse_variables()
+    v5 <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#34;var4&#34;</span>, shape<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>])
+<span style="color:#66d9ef">print</span>(v5<span style="color:#f92672">.</span>name) <span style="color:#75715e"># my_scope2/var4:0</span>
+
+</code></pre></div><p>The basic functions of <code>tf.variable_scope()</code> and <code>tf.get_variable()</code> have been confirmed above.</p>
+<h2 id="shared-variable-example-autoencoder">Shared variable example-Autoencoder</h2>
+<p>Now, I would like to look at an example of using shared variables, but in the document <a href="https://www.tensorflow.org/versions/r0.12/how_tos/variable_scope/index.html">TensorFlow-Sharing Variable</a> , Please refer to the following usage example.</p>
+<ul>
+<li>models/image/cifar10.py, Model for detecting objects in images.</li>
+<li>models/rnn/rnn_cell.py, Cell functions for recurrent neural networks.</li>
+<li>models/rnn/seq2seq.py, Functions for building sequence-to-sequence models.Since all of them have a considerable amount of code, this time, I would like to take up weight sharing of an auto-encoder (hereinafter, Autoencoder) other than these. The encode side/decode side of Autoencoder can be expressed as follows.</li>
+</ul>
+<pre><code class="language-math" data-lang="math">y = f(\textbf{W}x + \textbf{b}) \\
+\hat{x} = \tilde{f}(\tilde{\textbf{W}}y + \tilde{\textbf{b}})
+</code></pre><p>The following weight sharing can be used in such a symmetric Autoencoder.</p>
+<pre><code class="language-math" data-lang="math">\tilde{\textbf{W}} = \textbf{W} ^{\mathrm{T}}
+</code></pre><p>Let&rsquo;s implement the above configuration network using shared variables of TensorFlow. First, define the Encoder class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Encoder Layer</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Encoder</span>(object):
+    <span style="color:#66d9ef">def</span> __init__(self, input, n_in, n_out, vs_enc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;encoder&#39;</span>):
+        self<span style="color:#f92672">.</span>input <span style="color:#f92672">=</span> input
+        <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(vs_enc):
+            weight_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>truncated_normal_initializer(mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.05</span>)
+            W <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;W&#39;</span>, [n_in, n_out], initializer<span style="color:#f92672">=</span>weight_init)
+            bias_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>constant_initializer(value<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>)
+            b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;b&#39;</span>, [n_out], initializer<span style="color:#f92672">=</span>bias_init)
+        self<span style="color:#f92672">.</span>w <span style="color:#f92672">=</span> W
+        self<span style="color:#f92672">.</span>b <span style="color:#f92672">=</span> b
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">output</span>(self):
+        linarg <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>matmul(self<span style="color:#f92672">.</span>input, self<span style="color:#f92672">.</span>w) <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>b
+        self<span style="color:#f92672">.</span>output <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>sigmoid(linarg)
+        
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>output
+</code></pre></div><p>The variable scope is specified by the option <code>vs_enc</code> and set, and <code>W</code> is defined in it by <code>tf.get_variable()</code>. Next, for the Decoder class, I did the following.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Decoder Layer</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Decoder</span>(object):
+    <span style="color:#66d9ef">def</span> __init__(self, input, n_in, n_out, vs_dec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;decoder&#39;</span>):
+        self<span style="color:#f92672">.</span>input <span style="color:#f92672">=</span> input
+        <span style="color:#66d9ef">if</span> vs_dec <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;decoder&#39;</span>: <span style="color:#75715e"># independent weight</span>
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(vs_dec):
+                weight_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>truncated_normal_initializer(mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.05</span>)
+                W <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;W&#39;</span>, [n_in, n_out], initializer<span style="color:#f92672">=</span>weight_init)
+        <span style="color:#66d9ef">else</span>: <span style="color:#75715e"># weight sharing (tying)</span>
+            <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(vs_dec, reuse<span style="color:#f92672">=</span>True): <span style="color:#75715e"># set reuse option</span>
+                W <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;W&#39;</span>, [n_out, n_in])
+                W <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>transpose(W)
+
+        <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(<span style="color:#e6db74">&#39;decoder&#39;</span>): <span style="color:#75715e"># in all case, need new bias</span>
+            bias_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>constant_initializer(value<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>)
+            b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(<span style="color:#e6db74">&#39;b&#39;</span>, [n_out], initializer<span style="color:#f92672">=</span>bias_init)
+        self<span style="color:#f92672">.</span>w <span style="color:#f92672">=</span> W
+        self<span style="color:#f92672">.</span>b <span style="color:#f92672">=</span> b
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">output</span>(self):
+        linarg <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>matmul(self<span style="color:#f92672">.</span>input, self<span style="color:#f92672">.</span>w) <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>b
+        self<span style="color:#f92672">.</span>output <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>sigmoid(linarg)
+        
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>output
+</code></pre></div><p>Most of it is the same as Encoder class, but the definition statement of variable W is processed in a branch. The network definition part is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># make neural network model</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_model</span>(x):
+    enc_layer <span style="color:#f92672">=</span> Encoder(x, <span style="color:#ae81ff">784</span>, <span style="color:#ae81ff">625</span>, vs_enc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;encoder&#39;</span>)
+    enc_out <span style="color:#f92672">=</span> enc_layer<span style="color:#f92672">.</span>output()
+    dec_layer <span style="color:#f92672">=</span> Decoder(enc_out, <span style="color:#ae81ff">625</span>, <span style="color:#ae81ff">784</span>, vs_dec<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;encoder&#39;</span>)
+    dec_out <span style="color:#f92672">=</span> dec_layer<span style="color:#f92672">.</span>output()
+
+    <span style="color:#66d9ef">return</span> enc_out, dec_out
+</code></pre></div><p>If you specify <code>vs_dec='decoder'</code> when creating a Decoder object, or omit this option, the weight variable <code>W</code> is newly secured and you can use Encoder like <code>vs_dec='encoder'</code> above. The weight variable was implemented to reuse <code>W</code> as a shared variable when the same variable scope was used. (When reusing, transpose <code>W</code> so that it matches the network.)</p>
+<p>An example of calculation execution with MNIST data is shown. First, if weight sharing is not performed, it becomes as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Training...
+  step, loss = 0: 0.732
+  step, loss = 1000: 0.271
+  step, loss = 2000: 0.261
+  step, loss = 3000: 0.240
+  step, loss = 4000: 0.234
+  step, loss = 5000: 0.229
+  step, loss = 6000: 0.219
+  step, loss = 7000: 0.197
+  step, loss = 8000: 0.195
+  step, loss = 9000: 0.193
+  step, loss = 10000: 0.189
+loss (test) = 0.183986
+</code></pre></div><p>When sharing weights, the procedure is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Training...
+  step, loss = 0: 0.707
+  step, loss = 1000: 0.233
+  step, loss = 2000: 0.215
+  step, loss = 3000: 0.194
+  step, loss = 4000: 0.186
+  step, loss = 5000: 0.174
+  step, loss = 6000: 0.167
+  step, loss = 7000: 0.154
+  step, loss = 8000: 0.159
+  step, loss = 9000: 0.152
+  step, loss = 10000: 0.152
+loss (test) = 0.147831
+</code></pre></div><p>By setting the weight sharing, the loss (cross-entropy) decreases faster with the same number of learnings. Since the degree of freedom of the network is about half, the result is as expected.</p>
+<h2 id="somewhat-complex-model-example-classifier-with-two-mlps">Somewhat complex model example-classifier with two MLPs</h2>
+<p>Consider another slightly complex model. (Although it is not so complicated&hellip;) MNIST is used for the data to be handled as above. This time, we will perform multi-class classification. As the classifier, MLP (Multi-layer Perceptron) with hidden layer x2 and output layer x1 was used. The figure below is a graph chart of TensorBoard.</p>
+<p><strong>Fig. Graph of 2 MLP networks</strong>
+<img src="https://qiita-image-store.s3.amazonaws.com/0/74152/1f505838-3b99-4825-7c3c-14bd1d160fe8.png" alt="mnist_2nets_60.png"></p>
+<p>(I&rsquo;m not familiar with TensorBoard. Please use it as a rough image.)</p>
+<p>First, define the hidden layer (fully connected layer) and output layer classes.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Full-connected Layer</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FullConnected</span>(object):
+    <span style="color:#66d9ef">def</span> __init__(self, input, n_in, n_out, vn<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;W&#39;</span>,<span style="color:#e6db74">&#39;b&#39;</span>)):
+        self<span style="color:#f92672">.</span>input <span style="color:#f92672">=</span> input
+
+        weight_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>truncated_normal_initializer(mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.05</span>)
+        bias_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>constant_initializer(value<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>)
+        W <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(vn[<span style="color:#ae81ff">0</span>], [n_in, n_out], initializer<span style="color:#f92672">=</span>weight_init)
+        b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(vn[<span style="color:#ae81ff">1</span>], [n_out], initializer<span style="color:#f92672">=</span>bias_init)
+        self<span style="color:#f92672">.</span>w <span style="color:#f92672">=</span> W
+        self<span style="color:#f92672">.</span>b <span style="color:#f92672">=</span> b
+        self<span style="color:#f92672">.</span>params <span style="color:#f92672">=</span> [self<span style="color:#f92672">.</span>w, self<span style="color:#f92672">.</span>b]
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">output</span>(self):
+        linarg <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>matmul(self<span style="color:#f92672">.</span>input, self<span style="color:#f92672">.</span>w) <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>b
+        self<span style="color:#f92672">.</span>output <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>relu(linarg)
+        
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>output
+<span style="color:#75715e">#</span>
+
+<span style="color:#75715e"># Read-out Layer</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ReadOutLayer</span>(object):
+    <span style="color:#66d9ef">def</span> __init__(self, input, n_in, n_out, vn<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;W&#39;</span>,<span style="color:#e6db74">&#39;b&#39;</span>)):
+        self<span style="color:#f92672">.</span>input <span style="color:#f92672">=</span> input
+
+        weight_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>random_normal_initializer(mean<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, stddev<span style="color:#f92672">=</span><span style="color:#ae81ff">0.05</span>)
+        bias_init <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>constant_initializer(value<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>)W <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(vn[<span style="color:#ae81ff">0</span>], [n_in, n_out], initializer<span style="color:#f92672">=</span>weight_init)
+        b <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>get_variable(vn[<span style="color:#ae81ff">1</span>], [n_out], initializer<span style="color:#f92672">=</span>bias_init)
+        self<span style="color:#f92672">.</span>w <span style="color:#f92672">=</span> W
+        self<span style="color:#f92672">.</span>b <span style="color:#f92672">=</span> b
+        self<span style="color:#f92672">.</span>params <span style="color:#f92672">=</span> [self<span style="color:#f92672">.</span>w, self<span style="color:#f92672">.</span>b]
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">output</span>(self):
+        linarg <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>matmul(self<span style="color:#f92672">.</span>input, self<span style="color:#f92672">.</span>w) <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>b
+        self<span style="color:#f92672">.</span>output <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>softmax(linarg)
+
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>output
+</code></pre></div><p>The variable name is set in the option of the class constructor, but the variable sharing operation is not performed here. Next, the part that defines the network is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Create the model</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mk_NN_model</span>(scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mlp&#39;</span>, reuse<span style="color:#f92672">=</span>False):
+    <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">      args.:
+</span><span style="color:#e6db74">        scope: variable scope ID of networks
+</span><span style="color:#e6db74">        reuse: reuse flag of weights/biases
+</span><span style="color:#e6db74">    &#39;&#39;&#39;</span>
+    <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>variable_scope(scope, reuse<span style="color:#f92672">=</span>reuse):
+        hidden1 <span style="color:#f92672">=</span> FullConnected(x, <span style="color:#ae81ff">784</span>, <span style="color:#ae81ff">625</span>, vn<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;W_hid_1&#39;</span>,<span style="color:#e6db74">&#39;b_hid_1&#39;</span>))
+        h1out <span style="color:#f92672">=</span> hidden1<span style="color:#f92672">.</span>output()
+        hidden2 <span style="color:#f92672">=</span> FullConnected(h1out, <span style="color:#ae81ff">625</span>, <span style="color:#ae81ff">625</span>, vn<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;W_hid_2&#39;</span>,<span style="color:#e6db74">&#39;b_hid_2&#39;</span>))
+        h2out <span style="color:#f92672">=</span> hidden2<span style="color:#f92672">.</span>output()
+        readout <span style="color:#f92672">=</span> ReadOutLayer(h2out, <span style="color:#ae81ff">625</span>, <span style="color:#ae81ff">10</span>, vn<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;W_RO&#39;</span>,<span style="color:#e6db74">&#39;b_RO&#39;</span>))
+        y_pred <span style="color:#f92672">=</span> readout<span style="color:#f92672">.</span>output()
+     
+    cross_entropy <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>tf<span style="color:#f92672">.</span>reduce_sum(y_<span style="color:#f92672">*</span>tf<span style="color:#f92672">.</span>log(y_pred))
+    
+    <span style="color:#75715e"># Regularization terms (weight decay)</span>
+    L2_sqr <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>l2_loss(hidden1<span style="color:#f92672">.</span>w) <span style="color:#f92672">+</span> tf<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>l2_loss(hidden2<span style="color:#f92672">.</span>w)
+    lambda_2 <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>
+    <span style="color:#75715e"># the loss and accuracy</span>
+    <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#39;loss&#39;</span>):
+        loss <span style="color:#f92672">=</span> cross_entropy <span style="color:#f92672">+</span> lambda_2 <span style="color:#f92672">*</span> L2_sqr
+    <span style="color:#66d9ef">with</span> tf<span style="color:#f92672">.</span>name_scope(<span style="color:#e6db74">&#39;accuracy&#39;</span>):
+        correct_prediction <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>equal(tf<span style="color:#f92672">.</span>argmax(y_pred,<span style="color:#ae81ff">1</span>), tf<span style="color:#f92672">.</span>argmax(y_,<span style="color:#ae81ff">1</span>))
+        accuracy <span style="color:#f92672">=</span> tf<span style="color:#f92672">.</span>reduce_mean(tf<span style="color:#f92672">.</span>cast(correct_prediction, tf<span style="color:#f92672">.</span>float32))
+    
+    <span style="color:#66d9ef">return</span> y_pred, loss, accuracy
+</code></pre></div><p>With this function, the specification is to take the variable scope <code>scope</code> and the variable sharing flag <code>reuse</code> as options. In two MLP networks, weight sharing aligns scope names and sets the <code>reuse</code> flag as follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">    y_pred1, loss1, accuracy1 <span style="color:#f92672">=</span> mk_NN_model(scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mlp1&#39;</span>)
+    y_pred2, loss2, accuracy2 <span style="color:#f92672">=</span> mk_NN_model(scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mlp1&#39;</span>, reuse<span style="color:#f92672">=</span>True)
+</code></pre></div><p>If you do not share weights, set as follows. (Although it is a common syntax&hellip;)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">    y_pred1, loss1, accuracy1 <span style="color:#f92672">=</span> mk_NN_model(scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mlp1&#39;</span>)
+    y_pred2, loss2, accuracy2 <span style="color:#f92672">=</span> mk_NN_model(scope<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;mlp2&#39;</span>)
+</code></pre></div><p>The following two cases were carried out as computational experiments.</p>
+<ol>
+<li>The training data is divided into two and supplied to two classifiers&rsquo;mlp1&rsquo; and&rsquo;mlp2&rsquo;.
+The two classifiers set weight sharing. Perform&rsquo;mlp1&rsquo; training,&lsquo;mlp2&rsquo; training and serial. Classify test data using final parameters.</li>
+<li>The training data is divided into two and supplied to two classifiers&rsquo;mlp1&rsquo; and&rsquo;mlp2&rsquo;. &lsquo;mlp1&rsquo; and&rsquo;mlp2&rsquo; are independent (not shared) networks and perform learning respectively. The test data is applied to each classifier and the results are averaged to obtain the final classification result.</li>
+</ol>
+<p>Since we wanted to do the weight sharing experiment, the number of layers and the number of units of the two classifiers must be the same. However, since the same classifier is boring, the optimizer is different and the learning rate is finely adjusted.</p>
+<p>First, the execution result of case No.1 is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Training...
+  Network No.1:
+  step, loss, accurary = 0: 178.722, 0.470
+  step, loss, accurary = 1000: 22.757, 0.950
+  step, loss, accurary = 2000: 15.717, 0.990
+  step, loss, accurary = 3000: 10.343, 1.000
+  step, loss, accurary = 4000: 9.234, 1.000
+  step, loss, accurary = 5000: 8.950, 1.000
+  Network No.2:
+  step, loss, accurary = 0: 14.552, 0.980
+  step, loss, accurary = 1000: 7.353, 1.000
+  step, loss, accurary = 2000: 5.806, 1.000
+  step, loss, accurary = 3000: 5.171, 1.000
+  step, loss, accurary = 4000: 5.043, 1.000
+  step, loss, accurary = 5000: 4.499, 1.000
+accuracy1 = 0.9757
+accuracy2 = 0.9744
+</code></pre></div><p>Note that the loss increases a little at the beginning of learning of Network No.2, but it is considerably smaller than the value at the beginning of learning of No.1. This shows that as a result of weight sharing, the parameters (inheriting the learning result of No.1) were optimized from the beginning of No.2. However, the classification accuracy finally obtained, <code>accuracy2 = 0.9744</code>, did not improve from <code>accuracy1</code>, and it was found that this &ldquo;ensemble learning mod&rdquo; failed.</p>
+<p>It is natural if you think about it, and the situation is that the same classifier is used twice in learning,
+Since the training data was simply divided into two parts and supplied, the accuracy cannot be expected to improve with the ensemble.</p>
+<p>The following is the result of performing the correct ensemble with the independent classifier configuration of Case No.2.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">Training...
+  Network No.1:
+  step, loss, accurary = 0: 178.722, 0.470
+  step, loss, accurary = 1000: 15.329, 0.990
+  step, loss, accurary = 2000: 12.242, 0.990
+  step, loss, accurary = 3000: 10.827, 1.000
+  step, loss, accurary = 4000: 10.167, 0.990
+  step, loss, accurary = 5000: 8.178, 1.000
+  Network No.2:
+  step, loss, accurary = 0: 192.382, 0.570
+  step, loss, accurary = 1000: 10.037, 0.990
+  step, loss, accurary = 2000: 7.590, 1.000
+  step, loss, accurary = 3000: 5.855, 1.000
+  step, loss, accurary = 4000: 4.678, 1.000
+  step, loss, accurary = 5000: 4.693, 1.000
+accuracy1 = 0.9751
+accuracy2 = 0.9756
+accuracy (model averaged) = 0.9810
+</code></pre></div><p>As expected, the accuracy (correct answer rate) that was around 0.975 for each classifier is 0.980, which is slightly better than the model average.</p>
+<p>(The code created this time was uploaded to <a href="https://gist.github.com/tomokishii/42146ecc450c9e7228c3bdd1ccb9e408">Gist</a>.)</p>
+<p>It&rsquo;s a bit off the road, but I think you got an idea of how to use variable scopes and shared variables. For small models, I don&rsquo;t think there is much need to manage variables using variable scopes, but for large models there may be situations where you want to use variable scopes and shared variables. This is a feature of TensorFlow that you can&rsquo;t see in other Deep Learning Frameworks, so please try it out!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

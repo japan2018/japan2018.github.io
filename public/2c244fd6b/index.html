@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Device monitoring with IOS-XE On-box Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Device monitoring with IOS-XE On-box Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/elasticsearch"> Elasticsearch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cisco"> Cisco</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lox"> lox</a></code></small>
+
+</p>
+<pre><code>## Introduction
+</code></pre>
+<p>When monitoring Cisco network equipment, you may want to see the results of show commands.
+This time, from the Guest Shell of IOS-XE, I would like to get the result of the show command using python and send it to Elasticsearch for visualization.</p>
+<h3 id="about-guest-shell">About Guest Shell</h3>
+<p>Guest Shell is a Linux container environment hosted on IOx, and is implemented in products such as the Catalyst 9000 series and ISR4000 series.
+Guest Shell provides a python cli library, which allows IOSd commands to be executed from a python script executed in Guest Shell.
+For IOx, see <a href="https://developer.cisco.com/docs/iox/#!introduction-to-iox/what-is-iox">here</a>.</p>
+<p>The image diagram when communicating is as follows.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223892/439f7f51-8197-14b1-48a5-3d8e520d16af.jpeg" height="500"></p>
+<p><a href="https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/prog/configuration/169/b_169_programmability_cg/guest_shell.html">Programmability Configuration Guide, Cisco IOS XE Fuji 16.9.x</a></p>
+<p>##environment
+Build the environment with the following configuration.
+(Construction method omitted)
+The monitoring target is CSR1.
+Although it is simplified, we also prepared a VM to put communication load on CSR1.</p>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223892/b4360f41-0500-79a7-9bf8-9b96a9cb6f32.jpeg" height=250>
+<table>
+<thead>
+<tr>
+<th>Software</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Elasticsearch</td>
+<td>6.5.0</td>
+</tr>
+<tr>
+<td>Kibana</td>
+<td>6.5.0</td>
+</tr>
+<tr>
+<td>CSR1000V</td>
+<td>IOS-XE 16.09.04</td>
+</tr>
+</tbody>
+</table>
+<h2 id="elasticsearch-preparation">Elasticsearch preparation</h2>
+<p>Elasticsearch is a full-text search engine and is also used as a database management system called a document store (or document oriented type).
+I will briefly describe the terms.
+(Until I get tired of myself)</p>
+<table>
+<thead>
+<tr>
+<th>Terms</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document</td>
+<td>Unit of stored JSON data</td>
+</tr>
+<tr>
+<td>Mapping</td>
+<td>A concrete definition of the contents of the Document</td>
+</tr>
+<tr>
+<td>Index</td>
+<td>The index name that is always given to the Document <br> It is used as a unit for setting and querying <br> It can be created in advance or automatically created when registering the Document</td>
+</tr>
+<tr>
+<td>Template</td>
+<td>Settings and Mapping applied when creating a new Index</td>
+</tr>
+</tbody>
+</table>
+<p>I will acquire the following information from CSR1 as monitoring items.</p>
+<ul>
+<li>Time (date)</li>
+<li>IOSd CPU usage (%)</li>
+<li>Kernel CPU usage (%)</li>
+<li>IOSd memory usage (%)</li>
+<li>kernel memory usage (%)</li>
+<li>Gigabit Ethernet1 send/receive amount (bps)</li>
+<li>Interface/line protocol status list (text)</li>
+<li>Routing table (text)</li>
+</ul>
+<p>Define Index Template to store the above data.
+Let&rsquo;s set the Index when storing Documents from CSR1 as router-csr.</p>
+<pre><code>curl -XPUT'http://elasticsearch.example.com:9200/_template/router' -H'Content-Type: application/json' -d @router_template.json
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json:router_template.json" data-lang="json:router_template.json">{
+  <span style="color:#f92672">&#34;template&#34;</span>: <span style="color:#e6db74">&#34;router-*&#34;</span>,
+  <span style="color:#f92672">&#34;mappings&#34;</span>:{
+    <span style="color:#f92672">&#34;monitoring&#34;</span>: {
+      <span style="color:#f92672">&#34;dynamic&#34;</span>: <span style="color:#e6db74">&#34;strict&#34;</span>,
+      <span style="color:#f92672">&#34;properties&#34;</span>: {
+        <span style="color:#f92672">&#34;@timestamp&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;date&#34;</span>,
+          <span style="color:#f92672">&#34;format&#34;</span>: <span style="color:#e6db74">&#34;date_time_no_millis&#34;</span>
+        },
+        <span style="color:#f92672">&#34;cpu_utilization_iosd&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;integer&#34;</span>
+        },
+        <span style="color:#f92672">&#34;cpu_utilization_kernel&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;integer&#34;</span>
+        },
+        <span style="color:#f92672">&#34;memory_utilization_iosd&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;integer&#34;</span>
+        },
+        <span style="color:#f92672">&#34;memory_utilization_kernel&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;integer&#34;</span>
+        },
+        <span style="color:#f92672">&#34;GigabitEthernet1_input&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;integer&#34;</span>
+        },
+        <span style="color:#f92672">&#34;GigabitEthernet1_output&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;integer&#34;</span>
+        },
+        <span style="color:#f92672">&#34;interface_status&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;keyword&#34;</span>
+        },
+        <span style="color:#f92672">&#34;routing_table&#34;</span>:{
+          <span style="color:#f92672">&#34;type&#34;</span>: <span style="color:#e6db74">&#34;keyword&#34;</span>
+        }
+      }
+    }
+  }
+}
+</code></pre></div><p>##CSR 1000V setting
+We will use the average of 30 seconds for the amount of transmission and reception of GigabitEthernet1.
+It is possible to calculate from the difference between the number of sent and received packets, but I think it is easier to adjust <code>load-interval</code> and get from <code>show interface</code>.</p>
+<pre><code>CSR1#conf t
+CSR1(config)#interface gigabitethernet 1
+CSR1(config-if)#load-interval 30
+</code></pre><p>Next, set the guest shell to be enabled and the NAT settings for communication from the guest shell at the same time.</p>
+<pre><code>CSR1#conf t
+CSR1(config)#iox
+
+CSR1(config)#ip http server
+
+CSR1(config)# interface GigabitEthernet3
+CSR1(config-if)# ip nat outside
+CSR1(config-if)# exit
+
+CSR1(config)# interface VirtualPortGroup0
+CSR1(config-if)# ip address 192.168.35.1 255.255.255.0
+CSR1(config-if)# ip nat inside
+CSR1(config-if)# exit
+
+CSR1(config)# ip nat inside source list GS_NAT_ACL interface GigabitEthernet3 overload
+CSR1(config)# ip access-list standard GS_NAT_ACL
+CSR1(config-std-nacl)# permit 192.168.35.0 0.0.0.255
+CSR1(config-std-nacl)# exit
+
+CSR1(config)#app-hosting appid guestshell
+CSR1(config-app-hosting)# app-vnic gateway0 virtualportgroup 0 guest-interface 0
+CSR1(config-app-hosting-gateway0)# guest-ipaddress 192.168.35.2 netmask 255.255.255.0
+CSR1(config-app-hosting-gateway0)# app-default-gateway 192.168.35.1 guest-interface 0
+CSR1(config-app-hosting)# name-server0 192.0.2.1
+CSR1(config-app-hosting)# end
+
+CSR1#guestshell enable
+</code></pre><p>Guest Shell is now enabled.
+If you execute <code>guestshell</code> from privileged mode, bash of the container will start and you can log in.
+Let&rsquo;s start Guset Shell and execute IOSd command.</p>
+<pre><code>CSR1#guestshell
+[guestshell@guestshell ~]$ dohost &quot;show app-hosting list&quot;
+
+App id State
+- ------------------------------------------------- ----
+guestshell RUNNING
+
+[guestshell@guestshell ~]$ python
+Python 2.7.5 (default, Jun 17 2014, 18:11:42)
+[GCC 4.8.2 20140120 (Red Hat 4.8.2-16)] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import cli
+&gt;&gt;&gt; cli.cli(&quot;show app-hosting list&quot;)
+'\nApp id State\n------------------------------------------------ -----------\nguestshell RUNNING\n'
+&gt;&gt;&gt; exit()
+[guestshell@guestshell ~]$
+</code></pre><p>Use EEM to execute Guest Shell commands from IOS-XE.
+By using the <code>event timer watchdog</code> as a trigger, you can execute a python script periodically.</p>
+<pre><code>CSR1#conf t
+CSR1(config)#event manager applet elasticsearch
+CSR1(config-applet)#event timer watchdog time 30CSR1(config-applet)#action 100 cli command &quot;enable&quot;
+CSR1(config-applet)#action 200 cli command &quot;guestshell run python /home/guestshell/monitoring.py&quot;
+</code></pre><h2 id="execution-script">Execution script</h2>
+<p>Extract the target character string from the show command corresponding to each monitoring item and set it as the value of the dictionary type object, and use the same key as Mapping.
+Time requires format conversion, and memory usage requires calculation of values.</p>
+<ul>
+<li>Time (date) -&gt; <code>show clock</code></li>
+<li>IOSd CPU usage (%) -&gt; <code>show processes cpu | i CPU</code></li>
+<li>kernel CPU usage (%) -&gt; <code>show processes cpu platform | i CPU</code></li>
+<li>IOSd memory usage (%) -&gt; <code>show processes memory | i Processor</code></li>
+<li>kernel memory usage (%) -&gt; <code>show processes memory platform | i System memory</code></li>
+<li>Gigabit Ethernet1 send/receive amount (bps) -&gt; <code>show interface GigabitEthernet1</code></li>
+<li>Interface/line protocol status list (text) -&gt; <code>show ip interface brief</code></li>
+<li>Routing table (text) -&gt; <code>show ip route</code></li>
+</ul>
+<p>Concatenate all dictionary type objects and send as JSON data to Elasticsearch.</p>
+<p>The code is posted on the link below.
+<a href="https://gist.github.com/ecodrive-18/f808df5a69b9a47e97288789cfa53c9d">https://gist.github.com/ecodrive-18/f808df5a69b9a47e97288789cfa53c9d</a></p>
+<p>Install the necessary libraries before execution.</p>
+<pre><code>CSR1#guestshell
+[guestshell@guestshell ~]$ sudo pip install -r requirements.txt
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-:requirements.txt" data-lang=":requirements.txt">elasticsearch&gt;=6.0.0,&lt;7.0.0
+python-dateutil==2.8.1
+</code></pre></div><h2 id="confirmation-and-visualization-of-execution-results">Confirmation and visualization of execution results</h2>
+<p>Try querying Elasticsearch to see if the script execution results can be stored.</p>
+<pre><code>curl -XGET'http://elasticsearch.example.com:9200/router-csr/monitoring/_search?size=1' | jq
+  % Total% Received %Xferd Average Speed Time Time Time Current
+                                 Dload Upload Total Spent Left Speed
+100 2765 100 2765 0 0 128k 0 --:--:-- --:--:-- --:--:-- 128k
+{
+  &quot;took&quot;: 13,
+  &quot;timed_out&quot;: false,
+  &quot;_shards&quot;: {
+    &quot;total&quot;: 5,
+    &quot;successful&quot;: 5,
+    &quot;skipped&quot;: 0,
+    &quot;failed&quot;: 0
+  },
+  &quot;hits&quot;: {
+    &quot;total&quot;: 232,
+    &quot;max_score&quot;: 1,
+    &quot;hits&quot;: [
+      {
+        &quot;_index&quot;: &quot;router-csr&quot;,
+        &quot;_type&quot;: &quot;monitoring&quot;,
+        &quot;_id&quot;: &quot;hHV2Xm4BlqMaqiTz5GDW&quot;,
+        &quot;_score&quot;: 1,
+        &quot;_source&quot;: {
+          &quot;GigabitEthernet1_output&quot;: &quot;30000&quot;,
+          &quot;routing_table&quot;: &quot;\nCodes: L-local, C-connected, S-static, R-RIP, M-mobile, B-BGP\n D-EIGRP, EX-EIGRP external, O-OSPF, IA-OSPF inter area \n N1-OSPF NSSA external type 1, N2-OSPF NSSA external type 2\n E1-OSPF external type 1, E2-OSPF external type 2\ni-IS-IS, su-IS-IS summary, L1-IS -IS level-1, L2-IS-IS level-2\n ia-IS-IS inter area, *-candidate default, U-per-user static route\no-ODR, P-periodic downloaded static route, H- NHRP, l-LISP\na-application route\n +-replicated route,%-next hop override, p-overrides from PfR\nGateway of last resort is 172.16.0.254 to network 0.0.0.0\nS* 0.0.0.0/0 [254/0] via 172.16.0.254\n 10.0.0.0/32 is subnetted, 2 subnets\nO 10.0.0.254 [110/2] via 192.168.255.2, 19:32:27, GigabitEthernet2\nO 10.100.0.254 [110 /2] via 192.168.255.2, 19:32:27, GigabitEthernet2\n 172.16.0.0/16 is variably subnetted, 3 subnets, 2 masks\nC 172.16.0.0/24 is directly connected, GigabitEthernet3\nL 172.16.0.207/32 is directly connected, GigabitEthernet3\nS 172.16.0.254/32 [254/0] via 172.16.0.254, GigabitEthernet3\n 192.168.0.0/24 is variably subnetted , 2 subnets, 2 masks\nC 192.168.0.0/24 is directly connected, GigabitEthernet1\nL 192.168.0.254/32 is directly connected, GigabitEthernet1\nO 192.168.1.0/24 [110/2] via 192.168.255.2, 19:34 :13, GigabitEthernet2\n 192.168.35.0/24 is variably subnetted, 2 subnets, 2 masks\nC 192.168.35.0/24 is directly connected, VirtualPortGroup0\nL 192.168.35.1/32 is directly connected, VirtualPortGroup0\n 192.168.255.0/ 24 is variably subnetted, 2 subnets, 2 masks\nC 192.168.255.0/30 is directly connected, GigabitEthernet2\nL 192.168.255.1/32 is directly connected, GigabitEthernet2\n&quot;,
+          &quot;cpu_utilization_iosd&quot;: &quot;0&quot;,
+          &quot;cpu_utilization_kernel&quot;: &quot;22&quot;,
+          &quot;memory_utilization_kernel&quot;: &quot;61&quot;,
+          &quot;@timestamp&quot;: &quot;2019-11-12T16:14:30+09:00&quot;,
+          &quot;interface_status&quot;: &quot;\nInterface IP-Address OK? Method Status Protocol\nGigabitEthernet1 192.168.0.254 YES manual up up \nGigabitEthernet2 192.168.255.1 YES manual up up \nGigabitEthernet3 172.16.0.207 YES DHCP up up \nVirtualPortGroup0 192.168.35.1 YES manual up up \n&quot;,
+          &quot;memory_utilization_iosd&quot;: &quot;14&quot;,
+          &quot;GigabitEthernet1_input&quot;: &quot;787000&quot;
+        }
+      }
+    ]
+  }
+}
+
+</code></pre><p>There was information sent from CSR1 in hits.hits._source.
+It is stored properly.</p>
+<h3 id="visualize-with-kibana">Visualize with Kibana</h3>
+<p>Let&rsquo;s visualize the information accumulated in Elasticsearch with Kibana.
+I can&rsquo;t find the function to display the text stored in Visualize as it is&hellip;
+Since it seems that there is that function in Canvas&rsquo;s Markdown, I tried using it.
+If you display the text as it is in the code block, line breaks will be added, which is a nice touch.
+Of course, you can also create graphs.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/223892/a89c35fd-1e7f-87e5-2b50-58fc17c6c296.png" width=800></p>
+<h2 id="summary">Summary</h2>
+<p>I sent the device information from the Guest Shell of IOS-XE to visualize it.
+If this function is implemented in many devices, it may be possible to monitor devices using a monitoring agent instead of SNMP.By the way, when performing pull type monitoring, Python must be made a resident process while the IOS Shell VTY is acquired in the Guest Shell, so it is necessary to set <code>maxrun</code> to 0 when setting the EEM <code>event</code>. ..</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

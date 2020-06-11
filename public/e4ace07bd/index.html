@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Complete understanding of Python threading and multiprocessing | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Complete understanding of Python threading and multiprocessing</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 26, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code># threading and multiprocessing
+</code></pre>
+<p>Speaking of the main modern OS, there are Mac OS, UNIX, Linux, Windows, etc. These operating systems support &ldquo;multitasking&rdquo; functionality.</p>
+<p>What is multitasking? You might think that, for example, in the situation of launching a browser, listening to music, and writing a report in Word, at least three tasks are in progress at the same time. And in addition to the tasks in the table, various OS-related tasks are secretly running behind the scenes.</p>
+<p>It is easy to understand that multitasking can be processed with a multi-core CPU, but multitasking is possible even with a single-core CPU. The OS executes each task in turn. For example, task 1 for 0.01 seconds, task 2 for 0.01 seconds, task 3 for 0.01 seconds, task 1 for 0.01 seconds&hellip; The CPUs are fast, so it feels like they are running at the same time. This alternation is often referred to as <a href="https://en.wikipedia.org/wiki/%E4%B8%A6%E8%A1%8C%E8%A8%88%E7%AE%97">&ldquo;concurrent computing&rdquo;</a>.</p>
+<p>Of course, single-core CPUs are only executed alternately, so only true multi-core CPUs can be processed simultaneously in the true sense. Processing multiple tasks simultaneously on each core at a time that is a multi-core CPU is &ldquo;<a href="https://en.wikipedia.org/wiki/%E4%B8%A6%E5%88%97%E8%A8%88%E7%AE%97">parallel computing</a>&rdquo;. In most cases, the number of tasks being executed far exceeds the number of cores, so even in multi-core, the work of &ldquo;alternate execution&rdquo; is performed.</p>
+<p>For the OS, one task becomes one process (Process). For example, launching a browser creates one browser process. Similarly, when you open Word, a Word process is created.</p>
+<p>One process is not necessarily one process. For example, Word does a lot of processing such as monitoring user input, spell checking, and UI display. These &ldquo;subtasks&rdquo; are called threads. Each process has at least one thread. When there are multiple threads, they execute in the same way as processes.</p>
+<p>There are two main ways to process multitasking in Python at the same time.</p>
+<ul>
+<li>Launch multiple processes. Each has only one thread, but since there are multiple processes, it can handle multiple tasks.</li>
+<li>Start multiple threads in one process.</li>
+</ul>
+<p>Of course, it is possible to launch multiple threads with multiple processes, but this is not recommended because it complicates the model.</p>
+<p>There are cases where communication and cooperation between tasks are required when processing multitasks, task 1 needs to be paused when task 2 executes, and task 3 and task 4 cannot proceed at the same time. , The program becomes a little complicated.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246522/9db33432-ebde-4226-849c-543708a98f9a.jpeg" alt="Relationship between threads and processes + processes have various resources allocated from the OS. .jpg">
+(Source: <a href="https://slidesplayer.net/slide/11222023/">System Software Lecture Summary</a>)</p>
+<h2 id="1-threading">1. threading</h2>
+<p>On Unix OS, the following system call functions can be mainly used around the threads below.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>start()</td>
+<td>starts a thread</td>
+</tr>
+<tr>
+<td>setName()</td>
+<td>Name the thread</td>
+</tr>
+<tr>
+<td>getName()</td>
+<td>Gets the name of the thread</td>
+</tr>
+<tr>
+<td>setDaemon(True)</td>
+<td>Thread thread <a href="https://en.wikipedia.org/wiki/%E3%83%87%E3%83%BC%E3%83%A2%E3%83%B3_(%E3%82%BD%E3%83%95%E3%83%88%E3%82%A6%E3%82%A7%E3%82%A2)">daemon</a></td>
+</tr>
+<tr>
+<td>join()</td>
+<td>Waits for thread to finish processing</td>
+</tr>
+<tr>
+<td>run()</td>
+<td>Manually execute thread processing</td>
+</tr>
+</tbody>
+</table>
+<p>Python threads are not simulated in process, they are real <a href="https://en.wikipedia.org/wiki/POSIX%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89">POSIX threads</a>. Two modules, <code>_thread</code> and <code>threading</code>, are available from the standard library. And <code>_thread</code> is the low level module and <code>threading</code> is the module that encapsulates it. So I usually use <code>threading</code>.</p>
+<h3 id="1-1-instantiation">1-1. Instantiation</h3>
+<p>If you introduce a function etc. to create an instance of <code>Thread</code> and start it with <code>start</code>, you can start a thread.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(n):
+    <span style="color:#75715e"># threading.current_thread().name calls getName()</span>
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;task: {} (thread name: {})&#34;</span><span style="color:#f92672">.</span>format(n, threading<span style="color:#f92672">.</span>current_thread()<span style="color:#f92672">.</span>name))
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;2s&#39;</span>)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;1s&#39;</span>)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;0s&#39;</span>)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+
+
+t1 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;t1&#34;</span>,))
+t2 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;t2&#34;</span>,), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Thread T2&#39;</span>) <span style="color:#75715e"># where setName() is called</span>
+<span style="color:#75715e"># start()</span>
+t1<span style="color:#f92672">.</span>start()
+t2<span style="color:#f92672">.</span>start()
+<span style="color:#75715e"># join()</span>
+t1<span style="color:#f92672">.</span>join()
+t2<span style="color:#f92672">.</span>join()
+because you called <span style="color:#75715e"># join()</span>
+<span style="color:#75715e"># The main thread waits until the above thread finishes</span>
+<span style="color:#75715e"># Print after all</span>
+<span style="color:#66d9ef">print</span>(threading<span style="color:#f92672">.</span>current_thread()<span style="color:#f92672">.</span>name)
+</code></pre></div><p>Execution result:</p>
+<pre><code>task: t1 (thread name: Thread-1)
+task: t2 (thread name: Thread T2)
+2s
+2s
+1s
+1s
+0s
+0s
+MainThread
+</code></pre><p>You can see that t1 and t2 are executed alternately. One of the alternation rules is described in more detail later in the GIL, after the IO operation (here <code>print</code> operations apply).</p>
+<h3 id="1-2-customization">1-2. Customization</h3>
+<p>It is also possible to use it by inheriting <code>Thread</code> and customizing the <code>run</code> method of the thread class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyThread</span>(threading<span style="color:#f92672">.</span>Thread):
+    <span style="color:#66d9ef">def</span> __init__(self, n):
+        super(MyThread, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>n <span style="color:#f92672">=</span> n
+
+    Rewrite <span style="color:#75715e">#run()</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(self):
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;task: {}&#34;</span><span style="color:#f92672">.</span>format(self<span style="color:#f92672">.</span>n))
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;2s&#39;</span>)
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;1s&#39;</span>)
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;0s&#39;</span>)
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+
+
+t1 <span style="color:#f92672">=</span> MyThread(<span style="color:#e6db74">&#34;t1&#34;</span>)
+t2 <span style="color:#f92672">=</span> MyThread(<span style="color:#e6db74">&#34;t2&#34;</span>)
+
+t1<span style="color:#f92672">.</span>start()
+t2<span style="color:#f92672">.</span>start()
+</code></pre></div><p>Execution result:</p>
+<pre><code>task: t1
+task: t2
+2s
+2s
+1s
+1s
+0s
+0s
+</code></pre><h3 id="1-3-calculate-the-number-of-threads">1-3. Calculate the number of threads</h3>
+<p>You can count the number of active threads with <code>active_count</code>. However, in a REPL environment, there are multiple threads to monitor, so the number of threads is higher than expected.</p>
+<p>Execute the following code with a script.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(n):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;task: {}&#34;</span><span style="color:#f92672">.</span>format(n))
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">3</span>):
+    t <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;t{}&#34;</span><span style="color:#f92672">.</span>format(i),))
+    t<span style="color:#f92672">.</span>start()
+
+time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">0.5</span>)
+<span style="color:#66d9ef">print</span>(threading<span style="color:#f92672">.</span>active_count())
+</code></pre></div><p>Execution result:</p>
+<pre><code>task: t0
+task: t1
+task: t2
+Four
+</code></pre><p>When the main thread <code>print</code> is executed, the number of threads = 3 + 1 (main thread) because other threads are still executing.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(n):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;task: {}&#34;</span><span style="color:#f92672">.</span>format(n))
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">0.5</span>)
+
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">3</span>):
+    t <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;t{}&#34;</span><span style="color:#f92672">.</span>format(i),))
+    t<span style="color:#f92672">.</span>start()
+
+time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+<span style="color:#66d9ef">print</span>(threading<span style="color:#f92672">.</span>active_count())
+</code></pre></div><p>Execution result:</p>
+<pre><code>task: t0
+task: t1
+task: t2
+1
+</code></pre><p>By adjusting the execution time and delaying <code>print</code> of the main thread, the number of active threads becomes 1 for the main thread only.</p>
+<h3 id="1-4-daemon-thread">1-4. Daemon thread</h3>
+<p>Start a thread as a daemon.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(n):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;task: {}&#34;</span><span style="color:#f92672">.</span>format(n))
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;3&#39;</span>)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;2&#39;</span>)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;1&#39;</span>)
+
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">3</span>):t <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;t{}&#34;</span><span style="color:#f92672">.</span>format(i),))
+    <span style="color:#75715e"># setDaemon(True)</span>
+    t<span style="color:#f92672">.</span>setDaemon(True)
+    t<span style="color:#f92672">.</span>start()
+
+time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1.5</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;thread count: {}&#39;</span><span style="color:#f92672">.</span>format(threading<span style="color:#f92672">.</span>active_count()))
+</code></pre></div><p>Execution result:</p>
+<pre><code>task: t0
+task: t1
+task: t2
+3
+3
+3
+Number of threads: 4
+</code></pre><p>Since t1, t2, and t3 are set as daemon threads of the main thread, they will stop when the main thread terminates.
+For example, Word&rsquo;s spell check is a daemon thread, which runs in an infinite loop, but goes down when the main thread goes down.</p>
+<h3 id="1-5-gil">1-5. GIL</h3>
+<p>When using a multi-core CPU with another programming language, threads with the number of cores can be executed at the same time. However, in Python only one thread runs at a time, which is one process. So Python&rsquo;s multithreading is fully concurrency. The reason is <a href="https://en.wikipedia.org/wiki/%E3%82%B0%E3%83%AD%E3%83%BC%E3%83%90%E3%83%AB%E3%82%A4%E3%83%B3%E3%82%BF%E3%83%97%E3%83%AA%E3%82%BF%E3%83%AD%E3%83%83%E3%82%AF">GIL (Global Interpreter Lock)</a>.</p>
+<p>GIL is a kind of exclusive control (explained later). When Python was first designed, it implemented GIL because it was easy to combine with data security and C language libraries. When you run a thread, you need to get the GIL. There can only be one Python process in a Python interpreter. And since there is only one GIL in a Python process, only one thread will be running at a time. GIL is like a passport, and threads that do not have GIL cannot be put in the CPU. By the way, GIL is in CPython (normal Python distribution) but not in PyPy and Jython. Ruby is another popular language with GIL.</p>
+<h4 id="1-5-1-multithreading-procedure-in-cpython">1-5-1. Multithreading procedure in CPython</h4>
+<ol>
+<li>Get resource</li>
+<li>Request GIL</li>
+<li>Python interpreter source OS native thread</li>
+<li>OS operates CPU to calculate</li>
+<li>If the GIL collection rule is satisfied, whether the calculation is completed or not, the GIL is collected.</li>
+<li>Another thread repeats the above procedure</li>
+<li>When the GIL comes around again, continue processing the previous one until the GIL collection rule is satisfied again (context switch)</li>
+</ol>
+<h4 id="1-5-2-different-versions-of-gil-collection-rules">1-5-2. Different versions of GIL collection rules</h4>
+<ul>
+<li>Python 2.X
+<ul>
+<li>Collect when IO operation occurs</li>
+<li>Collect when ticks reach 100
+<ul>
+<li>ticks is a GIL counter that records the number of Python virtual operations</li>
+<li>When it reaches 100, GIL is collected and reset to 0</li>
+<li>You can set the threshold with <code>sys.setcheckinterval</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Python 3.X
+<ul>
+<li>ticks have been discarded</li>
+<li>Measures time with a timer and collects when the threshold is exceeded</li>
+</ul>
+</li>
+</ul>
+<p>As an experiment, try running a simple infinite loop.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> multiprocessing
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">loop</span>():
+    x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">while</span> True:
+        x <span style="color:#f92672">=</span> x <span style="color:#f92672">^</span> <span style="color:#ae81ff">1</span>
+
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(multiprocessing<span style="color:#f92672">.</span>cpu_count()):
+    t <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>loop)
+    t<span style="color:#f92672">.</span>start()
+</code></pre></div><img width="1072" alt="Screen Shot 2020-02-26 at 19.02.51.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246522/1b584fe6-926f-8105-f248-75bd1f65b55c.png">
+<p>As you can see, due to the GIL, no matter how hard you try in a single process, the CPU utilization remains around 100% (up to 400% can be used on a quad core CPU).</p>
+<h4 id="1-5-3-computation-efficiency-of-python-programs-for-different-types-of-tasks">1-5-3. Computation efficiency of Python programs for different types of tasks</h4>
+<ul>
+<li>CPU bound task
+<ul>
+<li>GIL is collected after a certain period of time, and threads are switched, which causes additional calculation cost and is slow.</li>
+</ul>
+</li>
+<li>IO bound task
+<ul>
+<li>Switches threads each time an IO operation is performed. It is efficient because it can be used for other processing without waiting for reading and writing of slow files.</li>
+</ul>
+</li>
+<li>If you want to make the best use of multi-core CPU, multiprocessing is recommended. Each process has its own GIL.</li>
+</ul>
+<h3 id="1-6-thread-control">1-6. Thread control</h3>
+<p>Resources are shared between threads of the same process. And since the thread switching is done randomly without order, the data may be strange.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+
+
+<span style="color:#75715e"># Make savings</span>
+balance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">change_it</span>(n):
+    <span style="color:#75715e"># Withdrawal and deposit should be 0</span>
+    <span style="color:#66d9ef">global</span> balance
+    balance <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> n
+    balance <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span>n
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run_thread</span>(n):
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100000</span>):
+        change_it(n)
+
+
+t1 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run_thread, args<span style="color:#f92672">=</span>(<span style="color:#ae81ff">5</span>,))
+t2 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run_thread, args<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>,))
+t1<span style="color:#f92672">.</span>start()
+t2<span style="color:#f92672">.</span>start()
+t1<span style="color:#f92672">.</span>join()
+t2<span style="color:#f92672">.</span>join()
+<span style="color:#66d9ef">print</span>(balance)
+</code></pre></div><p>As you can see by running the above code a few times, the result is non-zero.</p>
+<p><code>balance = balance + n</code> can be split into two atomic operations.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">x <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> n
+balance <span style="color:#f92672">=</span> x
+</code></pre></div><p>The <code>x</code> here is a local variable and each thread has its own <code>x</code>. When the above code is executed sequentially, it will be as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">balance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># initial value</span>
+
+t1: x1 <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> <span style="color:#ae81ff">5</span> <span style="color:#75715e"># x1 = 0 + 5 = 5</span>
+t1: balance <span style="color:#f92672">=</span> x1 <span style="color:#75715e"># balance = 5</span>
+t1: x1 <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span><span style="color:#ae81ff">5</span> <span style="color:#75715e"># x1 = 5-5 = 0</span>
+t1: balance <span style="color:#f92672">=</span> x1 <span style="color:#75715e"># balance = 0</span>
+
+t2: x2 <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> <span style="color:#ae81ff">8</span> <span style="color:#75715e"># x2 = 0 + 8 = 8</span>
+t2: balance <span style="color:#f92672">=</span> x2 <span style="color:#75715e"># balance = 8</span>
+t2: x2 <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span><span style="color:#ae81ff">8</span> <span style="color:#75715e"># x2 = 8-8 = 0</span>
+t2: balance <span style="color:#f92672">=</span> x2 <span style="color:#75715e"># balance = 0</span>
+    
+balance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># result is correct</span>
+</code></pre></div><p>However, the results will be different if the order is different.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">balance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># initial value</span>
+
+t1: x1 <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> <span style="color:#ae81ff">5</span> <span style="color:#75715e"># x1 = 0 + 5 = 5</span>
+
+t2: x2 <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> <span style="color:#ae81ff">8</span> <span style="color:#75715e"># x2 = 0 + 8 = 8</span>
+t2: balance <span style="color:#f92672">=</span> x2 <span style="color:#75715e"># balance = 8</span>
+
+t1: balance <span style="color:#f92672">=</span> x1 <span style="color:#75715e"># balance = 5</span>
+t1: x1 <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span><span style="color:#ae81ff">5</span> <span style="color:#75715e"># x1 = 5-5 = 0</span>
+t1: balance <span style="color:#f92672">=</span> x1 <span style="color:#75715e"># balance = 0</span>
+
+t2: x2 <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span><span style="color:#ae81ff">8</span> <span style="color:#75715e"># x2 = 0-8 = -8</span>
+t2: balance <span style="color:#f92672">=</span> x2 <span style="color:#75715e"># balance = -8</span>
+
+balance <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">8</span> <span style="color:#75715e"># wrong result</span>
+</code></pre></div><p>The phenomenon that the calculation result is unpredictable in multithreading is called Thread-unsafe.</p>
+<p>To solve this, the thread needs to be locked and controlled.</p>
+<h4 id="1-6-1-exclusive-control-mutex">1-6-1. Exclusive control (mutex)</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+
+
+<span style="color:#75715e"># Make savings</span>
+balance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">change_it</span>(n):
+    <span style="color:#75715e">#Get lock</span>
+    lock<span style="color:#f92672">.</span>acquire()
+    <span style="color:#66d9ef">global</span> balance
+    balance <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> n
+    balance <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span>n
+    <span style="color:#75715e">#Release lock</span>
+    lock<span style="color:#f92672">.</span>release()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run_thread</span>(n):
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100000</span>):
+        change_it(n)
+
+
+lock <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Lock() <span style="color:#75715e"># instantiate lock</span>
+
+t1 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run_thread, args<span style="color:#f92672">=</span>(<span style="color:#ae81ff">5</span>,))
+t2 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run_thread, args<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>,))
+t1<span style="color:#f92672">.</span>start()
+t2<span style="color:#f92672">.</span>start()
+t1<span style="color:#f92672">.</span>join()
+t2<span style="color:#f92672">.</span>join()
+<span style="color:#66d9ef">print</span>(balance)
+</code></pre></div><p>With exclusive control, no other thread can access the resource until the lock is released. By doing this, the calculation result will always be 0.</p>
+<h4 id="1-6-2-recursive-exclusive-control">1-6-2. Recursive exclusive control</h4>
+<p>Exclusive control that can recursively release a lock with a nested structure.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+
+
+<span style="color:#75715e"># Make savings</span>
+balance <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">add_it</span>(n):
+    lock<span style="color:#f92672">.</span>acquire()
+    <span style="color:#66d9ef">global</span> balance
+    balance <span style="color:#f92672">=</span> balance <span style="color:#f92672">+</span> n
+    <span style="color:#66d9ef">return</span> balance
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sub_it</span>(n):
+    lock<span style="color:#f92672">.</span>acquire()
+    <span style="color:#66d9ef">global</span> balance
+    balance <span style="color:#f92672">=</span> balance<span style="color:#f92672">-</span>n
+    <span style="color:#66d9ef">return</span> balance
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">change_it</span>(n):
+    <span style="color:#75715e">#Get lock</span>
+    lock<span style="color:#f92672">.</span>acquire()
+    <span style="color:#66d9ef">global</span> balance
+    balance <span style="color:#f92672">=</span> add_it(n)
+    balance <span style="color:#f92672">=</span> sub_it(n)
+    <span style="color:#75715e"># Recursively release lock</span>
+    lock<span style="color:#f92672">.</span>release()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run_thread</span>(n):
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1000</span>):
+        change_it(n)lock <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>RLock() <span style="color:#75715e"># instantiate lock</span>
+
+t1 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run_thread, args<span style="color:#f92672">=</span>(<span style="color:#ae81ff">5</span>,))
+t2 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run_thread, args<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>,))
+t1<span style="color:#f92672">.</span>start()
+t2<span style="color:#f92672">.</span>start()
+t1<span style="color:#f92672">.</span>join()
+t2<span style="color:#f92672">.</span>join()
+<span style="color:#66d9ef">print</span>(balance)
+</code></pre></div><p>Here, the lock is also acquired inside <code>add_it</code> and <code>sub_it</code>. By using the recursive exclusive control, it is not necessary to release each lock, and all can be released in one shot. However, it is very computationally expensive, so the number of loops is reduced.</p>
+<h4 id="1-6-3-bounded-semaphore-control">1-6-3. Bounded Semaphore control</h4>
+<p>With exclusive control, the resource can be processed by only one thread at a certain time, whereas the semaphore is a restriction that allows a certain number of threads to be processed simultaneously. For example, a semaphore is a situation where there are three toilet seats in the toilet, which are used by three people at the same time and others wait in line.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(n):
+    semaphore<span style="color:#f92672">.</span>acquire()
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;current thread: {}</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">.</span>format(n))
+    semaphore<span style="color:#f92672">.</span>release()
+
+
+semaphore <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>BoundedSemaphore(<span style="color:#ae81ff">5</span>) <span style="color:#75715e"># allow simultaneous processing of 5 threads</span>
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">22</span>):
+    t <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>run, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;t-{}&#34;</span><span style="color:#f92672">.</span>format(i),))
+    t<span style="color:#f92672">.</span>start()
+
+<span style="color:#66d9ef">while</span> threading<span style="color:#f92672">.</span>active_count() <span style="color:#f92672">!=</span> <span style="color:#ae81ff">1</span>:
+    <span style="color:#66d9ef">pass</span> <span style="color:#75715e"># print threading.active_count()</span>
+<span style="color:#66d9ef">else</span>:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;-----all threads have finished-----&#39;</span>)
+</code></pre></div><p>By executing the above code, you can see that the string of the current thread is output every 5 pieces.</p>
+<h4 id="1-6-4-event-control">1-6-4. Event control</h4>
+<p>The thread event is for the main thread to control other threads. The following methods are provided for <code>Event</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Set</td>
+<td>clear</td>
+</tr>
+<tr>
+<td>Set</td>
+<td>set</td>
+</tr>
+<tr>
+<td>is_set</td>
+<td>Returns True when flag is True</td>
+</tr>
+<tr>
+<td>continue to monitor</td>
+<td>wait</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+
+event <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Event()
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lighter</span>():
+    <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">    flag=True: Green light
+</span><span style="color:#e6db74">    flag=False: Red light
+</span><span style="color:#e6db74">    &#39;&#39;&#39;</span>
+    count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    event<span style="color:#f92672">.</span>set() <span style="color:#75715e"># Initial value is green light</span>
+    <span style="color:#66d9ef">while</span> True:
+        <span style="color:#66d9ef">if</span> <span style="color:#ae81ff">5</span> <span style="color:#f92672">&lt;</span>count <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">10</span>:
+            event<span style="color:#f92672">.</span>clear() <span style="color:#75715e"># turn red</span>
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\33</span><span style="color:#e6db74">[41;1m red traffic light...</span><span style="color:#ae81ff">\033</span><span style="color:#e6db74">[0m&#34;</span>)
+        <span style="color:#66d9ef">elif</span> count<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">10</span>:
+            event<span style="color:#f92672">.</span>set() <span style="color:#75715e"># turn green</span>
+            count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\33</span><span style="color:#e6db74">[42;1m green light...</span><span style="color:#ae81ff">\033</span><span style="color:#e6db74">[0m&#34;</span>)
+
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">car</span>(name):
+    <span style="color:#66d9ef">while</span> True:
+        <span style="color:#66d9ef">if</span> event<span style="color:#f92672">.</span>is_set(): <span style="color:#75715e">#Check if the green light</span>
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;[{}] move forward...&#34;</span><span style="color:#f92672">.</span>format(name))
+            time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">else</span>:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;[{}] Wait for traffic light because of red light...&#34;</span><span style="color:#f92672">.</span>format(name))
+            event<span style="color:#f92672">.</span>wait()
+            Block here until <span style="color:#75715e"># flag=True</span>
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;[{}] Green light, so start moving forward...&#34;</span><span style="color:#f92672">.</span>format(name))
+
+
+light <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>lighter,)
+light<span style="color:#f92672">.</span>start()
+
+car <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span>car, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#34;MINI&#34;</span>,))
+car<span style="color:#f92672">.</span>start()
+</code></pre></div><p>With the above code, a simple communication between the traffic light and the car thread was realized at the event.</p>
+<h4 id="1-6-5-timer-control">1-6-5. Timer control</h4>
+<p>You can also use a timer to control threads by time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> threading <span style="color:#f92672">import</span> Timer
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>():
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;hello, world&#34;</span>)
+
+
+t <span style="color:#f92672">=</span> Timer(<span style="color:#ae81ff">1</span>, hello)
+t<span style="color:#f92672">.</span>start() <span style="color:#75715e"># 1 second later hello is executed</span>
+</code></pre></div><h4 id="1-6-6-condition-control">1-6-6. Condition control</h4>
+<p>ㆍThere is also a method to control threads by condition judgment. The following methods are provided for <code>Condition</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wait</td>
+<td>hangs the thread until notified or the argument timeout time is reached</td>
+</tr>
+<tr>
+<td>notify</td>
+<td>Notify hung threads (default n=1); can only be used with the lock acquired</td>
+</tr>
+<tr>
+<td>notifyAll</td>
+<td>Notify all hung threads</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> random <span style="color:#f92672">import</span> randint
+<span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> deque
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Producer</span>(threading<span style="color:#f92672">.</span>Thread):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(self):
+        <span style="color:#66d9ef">global</span> stocks
+        <span style="color:#66d9ef">while</span> True:
+            <span style="color:#66d9ef">if</span> lock_con<span style="color:#f92672">.</span>acquire():
+                products <span style="color:#f92672">=</span> [randint(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">100</span>) <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">5</span>)]
+                stocks<span style="color:#f92672">.</span>extend(products)
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Producer {} produced {}.&#39;</span><span style="color:#f92672">.</span>format(self<span style="color:#f92672">.</span>name, stocks))
+                lock_con<span style="color:#f92672">.</span>notify()
+                lock_con<span style="color:#f92672">.</span>release()
+            time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">3</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Consumer</span>(threading<span style="color:#f92672">.</span>Thread):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(self):
+        <span style="color:#66d9ef">global</span> stocks
+        <span style="color:#66d9ef">while</span> True:
+            lock_con<span style="color:#f92672">.</span>acquire()
+            <span style="color:#66d9ef">if</span> len(stocks) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+                <span style="color:#75715e">#Wait for product to run out</span>
+                hang thread until <span style="color:#75715e">#notfify</span>
+                lock_con<span style="color:#f92672">.</span>wait()
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Customer {} bought {}. Stock: {}&#39;</span><span style="color:#f92672">.</span>format(self<span style="color:#f92672">.</span>name, stocks<span style="color:#f92672">.</span>popleft(), stocks))
+            lock_con<span style="color:#f92672">.</span>release()
+            time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">0.5</span>)
+
+
+stocks <span style="color:#f92672">=</span> deque()
+lock_con <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Condition()
+p <span style="color:#f92672">=</span> Producer()
+c <span style="color:#f92672">=</span> Consumer()
+p<span style="color:#f92672">.</span>start()
+c<span style="color:#f92672">.</span>start()
+</code></pre></div><p>Execution result:</p>
+<pre><code>Producer Thread-1 produced a deque ([73, 2, 93, 52, 21]).
+Customer Thread-2 bought 73. Stock: deque([2, 93, 52, 21])
+Customer Thread-2 bought 2. Stock: deque([93, 52, 21])
+Customer Thread-2 bought 93. Stock: deque([52, 21])
+Customer Thread-2 bought 52. Stock: deque([21])
+Customer Thread-2 bought 21. Stock: deque([])
+Producer Thread-1 produced a deque ([6, 42, 85, 56, 76]).
+Customer Thread-2 bought 6. Stock: deque([42, 85, 56, 76])
+Customer Thread-2 bought 42. Stock: deque([85, 56, 76])
+Customer Thread-2 bought 85. Stock: deque([56, 76])
+Customer Thread-2 bought 56. Stock: deque([76])
+Customer Thread-2 bought 76. Stock: deque([])
+</code></pre><p>This is a simple program in which the producer produces 5 items if the customer buys all the stock.</p>
+<h4 id="1-6-7-barrier-control">1-6-7. Barrier control</h4>
+<p>It is a control that is executed collectively when a specified number of threads pass through the barrier. For example, in an online battle game, you can implement a barrier to wait for a certain number of teams to reach a specified number. The following methods are provided for <code>Barrier</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wait</td>
+<td>Threads pass the barrier; when the specified number of threads have passed, all waiting threads are released.</td>
+</tr>
+<tr>
+<td>reset</td>
+<td>Empty barrier; return BrokenBarrierError to waiting thread</td>
+</tr>
+<tr>
+<td>abort</td>
+<td>Brings the barrier into a broke state; all current threads terminate; returns a BrokenBarrierError to threads that try to pass the barrier after this</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+
+num <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">start</span>():
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Because I became {{} people, the game started.&#39;</span><span style="color:#f92672">.</span>format(num))
+
+
+lock <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Lock()
+barrier <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Barrier(num, action<span style="color:#f92672">=</span>start)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Player</span>(threading<span style="color:#f92672">.</span>Thread):
+    <span style="color:#66d9ef">def</span> __init__(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        super()<span style="color:#f92672">.</span>__init__(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(self):
+        <span style="color:#66d9ef">try</span>:<span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> barrier<span style="color:#f92672">.</span>broken:
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;{} has joined.&#39;</span><span style="color:#f92672">.</span>format(self<span style="color:#f92672">.</span>name))
+                barrier<span style="color:#f92672">.</span>wait(<span style="color:#ae81ff">2</span>)
+        <span style="color:#66d9ef">except</span> threading<span style="color:#f92672">.</span>BrokenBarrierError:
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;{} has exited because the game cannot start.&#39;</span><span style="color:#f92672">.</span>format(self<span style="color:#f92672">.</span>name))
+
+
+players <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+    lock <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Lock()
+    p <span style="color:#f92672">=</span> Player(name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Player {}&#39;</span><span style="color:#f92672">.</span>format(i))
+    players<span style="color:#f92672">.</span>append(p)
+
+<span style="color:#66d9ef">for</span> p <span style="color:#f92672">in</span> players:
+    p<span style="color:#f92672">.</span>start()
+</code></pre></div><p>Execution result</p>
+<pre><code>Player 0 has joined.
+Player 1 has joined.
+Player 2 has joined.
+Player 3 has joined.
+The game started because there were 4 players.
+Player 4 has joined.
+Player 5 has joined.
+Player 6 has joined.
+Player 7 has joined.
+The game started because there were 4 players.
+Player 8 has joined.
+Player 9 has joined.
+Player 8 has exited because the game cannot start.
+Player 9 has exited because the game cannot start.
+</code></pre><p>Threads are executed randomly, so they are not always printed in the above order. Here, Player 8 and Player 9 teams (barriers) were forced to evacuate (BrokenBarrierError) because they could not reach the specified number in time.</p>
+<h3 id="1-7-threadlocal">1-7. ThreadLocal</h3>
+<p>I explained that data is shared between threads, so it is necessary to lock it in order to calculate the correct output. However, sometimes you want each thread to handle its own local variables.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> threading
+
+
+<span style="color:#75715e">#Create ThreadLocal object in global scope</span>
+local_school <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>local()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process_student</span>():
+    <span style="color:#75715e"># Earn a student related to the current thread</span>
+    std <span style="color:#f92672">=</span> local_school<span style="color:#f92672">.</span>student
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Hello, </span><span style="color:#e6db74">%s</span><span style="color:#e6db74"> (in </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">)&#39;</span> <span style="color:#f92672">%</span>(std, threading<span style="color:#f92672">.</span>current_thread()<span style="color:#f92672">.</span>name))
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process_thread</span>(name):
+    <span style="color:#75715e"># Bind name to student in ThreadLocal</span>
+    local_school<span style="color:#f92672">.</span>student <span style="color:#f92672">=</span> name
+    process_student()
+
+t1 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span> process_thread, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;Alice&#39;</span>,), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Thread-A&#39;</span>)
+t2 <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target<span style="color:#f92672">=</span> process_thread, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;Bob&#39;</span>,), name<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Thread-B&#39;</span>)
+t1<span style="color:#f92672">.</span>start()
+t2<span style="color:#f92672">.</span>start()
+t1<span style="color:#f92672">.</span>join()
+t2<span style="color:#f92672">.</span>join()
+</code></pre></div><p>Execution result:</p>
+<pre><code>Hello, Alice (in Thread-A)
+Hello, Bob (in Thread-B)
+</code></pre><p><code>local_school</code> here is a global variable, but since it is a <code>ThreadLocal</code> object, the instance variable <code>student</code> can be changed without affecting each other from each thread. It can be operated. You can look at <code>local_school</code> as a dictionary and bind not only <code>student</code> but also <code>teacher</code>. And each thread can operate it arbitrarily and does not affect each other. As a usage of <code>ThreadLocal</code>, you can create your own DB connection, http request, etc. for each thread. From the thread&rsquo;s point of view, all the received data are as local variables and can be manipulated by other threads.</p>
+<h2 id="2-multiprocessing">2. multiprocessing</h2>
+<p>On Unix OS, you can create a process with the system call <code>fork()</code>. Calling <code>fork()</code> copies the current process. The copied process is called the child process, and the original process becomes its parent process. The return value of <code>fork()</code> is returned to both the child process and the parent process. And the return value of the child process is 0, and the ID of the child process is returned in the parent process. The reason is that the parent process must record the ID of the child process. You can get the ID of the parent process from the child process with <code>getppid</code>.</p>
+<p>The Python <code>OS</code> module encapsulates the system call system.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> os
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Process (</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">) start...&#39;</span> <span style="color:#f92672">%</span>os<span style="color:#f92672">.</span>getpid())
+<span style="color:#75715e"># Only works on Unix/Linux/Mac:</span>
+pid <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>fork()
+<span style="color:#66d9ef">if</span> pid <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;I am child process (</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">) and my parent is </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">.&#39;</span> <span style="color:#f92672">%</span>(os<span style="color:#f92672">.</span>getpid(), os<span style="color:#f92672">.</span>getppid()))
+<span style="color:#66d9ef">else</span>:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;I (</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">) just created a child process (</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">).&#39;</span><span style="color:#f92672">%</span> (os<span style="color:#f92672">.</span>getpid(), pid))
+</code></pre></div><p>Execution result:</p>
+<pre><code>Process (19148) start...
+I (19148) just created a child process (19149).
+I am child process (19149) and my parent is 19148.
+</code></pre><p>Here, the parent process and the child process enter different conditional branches. Please note that Windows does not have the system call <code>fork()</code>, so it cannot be executed.</p>
+<p>By using <code>fork()</code>, when a process takes on a new task, a new process can be created and processed. For example, the famous Apache server allows the parent process to monitor the port and <code>fork()</code> to let the child process handle any new http requests.</p>
+<p>When creating a Python multi-process program, we recommend that you use the <code>multiprocessing</code> module of the standard library. <code>multiprocessing</code> module is a parallel processing module. Since <code>threading</code> module cannot perform parallel processing due to GIL, it is said that <code>multiprocessing</code> module was implemented.</p>
+<p>Also, the <code>multiprocessing</code> module is cross-platform and you can create multi-process programs on Windows. As mentioned above, Windows does not have <code>fork()</code>, so when creating a process with the <code>multiprocessing</code> module, a pseudo <code>fork()</code> Is being processed. As a method, all Python objects of the parent process are serialized with <code>Pickle</code> and passed to the child process. So if the call to the <code>multiprocessing</code> module fails on Windows, it may have failed in <code>Pickle</code>.</p>
+<p>When you want to create a child process and execute an external command, you can use <code>subprocess</code> of the standard library, but here, first, Python processing is done by the multiprocess module <code>multiprocessing</code>. I will introduce the functions.</p>
+<h3 id="2-1-process">2-1. Process</h3>
+<p>You can easily create a child process using a process.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Process
+<span style="color:#f92672">import</span> os
+
+
+<span style="color:#75715e"># What the child process does</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run_proc</span>(name):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Run child process {} ({})...&#39;</span><span style="color:#f92672">.</span>format(name, os<span style="color:#f92672">.</span>getpid()))
+
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Parent process {}.&#39;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>getpid()))
+p <span style="color:#f92672">=</span> Process(target<span style="color:#f92672">=</span>run_proc, args<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;test&#39;</span>,))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Child process will start.&#39;</span>)
+p<span style="color:#f92672">.</span>start()
+p<span style="color:#f92672">.</span>join()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Child process end.&#39;</span>)
+</code></pre></div><p>Execution result:</p>
+<pre><code>Parent process 19218.
+Child process will start.
+Run child process test (19219)...
+Child process end.
+</code></pre><p>Pass the execution function and argument to <code>Process</code>, create an instance, and start it with <code>start</code>. From <code>fork()</code>, you can easily create a child process. By using <code>join</code> here, the parent process waits until the child process has finished executing, just as it does for threads.</p>
+<h3 id="2-2-process-pool">2-2. Process Pool</h3>
+<p>Since it takes a lot of computational cost to create a child process, it is more efficient to create a process pool with <code>Pool</code> when you want to create a large number. The main methods of <code>Pool</code> are as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>apply</td>
+<td>Synchronous processing</td>
+</tr>
+<tr>
+<td>apply_async</td>
+<td>Asynchronous processing</td>
+</tr>
+<tr>
+<td>terminate</td>
+<td>Terminates immediately</td>
+</tr>
+<tr>
+<td>join</td>
+<td>Parent process waits until child process is finished; process join can be executed only after close or terminate</td>
+</tr>
+<tr>
+<td>close</td>
+<td>Exit when all processes are finished</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Pool
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> random
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">long_time_task</span>(name):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Run task {} ({})...&#39;</span><span style="color:#f92672">.</span>format(name, os<span style="color:#f92672">.</span>getpid()))start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    time<span style="color:#f92672">.</span>sleep(random<span style="color:#f92672">.</span>random() <span style="color:#f92672">*</span> <span style="color:#ae81ff">3</span>)
+    end <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Task {} runs {} seconds.&#39;</span><span style="color:#f92672">.</span>format(name, (end<span style="color:#f92672">-</span>start)))
+
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Parent process {}.&#39;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>getpid()))
+p <span style="color:#f92672">=</span> Pool(<span style="color:#ae81ff">4</span>) <span style="color:#75715e"># up to 4 child processes at the same time</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">5</span>):
+    p<span style="color:#f92672">.</span>apply_async(long_time_task, args<span style="color:#f92672">=</span>(i,))
+<span style="color:#75715e">#Because of asynchronous processing, parent process does not wait for child process</span>
+<span style="color:#75715e"># Print next</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Waiting for all subprocesses done...&#39;</span>)
+p<span style="color:#f92672">.</span>close()
+p<span style="color:#f92672">.</span>join()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;All subprocesses done.&#39;</span>)
+</code></pre></div><p>Execution result:</p>
+<pre><code>Parent process 19348.
+Waiting for all subprocesses done...
+Run task 0 (19349)...
+Run task 1 (19350)...
+Run task 2 (19351)...
+Run task 3 (19352)...
+Task 1 runs 0.8950300216674805 seconds.
+Run task 4 (19350)...
+Task 2 runs 1.0132842063903809 seconds.
+Task 4 runs 0.3936619758605957 seconds.
+Task 3 runs 2.3689510822296143 seconds.
+Task 0 runs 2.776203155517578 seconds.
+All subprocesses done.
+</code></pre><p>Since the pool size is 4, task 4 will start executing after any of task 0 to task 3 finishes.</p>
+<h3 id="2-3-interprocess-communication">2-3. Interprocess communication</h3>
+<p>Unlike threads, data between processes is not shared. The OS provides many methods of interprocess communication. <code>multiprocessing</code> encapsulates the low level functionality of the OS, making it easier to use.</p>
+<h4 id="2-3-1-queue">2-3-1. Queue</h4>
+<p>FIFO data structure queues are often used for interprocess communication.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Process, Queue
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> random
+
+
+Write data to <span style="color:#75715e">#Queue</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">write</span>(q):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Process to write: {}&#39;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>getpid()))
+    <span style="color:#66d9ef">for</span> value <span style="color:#f92672">in</span> [<span style="color:#e6db74">&#39;A&#39;</span>,<span style="color:#e6db74">&#39;B&#39;</span>,<span style="color:#e6db74">&#39;C&#39;</span>]:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Put {} to queue...&#39;</span><span style="color:#f92672">.</span>format(value))
+        q<span style="color:#f92672">.</span>put(value)
+        time<span style="color:#f92672">.</span>sleep(random<span style="color:#f92672">.</span>random())
+
+
+Read data <span style="color:#f92672">from</span> <span style="color:#75715e">#Queue</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">read</span>(q):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Process to read: {}&#39;</span><span style="color:#f92672">.</span>format(os<span style="color:#f92672">.</span>getpid()))
+    <span style="color:#66d9ef">while</span> True:
+        value <span style="color:#f92672">=</span> q<span style="color:#f92672">.</span>get(True)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Get {} from queue.&#39;</span><span style="color:#f92672">.</span>format(value))
+
+
+<span style="color:#75715e">#Parent process creates Queue and passes it to child process</span>
+q <span style="color:#f92672">=</span> Queue()
+pw <span style="color:#f92672">=</span> Process(target<span style="color:#f92672">=</span>write, args<span style="color:#f92672">=</span>(q,))
+pr <span style="color:#f92672">=</span> Process(target<span style="color:#f92672">=</span>read, args<span style="color:#f92672">=</span>(q,))
+<span style="color:#75715e"># Start pw and start writing</span>
+pw<span style="color:#f92672">.</span>start()
+Start <span style="color:#75715e">#pr and start reading</span>
+pr<span style="color:#f92672">.</span>start()
+<span style="color:#75715e"># wait for pw to finish</span>
+pw<span style="color:#f92672">.</span>join()
+<span style="color:#75715e"># pr is an infinite loop, so forced termination</span>
+pr<span style="color:#f92672">.</span>terminate()
+</code></pre></div><p>Execution result:</p>
+<pre><code>Process to write: 19489
+Put A to queue...
+Process to read: 19490
+Get A from queue.
+Put B to queue...
+Get B from queue.
+Put C to queue...
+Get C from queue.
+</code></pre><p>Even if reading is slow, it can be taken out in the correct order because of the FIFO.</p>
+<h4 id="2-3-2-pipe">2-3-2. Pipe</h4>
+<p>As the name implies, you can think of a pipe as a pipe-shaped data structure. Data is transmitted by putting data in one side of the pipe (<code>send</code> method) and receiving data in the other side (<code>recv</code> method). Please note that data may be corrupted if two processes put or receive data into the same type at the same time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Process, Pipe
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">f</span>(conn):
+    conn<span style="color:#f92672">.</span>send([<span style="color:#ae81ff">42</span>, None,<span style="color:#e6db74">&#39;hello&#39;</span>])
+    conn<span style="color:#f92672">.</span>close()
+
+
+parent_conn, child_conn <span style="color:#f92672">=</span> Pipe()
+p <span style="color:#f92672">=</span> Process(target<span style="color:#f92672">=</span>f, args<span style="color:#f92672">=</span>(child_conn,))
+p<span style="color:#f92672">.</span>start()
+<span style="color:#66d9ef">print</span>(parent_conn<span style="color:#f92672">.</span>recv())
+p<span style="color:#f92672">.</span>join()
+</code></pre></div><p>Execution result:</p>
+<pre><code>[42, None,'hello']
+</code></pre><h4 id="2-3-3-shared-memory">2-3-3. Shared memory</h4>
+<p>I explained that the data between processes is not shared, but it is a lie&hellip;
+As a function of OS, [shared memory] between processes (<a href="https://en.wikipedia.org/wiki/%E5%85%B1%E6%9C%89%E3%83%A1%E3%83%A2%25">https://en.wikipedia.org/wiki/%E5%85%B1%E6%9C%89%E3%83%A1%E3%83%A2%</a> E3%83%AA#%E3%82%BD%E3%83%95%E3%83%88%E3%82%A6%E3%82%A7%E3%82%A2%E3%81%AB%E3 %82%88%E3%82%8B%E5%85%B1%E6%9C%89%E3%83%A1%E3%83%A2%E3%83%AA) can be made. In Python, <code>Value</code> and <code>Array</code> can be used to hold numeric data and array date in shared memory. As an aside, <code>Value</code> and <code>Array</code> use the C language data structure as is. Python&rsquo;s <a href="https://docs.python.org/ja/3/library/numbers.html">Numbers (which inherits the numbers class)</a> is basically immutable, so it cannot be directly rewritten. ..</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Process, Value, Array
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">f</span>(n, a):
+    n<span style="color:#f92672">.</span>value <span style="color:#f92672">=</span> <span style="color:#ae81ff">3.1415927</span>
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(a)):
+        a[i] <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>a[i]
+
+
+num <span style="color:#f92672">=</span> Value(<span style="color:#e6db74">&#39;d&#39;</span>, <span style="color:#ae81ff">0.0</span>) <span style="color:#75715e"># double type number</span>
+arr <span style="color:#f92672">=</span> Array(<span style="color:#e6db74">&#39;i&#39;</span>, range(<span style="color:#ae81ff">10</span>)) <span style="color:#75715e"># array</span>
+
+p <span style="color:#f92672">=</span> Process(target<span style="color:#f92672">=</span>f, args<span style="color:#f92672">=</span>(num, arr))
+p<span style="color:#f92672">.</span>start()
+p<span style="color:#f92672">.</span>join()
+
+<span style="color:#66d9ef">print</span>(num<span style="color:#f92672">.</span>value)
+<span style="color:#66d9ef">print</span>(arr[:])
+</code></pre></div><p>Execution result:</p>
+<pre><code>3.1415927
+[0, -1, -2, -3, -4, -5, -6, -7, -8, -9]
+</code></pre><ul>
+<li>
+<ul>
+<li>The multiprocessing.shared_memory module has been added from python 3.8. I will update when miniconda is updated. *</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-3-4-manager">2-3-4. Manager</h4>
+<p>It may be more accurate to say that managers share data rather than transmit it. <code>Manager()</code> returns a manager object and creates a server process. Through the server process, other processes can interact with Python objects in a proxy manner. The manager object supports Python <code>list, dict, Namespace, Lock, RLock, Semaphore, BoundedSemaphore, Condition, Event, Barrier, Queue, Value, Array</code> objects.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Process, Manager
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">f</span>(d, l, i):
+    d[i] <span style="color:#f92672">=</span> i
+    d[str(i)] <span style="color:#f92672">=</span> str(i)
+    l<span style="color:#f92672">.</span>append(i)
+    <span style="color:#66d9ef">print</span>(l)
+
+
+<span style="color:#66d9ef">with</span> Manager() <span style="color:#66d9ef">as</span> manager:
+    shared_dict <span style="color:#f92672">=</span> manager<span style="color:#f92672">.</span>dict()
+    shared_list <span style="color:#f92672">=</span> manager<span style="color:#f92672">.</span>list()
+    p_list <span style="color:#f92672">=</span> []
+    <span style="color:#75715e"># Create 10 processes</span>
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+        p <span style="color:#f92672">=</span> Process(target<span style="color:#f92672">=</span>f, args<span style="color:#f92672">=</span>(shared_dict, shared_list, i))
+        p<span style="color:#f92672">.</span>start()
+        p_list<span style="color:#f92672">.</span>append(p)
+    <span style="color:#66d9ef">for</span> p <span style="color:#f92672">in</span> p_list:
+        p<span style="color:#f92672">.</span>join()
+
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;All subprocesses done.&#39;</span>)
+    <span style="color:#66d9ef">print</span>(shared_dict)
+    <span style="color:#66d9ef">print</span>(shared_list)
+</code></pre></div><p>Execution result:</p>
+<pre><code>[0]
+[0, 1]
+[0, 1, 2]
+[0, 1, 2, 3]
+[0, 1, 2, 3, 4]
+[0, 1, 2, 3, 4, 5]
+[0, 1, 2, 3, 4, 5, 6]
+[0, 1, 2, 3, 4, 5, 6, 8]
+[0, 1, 2, 3, 4, 5, 6, 8, 7]
+[0, 1, 2, 3, 4, 5, 6, 8, 7, 9]
+All subprocesses done.
+{0: 0, '0': '0', 1: 1, '1': '1', 2: 2, '2': '2', 3: 3, '3': '3', 4 : 4, '4': '4', 5: 5, '5': '5', 6: 6, '6': '6', 8: 8, '8': '8', 7: 7 , '7': '7', 9: 9, '9': '9'}
+[0, 1, 2, 3, 4, 5, 6, 8, 7, 9]
+</code></pre><p>I tried to create a list and dictionary of interprocess sharing in the manager. Here you can see that the processes are not processed in order.</p>
+<h4 id="2-3-5-lock-process">2-3-5. Lock process</h4>
+<p>Like threads, processes also have lock processing.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> multiprocessing <span style="color:#f92672">import</span> Process, Lockdef f(i):
+    lock<span style="color:#f92672">.</span>acquire()
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;hello world&#39;</span>, i)
+    <span style="color:#66d9ef">finally</span>:
+        lock<span style="color:#f92672">.</span>release()
+
+
+lock <span style="color:#f92672">=</span> Lock()
+
+<span style="color:#66d9ef">for</span> num <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+    Process(target<span style="color:#f92672">=</span>f, args<span style="color:#f92672">=</span>(num,))<span style="color:#f92672">.</span>start()
+</code></pre></div><p>Execution result:</p>
+<pre><code>hello world 0
+hello world 1
+hello world 2
+hello world 3
+hello world 4
+hello world 5
+hello world 6
+hello world 7
+hello world 8
+hello world 9
+</code></pre><p>Unlike the last time, the numbers are output in order because the lock is applied. However, the multi-process performance cannot be achieved.</p>
+<h3 id="2-4-distributed-process-processing">2-4. Distributed process processing</h3>
+<p>Python processes can be distributed process processing using multiple machines. The <code>managers</code> submodule of the <code>multiprocessing</code> module allows you to distribute processes across multiple machines. You can write a distributed process processing program without knowing the communication protocol.</p>
+<p>Distributed process processing requires a server process that distributes tasks and a worker process that actually processes the tasks. First, implement the server process <code>task_master.py</code>.</p>
+<p>▽Here, publish the queue as <strong>api</strong> with <code>managers</code> on the Internet. A server process starts a queue, puts in a task, and is accessible to other machines.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:task_master.py" data-lang="python:task_master.py"><span style="color:#f92672">import</span> random
+<span style="color:#f92672">import</span> queue <span style="color:#75715e"># Since it is via the net, the standard library queue is sufficient</span>
+<span style="color:#f92672">from</span> multiprocessing.managers <span style="color:#f92672">import</span> BaseManager
+
+
+<span style="color:#75715e">#Queue to send tasks</span>
+task_queue <span style="color:#f92672">=</span> queue<span style="color:#f92672">.</span>Queue()
+<span style="color:#75715e"># Queue to receive results</span>
+result_queue <span style="color:#f92672">=</span> queue<span style="color:#f92672">.</span>Queue()
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">QueueManager</span>(BaseManager):
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#75715e"># Register two queues as api</span>
+<span style="color:#75715e"># In case of Windows, lambda can be used for api registration, so please define the function obediently</span>
+QueueManager<span style="color:#f92672">.</span>register(<span style="color:#e6db74">&#39;get_task_queue&#39;</span>, callable<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span>: task_queue)
+QueueManager<span style="color:#f92672">.</span>register(<span style="color:#e6db74">&#39;get_result_queue&#39;</span>, callable<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span>: result_queue)
+
+<span style="color:#75715e"># Use port 5000 and set authentication code to&#39;abc&#39;</span>
+<span style="color:#75715e"># In Windows, you need to specify the address (127.0.0.1)</span>
+manager <span style="color:#f92672">=</span> QueueManager(address<span style="color:#f92672">=</span>(<span style="color:#e6db74">&#39;&#39;</span>, <span style="color:#ae81ff">5000</span>), authkey<span style="color:#f92672">=</span><span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;abc&#39;</span>)
+<span style="color:#75715e"># to start</span>
+manager<span style="color:#f92672">.</span>start()
+<span style="color:#75715e"># Get queue object via net</span>
+task <span style="color:#f92672">=</span> manager<span style="color:#f92672">.</span>get_task_queue()
+result <span style="color:#f92672">=</span> manager<span style="color:#f92672">.</span>get_result_queue()
+
+<span style="color:#75715e"># Try adding a task</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+    n <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">10000</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Put task {}...&#39;</span><span style="color:#f92672">.</span>format(n))
+    task<span style="color:#f92672">.</span>put(n)
+
+<span style="color:#75715e"># result receive result from queue</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Try get results...&#39;</span>)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+    <span style="color:#75715e"># Timeout ends after 10 seconds</span>
+    r <span style="color:#f92672">=</span> result<span style="color:#f92672">.</span>get(timeout<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Result: {}&#39;</span><span style="color:#f92672">.</span>format(r))
+
+<span style="color:#75715e"># End</span>
+manager<span style="color:#f92672">.</span>shutdown()
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;master exit.&#39;</span>)
+</code></pre></div><p>Next, implement <code>task_worker.py</code> of the worker process. Acquire and process the task with the <strong>api</strong> called <code>manager.get_task_queue</code> published above.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:task_worker.py" data-lang="python:task_worker.py"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> queue
+<span style="color:#f92672">from</span> multiprocessing.managers <span style="color:#f92672">import</span> BaseManager
+
+
+<span style="color:#75715e"># Make the same QueueManager</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">QueueManager</span>(BaseManager):
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#75715e"># Get api from net and register to QueueManager</span>
+QueueManager<span style="color:#f92672">.</span>register(<span style="color:#e6db74">&#39;get_task_queue&#39;</span>)
+QueueManager<span style="color:#f92672">.</span>register(<span style="color:#e6db74">&#39;get_result_queue&#39;</span>)
+
+<span style="color:#75715e"># Connect to server</span>
+server_addr <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;127.0.0.1&#39;</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Connect to server {}...&#39;</span><span style="color:#f92672">.</span>format(server_addr))
+<span style="color:#75715e"># Set the same port and authentication cipher</span>
+m <span style="color:#f92672">=</span> QueueManager(address<span style="color:#f92672">=</span>(server_addr, <span style="color:#ae81ff">5000</span>), authkey<span style="color:#f92672">=</span><span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;abc&#39;</span>)
+<span style="color:#75715e"># Connect</span>
+m<span style="color:#f92672">.</span>connect()
+
+<span style="color:#75715e"># Get each queue</span>
+task <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>get_task_queue()
+result <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>get_result_queue()
+
+<span style="color:#75715e"># receive a task from the task queue</span>
+<span style="color:#75715e"># Store the processing result in the result queue</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>):
+    <span style="color:#66d9ef">try</span>:
+        n <span style="color:#f92672">=</span> task<span style="color:#f92672">.</span>get(timeout<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#75715e">#The task here is simple square calculation</span>
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;run task {} * {}...&#39;</span><span style="color:#f92672">.</span>format(n, n))
+        r <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{} * {} = {}&#39;</span><span style="color:#f92672">.</span>format(n, n, n<span style="color:#f92672">*</span>n)
+        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        result<span style="color:#f92672">.</span>put(r)
+    <span style="color:#66d9ef">except</span> queue<span style="color:#f92672">.</span>Empty:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;task queue is empty.&#39;</span>)
+
+<span style="color:#75715e"># End</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;worker exit.&#39;</span>)
+</code></pre></div><p>It can also be run on your local machine.</p>
+<p>Execution result:
+First, the server process first puts the task in <code>task_queue</code>. After putting all, wait for the result to be put in <code>result_queue</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-:task_master.py" data-lang=":task_master.py">Put task <span style="color:#ae81ff">7710.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">6743.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">8458.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">2439.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">1351.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">9885.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">5532.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">4181.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">6093.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">3815.</span><span style="color:#f92672">..</span>
+Try get results<span style="color:#f92672">...</span>
+</code></pre></div><p>The worker process then connects to the server, retrieves the task at <code>task_queue</code>, and processes it. Send the processing result to <code>result_queue</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-:task_worker.py" data-lang=":task_worker.py">Connect to server <span style="color:#ae81ff">127.0</span><span style="color:#f92672">.</span><span style="color:#ae81ff">0.1</span><span style="color:#f92672">...</span>
+run task <span style="color:#ae81ff">7710</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">7710.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">6743</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">6743.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">8458</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">8458.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">2439</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">2439.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">1351</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1351.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">9885</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">9885.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">5532</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5532.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">4181</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">4181.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">6093</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">6093.</span><span style="color:#f92672">..</span>
+run task <span style="color:#ae81ff">3815</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">3815.</span><span style="color:#f92672">..</span>
+worker exit<span style="color:#f92672">.</span>
+</code></pre></div><p>When the result comes in <code>result_queue</code>, the server process outputs it in order.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-:task_master.py" data-lang=":task_master.py">Put task <span style="color:#ae81ff">7710.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">6743.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">8458.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">2439.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">1351.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">9885.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">5532.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">4181.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">6093.</span><span style="color:#f92672">..</span>
+Put task <span style="color:#ae81ff">3815.</span><span style="color:#f92672">..</span>
+Try get results<span style="color:#f92672">...</span>
+Result: <span style="color:#ae81ff">7710</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">7710</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">59444100</span>
+Result: <span style="color:#ae81ff">6743</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">6743</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">45468049</span>
+Result: <span style="color:#ae81ff">8458</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">8458</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">71537764</span>
+Result: <span style="color:#ae81ff">2439</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">2439</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">5948721</span>
+Result: <span style="color:#ae81ff">1351</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1351</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">1825201</span>
+Result: <span style="color:#ae81ff">9885</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">9885</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">97713225</span>
+Result: <span style="color:#ae81ff">5532</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">5532</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">30603024</span>
+Result: <span style="color:#ae81ff">4181</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">4181</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">17480761</span>
+Result: <span style="color:#ae81ff">6093</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">6093</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">37124649</span>
+Result: <span style="color:#ae81ff">3815</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">3815</span> <span style="color:#f92672">=</span> <span style="color:#ae81ff">14554225</span>
+master exit<span style="color:#f92672">.</span>
+</code></pre></div><p>All queues are inside the server process, since we have not created any queues in the worker process.</p>
+<img width="659" alt="Screen Shot 2020-02-27 at 0.58.21.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/246522/c36fcf12-f486-77ee-25fa-c327cc72067f.png">
+(Source: [Huang Xuefeng Official Bureau](https://www.liaoxuefeng.com/wiki/1016959663602400/1017631559645600))
+<p>This way you can implement distributed processes in Python. By using multiple workers for processing, you can get powerful computing power.</p>
+<h2 id="3-subprocess">3. subprocess</h2>
+<p>I explained how to create a copy of the current process as a child process with <code>fork()</code> on Unix OS. That is, calling <code>os.fork</code> in Python creates a child process of the Python program. However, there are times when you want a child process that can execute an external command rather than a Python program.There is another system call <code>exec()</code> in Unix OS. It is implemented as <code>os.execve</code> in Python. <code>exec()</code> is a function that replaces the current process with another program. In other words, <code>os.fork</code> creates a child process of a Python program, and <code>os.execve</code> allows other programs (<code>ls</code>, code&gt;ping</code>).
+Standard library <code>subprocess</code> is a module for creating a child process that executes an external program. When executing an external program with <code>subprocess</code>, build a pipe (Pipe) for inter-process communication between the Python process and the child process, pass parameters, return values and errors. You will be able to receive it.</p>
+<h3 id="3-1subprocessrun">3-1.subprocess.run</h3>
+<ul>
+<li>Python 3.5 or later is officially recommended to execute the command with <code>subprocess.run</code>. Here, explanation of <code>subprocess.call</code> etc. of old <strong>api</strong> is omitted.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">subprocess<span style="color:#f92672">.</span>run(args, <span style="color:#f92672">*</span>, stdin<span style="color:#f92672">=</span>None, input<span style="color:#f92672">=</span>None,
+    stdout<span style="color:#f92672">=</span>None, stderr<span style="color:#f92672">=</span>None, shell<span style="color:#f92672">=</span>False, timeout<span style="color:#f92672">=</span>None, check<span style="color:#f92672">=</span>False, universal_newlines<span style="color:#f92672">=</span>False)
+</code></pre></div><p><code>subprocess.run</code> returns an instance of the <code>CompletedProcess</code> class. The attributes of the <code>CompletedProcess</code> class are as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>args</td>
+<td>Parameters passed to the child process; string or list</td>
+</tr>
+<tr>
+<td>returncode</td>
+<td>Stores status code after execution</td>
+</tr>
+<tr>
+<td>stdout</td>
+<td>Standard output after execution</td>
+</tr>
+<tr>
+<td>stderr</td>
+<td>Standard error after execution</td>
+</tr>
+<tr>
+<td>check_returncode()</td>
+<td>When the status code is not 0 (execution failure), CalledProcessError is raised</td>
+</tr>
+</tbody>
+</table>
+<p>Here are some examples of using <code>subprocess.run</code>.</p>
+<p>You can catch the standard output with <code>subprocess.PIPE</code> (if you don&rsquo;t catch it, the output will be discarded).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> subprocess
+
+
+Same <span style="color:#66d9ef">as</span> <span style="color:#75715e"># subprocess.run([&#34;ls&#34;, &#34;-l&#34;] stdout=subprocess.PIPE)</span>
+obj <span style="color:#f92672">=</span> subprocess<span style="color:#f92672">.</span>run([<span style="color:#e6db74">&#34;ls&#34;</span>, <span style="color:#e6db74">&#34;-l&#34;</span>], stdout<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;stdout:</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">{}&#39;</span><span style="color:#f92672">.</span>format(obj<span style="color:#f92672">.</span>stdout<span style="color:#f92672">.</span>decode()))
+</code></pre></div><p>Execution result:</p>
+<pre><code>stdout:
+total 128
+- rw-r--r--@ 1 kaito staff 692 Feb 16 19:35 1-1.py
+- rw-r--r--@ 1 kaito staff 509 Feb 17 23:39 1-2.py
+- rw-r--r--@ 1 kaito staff 364 Feb 19 16:48 2-10.py
+- rw-r--r--@ 1 kaito staff 645 Feb 19 19:12 2-17.py
+- rw-r--r--@ 1 kaito staff 213 Feb 19 19:14 2-18.py
+- rw-r--r--@ 1 kaito staff 209 Feb 19 19:18 2-19.py
+- rw-r--r--@ 1 kaito staff 318 Feb 19 23:53 2-20.py
+- rw-r--r--@ 1 kaito staff 194 Feb 19 23:57 2-21.py
+- rw-r--r--@ 1 kaito staff 230 Feb 20 15:46 2-23.py
+- rw-r--r--@ 1 kaito staff 131 Feb 18 19:39 2-4.py
+- rw-r--r--@ 1 kaito staff 543 Feb 18 19:50 2-8.py
+- rw-r--r--@ 1 kaito staff 240 Feb 18 22:29 2-9.py
+- rw-r--r-- 1 kaito staff 1339 Feb 27 00:25 task_master.py
+- rw-r--r-- 1 kaito staff 1086 Feb 27 00:31 task_worker.py
+- rw-r--r-- 1 kaito staff 446 Feb 27 20:26 test.py
+- rw-r--r-- 1 kaito staff 199 Feb 27 20:31 test2.py
+</code></pre><p>If <code>check</code> is set to True, an error will occur when the status code is not 0.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">subprocess<span style="color:#f92672">.</span>run(<span style="color:#e6db74">&#34;exit 1&#34;</span>, shell<span style="color:#f92672">=</span>True, check<span style="color:#f92672">=</span>True)
+</code></pre></div><p>Execution result:</p>
+<pre><code>Traceback (most recent call last):
+  File &quot;test2.py&quot;, line 4, in &lt;module&gt;
+    subprocess.run(&quot;exit 1&quot;, shell=True, check=True)
+  File &quot;/Users/kaito/opt/miniconda3/lib/python3.7/subprocess.py&quot;, line 487, in run
+    output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command'exit 1'returned non-zero exit status 1.
+</code></pre><p>The <code>__repr__</code> of the <code>CompletedProcess</code> class looks like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(subprocess<span style="color:#f92672">.</span>run([<span style="color:#e6db74">&#34;ls&#34;</span>, <span style="color:#e6db74">&#34;-l&#34;</span>, <span style="color:#e6db74">&#34;/dev/null&#34;</span>], stdout<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE))
+</code></pre></div><p>Execution result:</p>
+<pre><code>CompletedProcess(args=['ls','-l','/dev/null'], returncode=0, stdout=b'crw-rw-rw- 1 root wheel 3, 2 Feb 27 20:37 /dev/ null\n')
+</code></pre><h3 id="3-2subprocesspopen">3-2.subprocess.Popen</h3>
+<p>Advanced operation can use <code>subprocess.Popen</code> class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">subprocess</span><span style="color:#f92672">.</span>Popen(args, bufsize<span style="color:#f92672">=-</span><span style="color:#ae81ff">1</span>, executable<span style="color:#f92672">=</span>None, stdin<span style="color:#f92672">=</span>None, stdout<span style="color:#f92672">=</span>None, stderr<span style="color:#f92672">=</span>None,
+    preexec_fn<span style="color:#f92672">=</span>None, close_fds<span style="color:#f92672">=</span>True, shell<span style="color:#f92672">=</span>False, cwd<span style="color:#f92672">=</span>None, env<span style="color:#f92672">=</span>None, universal_newlines<span style="color:#f92672">=</span>False,
+    startup_info<span style="color:#f92672">=</span>None, creationflags<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, restore_signals<span style="color:#f92672">=</span>True, start_new_session<span style="color:#f92672">=</span>False, pass_fds<span style="color:#f92672">=</span>())
+</code></pre></div><p>The method of <code>subprocess.Popen</code> class is as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>poll</td>
+<td>Returns status code when child process finishes; returns None if not finished</td>
+</tr>
+<tr>
+<td>wait</td>
+<td>Waits for the child process to finish executing; raises a TimeoutExpired error when it reaches timeout</td>
+</tr>
+<tr>
+<td>communicate</td>
+<td>Communicate with child process</td>
+</tr>
+<tr>
+<td>send_signal</td>
+<td>Sends a signal to the child process; for example signal.signal(signal.SIGINT) is the command line on UNIX OS, and the signal when Ctrl+C is pressed.</td>
+</tr>
+<tr>
+<td>terminate</td>
+<td>Terminate child process</td>
+</tr>
+<tr>
+<td>kill</td>
+<td>Kill child process</td>
+</tr>
+</tbody>
+</table>
+<p>I will also introduce a few examples of using <code>subprocess.Popen</code>.</p>
+<p>You can execute Python code as an external program.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> subprocess
+
+
+<span style="color:#75715e"># Pipe a pipe to standard input, standard output, and standard error</span>
+p <span style="color:#f92672">=</span> subprocess<span style="color:#f92672">.</span>Popen([<span style="color:#e6db74">&#34;python&#34;</span>], stdin<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE, stdout<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE, stderr<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE)
+<span style="color:#75715e"># Write data to standard input</span>
+p<span style="color:#f92672">.</span>stdin<span style="color:#f92672">.</span>write(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;print(&#34;stdin&#34;)</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+Pass data <span style="color:#66d9ef">as</span> input to <span style="color:#75715e"># communicate</span>
+out, err <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span>communicate(input<span style="color:#f92672">=</span><span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;print(&#34;communicate&#34;)</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#39;</span>)
+<span style="color:#66d9ef">print</span>(out<span style="color:#f92672">.</span>decode())
+</code></pre></div><p>Execution result:</p>
+<pre><code>stdin
+communicate
+
+</code></pre><p>Pipelining using <code>|</code> can be constructed by connecting the standard output and standard input of two child processes with a pipe.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Pipe two child processes</span>
+p1 <span style="color:#f92672">=</span> subprocess<span style="color:#f92672">.</span>Popen([<span style="color:#e6db74">&#39;df&#39;</span>,<span style="color:#e6db74">&#39;-h&#39;</span>], stdout<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE)
+p2 <span style="color:#f92672">=</span> subprocess<span style="color:#f92672">.</span>Popen([<span style="color:#e6db74">&#39;grep&#39;</span>,<span style="color:#e6db74">&#39;Data&#39;</span>], stdin<span style="color:#f92672">=</span>p1<span style="color:#f92672">.</span>stdout, stdout<span style="color:#f92672">=</span>subprocess<span style="color:#f92672">.</span>PIPE)
+out, err <span style="color:#f92672">=</span> p2<span style="color:#f92672">.</span>communicate() <span style="color:#75715e"># df -h | grep Data</span>
+<span style="color:#66d9ef">print</span>(out<span style="color:#f92672">.</span>decode())
+</code></pre></div><p>Execution result:</p>
+<pre><code>/dev/disk1s1 466Gi 438Gi 8.0Gi 99% 1156881 4881295959 0% /System/Volumes/Data
+map auto_home 0Bi 0Bi 0Bi 100% 0 0 100% /System/Volumes/Data/home
+
+</code></pre><h2 id="4-concurrentfuturesive-introduced-you-to-pythons-multithreading-and-multiprocessing-you-may-have-an-image-that-is-a-little-complicated-and-difficult-to-understand-but-thats-a-fact-laughs-gohttpsenwikipediaorgwikigo_e38397e383ade382b0e383a9e3839fe3fromthebeginninglanguagessuchas83b3e382b0e8a880e8aa9e-whose-design-philosophy-is-simple-parallelparallel-processing-indicate-the-direction-of-evolution-of-programming-languages-it-may-be">4. concurrent.futuresI&rsquo;ve introduced you to Python&rsquo;s multithreading and multiprocessing. You may have an image that is a little complicated and difficult to understand, but that&rsquo;s a fact (laughs). <a href="https://en.wikipedia.org/wiki/Go_(%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9F%E3Fromthebeginning,languagessuchas%83%B3%E3%82%B0%E8%A8%80%E8%AA%9E)">Go</a> whose design philosophy is simple parallel/parallel processing indicate the direction of evolution of programming languages. It may be</h2>
+<p>However, the evolution of Python has not stopped yet. A high-level module that is easier to use by further encapsulating <code>threading</code> and <code>multiprocessing</code> called <code>concurrent</code> is under development.</p>
+<p>The current <code>concurrent</code> has only a module called <code>futures</code>. <code>futures</code> is <a href="https://en.wikipedia.org/wiki/Future_%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3">Future pattern</a> Python implementation. Here, I would like to introduce the functions that can be used at the moment.</p>
+<h3 id="4-1-executor-and-future">4-1. Executor and Future</h3>
+<p><code>concurrent.futures</code> provides <code>ThreadPoolExecutor</code> and <code>ProcessPoolExecutor</code>, which are inherited from <code>Executor</code> class. Become.
+<code>ThreadPoolExecutor</code> and <code>ProcessPoolExecutor</code> receive an argument <code>max_works</code> that specifies the number of threads or processes. Perform one task in the <code>submit</code> method and return an instance of the <code>Future</code> class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> concurrent.futures <span style="color:#f92672">import</span> ThreadPoolExecutor, ProcessPoolExecutor
+<span style="color:#f92672">import</span> requests
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_url</span>(url):
+    <span style="color:#66d9ef">return</span> requests<span style="color:#f92672">.</span>get(url)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://www.python.org/&#39;</span>
+    executor <span style="color:#f92672">=</span> ProcessPoolExecutor(max_workers<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>) <span style="color:#75715e"># ThreadPoolExecutor(max_workers=4)</span>
+    future <span style="color:#f92672">=</span> executor<span style="color:#f92672">.</span>submit(load_url, url)
+    <span style="color:#66d9ef">print</span>(future)
+    <span style="color:#66d9ef">while</span> <span style="color:#ae81ff">1</span>:
+        <span style="color:#66d9ef">if</span> future<span style="color:#f92672">.</span>done():
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;status code: {}&#39;</span><span style="color:#f92672">.</span>format(future<span style="color:#f92672">.</span>result()<span style="color:#f92672">.</span>status_code))
+            <span style="color:#66d9ef">break</span>
+</code></pre></div><p>Execution result:</p>
+<pre><code>&lt;Future at 0x10ae058d0 state=running&gt;
+status code: 200
+</code></pre><p>It&rsquo;s a simple http request. It should be noted here that when using <code>ProcessPoolExecutor</code>, the <code>__main__</code> module is required, so do not execute it in the REPL environment.</p>
+<blockquote>
+<p>The __main__ module must be importable by worker subprocesses.This means that ProcessPoolExecutor will not work in the interactive interpreter.</p>
+</blockquote>
+<h3 id="4-2-map-as_completed-and-wait">4-2. map, as_completed and wait</h3>
+<p><code>submit</code> method can execute only one task, so if you want to execute multiple tasks, <code>map</code>, <code>as_completed</code> and <code>wait&lt; Use /code&gt;.</p>
+<p>The <code>map</code> method takes an execution function and a sequence as arguments and returns the execution result generator.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> concurrent.futures <span style="color:#f92672">import</span> ThreadPoolExecutor, ProcessPoolExecutor
+<span style="color:#f92672">import</span> requests
+
+
+URLS <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;https://google.com&#39;</span>,<span style="color:#e6db74">&#39;https://www.python.org/&#39;</span>,<span style="color:#e6db74">&#39;https://api.github.com/&#39;</span>]
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_url</span>(url):
+    <span style="color:#66d9ef">return</span> requests<span style="color:#f92672">.</span>get(url)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    <span style="color:#75715e"># with ThreadPoolExecutor(max_workers=4) as executor:</span>
+    <span style="color:#66d9ef">with</span> ProcessPoolExecutor(max_workers<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>) <span style="color:#66d9ef">as</span> executor:
+        <span style="color:#66d9ef">for</span> url, data <span style="color:#f92672">in</span> zip(URLS, executor<span style="color:#f92672">.</span>map(load_url, URLS)):
+            <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;{}-status_code {}&#39;</span><span style="color:#f92672">.</span>format(url, data<span style="color:#f92672">.</span>status_code))
+</code></pre></div><p>Execution result:</p>
+<pre><code>https://google.com-status_code 200
+https://www.python.org/-status_code 200
+https://api.github.com/-status_code 200
+</code></pre><p>The <code>as_completed</code> method returns a generator of <code>Future</code> objects. And it blocks if the task is not completed.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> concurrent.futures <span style="color:#f92672">import</span> ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+<span style="color:#f92672">import</span> requests
+
+
+URLS <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;https://google.com&#39;</span>,<span style="color:#e6db74">&#39;https://www.python.org/&#39;</span>,<span style="color:#e6db74">&#39;https://api.github.com/&#39;</span>]
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_url</span>(url):
+    <span style="color:#66d9ef">return</span> url, requests<span style="color:#f92672">.</span>get(url)<span style="color:#f92672">.</span>status_code
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    <span style="color:#66d9ef">with</span> ProcessPoolExecutor(max_workers<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>) <span style="color:#66d9ef">as</span> executor:
+        tasks <span style="color:#f92672">=</span> [executor<span style="color:#f92672">.</span>submit(load_url, url) <span style="color:#66d9ef">for</span> url <span style="color:#f92672">in</span> URLS]
+        <span style="color:#66d9ef">for</span> future <span style="color:#f92672">in</span> as_completed(tasks):
+            <span style="color:#66d9ef">print</span>(<span style="color:#f92672">*</span>future<span style="color:#f92672">.</span>result())
+</code></pre></div><p>Execution result:</p>
+<pre><code>https://google.com 200
+https://www.python.org/ 200
+https://api.github.com/ 200
+</code></pre><p>The <code>wait</code> method blocks the main thread and main process. With the argument <code>return_when</code>, you can set three conditions.</p>
+<table>
+<thead>
+<tr>
+<th>Conditions</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ALL_COMPLETED</td>
+<td>Release blocking when all tasks are complete</td>
+</tr>
+<tr>
+<td>FIRST_COMPLETED</td>
+<td>Release blocking when any task is completed</td>
+</tr>
+<tr>
+<td>FIRST_EXCEPTION</td>
+<td>Release blocking if any task causes an error</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> concurrent.futures <span style="color:#f92672">import</span> ThreadPoolExecutor, ProcessPoolExecutor, wait, ALL_COMPLETED
+<span style="color:#f92672">import</span> requests
+
+
+URLS <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;https://google.com&#39;</span>,<span style="color:#e6db74">&#39;https://www.python.org/&#39;</span>,<span style="color:#e6db74">&#39;https://api.github.com/&#39;</span>]
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">load_url</span>(url):
+    requests<span style="color:#f92672">.</span>get(url)
+    <span style="color:#66d9ef">print</span>(url)
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    <span style="color:#66d9ef">with</span> ProcessPoolExecutor(max_workers<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>) <span style="color:#66d9ef">as</span> executor:
+        tasks <span style="color:#f92672">=</span> [executor<span style="color:#f92672">.</span>submit(load_url, url) <span style="color:#66d9ef">for</span> url <span style="color:#f92672">in</span> URLS]
+        wait(tasks, return_when<span style="color:#f92672">=</span>ALL_COMPLETED)
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;all completed.&#39;</span>) <span style="color:#75715e"># main process is released and prints after 3 prints</span>
+</code></pre></div><p>Execution result:</p>
+<pre><code>https://www.python.org/
+https://api.github.com/
+https://google.com
+all completed.
+</code></pre><p>#Reference</p>
+<blockquote>
+<p><a href="https://docs.python.org/ja/3/library/concurrency.html">Concurrent execution</a>
+<a href="https://docs.python.org/ja/3/library/threading.html">threading &mdash; Thread-based parallel processing</a>
+<a href="https://docs.python.org/ja/3/library/multiprocessing.html">multiprocessing &mdash; Process-based parallel processing</a>
+<a href="https://docs.python.org/ja/3/library/subprocess.html">subprocess &mdash; Subprocess Management</a>
+<a href="https://docs.python.org/ja/3/library/concurrent.futures.html#module-concurrent.futures">concurrent.futures-Parallel task execution</a></p>
+</blockquote>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

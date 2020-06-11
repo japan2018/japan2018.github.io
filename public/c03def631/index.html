@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Why is 0.1 displayed when printed even though 0.1 cannot be represented exactly as a floating point number? | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Why is 0.1 displayed when printed even though 0.1 cannot be represented exactly as a floating point number?</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 21, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/float"> float</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/double"> double</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/floating-decimal-point"> floating decimal point</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/computer"> computer</a></code></small>
+
+</p>
+<pre><code>When ``0.1`` is substituted for ``x`` and displayed on the console, ``0.1`` is displayed.
+</code></pre>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">x <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.1</span>
+<span style="color:#66d9ef">print</span>(x)
+<span style="color:#75715e"># =&gt; 0.1</span>
+</code></pre></div><p>It seems obvious, but <code>0.1</code> cannot be represented exactly in floating point numbers (IEEE 754).
+However, it is strange that <code>print</code> is displayed when doing <code>print</code>.
+I write down what I learned about this.</p>
+<p>#Environment
+This article uses Python 3.7.</p>
+<h1 id="assumption-floating-point-number">[Assumption] Floating point number</h1>
+<p>Throughout this article, the term &ldquo;floating point number&rdquo; refers to &ldquo;IEEE 754 double precision&rdquo;.</p>
+<p>The floating-point number format is a number converted into the following format, in which <code>sign</code>, <code>exp</code>, and <code>frac</code> are arranged in order.</p>
+<pre><code class="language-math" data-lang="math">(-1)^{sign} \times 2^{exp-1023} \times (1 + frac \times 2^{-52})
+</code></pre><p>The name and range of each symbol are as follows.</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Japanese name</th>
+<th>English name</th>
+<th>Range</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sign</td>
+<td>sign</td>
+<td>sign</td>
+<td>0 or 1</td>
+</tr>
+<tr>
+<td>exp</td>
+<td>exponent</td>
+<td>exponent</td>
+<td>1 to 2,046</td>
+</tr>
+<tr>
+<td>frac</td>
+<td>Mantissa</td>
+<td>fraction</td>
+<td>0 to 4,503,599,627,370,495</td>
+</tr>
+</tbody>
+</table>
+<p>See here for how to convert decimal numbers to this format.
+<a href="http://www.picfun.com/mathlib02.html">http://www.picfun.com/mathlib02.html</a></p>
+<p>It is easy to understand how to convert decimal numbers to binary numbers.
+<a href="https://mathwords.net/syosuu2sin">https://mathwords.net/syosuu2sin</a></p>
+<p>Decimal decimals are often circular decimals in binary. <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>
+In the process of converting a decimal number into a binary number, if the operation is aborted with a finite number of digits, there will be an error with the number before conversion (rounding error).</p>
+<h1 id="for-example-when-01-is-represented-by-a-floating-point-number">For example, when 0.1 is represented by a floating point number</h1>
+<p>Converts 0.1 to a floating point number.
+The following tools were used for the conversion.
+<a href="https://tools.m-bsys.com/calculators/ieee754.php">https://tools.m-bsys.com/calculators/ieee754.php</a></p>
+<img width="896" alt="to_float_point_0_1.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288329/82699691-ef8a-b613-f7ea-243bf1ed0e19.png">
+<p>``0.1&rsquo;&rsquo; is the binary representation of a floating point number,</p>
+<pre><code>Sign = 0
+Index = 01111111011
+Mantissa = 1001100110011001100110011001100110011001100110011010
+</code></pre><p>Converted to decimal,</p>
+<pre><code>Sign = 0
+Index = 1019
+Mantissa = 2702159776422298
+</code></pre><p>is.</p>
+<p>Applying to the floating point expression above,</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+&amp;(-1)^{0} \times 2^{1019-1023} \times (1 + 2702159776422298 \times 2^{-52})\\
+&amp;= 1 \times 2^{-4} \times (2^{52} \times 2^{-52} + 2702159776422298 \times 2^{-52})\\
+&amp;= 2^{-4} \times (4503599627370496 \times 2^{-52} + 2702159776422298 \times 2^{-52})\\
+&amp;= 2^{-4} \times 7205759403792794 \times 2^{-52}\\
+&amp;= 7205759403792794 \times 2^{-56}\\
+&amp;= \frac{7205759403792794}{72057594037927936}\\
+&amp;= 0.1000000000000000055511151231257827021181583404541015625
+\end{align}
+</code></pre><p>And on the computer 0.1 is</p>
+<pre><code class="language-math" data-lang="math">0.1000000000000000055511151231257827021181583404541015625
+</code></pre><p>You can see that it is treated as.</p>
+<p>This is why, for example, adding <code>0.1</code> three times doesn&rsquo;t fit exactly <code>0.3</code> (more precisely, &ldquo;doesn&rsquo;t appear&rdquo; rather than &ldquo;doesn&rsquo;t happen&rdquo;).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(<span style="color:#ae81ff">0.1</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.1</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.1</span>)
+<span style="color:#75715e"># =&gt; 0.30000000000000004</span>
+</code></pre></div><h1 id="behavior-when-printing">Behavior when printing</h1>
+<p>In the main subject, why is <code>0.1'' not displayed correctly as a floating point number, but </code>0.1&rsquo;&rsquo; is displayed when ``printing&rsquo;&rsquo;? The answer is written.</p>
+<blockquote>
+<p>In old Python, the prompt and the repr() built-in function selected and displayed a decimal value such as 0.10000000000000001 with 17 significant digits. Starting with Python 3.1, in most cases, the decimal value with the shortest number of digits such as 0.1 is selected.
+<a href="https://docs.python.org/ja/3/tutorial/floatingpoint.html">https://docs.python.org/ja/3/tutorial/floatingpoint.html</a></p>
+</blockquote>
+<p>&hellip; apparently &hellip;</p>
+<p>That is, the shortest representation of floating-point numbers that has the same representation as <code>0.1</code> is selected. ~~ It seems that <code>0.1</code> is displayed as <code>0.1</code> for the same reason in languages other than Python. ~~ (Correction: For languages other than Python, please check the official documentation for each language)</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288329/ba55413d-8003-d6ed-f502-6ce36f6c195f.png" alt="float_point_0_1.png"></p>
+<p>Conversely, for example, if the number is very close to <code>0.1</code>, it will be displayed as <code>0.1</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(<span style="color:#ae81ff">0.1000000000000000056</span>)
+<span style="color:#75715e"># =&gt; 0.1</span>
+</code></pre></div><p>As far as I&rsquo;ve examined,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#ae81ff">0.099999999999999998612221219218554324470460414886474609375</span>
+From
+<span style="color:#ae81ff">0.100000000000000012490009027033011079765856266021728515625</span>
+</code></pre></div><p>Up to here is the range where <code>0.1</code> is displayed when you <code>print</code>. Numbers in this range are converted to the same floating point number as <code>0.1</code>.</p>
+<p>It seems that if there is no particular shortest expression, a numerical value with 17 significant digits is displayed.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(<span style="color:#ae81ff">0.12345678901234567890</span>)
+<span style="color:#75715e">#=&gt; 0.12345678901234568</span>
+</code></pre></div><h1 id="bonus">bonus</h1>
+<p>To specify the number of decimal places in Python, do the following. You can see that there is an error between the entered number and the output.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(f<span style="color:#e6db74">&#39;{0.1:.20f}&#39;</span>)
+<span style="color:#75715e"># =&gt; 0.10000000000000000555</span>
+</code></pre></div><h1 id="i-wrote-the-sequel">I wrote the sequel</h1>
+<p>Now,</p>
+<blockquote>
+<p>This is why, for example, adding <code>0.1</code> three times doesn&rsquo;t fit exactly <code>0.3</code> (more precisely, &ldquo;not&rdquo; rather than &ldquo;not&rdquo;).</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">print</span>(<span style="color:#ae81ff">0.1</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.1</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.1</span>)
+<span style="color:#75715e"># =&gt; 0.30000000000000004</span>
+</code></pre></div><p>I wrote.
+In the decimal representation of the floating point number of <code>0.1</code>, <code>5</code> appears for the first time in the 18th column, but if you add <code>0.1</code> 3 times, <code>4</code> appears in the 17th column.
+This does not match the calculation.</p>
+<p>The following article explained this phenomenon.</p>
+<ul>
+<li><a href="https://qiita.com/yucatio/items/85a8e8d381d300092295">Why is the floating point number of 0.1 larger than 0.1, but less than 1.0 when added 10 times [Part 1]</a></li>
+<li><a href="https://qiita.com/yucatio/items/b5ed14bbd1e9a751b703#_reference-57cd7c907b8fa0bf0291">Why is 0.1 floating point number greater than 0.1, but less than 1.0 when added 10 times [Part 2]</a></li>
+</ul>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>For example, of the numbers that are greater than 0 and less than 1 and are represented within 3 digits after the decimal point (there are 999), only 7 are not circular decimals when converted to binary .. <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

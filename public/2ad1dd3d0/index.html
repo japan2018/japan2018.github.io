@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Touch the latest physics-based renderer Mitsuba2 (2) Move from Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Touch the latest physics-based renderer Mitsuba2 (2) Move from Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 11, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cg">CG</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/raytracing">RayTracing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mitsuba">mitsuba</a></code></small>
+
+</p>
+<pre><code>What is #Mitsuba2
+</code></pre>
+<p>A free physically based renderer for academics. There are new features such as differentiable rendering and polarized rendering.
+This article is a continuation of <a href="https://qiita.com/kurilab/items/34089636fa570d9a7939">Introduction</a>.
+The assumption is that Mitsuba2 has been installed.</p>
+<p>This is another related article I wrote.</p>
+<p>-<a href="https://qiita.com/kurilab/items/34089636fa570d9a7939">Try the latest physics-based renderer Mitsuba2 (1) Introduction</a>
+-<a href="https://qiita.com/kurilab/items/5f270ebf8ee28a25cd92">Try the latest physics-based renderer Mitsuba2 (3) Differentiable rendering</a>
+-<a href="https://qiita.com/kurilab/items/c96ee592dbde0416576e">Try the latest physics-based renderer Mitsuba2 (4) Polarization rendering</a>
+-<a href="https://qiita.com/kurilab/items/f9e48045bd1b9c130d0b">Difference between BRDF and polarized BRDF (pBRDF)</a></p>
+<h1 id="move-mitsuba2-from-python">Move Mitsuba2 from Python</h1>
+<p><a href="https://mitsuba2.readthedocs.io/en/latest/src/python_interface/intro/">As officially written</a> Mitsuba2 provides a very powerful Python binding, and almost all features Can be used from Python. Of course, you can also import on Jupyter Notebook and interactively perform various developments. We also assume that it will work with PyTorch, so you can describe optimization using PyTorch very easily.</p>
+<h2 id="first-of-all-try-to-move">First of all, try to move</h2>
+<p>**The procedure is for Windows 10 (information as of March 10, 2020). **
+The official provides the Python rendering test code, the goal is to get this working.
+This time, if you are a person who has completed <a href="https://qiita.com/kurilab/items/34089636fa570d9a7939">Introduction (1)</a>, I don&rsquo;t think there is anything in particular. I will explain step by step.</p>
+<h2 id="corresponding-version-of-python">Corresponding version of Python</h2>
+<p><a href="https://mitsuba2.readthedocs.io/en/latest/src/getting_started/compiling/">According to the official</a> It is said that it corresponds to 3.6 or more, so if it is less than that, let&rsquo;s update ..</p>
+<h2 id="through-path">through PATH</h2>
+<p>First, you need to pass PATH to the mitsuba2 module so that it can be imported by Python.
+There are several ways to do this, but here we will use the script provided by the formula.
+It is premised that the libraries and executable files built in <a href="https://qiita.com/kurilab/items/34089636fa570d9a7939">Introduction (1)</a> are in <code>mitsuba2\build\dist\</code>.
+Since there is a batch file called <code>setpath.bat</code> in the root directory, hit this from the command prompt (cmd) (If you use Power Shell, the environment variable will not be returned even if you hit bat, so you need to rewrite the script. ).</p>
+<pre><code>mitsuba2&gt; setpath.bat
+</code></pre><p>Now, &ldquo;in the executed cmd&rdquo;, PATH to the executable file and Python module is passed, and Mitsuba2 can be used anywhere.
+Start ipython and import mitsuba2.</p>
+<pre><code>mitsuba2&gt; ipython
+Python 3.7.4 (tags/v3.7.4:e09359112e, Jul 8 2019, 20:34:20) [MSC v.1916 64 bit (AMD64)]
+Type'copyright','credits' or'license' for more information
+IPython 7.10.1-An enhanced Interactive Python.Type'?' for help.
+
+In [1]: import mitsuba
+</code></pre><p>If you don&rsquo;t get an import error, you have PATH to mitsuba2 module.
+**It is mitsuba2, but please note that the module to import is &ldquo;mitsuba&rdquo;. **</p>
+<p>Now, let&rsquo;s move the test code right away.
+With &ldquo;cmd that executed the script&rdquo;, move to the sample code directory prepared by the official.
+The corresponding directory is located at <code>mitsuba2\docs\examples\01_render_scene\</code>.</p>
+<pre><code>mitsuba2&gt; cd docs\examples\01_render_scene\
+mitsuba2\docs\examples\01_render_scene&gt;
+</code></pre><p>The <code>render_scene.py</code> in the directory is sample code that renders by hitting mitsuba2 with Python.
+Let&rsquo;s open it with an appropriate editor.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> mitsuba
+
+<span style="color:#75715e"># Set the desired mitsuba variant</span>
+mitsuba<span style="color:#f92672">.</span>set_variant(<span style="color:#e6db74">&#39;scalar_rgb&#39;</span>)
+
+<span style="color:#f92672">from</span> mitsuba.core <span style="color:#f92672">import</span> Bitmap, Struct, Thread
+<span style="color:#f92672">from</span> mitsuba.core.xml <span style="color:#f92672">import</span> load_file
+
+<span style="color:#75715e"># Absolute or relative path to the XML file</span>
+filename <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;path/to/my/scene.xml&#39;</span>
+
+<span style="color:#75715e"># Add the scene directory to the FileResolver&#39;s search path</span>
+Thread<span style="color:#f92672">.</span>thread()<span style="color:#f92672">.</span>file_resolver()<span style="color:#f92672">.</span>append(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(filename))
+
+<span style="color:#75715e"># Load the actual scene</span>
+scene <span style="color:#f92672">=</span> load_file(filename)
+
+<span style="color:#75715e"># Call the scene&#39;s integrator to render the loaded scene</span>
+scene<span style="color:#f92672">.</span>integrator()<span style="color:#f92672">.</span>render(scene, scene<span style="color:#f92672">.</span>sensors()[<span style="color:#ae81ff">0</span>])
+
+<span style="color:#75715e"># After rendering, the rendered data is stored in the film</span>
+film <span style="color:#f92672">=</span> scene<span style="color:#f92672">.</span>sensors()[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>film()
+
+<span style="color:#75715e"># Write out rendering as high dynamic range OpenEXR file</span>
+film<span style="color:#f92672">.</span>set_destination_file(<span style="color:#e6db74">&#39;/path/to/output.exr&#39;</span>)
+film<span style="color:#f92672">.</span>develop()
+
+<span style="color:#75715e"># Write out a tonemapped JPG of the same rendering</span>
+bmp <span style="color:#f92672">=</span> film<span style="color:#f92672">.</span>bitmap(raw<span style="color:#f92672">=</span>True)
+bmp<span style="color:#f92672">.</span>convert(Bitmap<span style="color:#f92672">.</span>PixelFormat<span style="color:#f92672">.</span>RGB, Struct<span style="color:#f92672">.</span>Type<span style="color:#f92672">.</span>UInt8, srgb_gamma<span style="color:#f92672">=</span>True)<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;/path/to/output.jpg&#39;</span>)
+
+<span style="color:#75715e"># Get linear pixel values as a numpy array for further processing</span>
+bmp_linear_rgb <span style="color:#f92672">=</span> bmp<span style="color:#f92672">.</span>convert(Bitmap<span style="color:#f92672">.</span>PixelFormat<span style="color:#f92672">.</span>RGB, Struct<span style="color:#f92672">.</span>Type<span style="color:#f92672">.</span>Float32, srgb_gamma<span style="color:#f92672">=</span>False)
+image_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(bmp_linear_rgb)
+<span style="color:#66d9ef">print</span>(image_np<span style="color:#f92672">.</span>shape)
+
+</code></pre></div><p>** First, let&rsquo;s run it before understanding the code. **
+As it is, the scene file to be rendered does not exist, so prepare a scene file. I think that some people have already done the rendering test in the introduction (1), but I will git clone the repository of sample scene data somewhere else.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone https://github.com/mitsuba-renderer/mitsuba-data.git
+</code></pre></div><p>You can specify the path of the local repository here, but for the sake of clarity, this time again, <code>mitsuba_data/scenes/cbox</code> for each directory, the current test code directory <code>mitsuba2\docs\examples\01_render_scene\ Please copy it to </code>.</p>
+<p>Then, in the code, read this scene file and rewrite it only in three places to write it to the proper place.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># filename =&#39;path/to/my/scene.xml&#39;</span>
+filename <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;cbox/cbox.xml&#39;</span> <span style="color:#75715e"># l.12</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># film.set_destination_file(&#39;/path/to/output.exr&#39;)</span>
+film<span style="color:#f92672">.</span>set_destination_file(<span style="color:#e6db74">&#39;cbox/output.exr&#39;</span>) <span style="color:#75715e"># l.27</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True).write(&#39;/path/to/output.jpg&#39;)</span>
+bmp<span style="color:#f92672">.</span>convert(Bitmap<span style="color:#f92672">.</span>PixelFormat<span style="color:#f92672">.</span>RGB, Struct<span style="color:#f92672">.</span>Type<span style="color:#f92672">.</span>UInt8, srgb_gamma<span style="color:#f92672">=</span>True)<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;cbox/output.jpg&#39;</span>) <span style="color:#75715e"># l.32</span>
+</code></pre></div><p>All you have to do is execute it with python. (Please numpy with pip install)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python render_scene.py
+</code></pre></div><p>After the rendering is completed, two files, <code>cbox\output.exr</code> and <code>cbox\output.jpg</code> are generated.
+exr is the same as the introduction (1) and is a 32bit x 3ch rendered image, and jpg is an 8bit x 3ch compressed image.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/215987/adc231aa-65e3-d353-2ad6-b3f27ad34134.jpeg" alt="output.jpg"></p>
+<p>#Understand the sample code
+Now that we have successfully run the sample code, we will understand each code step by step.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> mitsuba
+</code></pre></div><p>I&rsquo;m importing a module, nothing special has changed.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Set the desired mitsuba variantmitsuba.set_variant(&#39;scalar_rgb&#39;)</span>
+</code></pre></div><p>Specify the variant (rendering setting) of mitsuba2. <a href="https://qiita.com/kurilab/items/34089636fa570d9a7939">Variants are explained in the introduction (1)</a>.
+**This must be selected from the ones specified during CMake. **If you want to render with another variant that has not been built, you need to go back to CMake and rebuild. This time, rendering is performed with &ldquo;scalar_rgb&rdquo;, which is the most basic variant of RGB rays (rgb) that does not have SIMD conversion (scalar) and does not consider spectrum and polarization.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> mitsuba.core <span style="color:#f92672">import</span> Bitmap, Struct, Thread
+<span style="color:#f92672">from</span> mitsuba.core.xml <span style="color:#f92672">import</span> load_file
+</code></pre></div><p>Import <code>Bitmap, Struct, Thread</code> from <code>mitsuba.core</code>.
+Also, import <code>load_file</code> from <code>mitsuba.core.xml</code>.
+I will explain each when I use it later.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Absolute or relative path to the XML file</span>
+filename <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;cbox/cbox.xml&#39;</span>
+
+<span style="color:#75715e"># Add the scene directory to the FileResolver&#39;s search path</span>
+Thread<span style="color:#f92672">.</span>thread()<span style="color:#f92672">.</span>file_resolver()<span style="color:#f92672">.</span>append(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(filename))
+
+<span style="color:#75715e"># Load the actual scene</span>
+scene <span style="color:#f92672">=</span> load_file(filename)
+</code></pre></div><p>Specify the scene file name in xml format to be loaded and load it with the function <code>load_file()</code> that loads the scene file.
+<code>Thread.thread().file_resolver()</code> resolves that links to files in scene files are written as relative paths by specifying a name or path and setting it as a search path. Without this you will get an error that the object file cannot be found.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Call the scene&#39;s integrator to render the loaded scene</span>
+scene<span style="color:#f92672">.</span>integrator()<span style="color:#f92672">.</span>render(scene, scene<span style="color:#f92672">.</span>sensors()[<span style="color:#ae81ff">0</span>])
+</code></pre></div><p>Call the integrator (<code>integrator</code>) to render the loaded scene.
+The first argument is the scene (<code>scene</code>) and the second argument is the sensor (<code>scene.sensors()[0]</code>) to render (described in the scene file). [0] is so that if you have several sensors you can specify which one.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># After rendering, the rendered data is stored in the film</span>
+film <span style="color:#f92672">=</span> scene<span style="color:#f92672">.</span>sensors()[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>film()
+
+<span style="color:#75715e"># Write out rendering as high dynamic range OpenEXR file</span>
+film<span style="color:#f92672">.</span>set_destination_file(<span style="color:#e6db74">&#39;cbox/output.exr&#39;</span>)
+film<span style="color:#f92672">.</span>develop()
+</code></pre></div><p>Load the film (<code>scene.sensors()[0].film()</code>) for the sensors described in the scene file.
+The film has the role of setting the output of data and post-processing.
+Set the output file name with <code>film.set_destination_file</code>.
+Develop <code>cbox\output.ext</code> with <code>film.develop()</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Write out a tonemapped JPG of the same rendering</span>
+bmp <span style="color:#f92672">=</span> film<span style="color:#f92672">.</span>bitmap(raw<span style="color:#f92672">=</span>True)
+bmp<span style="color:#f92672">.</span>convert(Bitmap<span style="color:#f92672">.</span>PixelFormat<span style="color:#f92672">.</span>RGB, Struct<span style="color:#f92672">.</span>Type<span style="color:#f92672">.</span>UInt8, srgb_gamma<span style="color:#f92672">=</span>True)<span style="color:#f92672">.</span>write(<span style="color:#e6db74">&#39;cbox/output.jpg&#39;</span>)
+
+</code></pre></div><p>It is an 8-bit development process.
+Returns a bitmap object that stores the content that was previously film developed with <code>film.bitmap(raw=True)</code>. ** The meaning of the argument <code>raw</code> is unknown because it has not been described officially yet. **
+In addition, 8bit development processing is performed with <code>convert</code> on the bitmap object. RGB is specified with <code>Bitmap.PixelFormat.RGB</code>, 8bit is specified with <code>Struct.Type.UInt8</code>, and Samma Gamma tone map is applied with <code>srgb_gamma=True</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Get linear pixel values as a numpy array for further processing</span>
+bmp_linear_rgb <span style="color:#f92672">=</span> bmp<span style="color:#f92672">.</span>convert(Bitmap<span style="color:#f92672">.</span>PixelFormat<span style="color:#f92672">.</span>RGB, Struct<span style="color:#f92672">.</span>Type<span style="color:#f92672">.</span>Float32, srgb_gamma<span style="color:#f92672">=</span>False)
+image_np <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(bmp_linear_rgb)
+<span style="color:#66d9ef">print</span>(image_np<span style="color:#f92672">.</span>shape)
+<span style="color:#75715e"># (256, 256, 3)</span>
+</code></pre></div><p>In the same <code>convert</code>, linear RGB values that are not 8-bit compressed are acquired by numpy array.
+Although it has nothing to do with the output result, ** I can see that the rendering result can be easily obtained with numpy array. **</p>
+<p>#Summary
+I ran the sample code and looked at the contents of the code to understand how to run Mitsuba 2 from Python.
+With a very simple description, I hope you found that you can use basic rendering with Python.
+Next time, I will explain how to use new features such as differentiable rendering and polarized rendering.</p>
+<p>-<a href="https://qiita.com/kurilab/items/5f270ebf8ee28a25cd92">Try the latest physics-based renderer Mitsuba2 (3) Differentiable rendering</a>
+-<a href="https://qiita.com/kurilab/items/c96ee592dbde0416576e">Try the latest physics-based renderer Mitsuba2 (4) Polarization rendering</a></p>
+<p>that&rsquo;s all.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

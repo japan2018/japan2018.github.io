@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Summary because I used Ansible&#39;s Vmware system module | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Summary because I used Ansible&rsquo;s Vmware system module</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Feb 28, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/vmware">vmware</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ansible">Ansible</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>There was a case where I wanted to make a guest VM of Vmware with Ansible like the title and want to use it in various ways, so I tried it with the opportunity.
+By the way, I thought it would be convenient to use Dynamic Inventory, so I tried it.</p>
+<h1 id="operation-verification-environment">Operation verification environment</h1>
+<ul>
+<li>Vmware side
+-VMware vCenter Server Appliance, 6.7.0, 42000
+-VMware ESXi, 6.7.0, 13006603</li>
+<li>Client (Ansible execution environment) side
+-OS: CentOS 7
+-I also tried using python:latest of Docker
+-Python 3.8.1
+-The vmware module works even with python2, but when I try to use Dynamic Inventory, the dependency package called setuptools is not compatible with Python 3.5 or higher, so 3.5 or higher seems to be happier.
+-ansible==2.9.5
+-pyvmomi==6.7.3</li>
+</ul>
+<h1 id="module-used">Module used</h1>
+<p><a href="https://docs.ansible.com/ansible/latest/modules/list_of_cloud_modules.html#vmware">Vmware Module List</a></p>
+<p>Historically, it seems that there are two types of Vmware type modules, and as a module for creating/deleting GuestVM, for example,</p>
+<ul>
+<li><a href="https://docs.ansible.com/ansible/latest/modules/vmware_guest_module.html#vmware-guest-module">vmware_guest module</a>
+-Use python&rsquo;s PyVmomi package
+<ul>
+<li><strong>Recommendation</strong></li>
+</ul>
+</li>
+<li><a href="https://docs.ansible.com/ansible/2.8/modules/vsphere_guest_module.html">vsphere_guest module</a>
+-Use python&rsquo;s Pysphere package
+-It was <code>DEPRECATED</code> for a long time, but it was finally <strong>deleted</strong> in ansible 2.9</li>
+</ul>
+<p>There seems to be two ways of writing, but it seems that it was integrated into vmware_guest as above, so I will use it.
+(I don&rsquo;t know the detailed historical details.)</p>
+<h1 id="various-preparations">Various preparations</h1>
+<h2 id="vmware-side">Vmware side</h2>
+<p>Many vmware modules seem to use API via vCenter server, so vCenter server is almost essential.
+(Some of the vsphere modules can act on ESXi, etc.)
+I didn&rsquo;t have a vCenter server in the environment I verified, so I started by deploying a virtual appliance, but I will skip this content.</p>
+<p>It is necessary to specify various information of vCenter as parameters, so let&rsquo;s organize and acquire in advance.
+Here is an example below.</p>
+<table>
+<thead>
+<tr>
+<th>vCenter Information</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hostname</td>
+<td>192.168.0.1 (IP address is acceptable)</td>
+</tr>
+<tr>
+<td>Username</td>
+<td><code>administrator@vsphere.local</code></td>
+</tr>
+<tr>
+<td>Password</td>
+<td><code>password</code></td>
+</tr>
+<tr>
+<td>Datacenter name</td>
+<td><code>Datcenter</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="client-ansible-execution-environment-side">Client (Ansible execution environment) side</h2>
+<p>This time I wanted to verify it easily, so I will install it without specifying the version because ansible is not included.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ pip install ansible pyvmomi
+</code></pre></div><h1 id="actually-write-playbook-etc">Actually write Playbook etc.</h1>
+<p>I will write a playbook etc. from here, but before that, let&rsquo;s write the vCenter information that will be reused in subsequent playbooks as variables in a file in advance.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:vars_vmware.yml" data-lang="yaml:vars_vmware.yml"><span style="color:#66d9ef">vcenter_hostname</span>: <span style="color:#ae81ff">192.168.0.1</span>
+<span style="color:#66d9ef">vcenter_username</span>: administrator@vsphere.local
+<span style="color:#66d9ef">vcenter_password</span>: password
+<span style="color:#66d9ef">vcenter_datacenter</span>: Datacenter
+</code></pre></div><h2 id="check-connection-to-vmware">Check connection to Vmware</h2>
+<p>Before starting detailed operations/changes, let&rsquo;s check if Vmware is properly connected.
+For the time being, I used the <a href="https://docs.ansible.com/ansible/latest/modules/vmware_about_info_module.html">vmware_about_info</a> module which seems simple.
+The contents of <code>tasks</code> are almost the same as the sample in the link.
+Most of the general modules run on a remote server connected by ssh,
+Most vmware-like modules run on ansible execution hosts that have the <code>pyvmomi</code> package as described by <code>delegate_to: localhost</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:test.yml" data-lang="yaml:test.yml">- <span style="color:#66d9ef">hosts</span>: local
+  <span style="color:#66d9ef">gather_facts</span>: <span style="color:#66d9ef">false</span>
+  <span style="color:#66d9ef">vars_files</span>:
+  -vars_vmware.yml
+  <span style="color:#66d9ef">tasks</span>:
+  <span style="color:#66d9ef">-name</span>: Provide information about vCenter
+    <span style="color:#66d9ef">vmware_about_info</span>:
+      <span style="color:#66d9ef">hostname</span>: <span style="color:#e6db74">&#34;{{ vcenter_hostname }}&#34;</span>
+      <span style="color:#66d9ef">username</span>: <span style="color:#e6db74">&#34;{{ vcenter_username }}&#34;</span>
+      <span style="color:#66d9ef">password</span>: <span style="color:#e6db74">&#34;{{ vcenter_password }}&#34;</span>
+      <span style="color:#66d9ef">validate_certs</span>: <span style="color:#66d9ef">false</span>
+    <span style="color:#66d9ef">delegate_to</span>: localhost
+    <span style="color:#66d9ef">register</span>: cluster_info
+
+  <span style="color:#66d9ef">-debug</span>:
+      <span style="color:#66d9ef">var</span>: cluster_info
+</code></pre></div><p>The inventory also set localhost this time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini:local.ini" data-lang="ini:local.ini"><span style="color:#66d9ef">[local]</span>
+<span style="color:#a6e22e">localhost</span>
+</code></pre></div><p>Let&rsquo;s run the playbook.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ansible-playbook -i local.ini test.yml
+
+PLAY <span style="color:#f92672">[</span>local<span style="color:#f92672">]</span> ********************************************** ************************************************** ************************************************** *********************************************
+
+TASK <span style="color:#f92672">[</span>Provide information about vCenter<span style="color:#f92672">]</span> *********************************************** ************************************************** ************************************************** ********************
+ok: <span style="color:#f92672">[</span>localhost -&gt; localhost<span style="color:#f92672">]</span>
+
+TASK <span style="color:#f92672">[</span>debug<span style="color:#f92672">]</span> ********************************************** ************************************************** ************************************************** *********************************************
+ok: <span style="color:#f92672">[</span>localhost<span style="color:#f92672">]</span> <span style="color:#f92672">=</span>&gt; <span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;cluster_info&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;about_info&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;api_type&#34;</span>: <span style="color:#e6db74">&#34;VirtualCenter&#34;</span>,
+            <span style="color:#e6db74">&#34;api_version&#34;</span>: <span style="color:#e6db74">&#34;6.7.3&#34;</span>,
+            <span style="color:#e6db74">&#34;build&#34;</span>: <span style="color:#e6db74">&#34;15129973&#34;</span>,
+            <span style="color:#e6db74">&#34;instance_uuid&#34;</span>: <span style="color:#e6db74">&#34;*****-******&#34;</span>,
+            <span style="color:#e6db74">&#34;license_product_name&#34;</span>: <span style="color:#e6db74">&#34;VMware VirtualCenter Server&#34;</span>,
+            <span style="color:#e6db74">&#34;license_product_version&#34;</span>: <span style="color:#e6db74">&#34;6.0&#34;</span>,
+            <span style="color:#e6db74">&#34;locale_build&#34;</span>: <span style="color:#e6db74">&#34;000&#34;</span>,
+            <span style="color:#e6db74">&#34;locale_version&#34;</span>: <span style="color:#e6db74">&#34;INTL&#34;</span>,
+            <span style="color:#e6db74">&#34;os_type&#34;</span>: <span style="color:#e6db74">&#34;linux-x64&#34;</span>,
+            <span style="color:#e6db74">&#34;product_full_name&#34;</span>: <span style="color:#e6db74">&#34;VMware vCenter Server 6.7.0 build-15129973&#34;</span>,
+            <span style="color:#e6db74">&#34;product_line_id&#34;</span>: <span style="color:#e6db74">&#34;vpx&#34;</span>,
+            <span style="color:#e6db74">&#34;product_name&#34;</span>: <span style="color:#e6db74">&#34;VMware vCenter Server&#34;</span>,
+            <span style="color:#e6db74">&#34;vendor&#34;</span>: <span style="color:#e6db74">&#34;VMware, Inc.&#34;</span>,
+            <span style="color:#e6db74">&#34;version&#34;</span>: <span style="color:#e6db74">&#34;6.7.0&#34;</span>
+        <span style="color:#f92672">}</span>,
+        <span style="color:#e6db74">&#34;ansible_facts&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;discovered_interpreter_python&#34;</span>: <span style="color:#e6db74">&#34;/usr/bin/python&#34;</span>
+        <span style="color:#f92672">}</span>,
+        <span style="color:#e6db74">&#34;changed&#34;</span>: false,
+        <span style="color:#e6db74">&#34;failed&#34;</span>: false
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+PLAY RECAP ************************************************ ************************************************** ************************************************** *********************************************
+localhost: ok<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span> changed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> unreachable<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> failed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> skipped<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> rescued<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> ignored<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+</code></pre></div><p>You can connect without error and get the value!</p>
+<h2 id="create-guestvm-from-template">Create GuestVM (From Template)</h2>
+<p>Now create a GuestVM using the <a href="https://docs.ansible.com/ansible/latest/modules/vmware_guest_module.html">vmware_guest</a> module.
+I think it&rsquo;s probably the most used module, but you need to make some preparations before you can actually use it.</p>
+<h3 id="create-vm-template">Create VM template</h3>
+<p>If you create a guest VM with the minimum parameters with the vmware_guest module, it will be empty before the OS is installed.Even though I created the guest VM with Ansible, I could not install the package or deploy the application as it was.
+It seems that you can also create an ISO image for KickStart and mount it&hellip;
+I&rsquo;m going to smartly create a VM template (?) and clone GuestVM.</p>
+<p>I don&rsquo;t want to go into details as I can create a VM template of your choice, but
+In my example I used CentOS 7 with a minimal installation.
+Also, when using a template in that state, there were events such as VMNIC not being enabled, so
+It seems that you need to install the additional <code>open-vm-tools</code> package, so let&rsquo;s just install this and <code>perl</code> that runs <code>open-vm-tools</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ sudo yum install -y open-vm-tools perl
+</code></pre></div><p>*Even in the case of Debian, there is a package with the same name, so let&rsquo;s install it with apt etc.</p>
+<p>This time, I created a virtual machine named <code>Template_CentOS</code> and converted it into a template.
+*Here, it is converted to a template, but it seems that cloning will be done without any problems even if a running VM is specified.</p>
+<h3 id="check-folder">check folder</h3>
+<p>Also, when creating a GuestVM with the <code>vmware_guest</code> module, you need to include a parameter called <code>folder</code>, so check the value of this <code>folder</code>.
+I didn&rsquo;t know how to confirm from the Vmware side document or vSphere Web Client (I hope you pointed out),
+Getting it with the <a href="https://docs.ansible.com/ansible/latest/modules/vmware_folder_info_module.html">vmware_folder_info</a> module was quick.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml:get_folders.yml" data-lang="yml:get_folders.yml">- <span style="color:#66d9ef">hosts</span>: local
+  <span style="color:#66d9ef">gather_facts</span>: <span style="color:#66d9ef">false</span>
+  <span style="color:#66d9ef">vars_files</span>:
+  -vars_vmware.yml
+  <span style="color:#66d9ef">tasks</span>:
+  <span style="color:#66d9ef">-name</span>: Provide information about vCenter folders
+    <span style="color:#66d9ef">vmware_folder_info</span>:
+      <span style="color:#66d9ef">hostname</span>: <span style="color:#e6db74">&#34;{{ vcenter_hostname }}&#34;</span>
+      <span style="color:#66d9ef">username</span>: <span style="color:#e6db74">&#34;{{ vcenter_username }}&#34;</span>
+      <span style="color:#66d9ef">password</span>: <span style="color:#e6db74">&#34;{{ vcenter_password }}&#34;</span>
+      <span style="color:#66d9ef">datacenter</span>: <span style="color:#e6db74">&#34;{{ vcenter_datacenter }}&#34;</span>
+      <span style="color:#66d9ef">validate_certs</span>: <span style="color:#66d9ef">false</span>
+    <span style="color:#66d9ef">delegate_to</span>: localhost
+    <span style="color:#66d9ef">register</span>: folder_info
+  <span style="color:#66d9ef">-debug</span>:
+      <span style="color:#66d9ef">var</span>: folder_info
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ansible-playbook -i local.ini get_folders.yml
+
+PLAY <span style="color:#f92672">[</span>local<span style="color:#f92672">]</span> ********************************************** ************************************************** ************************************************** *********************************************
+
+TASK <span style="color:#f92672">[</span>Provide information about vCenter folders<span style="color:#f92672">]</span> ********************************************** ************************************************** ************************************************** *************
+ok: <span style="color:#f92672">[</span>localhost -&gt; localhost<span style="color:#f92672">]</span>
+
+TASK <span style="color:#f92672">[</span>debug<span style="color:#f92672">]</span> ********************************************** ************************************************** ************************************************** *********************************************
+ok: <span style="color:#f92672">[</span>localhost<span style="color:#f92672">]</span> <span style="color:#f92672">=</span>&gt; <span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;folder_info&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;ansible_facts&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;discovered_interpreter_python&#34;</span>: <span style="color:#e6db74">&#34;/usr/bin/python&#34;</span>
+        <span style="color:#f92672">}</span>,
+        <span style="color:#e6db74">&#34;changed&#34;</span>: false,
+        <span style="color:#e6db74">&#34;failed&#34;</span>: false,
+        <span style="color:#e6db74">&#34;folder_info&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;datastoreFolders&#34;</span>: <span style="color:#f92672">{</span>
+                <span style="color:#e6db74">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/Datacenter/datastore&#34;</span>,
+                <span style="color:#e6db74">&#34;subfolders&#34;</span>: <span style="color:#f92672">{}</span>
+            <span style="color:#f92672">}</span>,
+            <span style="color:#e6db74">&#34;hostFolders&#34;</span>: <span style="color:#f92672">{</span>
+                <span style="color:#e6db74">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/Datacenter/host&#34;</span>,
+                <span style="color:#e6db74">&#34;subfolders&#34;</span>: <span style="color:#f92672">{}</span>
+            <span style="color:#f92672">}</span>,
+            <span style="color:#e6db74">&#34;networkFolders&#34;</span>: <span style="color:#f92672">{</span>
+                <span style="color:#e6db74">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/Datacenter/network&#34;</span>,
+                <span style="color:#e6db74">&#34;subfolders&#34;</span>: <span style="color:#f92672">{}</span>
+            <span style="color:#f92672">}</span>,
+            <span style="color:#e6db74">&#34;vmFolders&#34;</span>: <span style="color:#f92672">{</span>
+                <span style="color:#e6db74">&#34;path&#34;</span>: <span style="color:#e6db74">&#34;/Datacenter/vm&#34;</span>,
+                <span style="color:#e6db74">&#34;subfolders&#34;</span>: <span style="color:#f92672">{}</span>
+            <span style="color:#f92672">}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+PLAY RECAP ************************************************ ************************************************** ************************************************** *********************************************
+localhost: ok<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span> changed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> unreachable<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> failed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> skipped<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> rescued<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> ignored<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+</code></pre></div><p><code>/Datacenter/vm</code> described in <code>vmFolders</code> in this seems to be a folder for virtual machines.</p>
+<h3 id="finally-create-guestvm">Finally create GuestVM</h3>
+<p>You can finally use the <a href="https://docs.ansible.com/ansible/latest/modules/vmware_guest_module.html">vmware_guest</a> module with these parameters.</p>
+<p>The virtual machine name is <code>test1</code>.
+The virtual machine name should be unique (although it doesn&rsquo;t seem to be unique).
+It seems that GuestVM creation does not occur when an existing virtual machine name is specified, and only changes to the power state specified by the existing virtual machine <code>state</code>. (I think it&rsquo;s called idempotency)</p>
+<p>In addition, this time I created a vSphere cluster named <code>Cluster</code> and created GuestVM under it.
+If there is no cluster or you want to specify the ESXi host to create, specify <code>esxi_hostname</code> instead of <code>cluster</code>.</p>
+<p>For other parameters, see <a href="(https://docs.ansible.com/ansible/latest/modules/vmware_guest_module.html)">Documents</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml:create_guestvm.yml" data-lang="yml:create_guestvm.yml">- <span style="color:#66d9ef">hosts</span>: local
+  <span style="color:#66d9ef">gather_facts</span>: <span style="color:#66d9ef">false</span>
+  <span style="color:#66d9ef">vars_files</span>:
+  -vars_vmware.yml
+  <span style="color:#66d9ef">tasks</span>:
+  <span style="color:#66d9ef">-name</span>: Create a virtual machine on given ESXi hostname
+    <span style="color:#66d9ef">vmware_guest</span>:
+      <span style="color:#66d9ef">name</span>: test1 <span style="color:#75715e"># VM name</span>
+      <span style="color:#66d9ef">hostname</span>: <span style="color:#e6db74">&#34;{{ vcenter_hostname }}&#34;</span>
+      <span style="color:#66d9ef">username</span>: <span style="color:#e6db74">&#34;{{ vcenter_username }}&#34;</span>
+      <span style="color:#66d9ef">password</span>: <span style="color:#e6db74">&#34;{{ vcenter_password }}&#34;</span>
+      <span style="color:#66d9ef">datacenter</span>: <span style="color:#e6db74">&#34;{{ vcenter_datacenter }}&#34;</span>
+      <span style="color:#66d9ef">folder</span>: /Datacenter/vm folder name obtained by <span style="color:#75715e">#vmware_folder_info</span>
+      <span style="color:#66d9ef">validate_certs</span>: <span style="color:#66d9ef">false</span>
+      <span style="color:#66d9ef">template</span>: Template_CentOS <span style="color:#75715e"># Template name created in preparation</span>
+      <span style="color:#66d9ef">state</span>: poweredon <span style="color:#75715e"># start</span>
+      <span style="color:#75715e"># guest_id: centos7_64Guest # Required when creating a virtual machine, not required when creating from a template</span>
+      <span style="color:#66d9ef">cluster</span>: Cluster
+      <span style="color:#75715e"># esxi_hostname: 192.168.*.* # specify either cluster or esxi_hostname</span>
+      <span style="color:#66d9ef">disk</span>:
+      <span style="color:#66d9ef">-size_gb</span>: <span style="color:#ae81ff">16</span>
+        <span style="color:#66d9ef">type</span>: thin
+        <span style="color:#66d9ef">datastore</span>: datastore
+      <span style="color:#66d9ef">hardware</span>:
+        <span style="color:#66d9ef">memory_mb</span>: <span style="color:#ae81ff">1024</span>
+        <span style="color:#66d9ef">num_cpus</span>: <span style="color:#ae81ff">1</span>
+        <span style="color:#66d9ef">scsi</span>: paravirtual
+      <span style="color:#66d9ef">networks</span>:
+      <span style="color:#66d9ef">-name</span>: VM Network
+        <span style="color:#66d9ef">start_connected</span>: <span style="color:#66d9ef">true</span>
+      <span style="color:#66d9ef">wait_for_ip_address</span>: yes
+      <span style="color:#66d9ef">customization</span>:
+        <span style="color:#66d9ef">hostname</span>: test1
+    <span style="color:#66d9ef">delegate_to</span>: localhost
+    <span style="color:#66d9ef">register</span>: vm_info
+
+  <span style="color:#66d9ef">-debug</span>:
+      <span style="color:#66d9ef">var</span>: vm_info
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ansible-playbook -i local.ini create_guestvm.ymlPLAY <span style="color:#f92672">[</span>local<span style="color:#f92672">]</span> ***********************************************************************************************************************************************************************************************
+
+TASK <span style="color:#f92672">[</span>Create a virtual machine on given ESXi hostname<span style="color:#f92672">]</span> *****************************************************************************************************************************************************
+changed: <span style="color:#f92672">[</span>localhost -&gt; localhost<span style="color:#f92672">]</span>
+
+TASK <span style="color:#f92672">[</span>debug<span style="color:#f92672">]</span> ***********************************************************************************************************************************************************************************************
+ok: <span style="color:#f92672">[</span>localhost<span style="color:#f92672">]</span> <span style="color:#f92672">=</span>&gt; <span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;vm_info&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;ansible_facts&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;discovered_interpreter_python&#34;</span>: <span style="color:#e6db74">&#34;/usr/bin/python&#34;</span>
+        <span style="color:#f92672">}</span>, 
+        <span style="color:#e6db74">&#34;changed&#34;</span>: true, 
+        <span style="color:#e6db74">&#34;failed&#34;</span>: false, 
+        <span style="color:#e6db74">&#34;instance&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;annotation&#34;</span>: <span style="color:#e6db74">&#34;&#34;</span>, 
+            <span style="color:#e6db74">&#34;current_snapshot&#34;</span>: null, 
+            <span style="color:#e6db74">&#34;customvalues&#34;</span>: <span style="color:#f92672">{}</span>, 
+            <span style="color:#e6db74">&#34;guest_consolidation_needed&#34;</span>: false, 
+            <span style="color:#e6db74">&#34;guest_question&#34;</span>: null, 
+            <span style="color:#e6db74">&#34;guest_tools_status&#34;</span>: <span style="color:#e6db74">&#34;guestToolsRunning&#34;</span>, 
+            <span style="color:#e6db74">&#34;guest_tools_version&#34;</span>: <span style="color:#e6db74">&#34;10336&#34;</span>, 
+            <span style="color:#e6db74">&#34;hw_cluster&#34;</span>: <span style="color:#e6db74">&#34;Cluster&#34;</span>, 
+            <span style="color:#e6db74">&#34;hw_cores_per_socket&#34;</span>: 1, 
+            <span style="color:#e6db74">&#34;hw_datastores&#34;</span>: <span style="color:#f92672">[</span>
+                <span style="color:#e6db74">&#34;datastore&#34;</span>
+            <span style="color:#f92672">]</span>, 
+            <span style="color:#e6db74">&#34;hw_esxi_host&#34;</span>: <span style="color:#e6db74">&#34;192.168.*.*&#34;</span>, 
+            <span style="color:#e6db74">&#34;hw_eth0&#34;</span>: <span style="color:#f92672">{</span>
+                <span style="color:#e6db74">&#34;addresstype&#34;</span>: <span style="color:#e6db74">&#34;assigned&#34;</span>, 
+                <span style="color:#e6db74">&#34;ipaddresses&#34;</span>: <span style="color:#f92672">[</span>
+                    <span style="color:#e6db74">&#34;192.168.*.*&#34;</span>, 
+~~~~ 中略 ~~~~
+            <span style="color:#e6db74">&#34;instance_uuid&#34;</span>: <span style="color:#e6db74">&#34;****^****&#34;</span>, 
+            <span style="color:#e6db74">&#34;ipv4&#34;</span>: <span style="color:#e6db74">&#34;192.168.*.*&#34;</span>, 
+            <span style="color:#e6db74">&#34;ipv6&#34;</span>: null, 
+            <span style="color:#e6db74">&#34;module_hw&#34;</span>: true, 
+            <span style="color:#e6db74">&#34;moid&#34;</span>: <span style="color:#e6db74">&#34;vm-***&#34;</span>, 
+            <span style="color:#e6db74">&#34;snapshots&#34;</span>: <span style="color:#f92672">[]</span>, 
+            <span style="color:#e6db74">&#34;vimref&#34;</span>: <span style="color:#e6db74">&#34;vim.VirtualMachine:vm-***&#34;</span>, 
+            <span style="color:#e6db74">&#34;vnc&#34;</span>: <span style="color:#f92672">{}</span>
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>
+<span style="color:#f92672">}</span>
+
+PLAY RECAP *************************************************************************************************************************************************************************************************
+localhost                  : ok<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>    changed<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>    unreachable<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>    failed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>    skipped<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>    rescued<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>    ignored<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>   
+</code></pre></div><p>スペックによってはそれなりの時間がかかると思いますが、これでGuestVMが作成されましたね！
+<code>.instance.ipv4</code>にIPアドレスの情報もあるので、<a href="https://docs.ansible.com/ansible/latest/modules/add_host_module.html">add_host</a>モジュールで追加してその後のタスクを実行！なんてことも可能です。</p>
+<h2 id="オマケvmwareのdynamic-inventoryを使ってみる">オマケ：VmwareのDynamic Inventoryを使ってみる</h2>
+<p>AnsibleはVmwareについてDynamic Inventoryを使用することができます。
+Dynamic Inventory自体については以下を参考してもらえるのがよいですが、簡単にいうと
+タスクを実行したい対象が数台ぐらいであればVMのホスト名（IP）をインベントリに書けばいいのですが、対象が3桁・4桁と増えていくとそれも大変になります。
+そこでホスト情報を直接記載するのではなく、API等からホスト情報を取得することで動的にインベントリに必要な情報を取ってこよう、というものです。
+<a href="https://docs.ansible.com/ansible/latest/user_guide/intro_dynamic_inventory.html">https://docs.ansible.com/ansible/latest/user_guide/intro_dynamic_inventory.html</a></p>
+<p>こちらのページを参考に、ついでにDynamic Inventoryを使ってみました。
+<a href="https://docs.ansible.com/ansible/latest/scenario_guides/vmware_scenarios/vmware_inventory.html">https://docs.ansible.com/ansible/latest/scenario_guides/vmware_scenarios/vmware_inventory.html</a></p>
+<p>準備として、先にインストールした<code>pyvmomi</code>モジュールに加えて、<a href="https://code.vmware.com/web/sdk/65/vsphere-automation-python">vSphere Automation SDK</a>が必要なようです。
+こちらの<a href="https://github.com/vmware/vsphere-automation-sdk-python#installing-required-python-packages">手順</a>にしたがってインストールします。
+なお、<a href="#%E5%8B%95%E4%BD%9C%E6%A4%9C%E8%A8%BC%E7%92%B0%E5%A2%83">動作検証環境</a>で記載したように<code>setuptools</code>パッケージがpython3.5未満ではインストールできなかったため、python3系で実行しています。
+(<code>setuptools</code>はバージョン指定をすればインストールできたのですが、その後のsdkのインストールには失敗したのでそれ以降は追いかけてません。回避方法等があればご指摘ください)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ pip install --upgrade pip setuptools
+$ pip install --upgrade git+https://github.com/vmware/vsphere-automation-sdk-python.git
+</code></pre></div><p>まず<code>ansible.cfg</code>でVmwareのDynamic Inventoryに必要なプラグインを有効化します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-config:ansible.cfg" data-lang="config:ansible.cfg"><span style="color:#66d9ef">[inventory]</span>
+<span style="color:#a6e22e">enable_plugins</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">vmware_vm_inventory</span>
+</code></pre></div><p>続いて、インベントリですが、vCenterの情報を記載します。またファイル名の末尾が<code>.vmware.yml</code> or <code>.vmware.yaml</code>である必要があります。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml:inventory.vmware.yml" data-lang="yaml:inventory.vmware.yml"><span style="color:#66d9ef">plugin</span>: vmware_vm_inventory
+<span style="color:#66d9ef">strict</span>: False
+<span style="color:#66d9ef">hostname</span>: <span style="color:#ae81ff">192.168.0.1</span>
+<span style="color:#66d9ef">username</span>: administrator@vsphere.local
+<span style="color:#66d9ef">password</span>: password
+<span style="color:#66d9ef">validate_certs</span>: False
+<span style="color:#66d9ef">with_tags</span>: True
+</code></pre></div><p>ここで確認で<code>ansible-inventory</code>コマンドを実行するとJSON形式のインベントリ情報が出力されます。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ansible-inventory -i inventory.vmware.yml --list
+<span style="color:#f92672">{</span>
+    <span style="color:#e6db74">&#34;_meta&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;hostvars&#34;</span>: <span style="color:#f92672">{</span>
+            <span style="color:#e6db74">&#34;test1_****-****&#34;</span>: <span style="color:#f92672">{</span>
+                <span style="color:#e6db74">&#34;ansible_host&#34;</span>: <span style="color:#e6db74">&#34;192.168.*.*&#34;</span>,
+                <span style="color:#e6db74">&#34;config.cpuHotAddEnabled&#34;</span>: false,
+                <span style="color:#e6db74">&#34;config.cpuHotRemoveEnabled&#34;</span>: false,
+                <span style="color:#e6db74">&#34;config.hardware.numCPU&#34;</span>: 1,
+                <span style="color:#e6db74">&#34;config.instanceUuid&#34;</span>: <span style="color:#e6db74">&#34;****-****&#34;</span>,
+                <span style="color:#e6db74">&#34;config.name&#34;</span>: <span style="color:#e6db74">&#34;test1&#34;</span>,
+                <span style="color:#e6db74">&#34;config.template&#34;</span>: false,
+                <span style="color:#e6db74">&#34;guest.guestId&#34;</span>: <span style="color:#e6db74">&#34;centos7_64Guest&#34;</span>,
+                <span style="color:#e6db74">&#34;guest.guestState&#34;</span>: <span style="color:#e6db74">&#34;running&#34;</span>,
+                <span style="color:#e6db74">&#34;guest.hostName&#34;</span>: <span style="color:#e6db74">&#34;localhost.localdomain&#34;</span>,
+                <span style="color:#e6db74">&#34;guest.ipAddress&#34;</span>: <span style="color:#e6db74">&#34;192.168.*.*&#34;</span>,
+                <span style="color:#e6db74">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;test1&#34;</span>,
+                <span style="color:#e6db74">&#34;runtime.maxMemoryUsage&#34;</span>: <span style="color:#ae81ff">1024</span>
+            <span style="color:#f92672">}</span>,
+~~~ 中略 ~~~
+        <span style="color:#f92672">}</span>
+    <span style="color:#f92672">}</span>,
+    <span style="color:#e6db74">&#34;all&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;children&#34;</span>: <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;centos7_64Guest&#34;</span>,
+            <span style="color:#e6db74">&#34;other3xLinux64Guest&#34;</span>,
+            <span style="color:#e6db74">&#34;poweredOff&#34;</span>,
+            <span style="color:#e6db74">&#34;poweredOn&#34;</span>,
+            <span style="color:#e6db74">&#34;ungrouped&#34;</span>
+        <span style="color:#f92672">]</span>
+    <span style="color:#f92672">}</span>,
+    <span style="color:#e6db74">&#34;centos7_64Guest&#34;</span>: <span style="color:#f92672">{</span>
+        <span style="color:#e6db74">&#34;hosts&#34;</span>: <span style="color:#f92672">[</span>
+            <span style="color:#e6db74">&#34;test1_****-****&#34;</span>,
+            <span style="color:#e6db74">&#34;&#34;</span>,
+~~~ 中略 ~~~
+        <span style="color:#f92672">]</span>
+    <span style="color:#f92672">}</span>,
+
+~~~ 中略 ~~~
+<span style="color:#f92672">}</span>
+<span style="color:#e6db74">```</span>There are <span style="color:#e6db74">`</span>guest_id<span style="color:#e6db74">`</span> and power status groups as the <span style="color:#e6db74">`</span>children<span style="color:#e6db74">`</span> of the <span style="color:#e6db74">`</span>all<span style="color:#e6db74">`</span> group, the host names are listed in an array in <span style="color:#e6db74">`</span>hosts<span style="color:#e6db74">`</span>, and detailed information <span style="color:#66d9ef">for</span> each host is listed as <span style="color:#e6db74">`</span>host_vars<span style="color:#e6db74">`</span>. It seems that
+The host name seems to be the VM name with the UUID <span style="color:#e6db74">`</span>hw_product_uuid<span style="color:#e6db74">`</span>.
+
+Finally, as an example, I<span style="color:#960050;background-color:#1e0010">&#39;</span>d like to upgrade VmwareTool using the <span style="color:#f92672">[</span>vmware_guest_tools_upgrade<span style="color:#f92672">](</span>https://docs.ansible.com/ansible/latest/modules/vmware_guest_tools_upgrade_module.html<span style="color:#f92672">)</span> module.
+This time I did not want to affect other VMs, so I will upgrade only test1.
+If you set hosts to <span style="color:#e6db74">`</span>all<span style="color:#e6db74">`</span> or a group name, it should be executed <span style="color:#66d9ef">for</span> multiple machines.
+
+<span style="color:#e6db74">```</span>yaml:vmtool_upgrade.yml
+- hosts: test1_***-****
+  gather_facts: false
+  vars_files:
+  -vars_vmware.yml
+  tasks:
+  -name: Upgrade VMware Tools using VM name
+    vmware_guest_tools_upgrade:
+      hostname: <span style="color:#e6db74">&#34;{{ vcenter_hostname }}&#34;</span>
+      username: <span style="color:#e6db74">&#34;{{ vcenter_username }}&#34;</span>
+      password: <span style="color:#e6db74">&#34;{{ vcenter_password }}&#34;</span>
+      datacenter: <span style="color:#e6db74">&#34;{{ vcenter_datacenter }}&#34;</span>
+      name: <span style="color:#e6db74">&#34;{{ name }}&#34;</span>
+      validate_certs: false
+    delegate_to: localhost
+</code></pre></div><p>As a result of executing, VmwareTool seems to be the latest version because it was a VM just created, so there was no change,
+I think it will lead to powerful automation of work if it is executed in an environment where a certain period and number of units are in operation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ ansible-playbook -i inventory.vmware.yml play.yml -v
+Using /work/ansible.cfg as config file
+
+PLAY <span style="color:#f92672">[</span>test1_***-***<span style="color:#f92672">]</span> *************************************** ************************************************** ************************************************** ***************
+
+TASK <span style="color:#f92672">[</span>Upgrade VMware Tools using VM name<span style="color:#f92672">]</span> ***************************************** ************************************************** ************************************************** *********************
+ok: <span style="color:#f92672">[</span>test1_***-*** -&gt; localhost<span style="color:#f92672">]</span> <span style="color:#f92672">=</span>&gt; <span style="color:#f92672">{</span><span style="color:#e6db74">&#34;changed&#34;</span>: false, <span style="color:#e6db74">&#34;msg&#34;</span>: <span style="color:#e6db74">&#34;VMware tools is already up to date&#34;</span><span style="color:#f92672">}</span>
+
+PLAY RECAP ************************************************ ************************************************** ************************************************** *********************************************
+test1_***-*** :ok<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> changed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> unreachable<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> failed<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> skipped<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> rescued<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span> ignored<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

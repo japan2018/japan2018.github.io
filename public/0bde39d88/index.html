@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] First satellite data analysis with Tellus | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] First satellite data analysis with Tellus</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 11, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machinelearning">MachineLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cisco">Cisco</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/satellite">Satellite</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tellus">Tellus</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This article was posted on the 21st day of <a href="https://qiita.com/advent-calendar/2019/cisco">Cisco Advent Calendar 2019</a> by Cisco Systems LLC.
+What kind of connection does Cisco have with satellite data in the first place? I think that there is a question, so I will introduce it including that.</p>
+<h1 id="what-you-can-do-with-this-article">What you can do with this article</h1>
+<ul>
+<li>Know what satellite data is</li>
+<li>Find out what the satellite data platform Tellus is</li>
+<li>Know how to use Tellus development environment</li>
+<li>Satellite data can be analyzed using Tellus development environment</li>
+<li>Understanding what NDVI and NDWI are</li>
+</ul>
+<h1 id="finally-you-can">Finally you can</h1>
+<ul>
+<li>
+<p>Display high-definition satellite image by selecting date and position
+Tue, 31 Jul 2018 12:42:49 GMT, North 35.675-35.605: East 139.745-139.835
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/b49006ac-e5dd-45d7-9c84-49772c7d84fc.png" alt="image.png"></p>
+</li>
+<li>
+<p>Visualization of vegetation status (green area) from satellite image
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/73b70f3d-3c6e-f795-3f50-a52282065e6a.png" alt="image.png"></p>
+</li>
+<li>
+<p>Numerical vegetation status (NDVI)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/f5e7d5ac-fb37-2fbb-b4d0-79fb74ae819f.png" alt="image.png"></p>
+</li>
+</ul>
+<h1 id="what-is-tellus-a-satellite-data-platform">What is Tellus, a satellite data platform?</h1>
+<h2 id="from-the-official-page">From the official page</h2>
+<blockquote>
+<p>Tellus is Japan&rsquo;s first open and free satellite data platform aimed at creating a new business marketplace using government satellite data. We provide all the functions to multiply multiple data and promote new business creation.
+<a href="https://www.tellusxdp.com/ja/about">https://www.tellusxdp.com/ja/about</a></p>
+</blockquote>
+<p>Until now, satellite data had to be handled in a special data format that would cost hundreds of thousands of yen per image. There are various issues in terms of price, storage, and computing resources, and the use of satellite data has been very limited, despite the wealth of satellite data. In order to solve these problems, the Ministry of Economy, Trade and Industry launched as a project for three years until 2020, &ldquo;Government satellite data open &amp; free and data utilization promotion project&rdquo; It will be Tellus.</p>
+<h2 id="characteristic">Characteristic</h2>
+<ol>
+<li>All data available free of charge (with cap)</li>
+<li>Not only satellite data but also ground data (people flow, etc.) can be used</li>
+<li>Not only data but also analysis resources (CPU/GPU/Storage) can be used</li>
+<li>Marketplace allows trading of data, applications and algorithms</li>
+<li>Enhanced training program to support utilization</li>
+</ol>
+<h2 id="relationship-with-cisco">Relationship with Cisco</h2>
+<p>Regarding the relationship between Cisco and the space business, Cisco frequently introduced IP routers to outer space in 2003 (experimental satellite) and 2009 (commercial satellite). There are four types of satellites: weather satellites, observation satellites, positioning satellites, and communication satellites. Of these, Cisco has worked on communication satellites in the past.
+<a href="https://www.cisco.com/c/ja_jp/about/newsroom/archives/us/2010/prod-072010b.html">https://www.cisco.com/c/ja_jp/about/newsroom/archives/us/2010/prod-072010b.html</a></p>
+<p>Tellus has various companies, research institutes, and organizations participating in various fields as xData Alliance, and Cisco has been participating since February 21, 2019. This time, in terms of the types above, we are aiming to create new businesses using observation satellites.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/5343352e-223e-1096-1852-73916ff2d22e.png" alt="xdatacompanys.60afba0d0b2e30287551f6680ece67d9.png">
+<a href="https://www.xdataalliance.com">https://www.xdataalliance.com</a></p>
+<p>In addition, recently, a service design that provides a new urban experience called <a href="https://www.cisco.com/c/m/ja_jp/training-events/events-webinars/2019-moonshotchallenge.html">Tokyo Moonshot Challenge</a> We are also holding an idea creation and materialization contest, so we hope that those who are interested can participate.</p>
+<p>Let&rsquo;s use # Tellus OS
+Let&rsquo;s actually use Tellus to utilize satellite data.
+The usage procedure is as follows.</p>
+<ol>
+<li>User registration with Tellus</li>
+<li>Login to Tellus OS</li>
+<li>Access to Tellus development environment</li>
+<li>Select your language
+-R and Python can be used, but this time use Python</li>
+<li>Code in Jupyter Notebook</li>
+<li>Execution and confirmation of results</li>
+</ol>
+<h2 id="lets-register-as-a-user-on-tellus">Let&rsquo;s register as a user on Tellus</h2>
+<p>Access <a href="https://www.tellusxdp.com/">Tellus</a>, enter the required information, and register as a user.
+<img width="1538" alt="Screen Shot 2019-12-13 at 18.13.20.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/519807e7-3999-6699-e7a2-834b4b6c9165.png">
+There may be a few input points, but please fill it in carefully.</p>
+<h1 id="tellus-lets-use-the-development-environment">Tellus Let&rsquo;s use the development environment</h1>
+<p>After completing the user registration, let&rsquo;s actually use Tellus. Tellus has two usage environments.
+First, log in to the Tellus OS from the button on the top right or below the Tellus web page.
+<img width="1559" alt="Screen Shot 2019-12-16 at 11.43.33.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/10db41f2-d2a5-9421-be30-0280ca97925c.png"></p>
+<h2 id="1-tellus-os">1. Tellus OS</h2>
+<p>An environment is provided that allows intuitive operation using the GUI.
+Since data is prepared in presets, it is possible to analyze using this if it is rough. Here is the flow of narrowing down the analysis target to some extent, and if necessary, performing detailed analysis in the following development environment.
+<img width="1559" alt="Screen Shot 2019-12-16 at 10.24.05.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/4db0e186-99ba-ab23-23b6-43bd1ecc6ce9.png"></p>
+<h2 id="2-tellus-development-environment">2. Tellus Development Environment</h2>
+<p>APIs that can be used from Python and R are available. Not only API but also environment such as Computing, Storage and GPU are provided. You can access the development environment from Tellus OS. You can access the development environment by clicking the button below on Tellus OS.
+<img width="1559" alt="Screen Shot 2019-12-16 at 10.24.05.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/a1ddb9e3-9585-d40c-9381-37774d43c1c8.png"></p>
+<img width="1559" alt="Screen Shot 2019-12-16 at 10.26.24.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/7c7b390b-8390-a692-6712-8faefcc6426e.png">
+<p>You need to apply for access to the development environment.</p>
+<h3 id="development-environment-application-method">Development environment application method</h3>
+<ol>
+<li>
+<p>Access my page
+<img width="1559" alt="Screen Shot 2019-12-16 at 11.54.08.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/56270922-1a99-e308-e292-9096912e7415.png"></p>
+</li>
+<li>
+<p>Select and apply for the development environment required for the development environment application on My Page.
+-It may take some time because applications are currently concentrated.
+<img width="1559" alt="Screen Shot 2019-12-16 at 11.54.42.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/6abefc15-cb7f-012f-b53a-0cbd906bb62c.png"></p>
+</li>
+</ol>
+<h2 id="api-token-registration">API TOKEN registration</h2>
+<p>When the development environment becomes available, register API TOKEN. You can register from My Page.
+Give the Key any name you like.
+<img width="1559" alt="Screen Shot 2019-12-16 at 12.48.44.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/9a904532-b280-ddbd-d123-070f59b8220c.png"></p>
+<h2 id="launching-jupyter-note-book">Launching Jupyter Note Book</h2>
+<p>Login to Tellus OS and enter the development environment.
+<img width="1559" alt="Screen Shot 2019-12-16 at 12.56.53.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/7f61e73d-7a90-0af3-d8a5-f1145bb7628c.png"></p>
+<h2 id="lets-actually-write-the-code">Let&rsquo;s actually write the code</h2>
+<p>Once logged in, go to the Work directory.
+Let&rsquo;s create a new Python3 Notebook.<img width="1559" alt="Screen Shot 2019-12-16 at 13.00.57.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/0269069f-23ea-d62a-eb0f-10462f4a0a16.png"></p>
+<img width="1559" alt="Screen Shot 2019-12-16 at 13.04.57.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/fef8ced8-63e6-43fb-429b-be5ed9f1c57b.png">
+<p>The explanation of Jupyter Notebook is omitted here, but it is a familiar environment for those who have used it.
+The modules used this time are as follows. First, import these.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Name</th>
+<th align="center">Overview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Numpy</td>
+<td align="center">Library for numerical calculation of Python</td>
+</tr>
+<tr>
+<td align="center">Scikit-image</td>
+<td align="center">Python image analysis library</td>
+</tr>
+<tr>
+<td align="center">Requests</td>
+<td align="center">Apache2 Licensed based HTTP communication library for Python</td>
+</tr>
+<tr>
+<td align="center">Io</td>
+<td align="center">Python standard module for I/O</td>
+</tr>
+<tr>
+<td align="center">PIL</td>
+<td align="center">Python image processing library</td>
+</tr>
+<tr>
+<td align="center">Matplotlib</td>
+<td align="center">Python graph drawing library</td>
+</tr>
+<tr>
+<td align="center">math</td>
+<td align="center">Python calculation library</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Import required modules and libraries</span>
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> skimage <span style="color:#f92672">import</span> io, color, img_as_ubyte, filters, transform
+<span style="color:#f92672">import</span> requests
+<span style="color:#f92672">from</span> io <span style="color:#f92672">import</span> BytesIO
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">%</span>matplotlib inline
+<span style="color:#f92672">import</span> math
+</code></pre></div><p>Here, we will introduce the satellites used this time.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Satellite Name</th>
+<th align="left">ASNARO-1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Data Provider</td>
+<td align="left">PASCO CORPORATION</td>
+</tr>
+<tr>
+<td align="center">Loading period</td>
+<td align="left">2019-2019</td>
+</tr>
+<tr>
+<td align="center">Surface resolution</td>
+<td align="left">0.5m (pan black), 2m (multi), 0.5m (pan sharpened)</td>
+</tr>
+<tr>
+<td align="center">Application example</td>
+<td align="left">Vessel detection in water area using high resolution optical satellite data</td>
+</tr>
+<tr>
+<td align="center">Wavelength</td>
+<td align="left">Panchromatic (black and white image): 450-860 nm <br> Multi (color image): <br> Band1: 400-450 nm (Ocean Blue) <br> Band2: 450-520 nm (Blue) <br> Band3: 520-600 nm (Green) <br> Band4: 630-690 nm (Red) <br> Band5: 705-745 nm (Red Edge) <br> Band6: 760-860 nm (NIR)</td>
+</tr>
+</tbody>
+</table>
+<p>Specify the access token.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Store API access token in API_TOKEN</span>
+API_TOKEN <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;YOUR TOKEN HERE&#39;</span>
+</code></pre></div><p>This time, I would like to acquire images of the area around Tokyo Bay, so enter the latitude and longitude as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Minimum latitude</span>
+min_lat <span style="color:#f92672">=</span> <span style="color:#ae81ff">35.675</span>
+<span style="color:#75715e">#Longitude</span>
+min_lon <span style="color:#f92672">=</span> <span style="color:#ae81ff">139.745</span>
+<span style="color:#75715e">#Latitude maximum</span>
+max_lat <span style="color:#f92672">=</span> <span style="color:#ae81ff">35.605</span>
+<span style="color:#75715e">#Longitude maximum</span>
+max_lon <span style="color:#f92672">=</span> <span style="color:#ae81ff">139.835</span>
+</code></pre></div><p>Specify the URL, header, and parameters for acquiring satellite data with API.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Specify the server URL, header and parameters of the satellite image to be acquired</span>
+<span style="color:#75715e"># ASNARO-1 URL</span>
+urls_ASNARO1 <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://gisapi.tellusxdp.com/api/v1/asnaro1/scene&#39;</span>
+<span style="color:#75715e"># Header</span>
+headers <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;Authorization&#39;</span>:<span style="color:#e6db74">&#39;Bearer&#39;</span> <span style="color:#f92672">+</span> API_TOKEN}
+Specify the <span style="color:#75715e"># parameter (maximum value of latitude and longitude, minimum value)</span>
+parameter <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;min_lat&#39;</span>: min_lat,<span style="color:#e6db74">&#39;min_lon&#39;</span>: min_lon,<span style="color:#e6db74">&#39;max_lat&#39;</span>: max_lat,<span style="color:#e6db74">&#39;max_lon&#39;</span>: max_lon}
+</code></pre></div><p>The server URL and parameters can be found in Tellus API Reference.
+API reference: <a href="https://www.tellusxdp.com/ja/dev/api">https://www.tellusxdp.com/ja/dev/api</a></p>
+<p>There are two main types of satellite data APIs.</p>
+<ol>
+<li>What kind of scene each satellite has</li>
+<li>Image data for each scene, image data for each wavelength, SAR data</li>
+</ol>
+<p>First, let&rsquo;s check what kind of scene the ASNARO-1 has.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Search the scene that observed the area specified by the <span style="color:#75715e">#requests module and get the list in JSON format</span>
+r_ASNARO1 <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(urls_ASNARO1, params<span style="color:#f92672">=</span>parameter, headers<span style="color:#f92672">=</span>headers)<span style="color:#f92672">.</span>json()
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Let&#39;s display the contents</span>
+r_ASNARO1[<span style="color:#ae81ff">0</span>]
+{<span style="color:#e6db74">&#39;acquisitionDate&#39;</span>:<span style="color:#e6db74">&#39;Wed, 31 Oct 2018 12:31:16 GMT&#39;</span>,
+ <span style="color:#e6db74">&#39;clat&#39;</span>: <span style="color:#ae81ff">35.6602740014593</span>,
+ <span style="color:#e6db74">&#39;clon&#39;</span>: <span style="color:#ae81ff">139.701407725281</span>,
+ <span style="color:#e6db74">&#39;cloudCover&#39;</span>: <span style="color:#ae81ff">20.0</span>,
+ <span style="color:#e6db74">&#39;entityId&#39;</span>: <span style="color:#e6db74">&#39;20190115064426419_AS1&#39;</span>,
+ <span style="color:#e6db74">&#39;max_lat&#39;</span>: <span style="color:#ae81ff">35.7191765745438</span>,
+ <span style="color:#e6db74">&#39;max_lon&#39;</span>: <span style="color:#ae81ff">139.786374532312</span>,
+ <span style="color:#e6db74">&#39;min_lat&#39;</span>: <span style="color:#ae81ff">35.6013160074949</span>,
+ <span style="color:#e6db74">&#39;min_lon&#39;</span>: <span style="color:#ae81ff">139.61632039109</span>,
+ <span style="color:#e6db74">&#39;path&#39;</span>: <span style="color:#ae81ff">0</span>,
+ <span style="color:#e6db74">&#39;productId&#39;</span>: <span style="color:#e6db74">&#39;20190115064426419_AS1_D01_L1B&#39;</span>,
+ <span style="color:#e6db74">&#39;row&#39;</span>: <span style="color:#ae81ff">0</span>,
+ <span style="color:#e6db74">&#39;thumbs_url&#39;</span>:<span style="color:#e6db74">&#39;https://tile.tellusxdp.com/thums/ASNARO-1/20190115064426419_AS1.PNG&#39;</span>}
+</code></pre></div><p>Let&rsquo;s check how many pieces of shooting data are in this latitude/longitude range</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">len(r_ASNARO1)
+<span style="color:#ae81ff">28</span>
+</code></pre></div><p>I found that there are 28.
+Now let&rsquo;s display the contents.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Showing search results <span style="color:#66d9ef">for</span> <span style="color:#75715e"># ASNARO-1</span>
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;List of ASNARO-1 [shooting date, entityId, productId, cloudCover]&#34;</span>)
+<span style="color:#66d9ef">for</span> res <span style="color:#f92672">in</span> r_ASNARO1:
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;, &#34;</span><span style="color:#f92672">.</span>join([res[<span style="color:#e6db74">&#39;acquisitionDate&#39;</span>],
+        str(res[<span style="color:#e6db74">&#39;entityId&#39;</span>]), str(res[<span style="color:#e6db74">&#39;productId&#39;</span>]), str(res[<span style="color:#e6db74">&#39;cloudCover&#39;</span>])])))
+
+List of ASNARO<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> [shooting date, entityId, productId, cloudCover]
+Wed, <span style="color:#ae81ff">31</span> Oct <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">31</span>:<span style="color:#ae81ff">16</span> GMT, <span style="color:#ae81ff">20190115064426419</span>_AS1, <span style="color:#ae81ff">20190115064426419</span>_AS1_D01_L1B, <span style="color:#ae81ff">20.0</span>
+Sat, <span style="color:#ae81ff">20</span> Oct <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">52</span>:<span style="color:#ae81ff">04</span> GMT, <span style="color:#ae81ff">20181224064142828</span>_AS1, <span style="color:#ae81ff">20181224064142828</span>_AS1_D01_L1B, <span style="color:#ae81ff">19.0</span>
+Tue, <span style="color:#ae81ff">31</span> Jul <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">42</span>:<span style="color:#ae81ff">49</span> GMT, <span style="color:#ae81ff">20181224064003777</span>_AS1, <span style="color:#ae81ff">20181224064003777</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Sat, <span style="color:#ae81ff">30</span> Jun <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">17</span>:<span style="color:#ae81ff">46</span> GMT, <span style="color:#ae81ff">20181224062516884</span>_AS1, <span style="color:#ae81ff">20181224062516884</span>_AS1_D01_L1B, <span style="color:#ae81ff">13.0</span>
+Fri, <span style="color:#ae81ff">08</span> Jun <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">25</span>:<span style="color:#ae81ff">21</span> GMT, <span style="color:#ae81ff">20190115062640786</span>_AS1, <span style="color:#ae81ff">20190115062640786</span>_AS1_D01_L1B, <span style="color:#ae81ff">20.0</span>
+Sat, <span style="color:#ae81ff">02</span> Jun <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">36</span>:<span style="color:#ae81ff">46</span> GMT, <span style="color:#ae81ff">20181224062257563</span>_AS1, <span style="color:#ae81ff">20181224062257563</span>_AS1_D01_L1B, <span style="color:#ae81ff">18.0</span>
+Sat, <span style="color:#ae81ff">21</span> Apr <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">38</span>:<span style="color:#ae81ff">02</span> GMT, <span style="color:#ae81ff">20181225033937173</span>_AS1, <span style="color:#ae81ff">20181225033937173</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Sun, <span style="color:#ae81ff">25</span> Mar <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">27</span>:<span style="color:#ae81ff">00</span> GMT, <span style="color:#ae81ff">20181224062059947</span>_AS1, <span style="color:#ae81ff">20181224062059947</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Wed, <span style="color:#ae81ff">03</span> Jan <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">30</span>:<span style="color:#ae81ff">59</span> GMT, <span style="color:#ae81ff">20181224061906786</span>_AS1, <span style="color:#ae81ff">20181224061906786</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Tue, <span style="color:#ae81ff">02</span> Jan <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">02</span>:<span style="color:#ae81ff">16</span>:<span style="color:#ae81ff">36</span> GMT, <span style="color:#ae81ff">20181224061858253</span>_AS1, <span style="color:#ae81ff">20181224061858253</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Fri, <span style="color:#ae81ff">29</span> Dec <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">24</span>:<span style="color:#ae81ff">58</span> GMT, <span style="color:#ae81ff">20181224061846634</span>_AS1, <span style="color:#ae81ff">20181224061846634</span>_AS1_D01_L1B, <span style="color:#ae81ff">1.0</span>
+Sun, <span style="color:#ae81ff">05</span> Nov <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">13</span>:<span style="color:#ae81ff">55</span>:<span style="color:#ae81ff">39</span> GMT, <span style="color:#ae81ff">20181224061816204</span>_AS1, <span style="color:#ae81ff">20181224061816204</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Sun, <span style="color:#ae81ff">09</span> Jul <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">40</span>:<span style="color:#ae81ff">45</span> GMT, <span style="color:#ae81ff">20181224061651885</span>_AS1, <span style="color:#ae81ff">20181224061651885</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Mon, <span style="color:#ae81ff">22</span> May <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">14</span>:<span style="color:#ae81ff">06</span>:<span style="color:#ae81ff">36</span> GMT, <span style="color:#ae81ff">20181224061523296</span>_AS1, <span style="color:#ae81ff">20181224061523296</span>_AS1_D01_L1B, <span style="color:#ae81ff">1.0</span>
+Sat, <span style="color:#ae81ff">06</span> May <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">29</span>:<span style="color:#ae81ff">27</span> GMT, <span style="color:#ae81ff">20181224061506752</span>_AS1, <span style="color:#ae81ff">20181224061506752</span>_AS1_D01_L1B, <span style="color:#ae81ff">8.0</span>
+Tue, <span style="color:#ae81ff">04</span> Apr <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">27</span>:<span style="color:#ae81ff">01</span> GMT, <span style="color:#ae81ff">20181224061413592</span>_AS1, <span style="color:#ae81ff">20181224061413592</span>_AS1_D01_L1B, <span style="color:#ae81ff">1.0</span>
+Fri, <span style="color:#ae81ff">24</span> Mar <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">13</span>:<span style="color:#ae81ff">57</span>:<span style="color:#ae81ff">55</span> GMT, <span style="color:#ae81ff">20181224061303679</span>_AS1, <span style="color:#ae81ff">20181224061303679</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Sat, <span style="color:#ae81ff">18</span> Mar <span style="color:#ae81ff">2017</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">39</span>:<span style="color:#ae81ff">14</span> GMT, <span style="color:#ae81ff">20181224061254113</span>_AS1, <span style="color:#ae81ff">20181224061254113</span>_AS1_D01_L1B, <span style="color:#ae81ff">2.0</span>
+Mon, <span style="color:#ae81ff">24</span> Oct <span style="color:#ae81ff">2016</span> <span style="color:#ae81ff">14</span>:<span style="color:#ae81ff">10</span>:<span style="color:#ae81ff">19</span> GMT, <span style="color:#ae81ff">20181224060959386</span>_AS1, <span style="color:#ae81ff">20181224060959386</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>Fri, <span style="color:#ae81ff">17</span> Jun <span style="color:#ae81ff">2016</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">39</span>:<span style="color:#ae81ff">32</span> GMT, <span style="color:#ae81ff">20181224045149110</span>_AS1, <span style="color:#ae81ff">20181224045149110</span>_AS1_D01_L1B, <span style="color:#ae81ff">29.0</span>
+Thu, <span style="color:#ae81ff">05</span> May <span style="color:#ae81ff">2016</span> <span style="color:#ae81ff">14</span>:<span style="color:#ae81ff">08</span>:<span style="color:#ae81ff">24</span> GMT, <span style="color:#ae81ff">20181223152759390</span>_AS1, <span style="color:#ae81ff">20181223152759390</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Fri, <span style="color:#ae81ff">18</span> Mar <span style="color:#ae81ff">2016</span> <span style="color:#ae81ff">15</span>:<span style="color:#ae81ff">31</span>:<span style="color:#ae81ff">58</span> GMT, <span style="color:#ae81ff">20181223152702426</span>_AS1, <span style="color:#ae81ff">20181223152702426</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Mon, <span style="color:#ae81ff">30</span> Nov <span style="color:#ae81ff">2015</span> <span style="color:#ae81ff">14</span>:<span style="color:#ae81ff">31</span>:<span style="color:#ae81ff">57</span> GMT, <span style="color:#ae81ff">20190117124820618</span>_AS1, <span style="color:#ae81ff">20190117124820618</span>_AS1_D01_L1B, <span style="color:#ae81ff">33.0</span>
+Tue, <span style="color:#ae81ff">03</span> Nov <span style="color:#ae81ff">2015</span> <span style="color:#ae81ff">14</span>:<span style="color:#ae81ff">32</span>:<span style="color:#ae81ff">11</span> GMT, <span style="color:#ae81ff">20181225123811442</span>_AS1, <span style="color:#ae81ff">20181225123811442</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Sun, <span style="color:#ae81ff">25</span> Oct <span style="color:#ae81ff">2015</span> <span style="color:#ae81ff">03</span>:<span style="color:#ae81ff">35</span>:<span style="color:#ae81ff">55</span> GMT, <span style="color:#ae81ff">20181223152305607</span>_AS1, <span style="color:#ae81ff">20181223152305607</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Thu, <span style="color:#ae81ff">06</span> Aug <span style="color:#ae81ff">2015</span> <span style="color:#ae81ff">03</span>:<span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">35</span> GMT, <span style="color:#ae81ff">20181223060118912</span>_AS1, <span style="color:#ae81ff">20181223060118912</span>_AS1_D01_L1B, <span style="color:#ae81ff">13.0</span>
+Wed, <span style="color:#ae81ff">05</span> Aug <span style="color:#ae81ff">2015</span> <span style="color:#ae81ff">14</span>:<span style="color:#ae81ff">11</span>:<span style="color:#ae81ff">45</span> GMT, <span style="color:#ae81ff">20181223060109423</span>_AS1, <span style="color:#ae81ff">20181223060109423</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+Sun, <span style="color:#ae81ff">28</span> Jun <span style="color:#ae81ff">2015</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">41</span>:<span style="color:#ae81ff">27</span> GMT, <span style="color:#ae81ff">20181225122707116</span>_AS1, <span style="color:#ae81ff">20181225122707116</span>_AS1_D01_L1B, <span style="color:#ae81ff">10.0</span>
+</code></pre></div><p>Here, the &ldquo;cloud cover&rdquo; is called the cloud cover rate, and is a numerical representation of how many clouds are included in the image. This time, since it is not a synthetic aperture radar called SAR that is not affected by clouds, it is a normal optical satellite image, so we will select the following newest data without cloud coverage.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Tue, <span style="color:#ae81ff">31</span> Jul <span style="color:#ae81ff">2018</span> <span style="color:#ae81ff">12</span>:<span style="color:#ae81ff">42</span>:<span style="color:#ae81ff">49</span> GMT, <span style="color:#ae81ff">20181224064003777</span>_AS1, <span style="color:#ae81ff">20181224064003777</span>_AS1_D01_L1B, <span style="color:#ae81ff">0.0</span>
+</code></pre></div><p>Next, let&rsquo;s get the image data for each scene using the second API.
+ASNARO-1 uses the productId to get the image. Let&rsquo;s store the entityId here as well.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Select the scene you want to get</span>
+<span style="color:#75715e"># Store the productId and entityId of the selected ASNARO-1 satellite image</span>
+ASNARO1_entityId <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;20181224064003777_AS1&#34;</span>
+ASNARO1_productId <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;20181224064003777_AS1_D01_L1B&#34;</span>
+</code></pre></div><p>Here, I will explain the image tiles and magnification. It is expressed as (z = Zoom Level, x = tile_x, y = tile_y), but with Tellus, it is possible to get a tile image of 256 x 256 for each Zoom Level between Z = 0-18 by API. .. This is using the Web Mercator projection, which is a world map projected by the Mercator projection cut in the range of east longitude 180° to west longitude 180°, north latitude 85.0511° to south latitude 85.0511°.</p>
+<h4 id="when-z1">When Z=1</h4>
+<img width="280" alt="Screen Shot 2019-12-13 at 13.51.51.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/9fdfc9b4-fb64-e6c5-9c26-54f83548c035.png">
+The whole world is represented by one tile.
+<h4 id="when-z1-1">When Z=1</h4>
+<img width="532" alt="Screen Shot 2019-12-13 at 13.52.07.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/13e0bd50-23cb-66ab-4761-4f3e05e57afe.png">
+The tile is divided into four.
+<h4 id="when-z2">When Z=2</h4>
+<img width="532" alt="Screen Shot 2019-12-13 at 13.52.19.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/ef111da8-da7b-b393-127c-459e851446f0.png">
+Japan still fits in one tile.
+<h4 id="when-z7">When Z=7</h4>
+<img width="775" alt="Screen Shot 2019-12-13 at 13.52.48.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/2d33f504-3030-1ae1-546d-bb280c399840.png">
+Gradually, I could see Tokyo Bay.
+<h4 id="when-z12">When Z=12</h4>
+<img width="787" alt="Screen Shot 2019-12-13 at 13.51.13.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/03663c41-4acf-8e25-0098-4f0d20b69e89.png">
+I can see the display range Z=12, X=3638, Y=1613 this time.
+<p>By the way, it is possible to find the range you wanted to display this time from the Tellus OS as tiles, but in this case, select &ldquo;Data selection&rdquo; → &ldquo;Tile image&rdquo; as shown below.
+<img width="1559" alt="Screen Shot 2019-12-16 at 17.24.05.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/eaaafc5c-6163-aebd-3fe1-4f282149c045.png"></p>
+<p>However, if it is troublesome to carry out such a thing every time, consider a method to implement a method to make tile coordinates of latitude and longitude into Python.
+Please refrain from detailed algorithm because it will be long, but you can convert it with the following code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Calculate the tile coordinates (x, y, z) including the specified latitude and longitude.</span>
+<span style="color:#75715e"># A function that calculates the corresponding tile coordinates by inputting latitude and longitude and zoom level z</span>
+You can check the zoom level z that can be specified <span style="color:#f92672">in</span> <span style="color:#e6db74">&#34;API Reference&#34;</span> on the Tellus developer page<span style="color:#f92672">.</span>
+<span style="color:#75715e"># https://www.tellusxdp.com/ja/dev/api</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">LatLon2Tile</span>(lat,lon, z):
+    L <span style="color:#f92672">=</span> <span style="color:#ae81ff">85.05112878</span>
+    tileX <span style="color:#f92672">=</span> int( (<span style="color:#ae81ff">2</span><span style="color:#f92672">**</span>(z<span style="color:#f92672">+</span><span style="color:#ae81ff">7</span>)) <span style="color:#f92672">*</span> ((lon<span style="color:#f92672">/</span><span style="color:#ae81ff">180</span>) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>))
+    tileY <span style="color:#f92672">=</span> int( (<span style="color:#ae81ff">2</span><span style="color:#f92672">**</span>(z<span style="color:#f92672">+</span><span style="color:#ae81ff">7</span>)<span style="color:#f92672">/</span>math<span style="color:#f92672">.</span>pi) <span style="color:#f92672">*</span> (<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>arctanh(math<span style="color:#f92672">.</span>sin(lat <span style="color:#f92672">*</span> math<span style="color:#f92672">.</span>pi<span style="color:#f92672">/</span><span style="color:#ae81ff">180</span>)) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>arctanh(math<span style="color:#f92672">.</span>sin(L <span style="color:#f92672">*</span> math<span style="color:#f92672">.</span>pi<span style="color:#f92672">/</span><span style="color:#ae81ff">180</span>))))
+    <span style="color:#66d9ef">return</span> int(tileX<span style="color:#f92672">/</span><span style="color:#ae81ff">256</span>), int(tileY<span style="color:#f92672">/</span><span style="color:#ae81ff">256</span>)
+
+<span style="color:#75715e"># Center coordinates of this designated area (latitude, longitude)</span>
+center_lat <span style="color:#f92672">=</span> (min_lat <span style="color:#f92672">+</span> max_lat) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>
+center_lon <span style="color:#f92672">=</span> (min_lon <span style="color:#f92672">+</span> max_lon) <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span>
+<span style="color:#75715e"># This time, the zoom level z is 12.</span>
+z <span style="color:#f92672">=</span> <span style="color:#ae81ff">12</span>
+<span style="color:#75715e"># Get tile coordinates</span>
+x, y <span style="color:#f92672">=</span> LatLon2Tile(center_lat,center_lon, z)
+</code></pre></div><p>Let&rsquo;s actually acquire a satellite image using this function.
+This time, we will acquire images by RGB and NIR (near infrared) bands.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Acquisition of satellite image of <span style="color:#75715e"># ASNARO-1</span>
+<span style="color:#75715e"># Specify server URL</span>
+url_ASNARO1 <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://gisapi.tellusxdp.com/blend/asnaro1&#39;</span>
+<span style="color:#75715e"># Determine band allocation</span>
+query_ASNARO1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;r=4&amp;g=3&amp;b=2&#34;</span>
+res_ASNARO1 <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;{}/{}/{}/{}/{}.png?{}&#34;</span><span style="color:#f92672">.</span>format(
+                url_ASNARO1,
+                ASNARO1_productId,
+                z, x, y,
+                query_ASNARO1),
+                headers<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;Authorization&#34;</span>: <span style="color:#e6db74">&#34;Bearer &#34;</span><span style="color:#f92672">+</span> API_TOKEN})
+RGB_ASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>asarray(Image<span style="color:#f92672">.</span>open((BytesIO(res_ASNARO1<span style="color:#f92672">.</span>content))))
+<span style="color:#75715e"># Change data type to integer</span>
+RGB_ASNARO1 <span style="color:#f92672">=</span> RGB_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+</code></pre></div><p>Capture as R=Band4, G=Band3, B=Band2 by band allocation.
+The acquired image is captured in 4 dimensions RGBA(A=Alpha Chennel) in a numpy array.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># 7. Acquire a single band image of ASNARO-1 (red, blue, green, near infrared)</span>
+<span style="color:#75715e">#Convert to single band 2D array of red, blue and green</span>
+R_ASNARO1 <span style="color:#f92672">=</span> RGB_ASNARO1[:,:,<span style="color:#ae81ff">0</span>]
+G_ASNARO1 <span style="color:#f92672">=</span> RGB_ASNARO1[:,:,<span style="color:#ae81ff">1</span>]
+B_ASNARO1 <span style="color:#f92672">=</span> RGB_ASNARO1[:,:,<span style="color:#ae81ff">2</span>]
+
+<span style="color:#75715e"># ASNARO-1 band assignment changed (red: band 4, green: band 4, blue: band 4)</span>
+query_ASNARO1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;r=6&amp;g=6&amp;b=6&#34;</span>
+<span style="color:#75715e"># ASNARO-1 Acquisition of satellite image</span>
+res_ASNARO1 <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;{}/{}/{}/{}/{}.png?{}&#34;</span><span style="color:#f92672">.</span>format(
+                url_ASNARO1,
+                ASNARO1_productId,
+                z, x, y,
+                query_ASNARO1),
+                headers<span style="color:#f92672">=</span>headers)
+<span style="color:#75715e">#Near infrared single band image NumPy 2D array</span>
+NIR_ASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>asarray(Image<span style="color:#f92672">.</span>open((BytesIO(res_ASNARO1<span style="color:#f92672">.</span>content))))
+NIR_ASNARO1 <span style="color:#f92672">=</span> NIR_ASNARO1[:,:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+</code></pre></div><p>Next, the near infrared NIR=Band6 is acquired.</p>
+<p>The captured image is displayed in true color composition, which is a composition method similar to that of the human eye.Below is an image of true color composition.
+<img width="1039" alt="Screen Shot 2019-12-16 at 18.01.43.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/10f7c8d9-c953-f2c6-998d-16404cc4d1a4.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># 9. True color composition</span>
+<span style="color:#75715e">#R: Red band, G: Green band, B: Blue band composite</span>
+<span style="color:#75715e"># ASNARO-1</span>
+true_ASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dstack((R_ASNARO1, G_ASNARO1, B_ASNARO1))
+<span style="color:#75715e"># ASNARO-1 Display of satellite image</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">20</span>)) <span style="color:#75715e"># Specify display size in inches 20 x 20 inches</span>
+plt<span style="color:#f92672">.</span>imshow(true_ASNARO1)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/ccfa557a-1533-236b-2274-1f55328ae445.png" alt="image.png"></p>
+<p>Since it is acquired in 256 x 256 pixels, it will be quite blurry if it is expanded to this extent, but it seems that it is possible to acquire some information such as the status of sediment inflow from the Hamarikyu Garden and rivers.</p>
+<h3 id="is-it-bad-with-google-earth">Is it bad with Google Earth?</h3>
+<p>So far, I think you have written a rather troublesome Code, but I think it would be possible to use it more conveniently from GCP on Google Earth without doing this. I think that some people think that. I was like that too.
+It&rsquo;s really what you want it to be, so if Google Earth or any other data source is good enough, you&rsquo;re good to go.</p>
+<p>However, satellite data has a number of features that do not exist in other data.
+It is my own research, but I summarized the features of each.</p>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">Satellites</th>
+<th align="center">Google Earth</th>
+<th align="center">Aviation drones</th>
+<th align="center">Aircraft</th>
+<th align="center">Tellus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Price</td>
+<td align="center">✕✕✕</td>
+<td align="center">◎</td>
+<td align="center">△</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">Past data</td>
+<td align="center">◎</td>
+<td align="center">△</td>
+<td align="center">✕</td>
+<td align="center">◯</td>
+<td align="center">◎<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup></td>
+</tr>
+<tr>
+<td align="center">Frequency</td>
+<td align="center">◎<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup></td>
+<td align="center">✕</td>
+<td align="center">△</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">Resolution</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">Visible wavelength sensor (passive)</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">Other sensors (passive)</td>
+<td align="center">◎</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">SAR</td>
+<td align="center">◎</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">API integration</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+</tr>
+<tr>
+<td align="center">Non-satellite data</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">✕</td>
+<td align="center">◎</td>
+</tr>
+</tbody>
+</table>
+<p>As mentioned above, the advantages of satellite data are the abundance of past data, sensors of various wavelengths, and active sensing by the synthetic aperture radar called SAR. By using these, it becomes possible to obtain information that could not be obtained with visible light.</p>
+<p>Tellus also provides data obtained from sources other than satellites, such as temperature and artificial flow data, which is also an advantage.</p>
+<h3 id="what-is-ndvi-ndwi">What is NDVI, NDWI?</h3>
+<p>So what is the information that could not be obtained with visible light?
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/5850cdb4-dadf-7e45-6f1e-822944456f3e.png" alt="image.png">
+<a href="https://sorabatake.jp/5192/">https://sorabatake.jp/5192/</a></p>
+<p>Since the observation satellites are equipped with optical sensors of various wavelengths, the wavelengths that can be acquired differ for each satellite.
+As described above, the wavelengths of electromagnetic waves that are absorbed and reflected by the target object are different, so various information can be obtained by combining these. The following typical combinations are known.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/458b7dc7-4a1c-139d-7004-0e8c4a8a5349.png" alt="image.png">
+<a href="https://sorabatake.jp/5192/">https://sorabatake.jp/5192/</a></p>
+<p>Among them, NDVI, which is an index of how much plants are overgrown, is a commonly used index.
+There is NDWI, which is an indicator of how much water is present.
+The pixel of each image is represented by uint8$(2^8=256)$ this time, so it is represented by a number from 0 to 255,
+NDVI and NDWI are normalized and shown between (-1 → 1).</p>
+<h4 id="normalized-vegetation-index-ndvi-combination-of-red-r-and-near-infrared-nir">Normalized vegetation index NDVI (combination of red (R) and near infrared (NIR))</h4>
+<pre><code class="language-math" data-lang="math">NDVI = \frac{R-NIR}{R + NIR}
+</code></pre><h4 id="normalized-water-index-ndwi-combination-of-red-r-and-short-wavelength-infrared-swir">Normalized water index NDWI (combination of red (R) and short wavelength infrared (SWIR))</h4>
+<pre><code class="language-math" data-lang="math">NDWI = \frac{R-SWIR}{R + SWIR}
+</code></pre><p>Next, we will perform a compositing method called natural color composition.
+This is a color composition method in which R=NIR (near infrared) is used instead of R=R. You can display plants in green.
+The concrete image is as follows.
+<img width="1039" alt="Screen Shot 2019-12-16 at 18.01.53.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/e4907eca-4417-572c-30a9-6452a3d2bb29.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># 10. Natural color composition</span>
+<span style="color:#75715e">#R: Red band, G: Near infrared band, B: Green band</span>
+<span style="color:#75715e"># ASNARO-1</span>
+natural_ASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dstack((R_ASNARO1, NIR_ASNARO1, G_ASNARO1))
+
+<span style="color:#75715e"># ASNARO-1 Display of satellite image</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">20</span>)) <span style="color:#75715e"># Specify display size in inches 20 x 20 inches</span>
+plt<span style="color:#f92672">.</span>imshow(natural_ASNARO1)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/530a5ea6-a073-7585-2e00-d9ce5f7440b9.png" alt="image.png"></p>
+<p>Since the vegetation part is visualized in green, the vegetation area can be displayed more easily than when viewed with true color composition.</p>
+<p>Next, let&rsquo;s visualize the NDVI described above.
+R and NIR are included in the calculation formula.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># 1. NDVI</span>
+<span style="color:#75715e"># Change data type from uint8 to float32</span>
+NIR_ASNARO1 <span style="color:#f92672">=</span> NIR_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+R_ASNARO1 <span style="color:#f92672">=</span> R_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+
+<span style="color:#75715e"># Calculate NDVI</span>
+NDVI_ASNARO1 <span style="color:#f92672">=</span> (NIR_ASNARO1<span style="color:#f92672">-</span>R_ASNARO1) <span style="color:#f92672">/</span> (NIR_ASNARO1 <span style="color:#f92672">+</span> R_ASNARO1)
+
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">20</span>)) <span style="color:#75715e"># Specify display size in inches 6 inches x 6 inches</span>
+plt<span style="color:#f92672">.</span>imshow(NDVI_ASNARO1, cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Reds&#39;</span>)
+plt<span style="color:#f92672">.</span>colorbar()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/f7462d0b-c65f-b373-7506-f5b779ce679b.png" alt="image.png"></p>
+<p>I was able to calculate the NDVI and digitize the vegetation index. Unfortunately, ASNARO-1 does not have a SWIR (short wavelength infrared) sensor, so it is not possible to calculate NDWI. However, even in such a case, it is possible to calculate the NDWI by using the data of Landsat8 equipped with SWIR. However, Landsat8 only supports up to Z=12 magnification, so the roughness of this image is the limit. In this way, Tellus can switch and use data from various satellites depending on the purpose.</p>
+<h2 id="but-isnt-the-image-rough">But isn&rsquo;t the image rough?</h2>
+<p>I think that the resolution is lower than the image shown at the beginning of the article, but it does not mean that the loading of the web browser has failed. Images at a resolution of 256x256 are acquired at each zoom level, so you need to increase the zoom level, for example, if you want to acquire higher definition images. The zoom level differs for each satellite, but it also varies depending on the sensor within the same satellite. In the ASNARO-1, the maximum zoom level is 18 for the RGB combined optical sensor, but the maximum zoom level is 16 for the optical sensor for each band as this time. The details of the specs for each satellite are detailed on the following pages, so please refer to them as necessary.
+<a href="https://www.tellusxdp.com/ja/dev/data">https://www.tellusxdp.com/ja/dev/data</a></p>
+<p>Now, if you try to get a high resolution image (Z=16), the range will be narrowed because it is 256x256 pixels. However, if you try to expand the range (Z=12), the resolution will decrease because it is 256x256 pixels. In such a case, by connecting and displaying images of Z=16, it is possible to acquire images with a resolution of Z=16 levels in the range of Z=12.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_combined_image</span>(get_image_func, z, topleft_x, topleft_y, size_x<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, size_y<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, option<span style="color:#f92672">=</span>{}, params<span style="color:#f92672">=</span>{}):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Get combined tile images
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------
+</span><span style="color:#e6db74">    get_image_func: function
+</span><span style="color:#e6db74">        Tile image acquisition method
+</span><span style="color:#e6db74">        Arguments are z, x, y, option, params
+</span><span style="color:#e6db74">    z: int
+</span><span style="color:#e6db74">        Tile zoom factor
+</span><span style="color:#e6db74">    topleft_x: int
+</span><span style="color:#e6db74">        X coordinate of the upper left tile
+</span><span style="color:#e6db74">    topleft_y :int
+</span><span style="color:#e6db74">        Y coordinate of upper left tile
+</span><span style="color:#e6db74">    size_x: int
+</span><span style="color:#e6db74">         Number of tiles that can be connected in the longitudinal direction
+</span><span style="color:#e6db74">    size_y: int
+</span><span style="color:#e6db74">        Number of tiles that can be connected in the latitudinal direction
+</span><span style="color:#e6db74">    option: dict
+</span><span style="color:#e6db74">        API path options (excluding z, x, y)
+</span><span style="color:#e6db74">    params: dict
+</span><span style="color:#e6db74">        Query parameters
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    -------
+</span><span style="color:#e6db74">    combined_image: ndarray
+</span><span style="color:#e6db74">        Combined tile image
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    rows <span style="color:#f92672">=</span> []blank <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((<span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">256</span>, <span style="color:#ae81ff">4</span>), dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>uint8)
+    
+    <span style="color:#66d9ef">for</span> y <span style="color:#f92672">in</span> range(size_y):
+        row <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> range(size_x):
+            <span style="color:#66d9ef">try</span>:
+                img <span style="color:#f92672">=</span> get_image_func(z, topleft_x <span style="color:#f92672">+</span> x, topleft_y <span style="color:#f92672">+</span> y, option)
+            <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+                img <span style="color:#f92672">=</span> blank
+                
+            row<span style="color:#f92672">.</span>append(img)
+        rows<span style="color:#f92672">.</span>append(np<span style="color:#f92672">.</span>hstack(row))
+    <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>vstack(rows)
+</code></pre></div><p>Here, we will introduce an algorithm that first creates an empty numpy matrix and then inserts images one by one.
+The image will be quadrupled and quadrupled as Z increases by 1, so if Z=12 to Z=16, $4^{4}=256$ tiles will be lined up. This is illustrated below.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/b81da74f-9f66-4717-ecd9-b27f924acd99.png" alt="tellus.png"></p>
+<p>The code above is the actual implementation of this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_asnaro1_image</span>(z, x, y, option<span style="color:#f92672">=</span>{}, params<span style="color:#f92672">=</span>{}, query<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span>):
+    <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">    Get tile image of ASNARO-1
+</span><span style="color:#e6db74">    Parameters
+</span><span style="color:#e6db74">    ----------
+</span><span style="color:#e6db74">    z: int
+</span><span style="color:#e6db74">        Tile zoom factor
+</span><span style="color:#e6db74">    x: int
+</span><span style="color:#e6db74">        X coordinate of tile
+</span><span style="color:#e6db74">    y: int
+</span><span style="color:#e6db74">        Y coordinate of tile
+</span><span style="color:#e6db74">    option: dict
+</span><span style="color:#e6db74">        API path option (productId)
+</span><span style="color:#e6db74">    params: dict
+</span><span style="color:#e6db74">        Query parameters
+</span><span style="color:#e6db74">    Returns
+</span><span style="color:#e6db74">    -------
+</span><span style="color:#e6db74">    img: ndarray
+</span><span style="color:#e6db74">        Tile image
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span>
+    url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://gisapi.tellusxdp.com/blend/asnaro1/{}/{}/{}/{}.png?{}&#39;</span><span style="color:#f92672">.</span>format(option[<span style="color:#e6db74">&#39;productId&#39;</span>], z, x, y, query)
+    headers <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;Authorization&#39;</span>:<span style="color:#e6db74">&#39;Bearer&#39;</span> <span style="color:#f92672">+</span> API_TOKEN
+    }
+    r <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(url, headers<span style="color:#f92672">=</span>headers, params<span style="color:#f92672">=</span>params)
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> r<span style="color:#f92672">.</span>status_code <span style="color:#f92672">==</span> requests<span style="color:#f92672">.</span>codes<span style="color:#f92672">.</span>ok:
+        r<span style="color:#f92672">.</span>raise_for_status()
+    <span style="color:#66d9ef">return</span> io<span style="color:#f92672">.</span>imread(BytesIO(r<span style="color:#f92672">.</span>content))
+</code></pre></div><p>This time, the algorithm to acquire the 256x256 image which is the original image to be stitched is written as above.
+In the following, we will acquire images with R=Band4, G=Band3, B=Band2 for true color composition.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Acquisition of satellite image of <span style="color:#75715e"># ASNARO-1</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">rgb_asnaro1</span>(z, x, y, option):
+    <span style="color:#75715e"># Specify server URL</span>
+    url_ASNARO1 <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://gisapi.tellusxdp.com/blend/asnaro1&#39;</span>
+    <span style="color:#75715e"># Determine band allocation</span>
+    query_ASNARO1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;r=4&amp;g=3&amp;b=2&#34;</span>
+    res_ASNARO1 <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;{}/{}/{}/{}/{}.png?{}&#34;</span><span style="color:#f92672">.</span>format(
+                url_ASNARO1,
+                option[<span style="color:#e6db74">&#39;productId&#39;</span>],
+                z, x, y,
+                query_ASNARO1),
+                headers<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;Authorization&#34;</span>: <span style="color:#e6db74">&#34;Bearer &#34;</span><span style="color:#f92672">+</span> API_TOKEN})
+    RGB_ASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>asarray(Image<span style="color:#f92672">.</span>open((BytesIO(res_ASNARO1<span style="color:#f92672">.</span>content))))
+    <span style="color:#75715e"># Change data type to integer</span>
+    <span style="color:#75715e">#RGB_ASNARO1 = RGB_ASNARO1.astype(np.uint8)</span>
+    <span style="color:#66d9ef">return</span> RGB_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+</code></pre></div><p>In the following, we will acquire images with R=Band6, G=Band6, B=Band6 for natural color composition.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Acquisition of satellite image of <span style="color:#75715e"># ASNARO-1</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">nir_asnaro1</span>(z, x, y, option):
+    <span style="color:#75715e"># Specify server URL</span>
+    url_ASNARO1 <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://gisapi.tellusxdp.com/blend/asnaro1&#39;</span>
+    <span style="color:#75715e"># Determine band allocation</span>
+    query_ASNARO1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;r=6&amp;g=6&amp;b=6&#34;</span>
+    res_ASNARO1 <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>get(<span style="color:#e6db74">&#34;{}/{}/{}/{}/{}.png?{}&#34;</span><span style="color:#f92672">.</span>format(
+                url_ASNARO1,
+                option[<span style="color:#e6db74">&#39;productId&#39;</span>],
+                z, x, y,
+                query_ASNARO1),
+                headers<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#34;Authorization&#34;</span>: <span style="color:#e6db74">&#34;Bearer &#34;</span><span style="color:#f92672">+</span> API_TOKEN})
+    RGB_ASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>asarray(Image<span style="color:#f92672">.</span>open((BytesIO(res_ASNARO1<span style="color:#f92672">.</span>content))))
+    <span style="color:#75715e"># Change data type to integer</span>
+    <span style="color:#75715e">#RGB_ASNARO1 = RGB_ASNARO1.astype(np.uint8)</span>
+    <span style="color:#66d9ef">return</span> RGB_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+</code></pre></div><p>Below, Top Left X and Top Left Y coordinates are calculated from the center coordinates.
++1 is the correction performed because the coordinates will return too much if 1/2 is subtracted from the center coordinates.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">z <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>
+size_x <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>
+size_y <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>
+x, y <span style="color:#f92672">=</span> LatLon2Tile(center_lat,center_lon, z)
+topleft_x <span style="color:#f92672">=</span> int(x<span style="color:#f92672">-</span>size_x <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)
+topleft_y <span style="color:#f92672">=</span> int(y<span style="color:#f92672">-</span>size_y <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>)
+option <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;productId&#39;</span>: ASNARO1_productId
+}
+query_ASNARO1 <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;r=4&amp;g=3&amp;b=2&#34;</span>
+</code></pre></div><p>Add the above parameters to the function that actually connects the true color composite images.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">combined <span style="color:#f92672">=</span> get_combined_image(rgb_asnaro1, z, topleft_x, topleft_y, size_x, size_y, option, params_ASNARO1)
+</code></pre></div><p>The above parameters will be added to the function that actually connects the natural color composite images.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">combined_nir <span style="color:#f92672">=</span> get_combined_image(nir_asnaro1, z, topleft_x, topleft_y, size_x, size_y, option, query_ASNARO1)
+</code></pre></div><p>Images will be stored in an array for each band.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Obtain single band image of <span style="color:#75715e"># ASNARO-1 (red, blue, green, near infrared)</span>
+<span style="color:#75715e">#Convert to single band 2D array of red, blue and green</span>
+COMR_ASNARO1 <span style="color:#f92672">=</span> combined[:,:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+COMG_ASNARO1 <span style="color:#f92672">=</span> combined[:,:,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+COMB_ASNARO1 <span style="color:#f92672">=</span> combined[:,:,<span style="color:#ae81ff">2</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+
+<span style="color:#75715e">#Near infrared single band image NumPy 2D array</span>
+COMNIR_ASNARO1 <span style="color:#f92672">=</span> combined_nir[:,:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>uint8)
+</code></pre></div><p>First of all, it is true color composition.
+<img width="1039" alt="Screen Shot 2019-12-16 at 18.01.43.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/f1e966ad-ccfe-9d20-9d3a-5a3354d674a3.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># True color composition</span>
+<span style="color:#75715e">#R: Red band, G: Green band, B: Blue band composite</span>
+<span style="color:#75715e"># ASNARO-1</span>
+true_COMASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dstack((COMR_ASNARO1, COMG_ASNARO1, COMB_ASNARO1))
+<span style="color:#75715e"># ASNARO-1 Display of satellite image</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">20</span>)) <span style="color:#75715e"># Specify display size in inches 20 x 20 inches</span>
+plt<span style="color:#f92672">.</span>imshow(true_COMASNARO1)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/b49006ac-e5dd-45d7-9c84-49772c7d84fc.png" alt="image.png"></p>
+<p>You got a fairly high-definition image.
+In terms of pixels, it is an image of 256 x 16 = 4096 pixels.</p>
+<p>Next is natural color composition.
+<img width="1039" alt="Screen Shot 2019-12-16 at 18.01.53.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/6e9ade61-dfaf-a210-aa08-725b7e55bdc4.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Natural color composition</span>
+<span style="color:#75715e">#R: Red band, G: Near infrared band, B: Green band</span>
+<span style="color:#75715e"># ASNARO-1</span>
+natural_COMASNARO1 <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dstack((COMR_ASNARO1, COMNIR_ASNARO1, COMG_ASNARO1))
+
+<span style="color:#75715e"># ASNARO-1 Display of satellite image</span>
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">20</span>)) <span style="color:#75715e"># Specify display size in inches 20 x 20 inches</span>
+plt<span style="color:#f92672">.</span>imshow(natural_COMASNARO1)
+plt<span style="color:#f92672">.</span>show()
+<span style="color:#e6db74">``</span><span style="color:#960050;background-color:#1e0010">`!</span>[image<span style="color:#f92672">.</span>png](https:<span style="color:#f92672">//</span>qiita<span style="color:#f92672">-</span>image<span style="color:#f92672">-</span>store<span style="color:#f92672">.</span>s3<span style="color:#f92672">.</span>ap<span style="color:#f92672">-</span>northeast<span style="color:#f92672">-</span><span style="color:#ae81ff">1.</span>amazonaws<span style="color:#f92672">.</span>com<span style="color:#f92672">/</span><span style="color:#ae81ff">0</span><span style="color:#f92672">/</span><span style="color:#ae81ff">225355</span><span style="color:#f92672">/</span><span style="color:#ae81ff">73</span>b70f3d<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>c6e<span style="color:#f92672">-</span>f795<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>f50<span style="color:#f92672">-</span>a52282065e6a<span style="color:#f92672">.</span>png)
+
+I got a very high<span style="color:#f92672">-</span>definition image here<span style="color:#f92672">.</span>
+
+<span style="color:#e6db74">``</span><span style="color:#960050;background-color:#1e0010">`</span>python
+<span style="color:#75715e"># NDVI</span>
+<span style="color:#75715e"># Change data type from uint8 to float32</span>
+COMNIR_ASNARO1 <span style="color:#f92672">=</span> COMNIR_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+COMR_ASNARO1 <span style="color:#f92672">=</span> COMR_ASNARO1<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32)
+
+<span style="color:#75715e"># Calculate NDVI</span>
+COMNDVI_ASNARO1 <span style="color:#f92672">=</span> (COMNIR_ASNARO1<span style="color:#f92672">-</span>COMR_ASNARO1) <span style="color:#f92672">/</span> (COMNIR_ASNARO1 <span style="color:#f92672">+</span> COMR_ASNARO1)
+
+plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">20</span>)) <span style="color:#75715e"># Specify display size in inches 6 inches x 6 inches</span>
+plt<span style="color:#f92672">.</span>imshow(COMNDVI_ASNARO1, cmap<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Reds&#39;</span>)
+plt<span style="color:#f92672">.</span>colorbar()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/f5e7d5ac-fb37-2fbb-b4d0-79fb74ae819f.png" alt="image.png"></p>
+<p>The NVDI also has a fairly high-definition image.</p>
+<h1 id="bonus">bonus</h1>
+<p>This article mainly describes how to use satellite data, but when it comes to images, you want to try image recognition.
+Although not mentioned in this article, of course image recognition is possible on Tellus.
+The following is the result of detecting a vessel anchored using the machine learning model <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/225355/99a8e9d8-e233-aaeb-8032-771985e8e80f.jpeg" alt="Unknown.jpg"></p>
+<p>Although we extracted items with a certainty factor of 0.8 or higher, we were able to discover 326 vessels in the berth overall.
+We have also detected ships anchored in the river on land.
+Vessels that are sailing are excluded from the detection target, so you can see that vessels that are wavy are not detected.</p>
+<h1 id="reference">Reference</h1>
+<ul>
+<li><a href="https://sorabatake.jp">Sky field</a>
+-Contains news about Tellus usage and space business</li>
+<li><a href="https://www.tellusxdp.com">Tellus</a>
+-Click here to access Tellus OS and development environment</li>
+</ul>
+<h1 id="disclaimer">Disclaimer</h1>
+<p>The opinions expressed on this site and the corresponding comments are the personal opinions of the contributor and not Cisco. The content on this site is provided for information purposes only and is not intended as a recommendation or representation by Cisco or any other party. Each user is solely responsible for the content of all information posted, linked, or otherwise uploaded by posting on this website and disclaims any liability from Cisco for any use of this website. I agree.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>Based on future satellite data <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>There are frequent methods such as satellite constellation <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p>SSD512 Sliding Window(Stride 256, Window Size 512/512) <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

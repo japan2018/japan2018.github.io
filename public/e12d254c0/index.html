@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Photogrammetry viewed from OpenCV. (Why pillars tend to disappear) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Photogrammetry viewed from OpenCV. (Why pillars tend to disappear)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 21, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv">OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/zephyr">Zephyr</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/photogrammetry">Photogrammetry</a></code></small>
+
+</p>
+<pre><code>* In the past, we did LT about photogrammetry and OpenCV with [xRTechNagoya](https://vrm-nagoya.connpass.com/event/162233/)and[XRMTG](https://togetter.com/li/1470739) It is almost the same as the one.
+</code></pre>
+<h2 id="about-this-document">About this document</h2>
+<p>Photogrammetry that can create 3D data from multiple photos. It&rsquo;s nice to be able to generate data without any special equipment&hellip;
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/d68147a6-f9ef-ad5b-33db-ada43bcb55c1.jpeg" height="300px" width= "250px"/><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/5c73ea0c-bdee-7a53-50ca-6768801bd2ed.gif" height= "350px" width="480px"/></p>
+<p>If you use 3DF Zephyr for photogrammetry, you may be able to take it neatly like a tree trunk, or it may be something awful like a pillar.
+About the cause, I read the OpenCV book and summarized the processing contents of photogrammetry.
+(Since there are many images, it is displayed in a reduced size. Click to see the actual size)</p>
+<p>##First, an example that does not work
+The figure below shows a textured mesh created with 3DZF from four photos. (Created with default settings)</p>
+<p>↓ A case that can be beautifully three-dimensionalized
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/3dc66e2a-d86b-2f5e-ffd9-51f0c6281bff.jpeg" alt="Tree trunk 2.jpg"></p>
+<p>↓The case where the pillar is disappointing↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/b2dd5ff3-eaea-7b02-b829-5dacbd16b66e.jpeg" alt="Lucent Pillar.jpg"></p>
+<h2 id="photogrammetry-processing-overview">Photogrammetry processing overview</h2>
+<p>First, let&rsquo;s understand what photogrammetry is doing.
+To create 3D data, the following process should have been performed. (Perhaps.)
+**1. Detect features in photos. **
+**2. The feature points of multiple photos are linked. **
+**3. Estimate the position of the camera. **
+**4. Measure for each feature point. **
+**5. The point cloud obtained by the survey is grouped to generate 3D data. **</p>
+<p>###1. Feature detection processing
+Find the characteristic points of the image.
+Python-OpenCV will do it by feeding the image to the Akaze.detectAndCompute function. The figure below shows the result of processing a photo with Akaze.detectAndCompute.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/2be56d0e-efe6-f5ef-92ad-69ed3cc0ecc4.jpeg" alt="Image1b.jpg"></p>
+<p>###2. Linking feature points
+From multiple images, points with matching features are linked.
+Python-OpenCV will do it by feeding the image to the matchar function. The figure below shows the result of linking the photos taken by moving two horizontally and using the matchar function.
+<img width="300" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/ccede592-c1df-b44e-1df8-a7fbfe6747ba.png"></p>
+<p>###3,4. Estimate camera position, survey feature points
+As shown in the figure above, in the two photos taken while moving horizontally, the feature points in the foreground have moved greatly, and the feature points far away have not moved much.
+If you compare it to the angle memorized by the trigonometric function of junior high school, it looks like the figure below.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/b58b5c8d-7586-0093-9b10-e01714d4b133.jpeg" alt="sankakusokuryou.jpg">
+From the amount of movement of the feature points, first estimate the position of the camera (the position where the spots fit), and then estimate the position of each feature point from the position of the camera.</p>
+<p>↓ 3DF Zephyr used to find the point cloud from the coordinates of the feature points ↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/53c582d5-2910-de7c-47ce-af58684bebe6.jpeg" alt="3dz1.jpg"></p>
+<p>###5. Grouping of feature points, polygon generation
+After that, feature points are grouped and made into polygons.
+↓ Point groups are grouped to generate polygons ↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/dfe13e98-1e35-e3fc-d056-db9f63a8889c.jpeg" alt="3dz2.jpg"></p>
+<p>↓ Texture painting ↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/067ce44d-c5f8-0bb5-08c6-fbdb72e1be51.jpeg" alt="3dz3.jpg"></p>
+<p>Details of O&rsquo;REILLY In OpenCV3, the explanation below is given to the explanation of grouping. Is it similar to the labeling of machine learning?
+(I don&rsquo;t know because I&rsquo;m a bluff&gt; &lt;)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/f618ed21-04a3-6336-d6c7-84cc23ae3a6d.jpeg" alt="opencva.jpg"></p>
+<h2 id="what-is-the-difference-between-the-example-that-works-and-the-example-that-does-not-work">What is the difference between the example that works and the example that does not work?</h2>
+<p>Let&rsquo;s apply the process of extracting OpenCV feature points to the images of the trunk and pillars of the tree at the beginning.</p>
+<h3 id="result-of-feature-point-extraction-on-tree-trunk-image">Result of feature point extraction on tree trunk image</h3>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/76bbc9a5-894c-c1cc-4182-ba283eac9d3a.jpeg" width="640px">
+↓ An enlarged version. I still pick up irregularities on the surface of the trunk.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/762f92ee-08ff-2267-f7c0-95bb0d625220.jpeg" width="600px">
+<h3 id="result-of-feature-point-extraction-on-pillar-image">Result of feature point extraction on pillar image</h3>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/ead3948c-70c9-9e41-f37d-0da1e861d718.jpeg" width="640px">
+Compared to the case that worked well, the detection of feature points is biased.
+In particular, pillars are large, but have few characteristic points.
+<h2 id="where-are-the-characteristic-points">Where are the characteristic points?</h2>
+<h3 id="extract-feature-points-from-a-figure">Extract feature points from a figure</h3>
+<p>Let&rsquo;s try processing straight and circular shapes with Akaze.detectAndCompute.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/079fd5bd-aa31-3758-3edf-a83410b12f7e.jpeg" width="640px">
+↓ Feature point extraction result ↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/2d82cb65-1835-06c4-53c3-d5dea27ac50f.jpeg" width="640px">
+Characteristic points are generated in the curve and the corner, but the straight line part is through. I can not believe that.</p>
+<p>Details of O&rsquo;REILLY In OpenCV3, the explanation is as follows in the explanation of the characteristic points.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/cafb6d4c-f8d0-0d6f-b72c-e8fa5ca4726b.jpeg" width="640px">
+It seems that the dots that are large in gray scale and have a large difference from the surrounding dots are feature points.</p>
+<h3 id="straight-lines-do-not-become-feature-points">Straight lines do not become feature points</h3>
+<p>↓ An enlarged version of the previous image. The inside of the corner is the feature point. ↓
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/7a3feb2b-8464-c4fe-0ba5-37a529fbef61.jpeg" width="800px">
+Black 3: White 5 (38% match feature) when comparing dots around 8 points around point A (black)
+Black 5: White 3 (38% coincidence feature) when comparing with dots in the vicinity of 8 around the point B (white)
+And there are many dots with different values from the center.</p>
+<p>Conversely, a straight line that is not a feature point
+Black 3: White 5 (62% coincidence) when compared with the 8 neighboring dots based on point C (white)
+Black 5: White 3 (62% coincidence) when compared with the 8 neighboring dots based on point D (black)
+And, there are many dots with the same value as the center.
+On the outside of the corner (such as the upper left of point A), white is the starting point, and black 1: white 7. (88% match)</p>
+<p>If the feature point is one that has a large difference from the surrounding dots, the inside of the corner is a strong feature and the straight line is a weak feature.
+This is the reason why feature points do not occur on columns or planes.</p>
+<p>For example, in the case of the muffin image at the beginning,
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/02e3a8c9-fcea-b3cd-5f65-a2d9b24b7582.gif" alt="Muffin.gif"></p>
+<p>When the feature points are extracted, the muffin powder becomes the feature points in the three-dimensional data around the muffin, but the three-dimensional data looks good. (Powder suge)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/eb9e4ccf-dd47-512e-6cb6-4f71cb65ddd7.jpeg" width="640px"></p>
+<p>On the other hand, the paper cup had collapsed. If you look at the characteristic points, you cannot get the characteristic points. Is it because the hue and brightness are similar to the background tray?<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/594551/6fafbb36-d8f5-9bc1-1249-645d7c408a29.jpeg" width="640px"></p>
+<p>I do not know what the internal processing of 3DFZephyr is, but I think it will be helpful because the tendency is similar to the feature point detection of Akaze.</p>
+<h2 id="obtained-knowledge">Obtained knowledge</h2>
+<p>Lines and planes are apt to be ignored because of the judgment conditions for feature points. Because it is such a process, I have no choice but to drink.
+Follow up by reducing blurring and blurring and capturing small scratches and powder as characteristic points.</p>
+<p>Then sprinkle the bad muffin powder!</p>
+<p>I wrote that, but when a delicious person does it, the straight line of the lunch box is taken. Great person to teach.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

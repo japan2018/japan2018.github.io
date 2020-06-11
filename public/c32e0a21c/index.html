@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] PyTorch Three Kingdoms (Ignite, Catalyst, Lightning) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] PyTorch Three Kingdoms (Ignite, Catalyst, Lightning)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 14, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch">PyTorch</a></code></small>
+
+</p>
+<pre><code># 0. Introduction
+</code></pre>
+<p>I think that deep learning frameworks are all areas where development is very fast and exciting.
+While there are TensorFlow, jax, etc., there is also <a href="https://preferred.jp/ja/news/pr20191205/">PFN News</a>theotherday,andPyTorchislikelytobemoresolid.PerhapstherewillbemorePyTorchusersinthefuture(Iwillnotmentionthisarticleifthe<strong>officialTrainer</strong>alsofoundinChainerisimplementedinPyTorch,whichthreatenstheexistenceofthisarticle).</p>
+<p>However, while PyTorch has a high degree of freedom, the code around learning (such as around the loop of each epoch) is left to the individual, and tends to be very individual code.</p>
+<p>Writing these codes myself is a lot of learning, and I think it&rsquo;s a must if you start PyTorch. However, if the character is too strong, it may be difficult to share it with other people or reuse it during competitions (Oleole Trainer often seen in ex. Winner Solutions).</p>
+<p>In the case of PyTorch, there is no framework for simplifying the code around learning (previous Trainer was deprecated), but <a href="https://pytorchThefollowingframeworksforPyTorchareintroducedin.org/ecosystem/">Ecosystem | PyTorch</a>.</p>
+<ul>
+<li><a href="https://github.com/catalyst-team/catalyst">catalyst</a></li>
+<li><a href="https://docs.fast.ai/">fastai</a></li>
+<li><a href="https://github.com/pytorch/ignite">ignite</a></li>
+<li><a href="https://github.com/williamFalcon/pytorch-lightning">pytorch-lightning</a></li>
+</ul>
+<p>There are many.
+It&rsquo;s a correct argument to try everything and find the one that suits you. However, they are not easy, so in this article I&rsquo;d like to introduce each framework and make a simple comparison, and use it as a guide for something that everyone will touch.</p>
+<p>Regarding <strong>fastai</strong>, the abstraction is high and the abstraction is high (code tends to be short), but since I felt the learning cost for adding detailed operations by myself was high, <strong>Comparison in this article I have omitted it in advance</strong>.</p>
+<p>Therefore, in this article, we will focus on <strong>Catalyst</strong>, <strong>Ignite</strong>, <strong>Lightning</strong>, and also assume that you will participate in the <strong>Kaggle competition</strong>.</p>
+<p>By the way, I have confirmed that these three frameworks work to some extent in advance. If you have read this article and want to go a little further, please refer to it.</p>
+<ul>
+<li>Code in this article
+-https://github.com/yukkyo/Compare-PyTorch-Catalyst-Ignite-Lightning</li>
+<li>Catalyst: <a href="https://github.com/yukkyo/PyTorch-FilterResponseNormalizationLayer">yukkyo/PyTorch-FilterResponseNormalizationLayer</a></li>
+<li>Ignite: <a href="https://fam-taro.hatenablog.com/entry/2018/12/25/021346">PyTorch-Make learning code smarter with Ignite - Famtaro&rsquo;s blog</a></li>
+<li>Lightning: <a href="https://github.com/yukkyo/Kaggle-Understanding-Clouds-69th-solution">yukkyo/Kaggle-Understanding-Clouds-69th-solution</a></li>
+</ul>
+<p>As I mentioned earlier, **there is potential to participate in the competition. **</p>
+<h1 id="1-target-of-this-article-or-not">1. Target of this article (or not)</h1>
+<ul>
+<li>I am interested in Kaggle competition</li>
+<li>I&rsquo;m interested in image competition
+-Especially interested in Classification/Segmentation/Detection</li>
+<li>I have touched PyTorch
+-People who have never touched it are not the case when reading this article
+-Get started with the following pages and books
+-<a href="https://pytorch.org/tutorials/">Welcome to PyTorch Tutorials — PyTorch Tutorials 1.3.1 documentation</a>
+-<a href="https://www.amazon.co.jp/dp/B07VPDVNKW">Learn while making! Development with PyTorch Deep Learning | Yutaro Ogawa | Engineering | Kindle Store | Amazon</a></li>
+</ul>
+<h1 id="2-comparison-of-frameworks-catalyst-ignite-lightning">2. Comparison of frameworks (Catalyst, Ignite, Lightning)</h1>
+<p>I used the latest version on pip as of December 13, 2019.
+The Python version is 3.7.5. ~~ It is also assumed that <a href="https://github.com/NVIDIA/apex">NVIDIA/apex</a> has already been installed. ~~
+You don&rsquo;t need apex to run this code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">torch==1.3.1
+torchvision==0.4.2
+catalyst==19.12
+pytorch-ignite==0.2.1
+pytorch-lightning==0.5.3.2
+</code></pre></div><h2 id="21-star-number-transition-as-of-december-10-2019">2.1 Star number transition (as of December 10, 2019)</h2>
+<p>While Catalyst and Ignite are growing steadily, Lightning has been growing tremendously since April this year.
+On the other hand, Lightning hasn&rsquo;t been released in the world for a year, so there are many features under development and it is still unstable (it is not backward compatible when upgrading the version).</p>
+<p>It&rsquo;s also likely that Catalyst will overtake Ignite, as we often see Catalyst on recent Kaggle Notebooks.</p>
+<img src=https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/33573/f4e82ec9-46e3-0291-4bcf-e5ffc4f384a6.png width=700>
+<h2 id="22-how-to-write">2.2 How to write</h2>
+<p>Let&rsquo;s see what happens when we apply each framework to the bare PyTorch learning code.</p>
+<h3 id="221-common-part">2.2.1 Common part</h3>
+<p>This time, I will try learning with Resnet18 on the cifer10 dataset.
+As in the code below, the model and Dataloader definitions are made into functions in advance.</p>
+<details><summary>Code of common part (folded because it is long)</summary><div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:share_funcs.py" data-lang="python:share_funcs.py"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">import</span> torch.nn <span style="color:#f92672">as</span> nn
+<span style="color:#f92672">from</span> torch <span style="color:#f92672">import</span> optim
+<span style="color:#f92672">from</span> torch.utils.data <span style="color:#f92672">import</span> DataLoader
+<span style="color:#f92672">from</span> torchvision <span style="color:#f92672">import</span> datasets, models, transforms
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_criterion</span>():
+    <span style="color:#e6db74">&#34;&#34;&#34;A function that returns Loss in a nice way&#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">return</span> nn<span style="color:#f92672">.</span>CrossEntropyLoss()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_loaders</span>(batch_size: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>, num_workers: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>):
+    <span style="color:#e6db74">&#34;&#34;&#34; A function that can return each Dataloader to any kind&#34; &#34;&#34;
+</span><span style="color:#e6db74">    transform = transforms.Compose([transforms.ToTensor()])
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    # Dataset
+</span><span style="color:#e6db74">    args_dataset = dict(root=&#39;./data&#39;, download=True, transform=transform)
+</span><span style="color:#e6db74">    trainset = datasets.CIFAR10(train=True, **args_dataset)
+</span><span style="color:#e6db74">    testset = datasets.CIFAR10(train=False, **args_dataset)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    # Data Loader
+</span><span style="color:#e6db74">    args_loader = dict(batch_size=batch_size, num_workers=num_workers)
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">    train_loader = DataLoader(trainset, shuffle=True, **args_loader)
+</span><span style="color:#e6db74">    val_loader = DataLoader(testset, shuffle=False, **args_loader)
+</span><span style="color:#e6db74">    return train_loader, val_loader
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">def get_model(num_class: int = 10):
+</span><span style="color:#e6db74">    &#34;&#34;&#34;</span> A function that returns the model without any problems<span style="color:#e6db74">&#34; &#34;&#34;</span>
+    model <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>resnet18(pretrained<span style="color:#f92672">=</span>True)
+    num_features <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fc<span style="color:#f92672">.</span>in_features
+    model<span style="color:#f92672">.</span>fc <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Linear(num_features, num_class)
+    <span style="color:#66d9ef">return</span> model
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_optimizer</span>(model: torch<span style="color:#f92672">.</span>nn<span style="color:#f92672">.</span>Module, init_lr: float <span style="color:#f92672">=</span> <span style="color:#ae81ff">1e-3</span>, epoch: int <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>):
+    optimizer <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>SGD(model<span style="color:#f92672">.</span>parameters(), lr<span style="color:#f92672">=</span>init_lr, momentum<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>)
+    lr_scheduler <span style="color:#f92672">=</span> optim<span style="color:#f92672">.</span>lr_scheduler<span style="color:#f92672">.</span>MultiStepLR(
+        optimizer,
+        milestones<span style="color:#f92672">=</span>[int(epoch<span style="color:#f92672">*</span><span style="color:#ae81ff">0.8</span>), int(epoch<span style="color:#f92672">*</span><span style="color:#ae81ff">0.9</span>)],
+        gamma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>
+    )
+    <span style="color:#66d9ef">return</span> optimizer, lr_scheduler
+</code></pre></div></details></div>
+<h3 id="221-base-code-plain-learning-code">2.2.1 Base code (plain learning code)</h3>
+<p>If you don&rsquo;t think too deeply and write it in a straightforward manner, you will get the following.
+Since <code>.to(device)</code>, <code>loss.backward()</code>, and <code>optimizer.step()</code> have to be written, they tend to be long.
+In addition, <code>with torch.no_grad()</code> can support both Train and Eval by using <code>torch.set_grad_enabled(bool)</code>, but there are many different processes when Train and Eval (ex. If you create a function that supports both (optimizer.step()`, metrics, etc.), it tends to make the outlook worse.</p>
+<details><summary>base code (folded because it's long)</summary><div>
+<pre><code class="language-pythondef" data-lang="pythondef">    model.train()
+
+    # zero the parameter gradients
+    optimizer.zero_grad()
+
+    total_loss = 0.
+    for i, (inputs, labels) in tqdm(enumerate(data_loader), total=len(data_loader)):
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+
+        outputs = model(inputs)
+
+        loss = criterion(outputs, labels)
+        loss.backward()
+
+        # Gradient accumulation
+        if (i % grad_acc) == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+
+        total_loss += loss.item()
+
+    total_loss /= len(data_loader)
+    metrics = {'train_loss': total_loss}
+    return metrics
+
+
+def eval(model, data_loader, criterion, device):
+    model.eval()
+    num_correct = 0.
+
+    with torch.no_grad():
+        total_loss = 0.
+        for inputs, labels in tqdm(data_loader, total=len(data_loader)):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            loss = criterion(outputs, labels)
+
+            total_loss += loss.item()
+            num_correct += torch.sum(preds == labels.data)
+
+        total_loss /= len(data_loader)
+        num_correct /= len(data_loader.dataset)
+        metrics = {'valid_loss': total_loss, 'val_acc': num_correct}
+    return metrics
+
+
+def main():
+    epochs = 10
+
+    device = torch.device(&quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;)
+    model = get_model()
+    train_loader, val_loader = get_loaders()
+    optimizer, lr_scheduler = get_optimizer(model=model)
+    criterion = get_criterion()
+
+    # Model を multi-gpu したり、FP16 対応したりする
+    model = model.to(device)
+
+    print('Train start !')
+    for epoch in range(epochs):
+        print(f'epoch {epoch} start !')
+        metrics_train = train(model, train_loader, criterion, optimizer, device)
+        metrics_eval = eval(model, val_loader, criterion, device)
+
+        lr_scheduler.step()
+
+        # Logger 周りの処理
+        # print するためのごちゃごちゃした処理
+        print(f'epoch: {epoch} ', metrics_train, metrics_eval)
+
+        # tqdm 使ってたらさらにごちゃごちゃする処理をここに書く
+        # Model を保存するための処理
+        # Multi-GPU の場合さらに注意して書く
+</code></pre></details></div>
+<h3 id="222-catalyst">2.2.2 Catalyst</h3>
+<p>Catalyst の場合、ライブラリ内の <code>SupervisedRunner</code> に必要なものを渡せば終わりです。すごいスマートですね！
+また Accuracy や Dice 等のメジャーな metrics であれば Catalyst 内にあるため、それらを使えば自分で書くことはほとんどありません(独自 metrics の導入も比較的楽そうでした)。
+大抵デフォルトのままで困らなそうですが、自分で細かい処理を加えたい場合若干調べる必要がありそうです。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> catalyst
+<span style="color:#f92672">from</span> catalyst.dl <span style="color:#f92672">import</span> SupervisedRunner
+<span style="color:#f92672">from</span> catalyst.dl.callbacks <span style="color:#f92672">import</span> AccuracyCallback
+<span style="color:#f92672">from</span> share_funcs <span style="color:#f92672">import</span> get_model, get_loaders, get_criterion, get_optimizer
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>
+    num_class <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+    output_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./output/catalyst&#39;</span>
+
+    model <span style="color:#f92672">=</span> get_model()
+    train_loader, val_loader <span style="color:#f92672">=</span> get_loaders()
+    loaders <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;train&#34;</span>: train_loader, <span style="color:#e6db74">&#34;valid&#34;</span>: val_loader}
+
+    optimizer, lr_scheduler <span style="color:#f92672">=</span> get_optimizer(model<span style="color:#f92672">=</span>model)
+    criterion <span style="color:#f92672">=</span> get_criterion()
+
+    runner <span style="color:#f92672">=</span> SupervisedRunner(device<span style="color:#f92672">=</span>catalyst<span style="color:#f92672">.</span>utils<span style="color:#f92672">.</span>get_device())
+    runner<span style="color:#f92672">.</span>train(
+        model<span style="color:#f92672">=</span>model,
+        criterion<span style="color:#f92672">=</span>criterion,
+        optimizer<span style="color:#f92672">=</span>optimizer,
+        scheduler<span style="color:#f92672">=</span>lr_scheduler,
+        loaders<span style="color:#f92672">=</span>loaders,
+        logdir<span style="color:#f92672">=</span>output_path,
+        callbacks<span style="color:#f92672">=</span>[AccuracyCallback(num_classes<span style="color:#f92672">=</span>num_class, accuracy_args<span style="color:#f92672">=</span>[<span style="color:#ae81ff">1</span>])],
+        num_epochs<span style="color:#f92672">=</span>epochs,
+        main_metric<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;accuracy01&#34;</span>,
+        minimize_metric<span style="color:#f92672">=</span>False,
+        fp16<span style="color:#f92672">=</span>None,
+        verbose<span style="color:#f92672">=</span>True
+    )
+</code></pre></div><h3 id="223-ignite">2.2.3 Ignite</h3>
+<p>Ignite は Catalyst や後述する Lightning とは少し毛色が違います。
+下記のように <code>@trainer.on(Events.EPOCH_COMPLETED)</code> 等で自分が挟みたい処理を各タイミングに対して差し込んでいくようなイメージです。
+また Ignite も公式で Accuracy 等は用意されているのでメジャーな評価指標であれば自分で定義せずに済みそうです。</p>
+<p>一方使いこなすのに慣れが必要そうなのと、イベント挟み方の自由度が高い(trainder.append のような足し方もできる)ので、一歩間違えると全体の見通しが悪くなる可能性もあります。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">from</span> ignite.engine <span style="color:#f92672">import</span> Events, create_supervised_trainer, create_supervised_evaluator
+<span style="color:#f92672">from</span> ignite.metrics <span style="color:#f92672">import</span> Accuracy, Loss, RunningAverage
+<span style="color:#f92672">from</span> ignite.contrib.handlers <span style="color:#f92672">import</span> ProgressBar
+<span style="color:#f92672">from</span> share_funcs <span style="color:#f92672">import</span> get_model, get_loaders, get_criterion, get_optimizer
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">run</span>(epochs, model, criterion, optimizer, scheduler,
+        train_loader, val_loader, device):
+    trainer <span style="color:#f92672">=</span> create_supervised_trainer(model, optimizer, criterion, device<span style="color:#f92672">=</span>device)
+    evaluator <span style="color:#f92672">=</span> create_supervised_evaluator(
+        model,
+        metrics<span style="color:#f92672">=</span>{<span style="color:#e6db74">&#39;accuracy&#39;</span>: Accuracy(), <span style="color:#e6db74">&#39;nll&#39;</span>: Loss(criterion)},
+        device<span style="color:#f92672">=</span>device
+    )
+
+    RunningAverage(output_transform<span style="color:#f92672">=</span><span style="color:#66d9ef">lambda</span> x: x)<span style="color:#f92672">.</span>attach(trainer, <span style="color:#e6db74">&#39;loss&#39;</span>)
+
+    pbar <span style="color:#f92672">=</span> ProgressBar(persist<span style="color:#f92672">=</span>True)
+    pbar<span style="color:#f92672">.</span>attach(trainer, metric_names<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;all&#39;</span>)
+
+    <span style="color:#a6e22e">@trainer.on</span>(Events<span style="color:#f92672">.</span>EPOCH_COMPLETED)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">log_training_results</span>(engine):
+        scheduler<span style="color:#f92672">.</span>step()
+        evaluator<span style="color:#f92672">.</span>run(train_loader)
+        metrics <span style="color:#f92672">=</span> evaluator<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>metrics
+        avg_accuracy <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;accuracy&#39;</span>]
+        avg_nll <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;nll&#39;</span>]
+        pbar<span style="color:#f92672">.</span>log_message(
+            <span style="color:#e6db74">&#34;Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}&#34;</span>
+            <span style="color:#f92672">.</span>format(engine<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>epoch, avg_accuracy, avg_nll)
+        )<span style="color:#a6e22e">@trainer.on</span>(Events<span style="color:#f92672">.</span>EPOCH_COMPLETED)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">log_validation_results</span>(engine):
+        evaluator<span style="color:#f92672">.</span>run(val_loader)
+        metrics <span style="color:#f92672">=</span> evaluator<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>metrics
+        avg_accuracy <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;accuracy&#39;</span>]
+        avg_nll <span style="color:#f92672">=</span> metrics[<span style="color:#e6db74">&#39;nll&#39;</span>]
+        pbar<span style="color:#f92672">.</span>log_message(
+            <span style="color:#e6db74">&#34;Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}&#34;</span>
+            <span style="color:#f92672">.</span>format(engine<span style="color:#f92672">.</span>state<span style="color:#f92672">.</span>epoch, avg_accuracy, avg_nll))
+
+        pbar<span style="color:#f92672">.</span>n <span style="color:#f92672">=</span> pbar<span style="color:#f92672">.</span>last_print_n <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    trainer<span style="color:#f92672">.</span>run(train_loader, max_epochs<span style="color:#f92672">=</span>epochs)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+    train_loader, val_loader <span style="color:#f92672">=</span> get_loaders()
+    model <span style="color:#f92672">=</span> get_model()
+    device <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;cuda&#39;</span> <span style="color:#66d9ef">if</span> torch<span style="color:#f92672">.</span>cuda<span style="color:#f92672">.</span>is_available() <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#39;cpu&#39;</span>
+    optimizer, scheduler <span style="color:#f92672">=</span> get_optimizer(model)
+    criterion <span style="color:#f92672">=</span> get_criterion()
+
+    run(
+        epochs<span style="color:#f92672">=</span>epochs,
+        model<span style="color:#f92672">=</span>model,
+        criterion<span style="color:#f92672">=</span>criterion,
+        optimizer<span style="color:#f92672">=</span>optimizer,
+        scheduler<span style="color:#f92672">=</span>scheduler,
+        train_loader<span style="color:#f92672">=</span>train_loader,
+        val_loader<span style="color:#f92672">=</span>val_loader,
+        device<span style="color:#f92672">=</span>device
+    )
+</code></pre></div><h3 id="224-lightning">2.2.4 Lightning</h3>
+<p>Lightning の場合、<code>LightningModule</code> を継承したクラス(Trainer クラス的なもの)を定義する必要があります。</p>
+<p>各step(ex. <code>training_step</code>)の名前は決まっており、各 step を自分で埋めていきます。
+また学習の実行自体は <code>pytorch_lightning.Trainer</code> クラスによって行われ、GPU や MixedPrecision、gradient accumulation 等の設定はこのクラスで設定します。
+また metrics については Lightning 内には用意されていないため、自分で記載する必要があります。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">import</span> pytorch_lightning <span style="color:#f92672">as</span> pl
+<span style="color:#f92672">from</span> pytorch_lightning <span style="color:#f92672">import</span> Trainer
+<span style="color:#f92672">from</span> share_funcs <span style="color:#f92672">import</span> get_model, get_loaders, get_criterion, get_optimizer
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyLightninModule</span>(pl<span style="color:#f92672">.</span>LightningModule):
+    <span style="color:#66d9ef">def</span> __init__(self, num_class):
+        super(MyLightninModule, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>model <span style="color:#f92672">=</span> get_model(num_class<span style="color:#f92672">=</span>num_class)
+        self<span style="color:#f92672">.</span>criterion <span style="color:#f92672">=</span> get_criterion()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, x):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>model(x)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">training_step</span>(self, batch, batch_idx):
+        <span style="color:#75715e"># REQUIRED</span>
+        x, y <span style="color:#f92672">=</span> batch
+        y_hat <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>forward(x)
+        loss <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>criterion(y_hat, y)
+        logs <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;train_loss&#39;</span>: loss}
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;loss&#39;</span>: loss, <span style="color:#e6db74">&#39;log&#39;</span>: logs, <span style="color:#e6db74">&#39;progress_bar&#39;</span>: logs}
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">validation_step</span>(self, batch, batch_idx):
+        <span style="color:#75715e"># OPTIONAL</span>
+        x, y <span style="color:#f92672">=</span> batch
+        y_hat <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>forward(x)
+        preds <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>argmax(y_hat, dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;val_loss&#39;</span>: self<span style="color:#f92672">.</span>criterion(y_hat, y), <span style="color:#e6db74">&#39;correct&#39;</span>: (preds <span style="color:#f92672">==</span> y)<span style="color:#f92672">.</span>float()}
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">validation_end</span>(self, outputs):
+        <span style="color:#75715e"># OPTIONAL</span>
+        avg_loss <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>stack([x[<span style="color:#e6db74">&#39;val_loss&#39;</span>] <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> outputs])<span style="color:#f92672">.</span>mean()
+        acc <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat([x[<span style="color:#e6db74">&#39;correct&#39;</span>] <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> outputs])<span style="color:#f92672">.</span>mean()
+        logs <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;val_loss&#39;</span>: avg_loss, <span style="color:#e6db74">&#39;val_acc&#39;</span>: acc}
+        <span style="color:#66d9ef">return</span> {<span style="color:#e6db74">&#39;avg_val_loss&#39;</span>: avg_loss, <span style="color:#e6db74">&#39;log&#39;</span>: logs}
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">configure_optimizers</span>(self):
+        <span style="color:#75715e"># REQUIRED</span>
+        optimizer, scheduler <span style="color:#f92672">=</span> get_optimizer(model<span style="color:#f92672">=</span>self<span style="color:#f92672">.</span>model)
+        <span style="color:#66d9ef">return</span> [optimizer], [scheduler]
+
+    <span style="color:#a6e22e">@pl.data_loader</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">train_dataloader</span>(self):
+        <span style="color:#75715e"># REQUIRED</span>
+        <span style="color:#66d9ef">return</span> get_loaders()[<span style="color:#ae81ff">0</span>]
+
+    <span style="color:#a6e22e">@pl.data_loader</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">val_dataloader</span>(self):
+        <span style="color:#75715e"># OPTIONAL</span>
+        <span style="color:#66d9ef">return</span> get_loaders()[<span style="color:#ae81ff">1</span>]
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+    epochs <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>
+    num_class <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+    output_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;./output/lightning&#39;</span>
+
+    model <span style="color:#f92672">=</span> MyLightninModule(num_class<span style="color:#f92672">=</span>num_class)
+
+    <span style="color:#75715e"># most basic trainer, uses good defaults</span>
+    trainer <span style="color:#f92672">=</span> Trainer(
+        max_nb_epochs<span style="color:#f92672">=</span>epochs,
+        default_save_path<span style="color:#f92672">=</span>output_path,
+        gpus<span style="color:#f92672">=</span>[<span style="color:#ae81ff">0</span>],
+        <span style="color:#75715e"># use_amp=False,</span>
+    )
+    trainer<span style="color:#f92672">.</span>fit(model)
+</code></pre></div><h2 id="23-各フレームワークで実行したときのコンソール画面とアウトプット">2.3 各フレームワークで実行したときのコンソール画面とアウトプット</h2>
+<h3 id="231-デフォルト">2.3.1 デフォルト</h3>
+<h4 id="コンソール画面">コンソール画面</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$ python train_default.py
+Files already downloaded and verified
+Files already downloaded and verified
+Train start !
+epoch 0 start !
+100%|_____| 196/196 [00:05&lt;00:00, 33.44it/s]
+100%|_____| 40/40 [00:00&lt;00:00, 50.43it/s]
+epoch: 0  {&#39;train_loss&#39;: 1.3714478426441854} {&#39;valid_loss&#39;: 0.992230711877346, &#39;val_acc&#39;: tensor(0, device=&#39;cuda:0&#39;)}
+</code></pre></div><h4 id="アウトプット">アウトプット</h4>
+<p>なし</p>
+<h3 id="231-catalyst">2.3.1 Catalyst</h3>
+<h4 id="コンソール画面-1">コンソール画面</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$ python train_catalyst.py
+1/5 * Epoch (train): 100% 196/196 [00:06&lt;00:00, 30.09it/s, accuracy01=61.250, loss=1.058]
+1/5 * Epoch (valid): 100% 40/40 [00:00&lt;00:00, 49.75it/s, accuracy01=56.250, loss=1.053]
+[2019-12-14 08:47:33,819]
+1/5 * Epoch 1 (train): _base/lr=0.0010 | _base/momentum=0.9000 | _timers/_fps=58330.0450 | _timers/batch_time=0.0071 | _timers/data_time=0.0045 | _timers/model_time=0.0026 | accuracy01=52.0863 | loss=1.3634
+1/5 * Epoch 1 (valid): _base/lr=0.0010 | _base/momentum=0.9000 | _timers/_fps=77983.3850 | _timers/batch_time=0.0146 | _timers/data_time=0.0126 | _timers/model_time=0.0019 | accuracy01=65.6250 | loss=0.9848
+2/5 * Epoch (train): 100% 196/196 [00:06&lt;00:00, 30.28it/s, accuracy01=63.750, loss=0.951]
+</code></pre></div><h4 id="アウトプット-1">アウトプット</h4>
+<ul>
+<li>Tensorboard 等はデフォルトで出力されます</li>
+<li>weight も保存されます</li>
+<li>デフォルトで code まで残してくれるのはちょっとうれしいですね</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">catalyst
+├── checkpoints
+│   └── train.1.exception_KeyboardInterrupt.pth
+├── code
+│   ├── share_funcs.py
+│   ├── train_catalyst.py
+│   ├── train_default.py
+│   └── train_lightning.py
+├── log.txt
+└── train_log
+    └── events.out.tfevents.1576306176.FujimotoMac.local.41575.0
+</code></pre></div><h3 id="232-ignite">2.3.2 Ignite</h3>
+<h4 id="コンソール画面-2">コンソール画面</h4>
+<p>Catalyst よりもややスッキリした画面です。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$ python train_ignite.pyEpoch [1/10]: [196/196] 100%|________________, loss=1.14 [00:05&lt;00:00]
+Training Results-Epoch: 1 Avg accuracy: 0.69 Avg loss: 0.88
+Validation Results-Epoch: 1 Avg accuracy: 0.65 Avg loss: 0.98
+Epoch [2/10]: [196/196] 100%|________________, loss=0.813 [00:05&lt;00:00]
+Training Results-Epoch: 2 Avg accuracy: 0.78 Avg loss: 0.65
+Validation Results-Epoch: 2 Avg accuracy: 0.70 Avg loss: 0.83
+</code></pre></div><h4 id="output">Output</h4>
+<ul>
+<li>None</li>
+<li>It seems that you need to write the part to save it yourself or use the class in Ignite</li>
+</ul>
+<h3 id="233-lightning">2.3.3 Lightning</h3>
+<h4 id="console-screen">Console screen</h4>
+<p>By default, Lightning seems to display everything on the bar in tqdm.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$python train_lightning.py
+Epoch 1: 100%|_____________| 236/236 [00:07&lt;00:00, 30.75batch/s, batch_nb=195, gpu=0, loss=1.101, train_loss=1.06, v_nb=5]
+Epoch 4: 41%|_____________| 96/236 [00:03&lt;00:04, 32.28batch/s, batch_nb=95, gpu=0, loss=0.535, train_loss=0.524, v_nb=5]
+</code></pre></div><h4 id="output-1">Output</h4>
+<ul>
+<li>Lightning creates and saves the next directory like version_x if the directories are duplicated. (In some cases it&rsquo;s a hindrance, and sometimes I define my own checkpoint.)</li>
+<li>In the case of Lightning, the parameters passed to LightningModule are automatically saved in meta_tags.csv</li>
+<li>Log for Tensorboard is also created by default</li>
+<li>weights are also stored in checkpoints
+-By default, <code>_ckpt_epoch_X.ckpt</code> is created for each epoch, and it seems that the ckpt of the old epoch is deleted.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">lightning
+└── lightning_logs
+    ├── version_0
+    │  └── checkpoints
+    │  └── _ckpt_epoch_4.ckpt
+    │  ├── media
+    │  ├── meta.experiment
+    │  ├── meta_tags.csv
+    │  ├── metrics.csv
+    │  └── tf
+    │  └── events.out.tfevents.1576305970
+    ├── version_1
+    │  └── checkpoints
+    │  └── _ckpt_epoch_3.ckpt
+    │  ├── ...
+</code></pre></div><h2 id="24-other-highlights">2.4 Other highlights</h2>
+<p>Both are compatible with Early Stopping etc.</p>
+<h3 id="241-catalyst">2.4.1 Catalyst</h3>
+<ul>
+<li>Functions for reproducibility such as <code>catalyst.utils.set_global_seed()</code> are also provided</li>
+<li>Functions that can write Dataset in a simplified form are also supported
+-<code>create_dataset, create_dataframe, prepare_dataset_labeling, split_dataframe</code>
+-<code>catalyst.utils.pandas</code></li>
+<li>Multi GPU and FP16 are also supported</li>
+<li>High quality official tutorial</li>
+<li>Officially also has a Docker file, and it seems that it is aiming for a framework that is conscious of configuration management around infrastructure (maybe)</li>
+</ul>
+<h3 id="242-ignite">2.4.2 Ignite</h3>
+<ul>
+<li>Tensorboard and Logger are also inside Ignite and can be called and used</li>
+<li>Seems to have the highest degree of freedom
+-It seems that you need to get used to the way of holding the event</li>
+<li>Located under official repository</li>
+</ul>
+<h3 id="243-lightning">2.4.3 Lightning</h3>
+<ul>
+<li>Multi GPU and FP16 are also supported</li>
+</ul>
+<h2 id="25-what-would-you-recommend">2.5 What would you recommend</h2>
+<p>Both have potential, so they are not compulsory. Below are personal impressions.</p>
+<ul>
+<li>I&rsquo;m new to image competition, and I&rsquo;m not sure what to do
+-→ <strong>PyTorch Catalyst</strong></li>
+<li>I am used to image competitions and want to participate in competitions with a murderous intention (strong feeling to get a gold medal)
+-→ <strong>PyTorch Lightning</strong> or <strong>PyTorch Catalyst</strong></li>
+<li>I want to work on various image-related tasks, not limited to Classification and Segmentation
+-→ <strong>PyTorch Lightning</strong> or <strong>PyTorch Catalyst</strong>
+-There is also sample code for reinforcement learning in Catalyst</li>
+<li>I want to write on the dress
+-→ <strong>PyTorch Ignite</strong></li>
+<li>PyTorch Officially want to use the framework at your knees
+-→ <strong>PyTorch Ignite</strong>
+-Ignite is in the official PyTorch repository</li>
+</ul>
+<h1 id="3-to-freely-switch-between-catalyst-ignite-and-lightning">3. To freely switch between Catalyst, Ignite, and Lightning</h1>
+<p>You can narrow down the frameworks you use here, but if you write each framework so that it&rsquo;s easy to go back and forth, you shouldn&rsquo;t have any trouble. ** So here&rsquo;s what you might want to keep in mind as you scatter the PyTorch code.</p>
+<ul>
+<li>Take out the contents of the loop as much as possible
+-It seems good to be aware that you can extract the processing of each step (processing for each batch in ex. train)
+-At least once you start writing up to the triple loop, it seems good to be aware of whether you can extract the contents of the loop</li>
+<li>Don&rsquo;t add too many function arguments
+-I think you can use Class as instance variable or combine Config as one</li>
+<li>Create a function that calls optimizer or model
+-Personal impression</li>
+<li>Combine configs into one
+-When participating in the competition, it is easier to manage the settings in one place as much as possible
+-Example
+-Create Config class
+-Make something like a dictionary that is easy to call with Addict etc.
+-Read settings written in YAML file</li>
+</ul>
+<h1 id="4-finally">4. Finally</h1>
+<p>In this article, we compared PyTorch Catalyst, Ignite, and Lightning.
+Although they all agree that they want to eliminate the fixed phrases, they each have their own personality.
+Every framework has potential, so if you feel it and feel that it suits you, you should come out to the competition and try it out.</p>
+<p>Have a good Kaggle(with PyTorch) life!</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

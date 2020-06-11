@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [TF2.0 Application] High-speed parallelization of general-purpose Data Augmentation with the strong dataset function of TF | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [TF2.0 Application] High-speed parallelization of general-purpose Data Augmentation with the strong dataset function of TF</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 8, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow">TensorFlow</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/joblib">joblib</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/tensorflow2.0">TensorFlow2.0</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>This article is the previous article &ldquo;<a href="https://qiita.com/Suguru_Toyohara/items/820b0dad955ecd91c7f3">The story that the dataset function that can be used in TensorFlow was strong</a>&quot;&quot;[[TF2.0application]tf.data.&ldquo;DataAugmentationisfasterthanDataAugmentation]&quot;(<a href="https://qiita.com/Suguru_Toyohara/items/49c2914b21615b554afa)%22,">https://qiita.com/Suguru_Toyohara/items/49c2914b21615b554afa)&quot;,</a> which is a slightly enhanced version of Data Augmentation.</p>
+<p>While using <code>tf.data.Dataset</code> for speed enhancement and <code>keras.preprocessing.image</code> system
+** We have succeeded in realizing code that can be processed in parallel. **
+I will post the actual mechanism and how it came to this point after the code.</p>
+<p>Here is the code</p>
+<h2 id="environmental-arrangement">Environmental arrangement</h2>
+<p>First, prepare the experimental environment.</p>
+<pre><code class="language-python:init" data-lang="python:init">import tensorflow as tf
+import tensorflow.keras as keras
+import matplotlib.pyplot as plt
+import sklearn
+import numpy as np
+from tqdm import tqdm
+(tr_x,tr_y),(te_x,te_y)=keras.datasets.cifar10.load_data()
+tr_x, te_x = tr_x/255.0, te_x/255.0
+tr_y, te_y = tr_y.reshape(-1,1), te_y.reshape(-1,1)
+model = keras.models.Sequential()
+model.add(keras.layers.Convolution2D(32,3,padding=&quot;same&quot;,activation=&quot;relu&quot;,input_shape=(32,32,3)))
+model.add(keras.layers.Convolution2D(32,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(32,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.MaxPooling2D())
+model.add(keras.layers.Convolution2D(128,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(128,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(128,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(128,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(128,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.MaxPooling2D())
+model.add(keras.layers.Convolution2D(256,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(256,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.Convolution2D(256,3,padding=&quot;same&quot;,activation=&quot;relu&quot;))
+model.add(keras.layers.GlobalAveragePooling2D())
+model.add(keras.layers.Dense(1000,activation=&quot;relu&quot;))
+model.add(keras.layers.Dense(128,activation=&quot;relu&quot;))
+model.add(keras.layers.Dense(10,activation=&quot;softmax&quot;))
+model.compile(loss=&quot;sparse_categorical_crossentropy&quot;,metrics=[&quot;accuracy&quot;])
+</code></pre><p>#Data Augmentation example</p>
+<h2 id="check-data">Check data</h2>
+<p>First, let&rsquo;s express <code>keras.preprocessing.image.random_rotate</code> so that it can be done with <code>.map</code>.</p>
+<pre><code class="language-python:random_rotate" data-lang="python:random_rotate">from tensorflow.keras.preprocessing.image import random_rotation
+from joblib import Parallel, delayed
+
+def r_rotate(imgs, degree):
+    pics=imgs.numpy()
+    degree = degree.numpy()
+    
+    if tf.rank(imgs)==4:
+        X=Parallel(n_jobs=-1)( [delayed(random_rotation)(pic, degree, 0, 1, 2) for pic in pics])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        X=random_rotation(pics, degree, 0, 1, 2)
+    return X
+@tf.function
+def random_rotate(imgs, label):
+    x = tf.py_function(r_rotate,[imgs,30],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+</code></pre><p>Now it really works. Let&rsquo;s move it and see the data.</p>
+<pre><code class="language-python:" data-lang="python:">labels = np.array([
+    'airplane',
+    'automobile',
+    'bird',
+    'cat',
+    'deer',
+    'dog',
+    'frog',
+    'horse',
+    'ship',
+    'truck'])
+tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128).map(random_rotate)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+for b_img,b_label in tr_ds:
+    for i, img,label in zip(range(25),b_img,b_label):
+        plt.subplot(5,5,i+1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        plt.imshow(img)
+        plt.xlabel(labels[label])
+    break
+plt.show()
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/e812eeb0-f69c-6be3-98af-7e4963e90a6b.png" alt="CIFAR10-random-rotate-sample.png"></p>
+<h2 id="speed-test">Speed test</h2>
+<p>Let&rsquo;s check how fast it actually is.
+First of all, the speed at &ldquo;<a href="https://qiita.com/Suguru_Toyohara/items/49c2914b21615b554afa">[TF2.0 Application] tf.data.Dataset to accelerate Data Augmentation</a>&rdquo; was as follows.</p>
+<pre><code class="language-:" data-lang=":">Train on 50000 samples
+50000/50000 [==============================]-9s 175us/sample-loss: 2.3420-accuracy: 0.1197
+Train on 50000 samples
+50000/50000 [=============================]-7s 131us/sample-loss: 2.0576-accuracy: 0.2349
+Train on 50000 samples
+50000/50000 [=============================]-7s 132us/sample-loss: 1.7687-accuracy: 0.3435
+Train on 50000 samples
+50000/50000 [=============================]-7s 132us/sample-loss: 1.5947-accuracy: 0.4103
+Train on 50000 samples
+50000/50000 [=============================]-7s 132us/sample-loss: 1.4540-accuracy: 0.4705
+CPU times: user 1min 33s, sys: 8.03 s, total: 1min 41s
+Wall time: 1min 14s
+</code></pre><p>Next, I will post the code and results from the previous implementation.</p>
+<pre><code class="language-python:dataset" data-lang="python:dataset">%%time
+tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000)
+tr_ds = tr_ds.batch(tr_x.shape[0]).map(random_rotate).repeat(5)
+tr_ds = tr_ds.prefetch(tf.data.experimental.AUTOTUNE)
+
+for img,label in tr_ds:
+    model.fit(x=img,y=label,batch_size=128)
+</code></pre><pre><code class="language-:" data-lang=":">Train on 50000 samples
+50000/50000 [=============================]-9s 176us/sample-loss: 1.3960-accuracy: 0.5021
+Train on 50000 samples
+50000/50000 [=============================]-9s 173us/sample-loss: 1.2899-accuracy: 0.5430
+Train on 50000 samples50000/50000 [=============================]-9s 175us/sample-loss: 1.2082-accuracy: 0.5750
+Train on 50000 samples
+50000/50000 [=============================]-9s 171us/sample-loss: 1.1050-accuracy: 0.6133
+Train on 50000 samples
+50000/50000 [=============================]-7s 132us/sample-loss: 1.0326-accuracy: 0.6405
+CPU times: user 52 s, sys: 15.4 s, total: 1min 7s
+Wall time: 48.7 s
+</code></pre><img width="709" alt="random_rotate_cpu_and_GPU_processing_rate" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/b162cb0b-f1c1-898f-a2f9-8b26bdf7ee3b.png">
+<p>Is it a feeling that the pre-processing Map is working on the CPU while the GPU moves up to 90%?
+Since it is 48.7 seconds in total, it can be reduced by about 25 seconds.
+Also, the time without Map was 35.1 seconds, so you can see that Data Augmentation can be done quite quickly.
+And if you follow the same procedure, you can **all <code>keras.preprocessing.image</code>s. **</p>
+<h1 id="porting-data-augmentation-possible-with-keras">Porting Data Augmentation possible with Keras</h1>
+<h2 id="preparation">Preparation</h2>
+<pre><code class="language-python:show_data" data-lang="python:show_data">def show_data(tf_dataset):
+    for b_img,b_label in tf_dataset:
+        for i, img,label in zip(range(25),b_img,b_label):
+            plt.subplot(5,5,i+1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.grid(False)
+            plt.imshow(img)
+            plt.xlabel(labels[label])
+        break
+    plt.show()
+</code></pre><h2 id="random_shift">random_shift</h2>
+<p>You can specify up to a percentage of the random shift.</p>
+<pre><code class="language-python:random_shift" data-lang="python:random_shift">from tensorflow.keras.preprocessing.image import random_shift
+from joblib import Parallel, delayed
+def r_shift(imgs,wrg,hrg):
+    pics=imgs.numpy()
+    w = wrg.numpy()
+    h = wrg.numpy()
+
+    if tf.rank(imgs)==4:
+        X=Parallel(n_jobs=-1)( [delayed(random_shift)(pic,w,h,0,1,2) for pic in pics])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        X=random_shift(pics, w,h, 0, 1, 2)
+    return X
+@tf.function
+def tf_random_shift(imgs, label):
+    x = tf.py_function(r_shift,[imgs,0.3,0.3],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+</code></pre><pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128).map(tf_random_shift)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/f6a0342d-3bf1-0fd7-b9f2-ceabc80a5d4c.png" alt="CIFAR10-random-shift.png"></p>
+<h2 id="random_shear">random_shear</h2>
+<p>It can be distorted. (I am not familiar with the details)</p>
+<pre><code class="language-python:random_shear" data-lang="python:random_shear">from tensorflow.keras.preprocessing.image import random_shear
+
+def r_shear(imgs,degree):
+    pics=imgs.numpy()
+    degree = degree.numpy()
+    if tf.rank(imgs)==4:
+        X=Parallel(n_jobs=-1)( [delayed(random_shear)(pic,degree,0,1,2) for pic in pics])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        X=random_shear(pics,degree,0,1,2)
+    return X
+@tf.function
+def tf_random_shear(imgs, label):
+    x = tf.py_function(r_shear,[imgs,30],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+
+</code></pre><pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128).map(tf_random_shear)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/b14cde89-535f-8e89-315f-4ce35e3d78e1.png" alt="CIFAR10-random-shear.png"></p>
+<h2 id="random_zoom">random_zoom</h2>
+<p>Zoom randomly.</p>
+<pre><code class="language-python:random_zoom" data-lang="python:random_zoom">from tensorflow.keras.preprocessing.image import random_zoom
+
+def r_zoom(imgs,range_w,range_h):
+    pics=imgs.numpy()
+    zoom_range = (range_w.numpy(),range_h.numpy())
+
+    if tf.rank(imgs)==4:
+        X=Parallel(n_jobs=-1)( [delayed(random_zoom)(pic,zoom_range,0,1,2) for pic in pics])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        X=random_zoom(pics,zoom_range,0,1,2)
+    return X
+@tf.function
+def tf_random_zoom(imgs, label):
+    x = tf.py_function(r_zoom,[imgs,0.5,0.5],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+
+
+
+</code></pre><pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128).map(tf_random_zoom)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/aa562fd7-6cce-5691-1a9c-b3ee19825ace.png" alt="CIFAR10-random-zoom.png"></p>
+<p>It looks like a normal size&hellip; let&rsquo;s improve it.</p>
+<h3 id="improvement">Improvement</h3>
+<pre><code class="language-python:enhanced" data-lang="python:enhanced">from tensorflow.keras.preprocessing.image import random_zoom
+import random
+def zoom_range_gen(random_state):
+    while True:
+        x=random.uniform(random_state[0],random_state[1])
+        yield (x,x)
+def r_zoom(imgs):
+    pics=imgs.numpy()
+    random_state = [0.5,1.5]
+    if tf.rank(imgs)==4:
+        X=Parallel(n_jobs=-1)( [delayed(random_zoom)(pic,(x,y),0,1,2) for pic,(x,y) in zip(pics,zoom_range_gen(random_state))])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        zoom_range=next(zoom_range_gen)
+        X=random_zoom(pics,zoom_range,0,1,2)
+    return X
+@tf.function
+def tf_random_zoom_enhanced(imgs, label):
+    x = tf.py_function(r_zoom,[imgs],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+
+</code></pre><p>Let&rsquo;s check the data</p>
+<pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128).map(tf_random_zoom_enhanced)plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/f3928f19-447f-3d11-8949-5d3d0a2051f2.png" alt="CIFAR10-random-zoom-enhanced.png"></p>
+<p>It feels good! !</p>
+<h1 id="implement-another-augmentation">Implement another Augmentation.</h1>
+<p>Next, implement the Augmentation here on this blog &ldquo;Summary of Data Augmentation of NumPy Images&rdquo; (<a href="https://www.kumilog.net/entry/numpy-data-augmentation)%22">https://www.kumilog.net/entry/numpy-data-augmentation)&quot;</a>
+Numpy-based Augmentation can be implemented with it because Keras&rsquo;s Augmentation is Numpy-based.</p>
+<p>I will quote the cat image from the blog &ldquo;<a href="https://www.kumilog.net/entry/numpy-data-augmentation">Data Augmentation summary of images on NumPy</a>&rdquo;.
+The contents are also quoted from this implementation. I will also write the source in the code.</p>
+<h2 id="random-flip">random-flip</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/0141008e-acad-bdb4-146e-40b0fc40e79f.png" alt="random_flip"></p>
+<blockquote>
+<p><a href="https://www.kumilog.net/entry/numpy-data-augmentation">Here</a></p>
+</blockquote>
+<p>Let&rsquo;s implement random left-right inversion. This is already implemented in the TF series, so I will divert it.</p>
+<pre><code class="language-python:random-flip" data-lang="python:random-flip">@tf.function
+def flip_left_right(image,label):
+    return tf.image.random_flip_left_right(image),label
+
+@tf.function
+def flip_up_down(image,label):
+    return tf.image.random_flip_up_down(image),label
+
+
+</code></pre><pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128)
+tr_ds = tr_ds.map(flip_left_right).map(flip_up_down)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/fffdb3ba-e26e-580c-027b-f67adbcd4442.png" alt="CIFAR10-random-flip.png"></p>
+<h2 id="random-clip">random-clip</h2>
+<p>Here we use Scale Augmentation in <a href="https://www.kumilog.net/entry/numpy-data-augmentation">Blog</a>.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/61504c36-de24-cb61-464e-44caf97d6c79.png" alt="Scale Augmentation"></p>
+<blockquote>
+<p><a href="https://www.kumilog.net/entry/numpy-data-augmentation">Here</a></p>
+</blockquote>
+<p>As for the implementation, I also referred to the <a href="https://www.kumilog.net/entry/numpy-data-augmentation">blog</a>.</p>
+<pre><code class="language-python:random-clip" data-lang="python:random-clip">from PIL import Image
+
+def random_crop(pic, crop_size=(28, 28)):
+    try:
+        h, w, c = pic.shape
+    except ValueError:
+        raise ValueError(&quot;4Ds image can't decode&quot;)
+    # Determine the upper left point of the image in the specified section
+    top = np.random.randint(0, h-crop_size[0])
+    left = np.random.randint(0, w-crop_size[1])
+
+    # Decide the bottom right point to fit the size
+    bottom = top + crop_size[0]
+    right = left + crop_size[1]
+
+    # Cut out only the intersection of the upper left point and the lower right point
+    pic = pic[top:bottom, left:right, :]
+    return pic
+
+def scale_augmentation(pic, scale_range=(38, 80), crop_size=32):
+    scale_size = np.random.randint(*scale_range)
+    Ppic = Image.fromarray(pic)
+    Ppic = Ppic.resize((scale_size,scale_size),resample=1)
+    pic = np.asarray(Ppic)
+
+    return random_crop(pic, (crop_size, crop_size))
+
+def r_crop(imgs):
+    pics=imgs.numpy()
+    pics=np.asarray(pics * 255.0,dtype=np.uint8)
+
+    random_state = (38,60)
+    crop_size=32
+    if tf.rank(imgs)==4:
+        X=Parallel(n_jobs=-1)((delayed(scale_augmentation)(pic,random_state,crop_size) for pic in pics ])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        X=scale_augmentation(pics,random_state,crop_size)
+    
+    X=X/255.0
+    return X
+@tf.function
+def tf_random_crop(imgs, label):
+    x = tf.py_function(r_crop,[imgs],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+
+</code></pre><pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128)
+tr_ds = tr_ds.map(tf_random_crop)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/23fe3144-7b97-4753-f4bc-44bf7d2bdae1.png" alt="CIFAR10-random-crop.png"></p>
+<h2 id="random-erasing">random-erasing</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/2cd1e982-4c31-d319-17d4-e50f0275b662.png" alt="random-erasing"></p>
+<blockquote>
+<p><a href="https://www.kumilog.net/entry/numpy-data-augmentation">Here</a></p>
+</blockquote>
+<p>Implement this. The implementation is based on <a href="https://www.kumilog.net/entry/numpy-data-augmentation">Blog</a>.</p>
+<pre><code class="language-python:random_erasing" data-lang="python:random_erasing">def random_erasing(pic, p=0.5, s=(0.02, 0.4), r=(0.3, 3)):
+    # Whether to mask
+    if np.random.rand()&gt; p:
+        return pic
+
+    # Randomly decide the pixel value to mask
+    mask_value = np.random.random()
+
+    try:
+        h, w, c = pic.shape
+    except ValueError:
+        raise ValueError(&quot;4Ds image can't decode&quot;)
+    # Randomly determine the size of the mask from the range of s (0.02 to 0.4) times the original image
+    mask_area = np.random.randint(h * w * s[0], h * w * s[1])
+
+    # Randomly determine the aspect ratio of the mask from the range of r (0.3 to 3)
+    mask_aspect_ratio = np.random.rand() * r[1] + r[0]
+
+    # Determine mask height and width from mask size and aspect ratio
+    # Correct the calculated height and width (either of them) may be larger than the original image.
+    mask_height = int(np.sqrt(mask_area / mask_aspect_ratio))
+    if mask_height&gt; h-1:
+        mask_height = h-1
+    mask_width = int(mask_aspect_ratio * mask_height)
+    if mask_width &gt;w-1:
+        mask_width = w-1
+
+    top = np.random.randint(0, h-mask_height)
+    left = np.random.randint(0, w-mask_width)
+    bottom = top + mask_height
+    right = left + mask_width
+    pic[top:bottom, left:right, :].fill(mask_value)
+    return pic
+
+def r_erase(imgs):
+    pics=imgs.numpy()
+
+    if tf.rank(imgs)==4:X=Parallel(n_jobs=-1)((delayed(random_erasing)(pic) for pic in pics ])
+        X=np.asarray(X)
+    elif tf.rank(imgs)==3:
+        X=random_erasing(pics)
+    
+    return X
+@tf.function
+def tf_random_erase(imgs, label):
+    x = tf.py_function(r_erase,[imgs],[tf.float32])
+    X = x[0]
+    X.set_shape(imgs.shape)
+    return X, label
+
+</code></pre><pre><code class="language-python:" data-lang="python:">tr_ds = tf.data.Dataset.from_tensor_slices((tr_x,tr_y)).shuffle(40000).batch(128)
+tr_ds = tr_ds.map(tf_random_erase)
+
+plt.figure(figsize=(10,10),facecolor=&quot;white&quot;)
+show_data(tr_ds)
+</code></pre><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/92e089e5-def5-4727-17e9-f3b301d2ac1e.png" alt="CIFAR10-random-erase.png"></p>
+<p>With CIFAR10, I got a little overwhelmed, and there are some things I do not understand &hellip;</p>
+<p>#Important points for implementing Augmentation generically</p>
+<p>Here are some notes on writing code.
+Since it is a basic matter, I think some people may think it is,
+I was surprised to find all the pitfalls, so make a note here.</p>
+<h2 id="about-tfdatadatasetmap">About <code>tf.data.Dataset.map</code></h2>
+<p>There are some pitfalls here, but the behavior during mapping is the <code>Tensor</code> type.
+&hellip;What I want to say is that **Eager Execution does not fire in Tensor handled by <code>.map</code>. **
+In other words, normal multiplication can be neatly converted into TF operation with <code>@tf.function</code>,
+Operations that cannot be done without a real number, such as <code>.numpy()</code> that are not, cannot be used. **
+It would be easy to understand if you just think that it is described as an expression such as x+y=z.</p>
+<p>So what you should use is to turn on eager mode.
+What I should do is use **<code>tf.py_function</code>. **</p>
+<h2 id="what-are-eager-mode-and-graph-mode">What are Eager Mode and Graph Mode?</h2>
+<p>Graph mode is like a formula. This is what I did with Sess.run in TF1.x series.
+By designing an entity like the formula x+y=z once and then assigning a value to a variable (ie by running the Session)
+2+3=5 For Tensor of Z, the number 5 comes out for the first time. This is where it was hard to understand the TF1.x system.</p>
+<p>Eager Mode is such that when you enter an expression, the value executed immediately is output.
+It seems to be easy to understand because Sess.run is automatically executed and Graph is retained.
+(I&rsquo;m not very familiar with this, so I hope you can refer to the official guide.)
+(Please tell me if you are wrong)</p>
+<h2 id="about-tfpy_function">About <code>tf.py_function</code></h2>
+<p><code>tf.py_function</code> is a function that can be executed only in a part of Eager Mode as described in <a href="https://www.tensorflow.org/api_docs/python/tf/py_function">Guide</a>.
+Here, in other words, set up a black box function f(x), specify only what comes out and execute it in Graph Mode
+It feels like.
+As an expression, the TF side wants an expression such as x+f(a,b)=y, and what is needed here is the input and output data types.</p>
+<pre><code class="language-python:py_function" data-lang="python:py_function">def function (input 1, input 2):
+    # Run here in Eager Mode
+    # Processing something
+    return output 1, output 2
+
+[Output1, output2] = tf.py_function(function,[input1,input2],[type of output1,type of output2])
+</code></pre><p>Specifically:</p>
+<pre><code class="language-python:py_function" data-lang="python:py_function">def function(data1,data2):
+    return data1+data2,data1*data2
+@tf.function
+def process(tensor1,tensor2):
+    [data1,data2]=tf.py_function(function,[tensor1,tensor2],[tf.float32,tf.float32])
+    return data1, data2
+</code></pre><p>In other words, the function function here is <code>tf.Tensor</code> with a value in <code>Tensor</code> because it is executed in eager mode at the time of execution.
+Note that <code>tf.Tensor</code> and <code>Tensor</code> are different between Eager Mode and Graph Mode.</p>
+<h2 id="behavior-in-the-function-specified-by-py_function">Behavior in the function specified by py_function</h2>
+<p>This is executed in Eager Mode, and <code>tf.Tensor</code> is brought in, so it is okay to use <code>.numpy()</code> for the first time and return the result in numpy.
+This is where many mistakes are made.
+<code>tf.data.Dataset.map</code> only works in Graph mode at first. On top of that, some need to be run in eager mode.</p>
+<h2 id="when-the-whole-is-put-together-in-the-figure">When the whole is put together in the figure</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/effae119-bc0b-48a6-d558-5a895bddb4d2.png" alt="dataset-graph-mode"></p>
+<p>This seems to be the behavior of <code>tf.data.Dataset.from_tensor_slices</code>. (I&rsquo;m sorry because it is not accurate information)
+And when the data is discharged, it becomes as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/145843/4f2533c0-9be4-812d-9861-a1f456ab5be7.png" alt="dataset-eager-mode"></p>
+<p>If you code with this in mind, you will be able to code smoothly without being confused by mysterious bugs.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>I think I have told you how to develop a generic Data Augmentation.
+I also want to make something like this! I would like people to use the same method.
+I am really relieved to solve the mystery of <code>py_function</code>.
+Please use all means.</p>
+<p>#Acknowledgement</p>
+<p>This blog, <a href="https://www.kumilog.net/entry/numpy-data-augmentation">Summary of Data Augmentation of Images in NumPy</a>, was very helpful in implementing it.
+I take this opportunity to express my gratitude.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

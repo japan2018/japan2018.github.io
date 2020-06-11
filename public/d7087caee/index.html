@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] To celebrate the release of Django 3.0, I tried ASGI, the spiritual successor to WSGI, but couldn&#39;t use websocket | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] To celebrate the release of Django 3.0, I tried ASGI, the spiritual successor to WSGI, but couldn&rsquo;t use websocket</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 7, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django3.0">Django3.0</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/asgi">ASGI</a></code></small>
+
+</p>
+<pre><code># Celebration! Django 3.0 released!
+</code></pre>
+<p>02/12/2019 Django 3.0 has been released.
+Django 1.0 was released in 2008 and 2.0 was released in December 2017. And 3.0 was released on 12/2 of this year.
+The upgrade from 1 to 2 took about 10 years, but from 2 to 3 it took less than 2 years, which is a surprising sense of speed. On the other hand, what have I been doing over the last two years? Now let&rsquo;s take a look at the new features that I personally noticed in Django 3.0!</p>
+<h1 id="what-is-asgi-support">What is ASGI support</h1>
+<p>I was curious about this. Having said that, I never touched ASGI, and officially supported it! Even if I was told that, it was like that. But because I have WSGI&hellip;
+However, when I looked it up, it seemed that ASGI gradually seemed like an existence that cannot be ignored.</p>
+<p>According to <a href="https://docs.djangoproject.com/en/dev/releases/3.0/">Release Notes</a>,theasyncfeatureiscurrentlynotsupportedbyWSGIandonlysupportedwhenrunasASGI.Yes(butdoyouthinkwewillsupportitinthefuture)?
+<a href="https://asgi.readthedocs.io/en/latest/">ASGI&rsquo;s official</a>says,&ldquo;ASGIisWSGI&rsquo;sspiritualsuccessor(<a href="https://en.wikipedia.org/wiki/%E7%B2%BE%E7%A5%9E%E7%9A%84%E7%B6%9A%E7%B7%A8">mentalsequel</a>)”.
+In this way, I thought that WSGI, which I thought was a strong ally, was backward compatible with ASGI.</p>
+<p>It doesn&rsquo;t matter, but the word mental sequel is kind of cool. It seems that Xenosaga against Xenogius, Perfect Dark against Golden Eye 007, etc. However, isn&rsquo;t WSGI or ASGI a game or a fiction piece, and is the sequel really suitable? I thought so, so I will read it as a mental successor. I wrote that in the title as well.</p>
+<h1 id="try-running-django-with-asgi">Try running Django with ASGI</h1>
+<p>If you decide so, the story is quick, so I tried running Django with ASGI as a trial. Create an environment with Docker.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo docker run --rm -it -p 8000:8000 python:3.8 bash
+</code></pre></div><p>Use python3.8. BTW, Django 3.0 supports python 3.6, 3.7, and 3.8.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pip install django daphne
+</code></pre></div><p>Install <code>daphne</code> along with <code>django</code>. <code>daphne</code> looks like a server for <code>ASGI</code>. I think <code>uWSGI</code> in <code>WSGI</code> is <code>daphne</code> in <code>ASGI</code>. surely.
+By the way, daphne is called Daphne. django is django, but daphne&rsquo;s d can be pronounced properly.</p>
+<pre><code>django-admin startproject app
+cd app
+daphne -b 0.0.0.0 -p 8000 app.asgi:application
+</code></pre><p>After installing it, create a project and run it immediately.</p>
+<h1 id="hooray-moved-complete">Hooray! moved! Complete!</h1>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24415/ca88ed7f-cb80-7bf2-c6a3-6b1f1f95d5ef.png" alt="django3.png"></p>
+<p>It worked but I don&rsquo;t know what makes me happy. Well, of course. The asynchronous function is for sale, but I am only doing synchronous communication.</p>
+<h1 id="isnt-there-a-tutorial-to-build-a-chat-app-that-lets-you-try-asynchronous-communication-with-django">Isn&rsquo;t there a tutorial to build a chat app that lets you try asynchronous communication with Django?</h1>
+<p>was.
+<a href="https://channels.readthedocs.io/en/latest/tutorial/index.html">https://channels.readthedocs.io/en/latest/tutorial/index.html</a>
+It seems that you can use web socket with Djang when Django channels is used, and there is a chat application tutorial carefully. I am motivated to try running a chat app created by copying this with daphne.
+However, I don&rsquo;t quite understand the relationship between Django channels and this ASGI support. Well, but don&rsquo;t go deep into it as it may become apparent as you use it.</p>
+<p>The finished product made according to the tutorial is put here <a href="https://github.com/d9magai/django3-channels-tutorial-chat-application">here</a>.
+I will try to move it. <code>command: python manage.py runserver 0.0.0.0:8000</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo docker-compose up -d
+</code></pre></div><p>I confirmed the operation in 2 windows, but I can use chat properly.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24415/85496438-055e-7168-a36d-702b4ed261d2.gif" alt="mov2.gif"></p>
+<p>Let&rsquo;s move this with <code>daphne</code>. Rewrite <code>command</code> as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-diff" data-lang="diff"> services:
+     app:
+         build:.
+<span style="color:#f92672">- command: python manage.py runserver 0.0.0.0:8000
+</span><span style="color:#f92672"></span><span style="color:#a6e22e">+ command: daphne -b 0.0.0.0 -p 8000 mysite.asgi:application
+</span><span style="color:#a6e22e"></span>         volumes:
+             -.:/srv
+         ports:
+</code></pre></div><p>According to my expectations, this should work&hellip;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo docker-compose down
+sudo docker-compose up -d
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/24415/7545128b-bb4f-90b2-fc37-3ccd64258ead.png" alt="ws.png">
+Hmm, it doesn&rsquo;t move.</p>
+<p>When I read the error message, it says that websocket cannot be used.</p>
+<pre><code>172.17.0.1:52480--[06/Dec/2019:07:36:28] &quot;GET /chat/a/&quot; 200 1413
+172.17.0.1:52488--[06/Dec/2019:07:36:28] &quot;WSCONNECTING /ws/chat/a/&quot;--
+2019-12-06 07:36:29,471 ERROR Exception inside application: Django can only handle ASGI/HTTP connections, not websocket.
+  File &quot;/usr/local/lib/python3.8/site-packages/daphne/cli.py&quot;, line 30, in asgi
+    await self.app(scope, receive, send)
+  File &quot;/usr/local/lib/python3.8/site-packages/django/core/handlers/asgi.py&quot;, line 144, in __call__
+    raise ValueError(
+  Django can only handle ASGI/HTTP connections, not websocket.
+172.17.0.1:52488--[06/Dec/2019:07:36:29] &quot;WSDISCONNECT /ws/chat/a/&quot;--
+</code></pre><p>Look around line 144 in asgi.py.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+    async <span style="color:#66d9ef">def</span> __call__(self, scope, receive, send):
+        <span style="color:#e6db74">&#34;&#34;&#34;
+</span><span style="color:#e6db74">        Async entrypoint-parses the request and hands off to get_response.
+</span><span style="color:#e6db74">        &#34;&#34;&#34;</span>
+        <span style="color:#75715e"># Serve only HTTP connections.</span>
+        <span style="color:#75715e"># FIXME: Allow to override this.</span>
+        <span style="color:#66d9ef">if</span> scope[<span style="color:#e6db74">&#39;type&#39;</span>] <span style="color:#f92672">!=</span><span style="color:#e6db74">&#39;http&#39;</span>:
+            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">ValueError</span>(
+                <span style="color:#e6db74">&#39;Django can only handle ASGI/HTTP connections, not </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">.&#39;</span>
+                <span style="color:#f92672">%</span> scope[<span style="color:#e6db74">&#39;type&#39;</span>]
+            )
+</code></pre></div><p>It seems that exceptions are thrown when it is not HTTP connections. What does this mean?</p>
+<ul>
+<li>ASGI support does not yet support web socket</li>
+<li>The idea of trying to run the django channels tutorial chat app with <code>daphne app.asgi:application</code> using Django 3.0 is wrong in the first place.</li>
+</ul>
+<p>I think it&rsquo;s either, but I&rsquo;m not sure. The mystery is only deepening. However, it is officially said that ASGI can support Django asynchronously, so I will continue to pay close attention to it.</p>
+<h1 id="end">end</h1>
+<p>Goodbye WSGI. I have ASGI-san&hellip;</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

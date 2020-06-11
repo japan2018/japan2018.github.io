@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Using weakref module with Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Using weakref module with Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 18, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code>The weakref module is a practical and very powerful module.
+</code></pre>
+<p>Perhaps no module is as unfavorable as this module because of its balance of utility and name recognition.
+This article will show you how useful the weakref module is.</p>
+<h1 id="problem">Problem</h1>
+<p>Suppose you have a large number of objects with ID information (or unique hashable information).
+A dictionary for object management is prepared so that a large number of objects can be searched using ID as a key.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Member</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, id, name):
+        self<span style="color:#f92672">.</span>id <span style="color:#f92672">=</span> id
+        self<span style="color:#f92672">.</span>name <span style="color:#f92672">=</span> name
+
+Manage objects <span style="color:#f92672">in</span> dictionary <span style="color:#66d9ef">with</span> <span style="color:#75715e"># ID as key</span>
+members_dict <span style="color:#f92672">=</span> {
+    x<span style="color:#f92672">.</span>id: x <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> [
+        Member(<span style="color:#ae81ff">1</span>, <span style="color:#e6db74">&#34;tim&#34;</span>),
+        Member(<span style="color:#ae81ff">2</span>, <span style="color:#e6db74">&#34;matthew&#34;</span>),
+        Member(<span style="color:#ae81ff">3</span>, <span style="color:#e6db74">&#34;Jack&#34;</span>),
+        <span style="color:#75715e"># ...</span>
+    ]
+}
+
+members_dict[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>name
+<span style="color:#f92672">&gt;&gt;&gt;</span><span style="color:#e6db74">&#39;tim&#39;</span>
+</code></pre></div><p>There is a demand for searching not only by <code>id</code> but also by <code>name</code>, so let&rsquo;s create a dictionary with names as keys. (Here, to simplify the explanation, <code>name</code> is also unique information without duplication)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Create dictionary with name as key</span>
+names_dict <span style="color:#f92672">=</span> {x<span style="color:#f92672">.</span>name: x <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> members_dict<span style="color:#f92672">.</span>values()}
+
+names_dict[<span style="color:#e6db74">&#34;tim&#34;</span>]<span style="color:#f92672">.</span>id
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><p>Here, the member <code>tim</code> withdrew, so I deleted the data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">Delete the data of tim which <span style="color:#f92672">is</span> <span style="color:#75715e">#ID:1</span>
+<span style="color:#66d9ef">del</span> members_dict[<span style="color:#ae81ff">1</span>]
+</code></pre></div><p>It is desirable that the object data of <code>tim</code> is now collected by GC (garbage collection) and the memory is released.
+But that is not the case.</p>
+<p>The object is referred by the added <code>names_dict</code> in the meaning of the lookup table, and the object of <code>tim</code> remains in the memory without being collected by the GC.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">GC leaks without releasing because there are references <span style="color:#f92672">in</span> <span style="color:#75715e">#names_dict!</span>
+names_dict[<span style="color:#e6db74">&#39;tim&#39;</span>]
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#f92672">&lt;</span>__main__<span style="color:#f92672">.</span>Member at <span style="color:#ae81ff">0x1744e889ba8</span><span style="color:#f92672">&gt;</span>
+</code></pre></div><p>Since the memory is not released and accumulated as the members are created and deleted repeatedly, it is necessary to keep managing <code>names_dict</code> together with <code>members_dict</code>.
+As the number of search tables increases, so does the number of dictionaries that can be managed at the same time.</p>
+<p>With a simple data structure like this example, it would be manageable to design it in an object-oriented manner.
+When a complex data structure is created in which objects refer to each other, a reference counter is required to determine whether a object is alive or dead, and a philosophical code that implements GC-like mode on top of the language in which GC is written. Is completed.</p>
+<h1 id="there-is-a-weakref-module-that-comes-up-quickly">There is a weakref module that comes up quickly!</h1>
+<p>The weakref module saves such a situation. Simply replace <code>names_dict</code> with <code>weakref.WeakValuDictionary</code> to solve the problem.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> weakref <span style="color:#f92672">import</span> WeakValueDictionary
+
+names_dict <span style="color:#f92672">=</span> WeakValueDictionary(
+    {_<span style="color:#f92672">.</span>name: _ <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> members_dict<span style="color:#f92672">.</span>values()}
+)
+
+names_dict[<span style="color:#e6db74">&#39;tim&#39;</span>]<span style="color:#f92672">.</span>id
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#ae81ff">1</span>
+
+Delete the data of tim which <span style="color:#f92672">is</span> <span style="color:#75715e">#ID:1</span>
+<span style="color:#66d9ef">del</span> members_dict[<span style="color:#ae81ff">1</span>]
+
+names_dict[<span style="color:#e6db74">&#39;tim&#39;</span>]
+<span style="color:#f92672">&gt;&gt;&gt;</span> <span style="color:#a6e22e">KeyError</span>:<span style="color:#e6db74">&#39;tim&#39;</span>
+</code></pre></div><p><code>WeakValuDictionary</code> is a dictionary-like object whose value is a weak reference.
+A weak reference is a reference that does not hinder the collection of GC, and will automatically delete it from the dictionary when there are no strong references other than <code>WeakValuDictionary</code>.</p>
+<p>There are often situations where you want to access a large number of objects using a fast cache/lookup table to improve performance. At that time, the <code>WeakValuDictionary</code> is a must-have item.</p>
+<p>#Of course there is WeakKeyDictionary
+If there is a <code>WeakValuDictionary</code>, then of course there is also a <code>WeakKeyDictionary</code> where the keys are weak references.</p>
+<p><code>WeakKeyDictionary</code> can also be used to hold references and dereferences.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> weakref <span style="color:#f92672">import</span> WeakKeyDictionary
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Member</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, name, friend<span style="color:#f92672">=</span>None):
+        self<span style="color:#f92672">.</span>name <span style="color:#f92672">=</span> name
+        self<span style="color:#f92672">.</span>_friend_dict <span style="color:#f92672">=</span> WeakKeyDictionary()
+        self<span style="color:#f92672">.</span>_referenced_dict <span style="color:#f92672">=</span> WeakKeyDictionary()
+        <span style="color:#66d9ef">if</span> friend:
+            self<span style="color:#f92672">.</span>_friend_dict[friend] <span style="color:#f92672">=</span> None
+            friend<span style="color:#f92672">.</span>_referenced_dict[self] <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">referenced</span>(self):
+        referenced <span style="color:#f92672">=</span> list(self<span style="color:#f92672">.</span>_referenced_dict<span style="color:#f92672">.</span>keys())
+        <span style="color:#66d9ef">return</span> referenced[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">if</span> referenced <span style="color:#66d9ef">else</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">friend</span>(self):
+        friends <span style="color:#f92672">=</span> list(self<span style="color:#f92672">.</span>_friend_dict<span style="color:#f92672">.</span>keys())
+        <span style="color:#66d9ef">return</span> friends[<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">if</span> friends <span style="color:#66d9ef">else</span> None
+
+    <span style="color:#66d9ef">def</span> __str__(self):
+        friend <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>friend()
+        refer <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>referenced()
+        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;{}: referenced={} friend={}&#34;</span><span style="color:#f92672">.</span>format(
+            self<span style="color:#f92672">.</span>name,
+            refer<span style="color:#f92672">.</span>name <span style="color:#66d9ef">if</span> refer <span style="color:#66d9ef">else</span> None,
+            friend<span style="color:#f92672">.</span>name <span style="color:#66d9ef">if</span> friend <span style="color:#66d9ef">else</span> None
+        )
+
+
+tim <span style="color:#f92672">=</span> Member(<span style="color:#e6db74">&#34;tim&#34;</span>)
+matthew <span style="color:#f92672">=</span> Member(<span style="color:#e6db74">&#34;matthew&#34;</span>, friend<span style="color:#f92672">=</span>tim)
+jack <span style="color:#f92672">=</span> Member(<span style="color:#e6db74">&#34;jack&#34;</span>, friend<span style="color:#f92672">=</span>matthew)
+
+<span style="color:#66d9ef">print</span>(tim)
+<span style="color:#66d9ef">print</span>(matthew)
+<span style="color:#66d9ef">print</span>(jack)
+<span style="color:#75715e"># output:</span>
+<span style="color:#75715e">#</span>
+<span style="color:#75715e"># tim: referenced=&#39;matthew&#39; friend=&#39;None&#39;</span>
+<span style="color:#75715e"># matthew: referenced=&#39;jack&#39; friend=&#39;tim&#39;</span>
+<span style="color:#75715e"># jack: referenced=&#39;None&#39; friend=&#39;matthew&#39;</span>
+
+<span style="color:#66d9ef">del</span> matthew
+
+<span style="color:#66d9ef">print</span>(tim)
+<span style="color:#66d9ef">print</span>(jack)
+<span style="color:#75715e"># output:</span>
+<span style="color:#75715e">#</span>
+<span style="color:#75715e"># tim: referenced=&#39;None&#39; friend=&#39;None&#39;</span>
+<span style="color:#75715e"># jack: referenced=&#39;None&#39; friend=&#39;None&#39;</span>
+</code></pre></div><p>I tried using it as a dictionary that automatically updates references and dereferences of other objects.
+You can see that the dictionary is automatically updated by deleting the object.</p>
+<p>#Reference</p>
+<ul>
+<li><a href="http://docs.python.jp/2/library/weakref.html">8.11. weakref — Weak reference</a></li>
+</ul>
+<p>#Postscript
+The <code>weakref</code> module is a powerful module, although it is simple enough to have only two dictionary objects, <code>WeakValuDictionary</code> and <code>WeakKeyDictionary</code>.
+It seems that there are many other ways to use it, depending on your device.</p>
+<p>It&rsquo;s a module with a very low profile, so I think it will be very helpful to those who didn&rsquo;t know it.
+If you find another way to use it, please write it.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

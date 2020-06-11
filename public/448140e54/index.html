@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Kaggle&#39;s feature management was better than I thought with PostgreSQL, so I made a directory that anyone can use with Docker | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Kaggle&rsquo;s feature management was better than I thought with PostgreSQL, so I made a directory that anyone can use with Docker</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 20, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker">Docker</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/jupyter">Jupyter</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/docker-compose">docker-compose</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/kaggle">Kaggle</a></code></small>
+
+</p>
+<pre><code>This article is from the 19th day of [Kaggle Advent Calendar 2019](https://qiita.com/advent-calendar/2019/kaggle).
+</code></pre>
+<p>Hi, my name is <a href="https://github.com/kiccho1101">kiccho1101</a>!
+Writing an article for the first time in my life! Thank you!</p>
+<h2 id="introduction">Introduction</h2>
+<p>This time, I tried to use Kaggle&rsquo;s feature quantity management with PostgreSQL, but it was faster than I thought, so I would like to introduce it.</p>
+<p>The created directory is here: <a href="https://github.com/kiccho1101/datascience-template">https://github.com/kiccho1101/datascience-template</a>
+↑ The README has a usage example using the data of <a href="https://www.kaggle.com/c/titanic">Titanic competition</a>.</p>
+<h2 id="what-is-feature-quantity-management">What is feature quantity management?</h2>
+<p>In Kaggle competition, if you write code like (formerly) me without thinking about anything, the following problems will occur.</p>
+<ul>
+<li>I don&rsquo;t know what the features represent</li>
+<li>Notebook is in a chaotic state (exp1.ipynb, exp1_tmp.ipynb, exp1_tmp_tmp.ipynb, etc. are generated in large quantities)</li>
+<li>Even if you wrote it when you looked back six months later? ? ? Code is generated</li>
+</ul>
+<p>To solve these problems, it is necessary to manage features in some way.</p>
+<p>For feature quantity management, <a href="https://speakerdeck.com/takapy/detafen-xi-konpenioite-te-zheng-liang-guan-li-nipi-bi-siteiruquan-ren-lei-nichuan-etaixiang-i">Takanobu Nozawa&rsquo;s slide</a> is very easy to understand, so I hope you can refer to it.</p>
+<h2 id="overview">Overview</h2>
+<p>The features of this directory are summarized below.</p>
+<ul>
+<li>Manage data with PostgreSQL on Docker container</li>
+<li>Manipulate data with both SQL and Python</li>
+<li>Makeline is used as a command line tool for a series of flows (feature generation, cross validation, prediction)</li>
+<li>Manage experiment contents with config file</li>
+</ul>
+<h2 id="manage-data-with-postgresql-on-docker-container">Manage data with PostgreSQL on Docker container</h2>
+<p>By using the database,</p>
+<ul>
+<li><a href="https://www.pgadmin.org/">pgAdmin</a></li>
+<li><a href="https://github.com/sosedoff/pgweb">pgweb</a></li>
+<li><a href="https://tableplus.com/">TablePlus</a></li>
+<li><a href="https://www.jetbrains.com/datagrip/">DataGrip</a></li>
+</ul>
+<p>You can see the data with a database viewer such as. This is really good
+EDA is much easier than doing it with pandas.</p>
+<h2 id="makefile-command-line-tool">Makefile command line tool</h2>
+<h3 id="feature-generation">Feature generation</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271771/7703ad3e-71f1-f5a5-77d2-e0b70bfbc88b.gif" alt="feature.gif"></p>
+<h3 id="cross-validation">Cross Validation</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271771/f7431cc1-10a3-2d05-f41c-839f55424024.gif" alt="cv.gif"></p>
+<h3 id="forecast">Forecast</h3>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/271771/7e883a47-a09d-2241-d39a-e063d41b9e41.gif" alt="predict.gif"></p>
+<p>Like this, I made it possible to perform common operations with the make command.
+It&rsquo;s just a lot less code to write, but it&rsquo;s fairly comfortable to code.</p>
+<h2 id="summary">Summary</h2>
+<p>This time, the code is the main subject, so I only briefly explained it in the article.
+If you find it interesting, please do Clone and use it! !</p>
+<p>Finally
+Pullik &amp; Fork are welcome! ! ! Please feel free to anyone! ! !</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

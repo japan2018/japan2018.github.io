@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried to detect moving objects quickly with OpenCV | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried to detect moving objects quickly with OpenCV</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 10, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/motion-detection"> motion detection</a></code></small>
+
+</p>
+<pre><code>The articles about OpenCV and Raspberry Pi, which I wrote a long time ago, have started to be read by everyone again recently. I think that you are referring to it because it is a keyword related to the recent trends of &quot;deep learning&quot; and &quot;edge computing&quot;. When I suddenly think about the scenes where edge computing is used, I feel that I often see cases of motion detection with cameras. It is used as a function for automatic driving, robots, and fixed-point cameras. So, this time I'll try to implement a simple motion detection by making full use of OpenCV functions.
+</code></pre>
+<h1 id="operating-environment">Operating environment</h1>
+<ul>
+<li>OS: Windows10</li>
+<li>python3.6.5</li>
+<li>OpenCV 4.0.0</li>
+</ul>
+<p>OpenCV is installed using <code>pip install opencv-opencv</code>. With this, you can also install numpy, which is required when running OpenCV.</p>
+<h1 id="program-to-play-video">Program to play video</h1>
+<p>First, create a program to play the video. This time, I will use the video from <a href="https://github.com/opencv/opencv/blob/master/samples/data/vtest.avi">here</a> distributed in the official OpenCV package. Download it in advance and save it in the same folder as the source code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> cv2
+
+filepath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;vtest.avi&#34;</span>
+cap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoCapture(filepath)
+<span style="color:#75715e">#Click here when using a webcam</span>
+<span style="color:#75715e"># cap = cv2.VideoCapture(0)</span>
+
+<span style="color:#66d9ef">while</span> True:
+    <span style="color:#75715e"># Get one frame at a time.</span>
+    ret, frame <span style="color:#f92672">=</span> cap<span style="color:#f92672">.</span>read()
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> ret:
+        <span style="color:#66d9ef">break</span>
+
+    <span style="color:#75715e"># Output results</span>
+    cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#34;Frame&#34;</span>, frame)
+    key <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">30</span>)
+    <span style="color:#66d9ef">if</span> key <span style="color:#f92672">==</span> <span style="color:#ae81ff">27</span>:
+        <span style="color:#66d9ef">break</span>
+
+cap<span style="color:#f92672">.</span>release()
+cv2<span style="color:#f92672">.</span>destroyAllWindows()
+</code></pre></div><p>Here, <code>cv2.waitKey(30)</code> originally specifies the time to wait for the key input from the window output by OpenCV, but when playing the video, slow down the frame advance. It also plays a role in preventing the video from flowing quickly.</p>
+<h1 id="how-to-detect-motion">How to detect motion</h1>
+<p>Now, add the code for motion detection to the code that plays the previous video. Let&rsquo;s walk through the algorithm step by step.</p>
+<h2 id="convert-to-grayscale">Convert to grayscale</h2>
+<p>It is converted to grayscale and binarized in order to detect edges without depending on saturation. Specifically, use the following functions.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">gray <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(frame, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+</code></pre></div><h2 id="cut-out-a-frame-for-comparison">Cut out a frame for comparison</h2>
+<p>Define <code>avg = None</code> at the beginning of the source code and leave an array of frames for comparison in <code>avg</code>. So add the following code in the loop that outputs the video. Needless to say, the frames left here are converted to grayscale.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">if</span> avg <span style="color:#f92672">is</span> None:
+   avg <span style="color:#f92672">=</span> gray<span style="color:#f92672">.</span>copy()<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;float&#34;</span>)
+   <span style="color:#66d9ef">continue</span>
+</code></pre></div><h2 id="find-the-difference-between-the-current-image-and-the-moving-average">Find the difference between the current image and the moving average</h2>
+<p>Add it to the image accumulator and find the difference for the current frame from it. Specifically, the code is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cv2<span style="color:#f92672">.</span>accumulateWeighted(gray, avg, <span style="color:#ae81ff">0.6</span>)
+frameDelta <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>absdiff(gray, cv2<span style="color:#f92672">.</span>convertScaleAbs(avg))
+</code></pre></div><h2 id="set-threshold-and-binarize">Set threshold and binarize</h2>
+<p>Next, set the threshold and binarize the frame. This will make the outline of the changed part clear from the previous frame. The following code uses the <code>findContours</code> function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">contours, hierarchy <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>findContours(thresh<span style="color:#f92672">.</span>copy(), cv2<span style="color:#f92672">.</span>RETR_EXTERNAL, cv2<span style="color:#f92672">.</span>CHAIN_APPROX_SIMPLE)
+</code></pre></div><h2 id="draw-on-the-original-frame-from-the-calculated-threshold">Draw on the original frame from the calculated threshold</h2>
+<p>Up to this point, motion detection processing has been completed. But we need to visualize the results. Use the <code>drawContours</code> function to draw the resulting contours into the frame.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">frame <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>drawContours(frame, contours, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">0</span>), <span style="color:#ae81ff">3</span>)
+</code></pre></div><h2 id="complete-form">Complete form</h2>
+<p>Based on the above contents, the final completed form is the following source code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> cv2
+
+filepath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;vtest.avi&#34;</span>
+cap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoCapture(filepath)
+<span style="color:#75715e">#Click here when using a webcam</span>
+<span style="color:#75715e"># cap = cv2.VideoCapture(0)</span>
+
+avg <span style="color:#f92672">=</span> None
+
+<span style="color:#66d9ef">while</span> True:
+    <span style="color:#75715e"># Get one frame at a time.</span>
+    ret, frame <span style="color:#f92672">=</span> cap<span style="color:#f92672">.</span>read()
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> ret:
+        <span style="color:#66d9ef">break</span>
+
+    <span style="color:#75715e">#Convert to grayscale</span>
+    gray <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(frame, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+    <span style="color:#75715e"># Get a frame for comparison</span>
+    <span style="color:#66d9ef">if</span> avg <span style="color:#f92672">is</span> None:
+        avg <span style="color:#f92672">=</span> gray<span style="color:#f92672">.</span>copy()<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;float&#34;</span>)
+        <span style="color:#66d9ef">continue</span>
+
+    <span style="color:#75715e">#Calculate the difference between the current frame and the moving average</span>
+    cv2<span style="color:#f92672">.</span>accumulateWeighted(gray, avg, <span style="color:#ae81ff">0.6</span>)
+    frameDelta <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>absdiff(gray, cv2<span style="color:#f92672">.</span>convertScaleAbs(avg))
+
+    <span style="color:#75715e"># Threshold the delta image</span>
+    thresh <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(frameDelta, <span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>THRESH_BINARY)[<span style="color:#ae81ff">1</span>]
+    <span style="color:#75715e"># Put contour lines on image threshold</span>
+    contours, hierarchy <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>findContours(thresh<span style="color:#f92672">.</span>copy(), cv2<span style="color:#f92672">.</span>RETR_EXTERNAL, cv2<span style="color:#f92672">.</span>CHAIN_APPROX_SIMPLE)
+    frame <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>drawContours(frame, contours, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>, <span style="color:#ae81ff">0</span>), <span style="color:#ae81ff">3</span>)
+
+    <span style="color:#75715e"># Output results</span>
+    cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#34;Frame&#34;</span>, frame)
+    key <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">30</span>)
+    <span style="color:#66d9ef">if</span> key <span style="color:#f92672">==</span> <span style="color:#ae81ff">27</span>:
+        <span style="color:#66d9ef">break</span>
+
+cap<span style="color:#f92672">.</span>release()
+cv2<span style="color:#f92672">.</span>destroyAllWindows()
+</code></pre></div><p>#Result
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/170520/9629dd2b-7f9b-9dba-7e89-76e55415448e.gif" alt="result.gif"></p>
+<p>Since the contour of the changed part in the image is plotted, the slight movement of the background is detected as a change in addition to the movement of the person who can be visually recognized.</p>
+<p>#Summary
+This time, we implemented the motion detection process using only OpenCV functions. Although I am not using any new algorithm, I was able to easily detect &ldquo;moving objects&rdquo;. Since it is just a simple system, so-called noise such as background changes will be detected, so in this case, if you want to detect only the movement of people or specific objects, further improve the algorithm or deep learning. Should be used.</p>
+<p>#Reference
+[Contour: The First Step -OpenCV-Python Tutorials 1 documentation-](<a href="http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contours_begin/(py_contours_begin.html)">http://labs.eecs.tottori-u.ac.jp/sd/Member/oyamada/OpenCV/html/py_tutorials/py_imgproc/py_contours/py_contours_begin/(py_contours_begin.html)</a>
+<a href="https://developers.cyberagent.co.jp/blog/archives/12666/">How to detect motion from video (camera) using OpenCV</a>
+<a href="https://dev.classmethod.jp/etc/yoshim-opencv-extract-diff/">Trying to detect motion with OpenCV</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

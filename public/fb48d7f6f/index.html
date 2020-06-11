@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Make a lightweight server with Python and wait for Scratch 2 HTTP extension | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Make a lightweight server with Python and wait for Scratch 2 HTTP extension</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Sep 20, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/http"> HTTP</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scratch"> Scratch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/interactive-system"> interactive system</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/asyncio"> asyncio</a></code></small>
+
+</p>
+<pre><code># Why do you have a lightweight HTTP server?
+</code></pre>
+<ul>
+<li><a href="https://scratch.mit.edu/download">Scratch 2 offline version</a> can read additional block from JSON format file.</li>
+<li>The block makes a GET request to an HTTP server outside of Scratch.</li>
+<li>You can extend the functionality of Scratch by launching a helper app that waits for GET.</li>
+<li>However, creating a thread for each request that arrives in large numbers from a Scratch loop seems to have a large overhead.</li>
+<li>So, let&rsquo;s try processing GET requests in parallel with a single thread.</li>
+</ul>
+<p>As a practical example of the explanation here, the method of using speech synthesis and speech recognition in the Scratch 2 offline version is summarized below.</p>
+<ul>
+<li><a href="https://memakura.github.io/dialogsystem/">Scratch 2.0 Blocks for spoken dialogue robots/spoken dialogue systems that can be used offline</a></li>
+</ul>
+<p>Also, put the code mentioned below in github.</p>
+<ul>
+<li><a href="https://github.com/memakura/scratch2-extension">https://github.com/memakura/scratch2-extension</a></li>
+</ul>
+<p>S2e file to add blocks with # Scratch 2</p>
+<p><a href="https://wiki.scratch.mit.edu/wiki/Scratch_Extension#HTTP_Extensions">Explanation PDF</a>[https://wiki.scratch.mit.edu/w/images/ExtensionsDoc.Ifyouread(HTTP-9-11.pdf),youcanaddablockbycreatingaJSONformatfilewiththeextension<code>.s2e</code>andloadingit.(Itdoesn&rsquo;tmatterwhattheextensionis,butitseemstobe<code>.s2e</code>.) Below, I&rsquo;ll try using the example given in this description.</p>
+<pre><code class="language-json:test.s2e" data-lang="json:test.s2e">{&quot;extensionName&quot;: &quot;Extension Example&quot;,
+    &quot;extensionPort&quot;: 12345,
+    &quot;blockSpecs&quot;: [
+        [&quot; &quot;, &quot;beep&quot;, &quot;playBeep&quot;],
+        [&quot; &quot;, &quot;set beep volume to %n&quot;, &quot;setVolume&quot;, 5],
+        [&quot;r&quot;, &quot;beep volume&quot;, &quot;volume&quot;],
+    ]
+}
+</code></pre><p>Save this in a file called <code>test.s2e</code>. If you select [File] while pressing <code>Shift</code> in Scratch, [Load experimental HTTP extension] will be displayed, so if you select and load the <code>test.s2e</code> saved there, it will surely block. Will be added!</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/55780/17f0af41-4ca2-7610-b667-63677e961fae.png" alt="extension_example_empty-s.png"></p>
+<p>that? The circle next to <code>Extension Example</code> is red.</p>
+<p>According to <a href="https://wiki.scratch.mit.edu/w/images/ExtensionsDoc.HTTP-9-11.pdf">Description PDF</a>, Scratch requests polling <code>GET /poll about 30 times per second. I am sending </code>to a helper, but it seems to be red if there is no response to it. It will turn green if there is a response from the helper.</p>
+<h1 id="lightweight-http-server-with-python">Lightweight HTTP server with Python</h1>
+<h2 id="part-1-react-to-get-poll">Part 1: React to GET /poll</h2>
+<ul>
+<li>First, let&rsquo;s give something back to GET /poll.</li>
+<li>In this example, it seems to communicate with port 12345, so let&rsquo;s create an HTTP server listening on port 12345.</li>
+<li>You can easily create a lightweight HTTP server by using <a href="http://aiohttp.readthedocs.io/en/stable/">aiohttp</a>, which is based on the asynchronous I/O library asyncio.</li>
+<li>Since Python 3.5, you can use familiar modifiers such as async and await in C#. The following assumes Python 3.5.</li>
+</ul>
+<p>Install aiohttp with <code>$ pip install aiohttp</code> and create the following program (testhelper.py).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:testhelper.py" data-lang="py3:testhelper.py"><span style="color:#f92672">from</span> aiohttp <span style="color:#f92672">import</span> web
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle_poll</span>(request):
+    <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(text<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;OK&#34;</span>)
+
+app <span style="color:#f92672">=</span> web<span style="color:#f92672">.</span>Application()
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_get(<span style="color:#e6db74">&#39;/poll&#39;</span>, handle_poll)
+
+web<span style="color:#f92672">.</span>run_app(app, host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;127.0.0.1&#39;</span>, port<span style="color:#f92672">=</span><span style="color:#ae81ff">12345</span>)
+</code></pre></div><p>I will try it.</p>
+<pre><code>&gt; python testhelper.py
+======== Running on http://127.0.0.1:12345 ========
+(Press CTRL+C to quit)
+</code></pre><p>Now, when I look at the Scratch screen&hellip; Ah, it&rsquo;s green!</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/55780/1c89aa3c-50b5-30f4-a0d7-01610b234210.png" alt="extension_example_polling-s.png"></p>
+<p>As a precaution, I try GET from bash with nc.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">$ nc localhost <span style="color:#ae81ff">12345</span>
+GET /poll HTTP/1.1
+</code></pre></div><p>Now press return&hellip;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HTTP/1.1 <span style="color:#ae81ff">200</span> OK
+Content-Type: text/plain; charset<span style="color:#f92672">=</span>utf-8
+Content-Length: <span style="color:#ae81ff">2</span>
+Date: Tue, <span style="color:#ae81ff">19</span> Sep <span style="color:#ae81ff">2017</span> 13:41:21 GMT
+Server: Python/3.5 aiohttp/2.1.0
+
+OK
+</code></pre></div><p>Certainly aiohttp seems to be responding.</p>
+<h2 id="part-2-send-commands-from-scratch-command-block">Part 2: Send commands from Scratch (command block)</h2>
+<p>First of all, let&rsquo;s implement the <code>beep</code> block also as a review. The block that sends commands from Scratch to the helper is called &ldquo;command block&rdquo;. Looking at s2e, you can see that it is associated with the command name <code>playBeep</code>. At this time, <code>GET /playBeep</code> is sent to the helper, and the helper can receive it and do something. Let&rsquo;s ring the bell with <code>\007</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">async</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle_beep</span>(request):
+    print(<span style="color:#e6db74">&#34;play beep!&#34;</span>)
+    print(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\007</span><span style="color:#e6db74">&#34;</span>)
+    <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(text<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;OK&#34;</span>)
+
+<span style="color:#75715e"># Omitted</span>
+
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_get(<span style="color:#e6db74">&#39;/playBeep&#39;</span>, handle_beep)
+
+web<span style="color:#f92672">.</span>run_app(app, host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;127.0.0.1&#39;</span>, port<span style="color:#f92672">=</span><span style="color:#ae81ff">12345</span>)
+</code></pre></div><p>When I press the <code>beep</code> block in Scratch 2, it does sound.</p>
+<p>Next, let&rsquo;s implement the command block <code>set beep volume to (...)</code> that sends a value. In the following example, <code>vol</code> has a value, so you can retrieve it with <code>request.match_info['vol']</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">async</span> <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle_setvolume</span>(request):
+    volume <span style="color:#f92672">=</span> int(request<span style="color:#f92672">.</span>match_info[<span style="color:#e6db74">&#39;vol&#39;</span>])
+    <span style="color:#66d9ef">if</span> volume <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">and</span> volume <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">10</span>:
+        
+        print(<span style="color:#e6db74">&#34;set volume= &#34;</span><span style="color:#f92672">+</span> str(volume))
+    <span style="color:#66d9ef">else</span>:
+        print(<span style="color:#e6db74">&#34;out of range: &#34;</span><span style="color:#f92672">+</span> str(volume))
+    <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(text<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;OK&#34;</span>)
+
+<span style="color:#75715e"># Omitted</span>
+
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_get(<span style="color:#e6db74">&#39;/setVolume/</span><span style="color:#e6db74">{vol}</span><span style="color:#e6db74">&#39;</span>, handle_setvolume)
+
+web<span style="color:#f92672">.</span>run_app(app, host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;127.0.0.1&#39;</span>, port<span style="color:#f92672">=</span><span style="color:#ae81ff">12345</span>)
+</code></pre></div><p>The display changes depending on whether you enter a value from 0 to 10 and press the block, or when you enter any other value. (It is necessary to check <code>isinteger()</code> before <code>int()</code>, but omit it.)</p>
+<h2 id="part-3-receive-values-in-scratch-reporter-block">Part 3: Receive values in Scratch (reporter block)</h2>
+<p>Finally, let&rsquo;s return the value from the helper to Scratch. In Scratch, a block that can receive this value is called a reporter block, and when receiving a numerical value or a character string, s2e file adds &ldquo;&ldquo;r&quot;<code>. On the other hand, when it receives a boolean value, it is distinguished by adding </code>&quot;b&quot;`.</p>
+<p>To return the value to the reporter block, use the response to <code>GET /poll</code>. Since <code>beep volume</code> is associated with the name &ldquo;volume&rdquo;, if you return <code>volume 10</code> to <code>GET /poll</code>, the reporter block will be filled.</p>
+<p>In the following, the value specified by <code>set beep volume to (...)</code> will be returned as is. Here is the entire code so far.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:testhelper.py" data-lang="py3:testhelper.py"><span style="color:#f92672">from</span> aiohttp <span style="color:#f92672">import</span> web
+
+volume <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle_poll</span>(request):
+    text <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;volume &#34;</span><span style="color:#f92672">+</span> str(volume) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>
+    <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(text<span style="color:#f92672">=</span>text)
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle_beep</span>(request):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;play beep!&#34;</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\007</span><span style="color:#e6db74">&#34;</span>)
+    <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(text<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;OK&#34;</span>)
+
+async <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">handle_setvolume</span>(request):
+    <span style="color:#66d9ef">global</span> volume <span style="color:#75715e"># don&#39;t forget</span>
+    tmp_volume <span style="color:#f92672">=</span> int(request<span style="color:#f92672">.</span>match_info[<span style="color:#e6db74">&#39;vol&#39;</span>]) <span style="color:#75715e"># Once to another variable</span>
+    <span style="color:#66d9ef">if</span> tmp_volume <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">and</span> tmp_volume <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">10</span>:
+        volume <span style="color:#f92672">=</span> tmp_volume
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;set volume= &#34;</span><span style="color:#f92672">+</span> str(volume))
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;out of range: &#34;</span><span style="color:#f92672">+</span> str(tmp_volume))
+    <span style="color:#66d9ef">return</span> web<span style="color:#f92672">.</span>Response(text<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;OK&#34;</span>)app <span style="color:#f92672">=</span> web<span style="color:#f92672">.</span>Application()
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_get(<span style="color:#e6db74">&#39;/poll&#39;</span>, handle_poll)
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_get(<span style="color:#e6db74">&#39;/playBeep&#39;</span>, handle_beep)
+app<span style="color:#f92672">.</span>router<span style="color:#f92672">.</span>add_get(<span style="color:#e6db74">&#39;/setVolume/{vol}&#39;</span>, handle_setvolume)
+
+web<span style="color:#f92672">.</span>run_app(app, host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;127.0.0.1&#39;</span>, port<span style="color:#f92672">=</span><span style="color:#ae81ff">12345</span>)
+</code></pre></div><p>It seems better to make it a class and access it like <code>self.volume</code>. <a href="https://github.com/memakura/scratch2-extension/blob/master/s2extest.py">Is it like this in a class? </a></p>
+<p>Try it out with Scratch. First, put a check next to the reporter block <code>beep volume</code> to display the value. Next, when you enter a number in the command block <code>set beep volume to (...)</code> and execute it (click the block), the value of the reporter block <code>beep volume</code> changes to the value specified in the command block. You can see</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/55780/a015423c-7608-c898-d96c-5af35c450717.png" alt="command_and_reporter.png"></p>
+<p>If there are multiple reporter blocks, make a response by separating each with a line feed code <code>0A</code>.</p>
+<h2 id="other-command-block-to-wait">Other: command block to wait</h2>
+<p>Some command blocks are waiting to be executed, and are specified by prefixing <code>&quot;w&quot;</code> in s2e. To implement this block, we need to tell Scratch that the command is running.</p>
+<p>For example, if you add <code>&quot;w&quot;</code> to <code>set beep volume to (...)</code>, the command ID will change from <code>GET /setVolume/5</code> to <code>GET /setVolume/2574/5</code>. Is added (2574 is an example; in reality, the value will be different for each command request). By adding this command ID to the response to poll, it tells Scratch which block is being executed. At this time, add it in the format of <code>_busy 2574</code>. If you need to return multiple command IDs, separate them with a space.</p>
+<p>In addition, there are various topics such as how to make it select from a pull-down without inputting a value in a block, how to receive a character string, how to reset, cross-domain policy <a href="https://wiki.scratch.mit.edu/w/images/ExtensionsDoc.HTTP-9-11.pdf">Explanation PDF</a>.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>Although the above method may possibly be a connection up to Scratch 3 (I am not familiar with what happens to the offline version of Scratch 3 and how to extend it), Python does not support OpenCV, machine learning, numerical calculation, etc. The library is ready to use, so you can expand it quite freely.</p>
+<p>Of course, Node.js can set up a similar lightweight server for asynchronous I/O, so if you don&rsquo;t care about Python modules, you can write it in JavaScript. (<a href="https://qiita.com/memakura/items/ca1fff4d7dd33164bb7e">I summarized it in this article</a>)</p>
+<p>If you want to leave the HTTP extensions in Scratch 3 (and if they&rsquo;re still going to be removed), you might change Scratch 3 instead.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

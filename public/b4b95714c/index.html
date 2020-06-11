@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Try using PHATE, a dimension reduction and visualization method for biological data | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Try using PHATE, a dimension reduction and visualization method for biological data</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/bioinformatics"> bioinformatics</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/visualization"> visualization</a></code></small>
+
+</p>
+<pre><code># Try using PHATE, a dimension reduction and visualization method for biological data
+</code></pre>
+<p><a href="https://www.nature.com/articles/s41587-019-0336-3">PHATE (Moon, KR, van Dijk, D., Wang, Z. et al. Nature Biotechnology 37, 1482–1492 (2019))</a> Try to use.
+There are a lot of methods of dimension reduction used in biology papers, but each method has advantages and disadvantages. The following methods are often used as typical ones.</p>
+<ol>
+<li>PCA: principal component analysis. Take out the axis of maximum dispersion. Although there are various advantages that other methods do not have, especially when used for visualization, nonlinear features cannot be captured, local structures that well reflect global features of distribution tend to be collapsed as noise, etc. There are drawbacks.</li>
+<li>t-SNE (and UMAP): For each point, search a low-dimensional arrangement so that the distance relationship with the local neighborhood is preserved. So the visualization is one in which the local structure of the data distribution is well preserved. If the data consists of multiple clusters, the visualization will reflect those clusters well, but continuous &ldquo;trajectories&rdquo; tend to be divided appropriately. Also, since we hardly see long-distance relationships, the relative distance relationship between multiple clusters also changes with random numbers.</li>
+<li>MDS: Multidimensional scaling. Arranged to store all-to-all distance relationships between data points. We do not directly look at the &ldquo;structure&rdquo; of the data, so it is vulnerable to noise (no distinction is made between noise and characteristic structures such as clusters and trajectories)</li>
+<li>Diffusion map: A transition probability matrix is constructed from the distances between data points and a diffusion process (random walk on the graph structure of data) is applied. The distribution after t steps is obtained by the t-th power of the transition probability matrix. I want to obtain low-dimensional coordinates that reflect the difference in the distribution as the Euclidean distance, but it can be obtained as the eigenvector of the t-th power of the transition probability matrix. It has various advantages such as strong resistance to noise, support for local features to global structures by the number of steps t, and easy finding of structures such as &ldquo;orbits&rdquo;, but it tends to compress different orbits into different dimensions. In other words, it is not suitable for low-dimensional visualization such as 2D and 3D.</li>
+<li><a href="https://en.wikipedia.org/wiki/Trajectory_inference">Trajectory inference</a> such as Monocle2: It is a method of estimating the tree structure, so it is not clear in advance whether or not the assumption is satisfied. The estimation is also unstable.</li>
+</ol>
+<p>etc. A technique called PHATE (Potential of Heat diffusion for Affinity-based Transition Embedding) was developed to eliminate these drawbacks.
+Also, <a href="https://github.com/scottgigante/M-PHATE">M-PHATE</a>,whichisanextensionofPHATE,hasbeendevelopedasamoregeneraltensorembedding.Thisisamethodforlow-dimensionalvisualizationofdata(suchasweightinformationforeachepochofaneuralnetwork) that includes the time evolution of the same group.</p>
+<p>Installation is easy, if you do <code>pip install phate</code> OK.
+See <a href="https://github.com/KrishnaswamyLab/PHATE">PHATE repository</a> for R version and Matlab version.</p>
+<h2 id="visualization-of-tree-structure-data">Visualization of tree structure data</h2>
+<p>Experiment with 100-dimensional tree structure data (+ noise) provided by PHATE. It consists of 20 &ldquo;branches&rdquo; and has a total of 2,000 data points. As a structure, the remaining 19 branches grow randomly from various parts of the first branch. Each branch faces various directions in 100-dimensional space.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> phate
+
+tree_data, tree_clusters <span style="color:#f92672">=</span> phate<span style="color:#f92672">.</span>tree<span style="color:#f92672">.</span>gen_dla(seed<span style="color:#f92672">=</span><span style="color:#ae81ff">108</span>)
+</code></pre></div><p>Usage is the same as the model of scikit-learn. First, set parameters and create an instance of the model, and transform the data with <code>fit_transform</code>.
+The three main parameters are <code>knn</code>, <code>decay</code>, and <code>t</code>. <code>t</code> can also be determined automatically from the data. Details will be described later.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">phate_operator <span style="color:#f92672">=</span> phate<span style="color:#f92672">.</span>PHATE(knn<span style="color:#f92672">=</span><span style="color:#ae81ff">15</span>, decay<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>, t<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+
+tree_phated <span style="color:#f92672">=</span> phate_operator<span style="color:#f92672">.</span>fit_transform(tree_data)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">    Calculating PHATE...
+      Running PHATE on <span style="color:#ae81ff">2000</span> cells and <span style="color:#ae81ff">100</span> genes.
+      Calculating graph and diffusion operator...
+        Calculating KNN search...
+        Calculated KNN search in 0.50 seconds.
+        Calculating affinities...
+        Calculated affinities in 0.05 seconds.
+      Calculated graph and diffusion operator in 0.56 seconds.
+      Calculating diffusion potential...
+      Calculated diffusion potential in 0.41 seconds.
+      Calculating metric MDS...
+      Calculated metric MDS in 10.43 seconds.
+    Calculated PHATE in 11.41 seconds.
+</code></pre></div><p>Compressed in two dimensions. Let&rsquo;s plot the results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> seaborn <span style="color:#f92672">as</span> sns
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_2d</span>(coords, clusters, ax):
+    <span style="color:#66d9ef">for</span> c, color <span style="color:#f92672">in</span> zip(sorted(list(set(clusters))), plt<span style="color:#f92672">.</span>cm<span style="color:#f92672">.</span>tab20<span style="color:#f92672">.</span>colors):
+        samples <span style="color:#f92672">=</span> clusters <span style="color:#f92672">==</span> c
+        ax<span style="color:#f92672">.</span>scatter(coords[samples, <span style="color:#ae81ff">0</span>], coords[samples, <span style="color:#ae81ff">1</span>], \
+                   label<span style="color:#f92672">=</span>c, color<span style="color:#f92672">=</span>color)
+    ax<span style="color:#f92672">.</span>legend(loc<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;upper right&#39;</span>, bbox_to_anchor<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1.1</span>, <span style="color:#ae81ff">1</span>))
+    sns<span style="color:#f92672">.</span>despine()
+
+fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">9</span>))
+plot_2d(tree_phated, tree_clusters, ax<span style="color:#f92672">=</span>ax)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/2cb779ce-c8cd-edca-d359-8fc081bfeb32.png" alt="output_12_0.png"></p>
+<p>In this way, each branch can be properly separated and visualized while maintaining the data structure. Let&rsquo;s compare the visualization of PCA, t-SNE, UMAP, PHATE with the same data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sklearn.decomposition <span style="color:#f92672">import</span> PCA
+<span style="color:#f92672">from</span> sklearn.manifold <span style="color:#f92672">import</span> TSNE
+<span style="color:#f92672">from</span> umap <span style="color:#f92672">import</span> UMAP
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">compare_vis</span>(data, clusters, pca_init_dim<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Running PCA...&#39;</span>)
+    pca_op <span style="color:#f92672">=</span> PCA(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+    data_pca <span style="color:#f92672">=</span> pca_op<span style="color:#f92672">.</span>fit_transform(data)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Running t-SNE...&#39;</span>)
+    pca_init_op <span style="color:#f92672">=</span> PCA(n_components<span style="color:#f92672">=</span>pca_init_dim)
+    tsne_op <span style="color:#f92672">=</span> TSNE(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+    data_tsne <span style="color:#f92672">=</span> tsne_op<span style="color:#f92672">.</span>fit_transform(pca_init_op<span style="color:#f92672">.</span>fit_transform(data))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Running UMAP...&#39;</span>)
+    pca_init_op <span style="color:#f92672">=</span> PCA(n_components<span style="color:#f92672">=</span>pca_init_dim)
+    umap_op <span style="color:#f92672">=</span> UMAP(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+    data_umap <span style="color:#f92672">=</span> umap_op<span style="color:#f92672">.</span>fit_transform(pca_init_op<span style="color:#f92672">.</span>fit_transform(data))
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Running PHATE...&#39;</span>)
+    phate_op <span style="color:#f92672">=</span> phate<span style="color:#f92672">.</span>PHATE(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+    data_phated <span style="color:#f92672">=</span> phate_op<span style="color:#f92672">.</span>fit_transform(data)
+    fig, axes <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">36</span>), nrows<span style="color:#f92672">=</span><span style="color:#ae81ff">4</span>)
+    plot_2d(data_pca, clusters, ax<span style="color:#f92672">=</span>axes[<span style="color:#ae81ff">0</span>])
+    plot_2d(data_tsne, clusters, ax<span style="color:#f92672">=</span>axes[<span style="color:#ae81ff">1</span>])
+    plot_2d(data_umap, clusters, ax<span style="color:#f92672">=</span>axes[<span style="color:#ae81ff">2</span>])
+    plot_2d(data_phated, clusters, ax<span style="color:#f92672">=</span>axes[<span style="color:#ae81ff">3</span>])
+    axes[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">&#39;PCA&#39;</span>); axes[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">&#39;t-SNE&#39;</span>)
+    axes[<span style="color:#ae81ff">2</span>]<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">&#39;UMAP&#39;</span>); axes[<span style="color:#ae81ff">3</span>]<span style="color:#f92672">.</span>set_title(<span style="color:#e6db74">&#39;PHATE&#39;</span>)
+    plt<span style="color:#f92672">.</span>show()
+
+compare_vis(tree_data, tree_clusters)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/c5ee15fb-e838-cc41-f726-2fd65e42d12a.png" alt="output_15_1.png"></p>
+<p>In PCA, the tree structure is not well understood (because of the large influence of noise), and in t-SNE and UMAP, clusters are properly divided.
+Let&rsquo;s also look at embedding in three dimensions. As will be described later, in the PHATE algorithm, the dimension to be finally embedded is related only to the final MDS calculation, so it is not necessary to recalculate the whole, and the parameter (<code>n_components</code>) is updated to <code> If you do transform</code>, it will execute only the final step.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">%</span>matplotlib notebook
+<span style="color:#f92672">from</span> mpl_toolkits.mplot3d <span style="color:#f92672">import</span> axes3d
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_3d</span>(coords, clusters, fig):ax <span style="color:#f92672">=</span> fig<span style="color:#f92672">.</span>gca(projection<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;3d&#39;</span>)
+    <span style="color:#66d9ef">for</span> c, color <span style="color:#f92672">in</span> zip(sorted(list(set(clusters))), plt<span style="color:#f92672">.</span>cm<span style="color:#f92672">.</span>tab20<span style="color:#f92672">.</span>colors):
+        samples <span style="color:#f92672">=</span> clusters <span style="color:#f92672">==</span> c
+        ax<span style="color:#f92672">.</span>scatter(coords[samples, <span style="color:#ae81ff">0</span>], coords[samples, <span style="color:#ae81ff">1</span>], coords[samples, <span style="color:#ae81ff">2</span>], \
+                   label<span style="color:#f92672">=</span>c, color<span style="color:#f92672">=</span>color)
+    ax<span style="color:#f92672">.</span>legend()
+
+phate_operator<span style="color:#f92672">.</span>set_params(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
+tree_phated <span style="color:#f92672">=</span> phate_operator<span style="color:#f92672">.</span>transform()
+
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">9</span>))
+plot_3d(tree_phated, tree_clusters, fig)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/3141352a-785a-4186-cc0f-d6f24483b0e2.png" alt="output_19_0.png"></p>
+<h2 id="visualization-of-scrna-seq-data">Visualization of scRNA-seq data</h2>
+<p>Let&rsquo;s try with <a href="http://dx.doi.org/10.17632/v6n743h5ng.1">embryoid body scRNA-seq data</a> used in the paper for the demonstration.
+A little too much data and also to evaluate the stability of the results when down-sampling, we randomly sampled cells by 10% of the whole and made in advance some normal pre-processing results. It was
+For details of scRNA-seq data pre-processing and algorithms for PCA, t-SNE, UMAP, etc., see <a href="https://doi.org/10.7875/togotv.2019.190">Course video</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> scipy
+
+cells <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>genfromtxt(<span style="color:#e6db74">&#39;./data/cell_names.tsv&#39;</span>, dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;str&#39;</span>, delimiter<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span>)
+genes <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>genfromtxt(<span style="color:#e6db74">&#39;./data/gene_names.tsv&#39;</span>, dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;str&#39;</span>, delimiter<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;</span><span style="color:#ae81ff">\t</span><span style="color:#e6db74">&#39;</span>)
+arr <span style="color:#f92672">=</span> scipy<span style="color:#f92672">.</span>io<span style="color:#f92672">.</span>mmread(<span style="color:#e6db74">&#39;./data/matrix.mtx&#39;</span>)
+
+EBData <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(arr<span style="color:#f92672">.</span>todense(), index<span style="color:#f92672">=</span>cells, columns<span style="color:#f92672">=</span>genes)
+EBData<span style="color:#f92672">.</span>head()
+</code></pre></div><p>Gene expression level table of 1,679 cells and 12,993 genes.
+Each cell is labeled as follows. The time series of differentiation should be observable because it is taken every 3 days until the 27th day.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">sample_labels <span style="color:#f92672">=</span> EBData<span style="color:#f92672">.</span>index<span style="color:#f92672">.</span>map(<span style="color:#66d9ef">lambda</span> x:x<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;_&#39;</span>)[<span style="color:#ae81ff">1</span>])<span style="color:#f92672">.</span>values
+<span style="color:#66d9ef">print</span>(sample_labels)
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">    array<span style="color:#f92672">([</span><span style="color:#e6db74">&#39;Day 00-03&#39;</span>,<span style="color:#e6db74">&#39;Day 00-03&#39;</span>,<span style="color:#e6db74">&#39;Day 00-03&#39;</span>, ...,<span style="color:#e6db74">&#39;Day 24-27&#39;</span>,
+           <span style="color:#e6db74">&#39;Day 24-27&#39;</span>,<span style="color:#e6db74">&#39;Day 24-27&#39;</span><span style="color:#f92672">]</span>, dtype<span style="color:#f92672">=</span>object<span style="color:#f92672">)</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">phate_op <span style="color:#f92672">=</span> phate<span style="color:#f92672">.</span>PHATE()
+EBData_phated <span style="color:#f92672">=</span> phate_op<span style="color:#f92672">.</span>fit_transform(EBData)
+
+<span style="color:#f92672">%</span>matplotlib inline
+fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">9</span>))
+plot_2d(EBData_phated, sample_labels, ax<span style="color:#f92672">=</span>ax)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/7a8122d1-ac17-c7ec-cca9-d8c87f1485a5.png" alt="output_29_0.png"></p>
+<p>The process of differentiation is well understood by dimension reduction + visualization by PHATE. Especially the spread of diversity from the 18th to the 27th. PHATE&rsquo;s good point is that it visualizes the trajectory properly when it has a trajectory and cluster-like when there is a cluster, and also makes it possible to compare the extent of the cluster with each other. In addition, even though only 10% of all data are used, the figure of a paper dimensionally compressed using tens of thousands of cells (<a href="https://www.nature.com/articles/s41587-019-0336ItdrawsalmostthesameasFig.1c">Papers</a>in-3), which shows that the sample size is somewhat robust.
+Try 3D.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">phate_op<span style="color:#f92672">.</span>set_params(n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
+EBData_phated <span style="color:#f92672">=</span> phate_op<span style="color:#f92672">.</span>transform()
+fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">9</span>, <span style="color:#ae81ff">9</span>))
+plot_3d(EBData_phated, sample_labels, fig)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/62e1b35e-4316-2200-45da-2059f2d98575.png" alt="output_31_1.png"></p>
+<p>Let&rsquo;s compare the same scRNA-seq data with PCA, t-SNE, UMAP, etc.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">compare_vis(EBData<span style="color:#f92672">.</span>values, sample_labels)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/d00d6ce1-810b-98d0-08ca-4dd968591b20.png" alt="output_33_1.png"></p>
+<p>After all, t-SNE and UMAP have a strong sense of cluster, and the trajectory is difficult to understand.</p>
+<h2 id="phate-implementation">PHATE implementation</h2>
+<p>I will implement PHATE according to the method of the paper.
+As the whole is composed by combining various methods, it is not clear what part of the processing makes a decisive contribution to the improvement of visualization. So, I will implement it by dividing it into several steps. Honestly, I do not understand the importance of each step, or the necessity, even if I implement it &hellip;I am not sure whether it is this implementation &hellip;
+It consists of the following four steps. If you know the Diffusion map, it may be easy to swallow because it is almost the same until step 2.</p>
+<ol>
+<li>Calculation of Diffusion operator
+<ul>
+<li>Convert to distance matrix, calculate local affinity by kernel, configure transition probability matrix = diffusion operator for 1 step</li>
+</ul>
+</li>
+<li>Determination of diffusion time scale &ldquo;t&rdquo;
+<ul>
+<li>Determine how many steps to proceed with diffusion from the amount of information contained in the t-th power of the diffusion operator</li>
+</ul>
+</li>
+<li>Run the diffusion process and calculate &ldquo;potential distances&rdquo;
+<ul>
+<li>The distance after diffusion is calculated using the newly proposed Potential distance instead of using the Diffusion distance as in the Diffusion map.</li>
+</ul>
+</li>
+<li>Low-dimensional embedding of potential distance with MDS
+<ul>
+<li>Use MDS (Multidimensional Scaling Method) to transfer the distance relation of potential distance to the distance relation of arbitrary low-dimensional coordinates.</li>
+</ul>
+</li>
+</ol>
+<h3 id="1-diffusion-operator-calculation">1. Diffusion operator calculation</h3>
+<p>First, the Euclidean distance matrix of the entire data is calculated.
+For each data point, apply an adaptive kernel similar to t-SNE or UMAP so that data points that are close to each other have a large weight (=affinity) and data points that are far from each other have a small weight. A simple graph structure.
+Here comes the parameters, <code>knn</code> and <code>alpha</code> (called <code>decay</code> in the original implementation of phate), which have a big impact on the overall result. ..
+The kernel is a normal Gaussian kernel, but like the perplexity in t-SNE and n_neighbors in UMAP, the bandwidth is adaptively changed according to the density of the data neighborhood.
+In the case of PHATE, this adaptive bandwidth is simply set to $\epsilon_k$, which is the distance from each data point to the knn-th closest data point.
+Another idea is what is called $\alpha$-decaying kernel. When only the bandwidth is changed, when the width is wide, affinity remains at a point far away (heavy-tail). Then, the points taken from the low density area will have almost the same affinity as all the other points. To prevent this, use the following kernel to control the decay of affinity with the parameter $\alpha$.
+$$K_{k, \alpha}(x,y)=\frac{1}{2}exp\left( -\left(\frac{|xy|_2}{\epsilon_k(x)}\right )^{\alpha}\right) + \frac{1}{2}exp\left( -\left(\frac{|xy|_2}{\epsilon_k(y)}\right)^{\alpha }\right)$$
+When $\alpha=2$, it is a normal Gaussian kernel, but if $\alpha$ is large, the affinity decreases more rapidly.
+Both knn and $\alpha$ affect the connectivity of the graph, so you need to decide carefully. If knn is too small or $\alpha$ is too large and the graph is too sparse, the diffusion process will not work well. On the other hand, if knn is too large or $\alpha$ is too small, the whole structure will be connected with equal weight and the structure cannot be captured. For the time being, PHATE is argued to be more robust due to the difference in parameters, but I think it is better to fix one and experiment with it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> scipy.spatial.distance <span style="color:#f92672">import</span> pdist, squareform
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">diffusion_operator</span>(data, knn<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>):
+    <span style="color:#75715e"># Construction of Euclidean distance matrix</span>
+    dist <span style="color:#f92672">=</span> squareform(pdist(data))
+    <span style="color:#75715e"># Computation of adaptive bandwidth epsilon. Sort the distance matrix to the knn th value.</span>
+    epsilons <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sort(dist, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)[:, knn]
+    <span style="color:#75715e"># alpha-decaying kernelkernel_mtx = np.exp(-1.* np.power(dist / epsilons[:, np.newaxis], alpha))</span>
+    Normalized <span style="color:#66d9ef">with</span> <span style="color:#75715e"># L1-norm. Each row has a probability distribution.</span>
+    l1norm_kernel_mtx <span style="color:#f92672">=</span> kernel_mtx <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>abs(kernel_mtx)<span style="color:#f92672">.</span>sum(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)[:, np<span style="color:#f92672">.</span>newaxis]
+    <span style="color:#75715e"># Symmetrization.</span>
+    transition_mtx <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span> <span style="color:#f92672">*</span> l1norm_kernel_mtx <span style="color:#f92672">+</span> <span style="color:#ae81ff">0.5</span> <span style="color:#f92672">*</span> l1norm_kernel_mtx<span style="color:#f92672">.</span>T
+    <span style="color:#66d9ef">return</span> transition_mtx
+</code></pre></div><h3 id="2-determination-of-diffusion-time-scale-t">2. Determination of diffusion time scale &ldquo;t&rdquo;</h3>
+<p>The last important parameter is &ldquo;t&rdquo;, which determines the diffusion timescale.
+Decide how many steps the random walk based on affinity will progress (= how many times the diffusion operator will be raised).
+The diffusion process also serves to denoise the data. Data points that are connected by short paths with high affinity have a high probability of visiting each other on random walks, and outlier points that have only low affinity paths are less likely to be visited, so each time the diffusion step progresses, the former To be emphasized. Therefore, the diffusion time scale can be regarded as the degree of noise removal. If it is too small, a lot of noise remains, and if it is too large, important signals may be removed as noise.
+In PHATE, as a method of automatically determining the diffusion time scale t from data, noise is completely removed by examining the “information amount” included in the t-th power of the diffusion operator at various t, while the original data The structure of is determined t in consideration of the timing not to be crushed.
+Specifically, the eigenvalues are calculated for each (symmetric conjugate of) the powers of the diffusion operator to calculate <a href="https://en.wikipedia.org/wiki/Von_Neumann_entropy">von Neumann entropy</a>(VNE). As t increases, VNE decreases. The initial VNE reduction is due to denoising and the non-significant eigenvalues quickly go to zero. The eigenvalue reflecting the structure of the data decreases more slowly. Therefore, if you select t when the reduction rate switches, you can automatically select t that removes noise and does not collapse the structure.
+Here we find the &ldquo;knee point&rdquo; of the plot by computing the VNEs at various t&rsquo;s and then performing two linear regressions on the left and right sides of each t and choosing the point with less total error. ..</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm_notebook <span style="color:#66d9ef">as</span> tqdm
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">von_Neumann_entropy</span>(P):
+    Calculation of <span style="color:#75715e">#symmetric conjugate (diffusion affinity matrix)</span>
+    norm_factor <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sqrt(P<span style="color:#f92672">.</span>sum(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>))
+    A <span style="color:#f92672">=</span> P <span style="color:#f92672">/</span> norm_factor[:, np<span style="color:#f92672">.</span>newaxis] <span style="color:#f92672">/</span> norm_factor
+    <span style="color:#75715e"># Eigenvalue decomposition</span>
+    eig, _ <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>eigh(A)
+    eig <span style="color:#f92672">=</span> eig[eig<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>]
+    eig <span style="color:#f92672">/=</span> eig<span style="color:#f92672">.</span>sum()
+    <span style="color:#75715e">#VNE is the Shannon entropy of the normalized eigenvalues</span>
+    VNE <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1.0</span> <span style="color:#f92672">*</span> (eig <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>log(eig))<span style="color:#f92672">.</span>sum()
+    <span style="color:#66d9ef">return</span> VNE
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">find_knee_point</span>(vals):
+    y <span style="color:#f92672">=</span> vals
+    x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>arange(len(y))
+    candidates <span style="color:#f92672">=</span> x[<span style="color:#ae81ff">2</span>:len(y)<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>]
+    errors <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(len(candidates))
+    errors[:] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>nan
+    <span style="color:#75715e"># For each t, calculate the error by linear regression on the left and right sides respectively</span>
+    <span style="color:#75715e"># There seems to be a better way, but here I honestly calculate one by one ...</span>
+    <span style="color:#66d9ef">for</span> i, pnt <span style="color:#f92672">in</span> enumerate(candidates):
+        <span style="color:#75715e"># left area linear regression (y = ax + b)</span>
+        On the left side of the <span style="color:#75715e"># point, calculate the textbook least squares method.</span>
+        x_mean <span style="color:#f92672">=</span> x[:pnt]<span style="color:#f92672">.</span>mean()
+        y_mean <span style="color:#f92672">=</span> y[:pnt]<span style="color:#f92672">.</span>mean()
+        a <span style="color:#f92672">=</span> ((x[:pnt]<span style="color:#f92672">-</span>x_mean) <span style="color:#f92672">*</span> (y[:pnt]<span style="color:#f92672">-</span>y_mean))<span style="color:#f92672">.</span>sum() <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>power(x[:pnt]<span style="color:#f92672">-</span>x_mean, <span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum()
+        b <span style="color:#f92672">=</span> y_mean<span style="color:#f92672">-</span>a <span style="color:#f92672">*</span> x_mean
+        left_err <span style="color:#f92672">=</span> (a <span style="color:#f92672">*</span> x[:pnt] <span style="color:#f92672">+</span> b)<span style="color:#f92672">-</span>y[:pnt]
+        <span style="color:#75715e"># right area linear regression</span>
+        x_mean <span style="color:#f92672">=</span> x[pnt:]<span style="color:#f92672">.</span>mean()
+        y_mean <span style="color:#f92672">=</span> y[pnt:]<span style="color:#f92672">.</span>mean()
+        a <span style="color:#f92672">=</span> ((x[pnt:]<span style="color:#f92672">-</span>x_mean) <span style="color:#f92672">*</span> (y[pnt:]<span style="color:#f92672">-</span>y_mean))<span style="color:#f92672">.</span>sum() <span style="color:#f92672">/</span> np<span style="color:#f92672">.</span>power(x[pnt:]<span style="color:#f92672">-</span>x_mean, <span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum()
+        b <span style="color:#f92672">=</span> y_mean<span style="color:#f92672">-</span>a <span style="color:#f92672">*</span> x_mean
+        right_err <span style="color:#f92672">=</span> (a <span style="color:#f92672">*</span> x[pnt:] <span style="color:#f92672">+</span> b)<span style="color:#f92672">-</span>y[pnt:]
+        <span style="color:#75715e"># total error</span>
+        errors[i] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>abs(left_err)<span style="color:#f92672">.</span>sum() <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>abs(right_err)<span style="color:#f92672">.</span>sum()
+    <span style="color:#75715e">#Knee point is the point with the smallest error</span>
+    knee_ind <span style="color:#f92672">=</span> candidates[np<span style="color:#f92672">.</span>nanargmin(errors)]
+    <span style="color:#66d9ef">return</span> knee_ind
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">find_optimal_timescale</span>(P, max_t<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>):
+    VNEs <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros(max_t)
+    <span style="color:#66d9ef">for</span> t <span style="color:#f92672">in</span> tqdm(range(<span style="color:#ae81ff">1</span>, max_t<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)):
+        <span style="color:#75715e"># Calculate the t-th power of the diffusion operator and VNE for each t.</span>
+        Pt <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>matrix_power(P, t)
+        VNEs[t<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> von_Neumann_entropy(Pt)
+    knee_point_ind <span style="color:#f92672">=</span> find_knee_point(VNEs)
+    optimal_t <span style="color:#f92672">=</span> knee_point_ind <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots()
+    ax<span style="color:#f92672">.</span>plot(range(len(VNEs)), VNEs)
+    ax<span style="color:#f92672">.</span>scatter(knee_point_ind, VNEs[knee_point_ind], marker<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;o&#39;</span>, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;r&#39;</span>)
+    plt<span style="color:#f92672">.</span>show()
+    <span style="color:#66d9ef">return</span> optimal_t
+</code></pre></div><h3 id="3-perform-diffusion-process-and-calculate-potential-distances">3. Perform diffusion process and calculate &ldquo;potential distances&rdquo;</h3>
+<p>In the case of the Diffusion map, the coordinates that reflect the diffusion distance (square distance for each point of the probability distribution after t steps) are obtained as they are by eigenvalue decomposition of the diffusion operator.
+However, in this distance calculation, since the sensitivity of low probability values is low, it is difficult to reflect the information of the distance between the distant points (global structure of the data).
+Therefore, the Euclidean distance is calculated after logarithmically converting the diffusion operator after t steps of diffusion. This is called &ldquo;potential distance&rdquo;. The paper explains in detail what this newly introduced distance index physically means (but I was not sure).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">potential_distances</span>(P, t):
+    <span style="color:#75715e"># ride the diffusion operator t</span>
+    Pt <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>matrix_power(P, t)
+    Convert to Euclidean distance by converting to <span style="color:#75715e">#-log(P^t)</span>
+    <span style="color:#66d9ef">return</span> squareform(pdist(<span style="color:#f92672">-</span><span style="color:#ae81ff">1.0</span> <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>log(Pt <span style="color:#f92672">+</span> <span style="color:#ae81ff">1e-7</span>)))
+</code></pre></div><h3 id="4-potential-distance-embedded-with-mds-in-low-dimension">4. Potential distance embedded with MDS in low dimension</h3>
+<p>Instead of performing eigenvalue decomposition like a Diffusion map, the potential distance calculated in 3 is transferred to a lower dimension suitable for visualization by MDS (multidimensional scaling).
+First, low dimensional coordinates are calculated using classical MDS(=PCoA), and metric MDS is calculated using it as the initial value.
+metric MDS is executed by scikit-learn&rsquo;s SMACOF algorithm.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">from</span> sklearn.manifold <span style="color:#f92672">import</span> smacof
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mds</span>(dist, n_components<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>):
+    <span style="color:#75715e"># classical multidimensional scaling (= PCoA)</span>
+    n <span style="color:#f92672">=</span> len(dist)
+    J <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>eye(n)<span style="color:#f92672">-</span>np<span style="color:#f92672">.</span>ones((n, n))<span style="color:#f92672">/</span>n
+    B <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>J<span style="color:#f92672">.</span>dot(dist<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>dot(J)<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>
+    evals, evecs <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>eigh(B)
+    idx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>argsort(evals)[::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+    evals <span style="color:#f92672">=</span> evals[idx]
+    evecs <span style="color:#f92672">=</span> evecs[:,idx]
+    pos <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>where(evals<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>)[<span style="color:#ae81ff">0</span>]
+    initial_coords <span style="color:#f92672">=</span> evecs[:,pos]<span style="color:#f92672">.</span>dot(np<span style="color:#f92672">.</span>diag(np<span style="color:#f92672">.</span>sqrt(evals[pos])))[:, :n_components]
+    <span style="color:#75715e"># metric multidimensional scaling (SMACOF algorithm)</span>
+    coords <span style="color:#f92672">=</span> smacof(dist, n_components<span style="color:#f92672">=</span>n_components, init<span style="color:#f92672">=</span>initial_coords, n_init<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)[<span style="color:#ae81ff">0</span>]
+    <span style="color:#66d9ef">return</span> coords
+</code></pre></div><p>Let&rsquo;s actually execute the above steps with tree structure data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">diffop <span style="color:#f92672">=</span> diffusion_operator(tree_data, knn<span style="color:#f92672">=</span><span style="color:#ae81ff">15</span>, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">40</span>)
+optimal_t <span style="color:#f92672">=</span> find_optimal_timescale(diffop)
+<span style="color:#66d9ef">print</span>(optimal_t)
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/f7e3f720-72fa-a2c5-f2e5-8f7aed8ba671.png" alt="output_50_2.png"></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">potential_dist <span style="color:#f92672">=</span> potential_distances(diffop, optimal_t)
+coords <span style="color:#f92672">=</span> mds(potential_dist)fig, ax <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>subplots(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">12</span>, <span style="color:#ae81ff">9</span>))
+plot_2d(coords, tree_clusters, ax<span style="color:#f92672">=</span>ax)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/176102/a59c19d4-4763-081c-0c25-c8f1018277cb.png" alt="output_52_0.png"></p>
+<p>The result was similar to the original implementation.
+Actually, the above algorithm itself is not calculated by making various efforts to improve the stability of numerical calculation at each step, or by making various improvements for memory-saving and high-speed calculation. It seems that they are doing calculations, but it looks like this as a general outline.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

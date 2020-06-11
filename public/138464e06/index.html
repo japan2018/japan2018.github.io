@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] 1次元移流方程式を有限要素法で解いてみる.py | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] 1次元移流方程式を有限要素法で解いてみる.py</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 27, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/finite-element-method"> finite element method</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/flow-equation"> flow equation</a></code></small>
+
+</p>
+<pre><code>Let's solve the one-dimensional advection equation by the stabilized finite element method based on the SUPG (Streamline Upwind/Petrov-Galerkin) method.
+</code></pre>
+<p>The language is Python. The version used is Python 3.6.1.</p>
+<p>References:
+Computational Mechanics (2nd Edition)-Basics of Finite Element Method (Morikita Publishing)
+Third edition Flow simulation by finite element method With Fortran source code based on OpenMP (Maruzen Publishing)</p>
+<h1 id="one-dimensional-advection-equation">One-dimensional advection equation</h1>
+<p>The one-dimensional advection equation is expressed by the first-order partial differential equation as follows.</p>
+<pre><code class="language-math" data-lang="math">\cfrac{\partial f}{\partial t} + u\ \cfrac{\partial f}{\partial x} = 0
+</code></pre><p>Where $f$ is the advected physical quantity (eg concentration) and $u$ is the advection velocity.</p>
+<h1 id="discretization-by-the-stabilized-finite-element-method">Discretization by the stabilized finite element method</h1>
+<p>Dividing the analysis domain $\Omega$ into $M$ primary element domains $\Omega_e$ gives the following discretization equation.</p>
+<pre><code class="language-math" data-lang="math">\int_\Omega \omega\ \cfrac{\partial f}{\partial t}\ d\Omega\ + \int_\Omega \omega\ u\ \cfrac{\partial f}{\partial x}\ d\Omega \ + \sum_{e = 1}^M\int_{\Omega_e} \tau_e\ u\ \cfrac{\partial \omega}{\partial x}\left(\cfrac{\partial f}{\partial t} \ + u\ \cfrac{\partial f}{\partial x}\right)\ d\Omega = 0
+</code></pre><p>Where $\omega$ is a weighting function and $\tau_e$ is a stabilizing parameter. Generally, in the case of nonstationary problems, element length $h_e$ and time step $\Delta t$ are used.</p>
+<pre><code class="language-math" data-lang="math">\tau_e = \left(\left( \cfrac{2}{\Delta t}\right)^2 + \left(\cfrac{2|u|}{h_e}\right)^2\ \right)^{ -\frac{1}{2}}
+</code></pre><p>It is expressed as If you focus on a certain element $e$</p>
+<pre><code class="language-math" data-lang="math">\int_{\Omega_e} \omega\ \cfrac{\partial f}{\partial t}\ d\Omega\ + \int_{\Omega_e} \omega\ u\ \cfrac{\partial f}{\partial x} \ d\Omega\ + \int_{\Omega_e} \tau_e\ u\ \cfrac{\partial \omega}{\partial x}\left(\cfrac{\partial f}{\partial t}\ + u\ \ cfrac{\partial f}{\partial x}\right)\ d\Omega = 0
+</code></pre><p>can be obtained. $\omega$, $f$ and $u$ in the element are calculated using the 2-node primary element, respectively.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\omega(x) &amp;= \cfrac{x_2^e-x}{h_e}\ \omega_1^e + \cfrac{x-x_1^e}{h_e}\ \omega_2^e\\
+&amp;=
+\begin{pmatrix}
+N_1^e &amp; N_2^e
+\end{pmatrix}
+\begin{pmatrix}
+\omega_1^e\\
+\omega_2^e\\
+\end{pmatrix}
+= {\bf N}_e{\bf \omega}_e,
+\end{align}
+</code></pre><pre><code class="language-math" data-lang="math">\begin{align}
+f(x) &amp;= \cfrac{x_2^e-x}{h_e}\ f_1^e + \cfrac{x-x_1^e}{h_e}\ f_2^e\\
+&amp;=
+\begin{pmatrix}
+N_1^e &amp; N_2^e
+\end{pmatrix}
+\begin{pmatrix}
+f_1^e\\
+f_2^e\\
+\end{pmatrix}
+= {\bf N}_e{\bf f}_e,
+\end{align}
+</code></pre><pre><code class="language-math" data-lang="math">\begin{align}
+u(x) &amp;= \cfrac{x_2^e-x}{h_e}\ u_1^e + \cfrac{x-x_1^e}{h_e}\ u_2^e\\
+&amp;=
+{\begin{pmatrix}
+N_1^e &amp; N_2^e
+\end{pmatrix}}
+\begin{pmatrix}
+u_1^e\\
+u_2^e\\
+\end{pmatrix}
+= {\bf N}_e{\bf u}_e
+
+\end{align}
+</code></pre><p>And interpolate. Similarly, the time derivative of $f$</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\dot{f}(x) &amp;= \cfrac{x_2^e-x}{h_e}\ \dot{f}_1^e + \cfrac{x-x_1^e}{h_e}\ \dot{f} _2^e\\
+&amp;=
+{\begin{pmatrix}
+N_1^e &amp; N_2^e
+\end{pmatrix}}
+\begin{pmatrix}
+\dot{f}_1^e\\
+\dot{f}_2^e\\
+\end{pmatrix}
+= {\bf N}_e\dot{{\bf f}}_e
+\end{align}
+</code></pre><p>And interpolate. By substituting these, the following formula is obtained.</p>
+<pre><code class="language-math" data-lang="math">\int_{\Omega_e} {\bf N}_e{\bf \omega}_e {\bf N}_e\dot{\bf f}_e\ d\Omega\
++ \int_{\Omega_e} {\bf N}_e{\bf \omega}_e\ {\bf N}_e{\bf u}_e\cfrac{\partial {\bf N}_e}{\partial x} \ {\bf f}_e\ d\Omega\
++ \int_{\Omega_e} \tau_e\ {\bf N}_e{\bf u}_e\cfrac{\partial {\bf N}_e}{\partial x}{\bf \omega}_e\left({ \bf N}_e\dot{{\bf f}}_e\ + {\bf N}_e{\bf u}_e\cfrac{\partial {\bf N}_e}{\partial x}{\bf f }_e\right)\ d\Omega = 0
+</code></pre><p>The spatial derivative of the shape function $N$ is</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\cfrac{\partial {\bf N}_e}{\partial x}
+&amp;=
+{\begin{pmatrix}
+\cfrac{\partial N_1^e}{\partial x} &amp; \cfrac{\partial N_2^e}{\partial x}
+\end{pmatrix}}
+=
+{\begin{pmatrix}
+- \cfrac{1}{h_e} &amp; \cfrac{1}{h_e}
+\end{pmatrix}}
+\end{align}
+</code></pre><p>And becomes a constant value within the element.
+When the formula is transformed using ${\bf N}_ e\omega_e = ({\bf N}_ e \omega_e)^T = \omega_e^T{\bf N}_ e^T$, etc.</p>
+<pre><code class="language-math" data-lang="math">\omega_e^T\left(\int_{\Omega_e} {\bf N}_e^T{\bf N}_e\ d\Omega\ \dot{\bf f}_e\
++ \int_{\Omega_e} {\bf N}_e^T\ {\bf N}_e{\bf u}_e\ \cfrac{\partial {\bf N}_e}{\partial x}\ d\Omega \ {\bf f}_e\
++ \int_{\Omega_e} \tau_e\ \left(\cfrac{\partial {\bf N}_e}{\partial x}\right)^T{\bf u}_e^T{\bf N}_e^ T{\bf N}_e\ d\Omega\ \dot{{\bf f}}_e\
++ \int_{\Omega_e} \tau_e\ \left(\cfrac{\partial {\bf N}_e}{\partial x}\right)^T{\bf u}_e^T{\bf N}_e^ T{\bf N}_e\ d\Omega\ {\bf u}_e\cfrac{\partial {\bf N}_e}{\partial x}\ {{\bf f}}_e\right)= 0
+</code></pre><p>It becomes. The weighting function is a constant chosen arbitrarily, so the finite element equation is</p>
+<pre><code class="language-math" data-lang="math">\left({\bf M}_e + {\bf M}_{\delta e}\right)\ \dot{{\bf f}}_e + \left({\bf S}_e + {\bf S }_{\delta e}\right)\ {\bf f}_e = 0
+</code></pre><p>${\bf M}_ e$ is the mass matrix, ${\bf S}_ e$ is the advection matrix, ${\bf M}_ {\delta e}$, ${\bf S}_ {\delta e}$ are the mass and advection matrices resulting from the SUPG term, respectively.
+These matrices can be obtained using linear coordinates.</p>
+<pre><code class="language-math" data-lang="math">{\bf M}_e = \int_{\Omega_e} {\bf N}_e^T{\bf N}_e\ d\Omega
+= \cfrac{h_e}{6}
+\begin{pmatrix}
+twenty one\\
+1 &amp; 2
+\end{pmatrix},
+</code></pre><pre><code class="language-math" data-lang="math">\begin{align}
+{\bf A}_e &amp;= \int_{\Omega_e} {\bf N}_e^T\ {\bf N}_e{\bf u}_e\cfrac{\partial {\bf N}_e}{\partial x}\ d\Omega\\
+&amp;= \int_{\Omega_e} {\bf N}_e^T\ {\bf N}_e\ d\Omega\ {\bf u}_e\cfrac{\partial {\bf N}_e}{\partial x }\\
+&amp;= \cfrac{h_e}{6}
+\begin{pmatrix}
+twenty one\\
+1 &amp; 2
+\end{pmatrix}
+\begin{pmatrix}
+u_1^e\\
+u_2^e
+\end{pmatrix}
+\begin{pmatrix}
+- \cfrac{1}{h_e} &amp; \cfrac{1}{h_e}
+\end{pmatrix}\\
+&amp;= \cfrac{1}{6}
+\begin{pmatrix}
+twenty one\\
+1 &amp; 2
+\end{pmatrix}
+\begin{pmatrix}
+- u_1^e &amp; u_1^e\\
+- u_2^e &amp; u_2^e
+\end{pmatrix}\\
+&amp;= \cfrac{1}{6}
+\begin{pmatrix}
+- 2u_1^e-u_2^e &amp; 2u_1^e + u_2^e\\
+- u_1^e-2u_2^e &amp; u_1^e + 2u_2^e
+\end{pmatrix},
+\end{align}
+</code></pre><pre><code class="language-math" data-lang="math">\begin{align}
+{\bf M}_{\delta e} &amp;= \int_{\Omega_e} \tau_e\ \left(\cfrac{\partial {\bf N}_e}{\partial x}\right)^T{\bf u}_e^T{\bf N}_e^T{\bf N}_e\ d\Omega\\&amp; = \ tau_e \ \ left (\ cfrac {\ partial {\ bf N} _e} {\ partial x} \ right) ^ T {\ bf u} _e ^ T \ \ int _ {\ Omega_e} {\ bf N} _e ^ T {\ bf N} _e \ d \ Omega \\
+&amp; = \ tau_e
+\ begin {pmatrix}
+-  \ cfrac {1} {h_e} \\
+\ cfrac {1} {h_e}
+\ end {pmatrix}
+\ begin {pmatrix}
+u_1 ^ e &amp; u_2 ^ e
+\ end {pmatrix}
+\ cfrac {h_e} {6}
+\ begin {pmatrix}
+2 &amp; 1 \\
+1 &amp; 2
+\ end {pmatrix} \\
+&amp; = \ cfrac {\ tau_e} {6}
+\ begin {pmatrix}
+- 2u_1 ^ e - u_2 ^ e &amp; -u_1 ^ e - 2u_2 ^ e \\
+ 2u_1 ^ e + u_2 ^ e &amp; u_1 ^ e + 2u_2 ^ e
+\ end {pmatrix},
+\ end {align}
+``
+`` math
+\ begin {align}
+{\ bf A} _ {\ delta e} &amp; = \ int _ {\ Omega_e} \ tau_e \ \ left (\ cfrac {\ partial {\ bf N} _e} {\ partial x} \ right) ^ T {\ bf u} _e ^ T {\ bf N} _e ^ T {\ bf N} _e \ d \ Omega \ {\ bf u} _e \ cfrac {\ partial {\ bf N} _e} {\ partial x} \\
+&amp; = \ tau_e \ \ left (\ cfrac {\ partial {\ bf N} _e} {\ partial x} \ right) ^ T {\ bf u} _e ^ T \ int _ {\ Omega_e} {\ bf N} _e ^ T {\ bf N} _e \ d \ Omega \ {\ bf u} _e \ cfrac {\ partial {\ bf N} _e} {\ partial x} \\
+&amp; = \ tau_e
+\ begin {pmatrix}
+-  \ cfrac {1} {h_e} \\
+ \ cfrac {1} {h_e}
+\ end {pmatrix}
+\ begin {pmatrix}
+u_1 ^ e &amp; u_2 ^ e
+\ end {pmatrix}
+\ cfrac {h_e} {6}
+\ begin {pmatrix}
+2 &amp; 1 \\
+1 &amp; 2
+\ end {pmatrix}
+\ begin {pmatrix}
+u_1 ^ e \\
+u_2 ^ e
+\ end {pmatrix}
+\ begin {pmatrix}
+-  \ cfrac {1} {h_e} &amp; \ cfrac {1} {h_e}
+\ end {pmatrix} \\
+&amp; = \ cfrac {\ tau_e} {3h_e} \ left ({u_1 ^ e} ^ 2 + u_1 ^ e u_2 ^ e + {u_2 ^ e} ^ 2 \ right)
+\ begin {pmatrix}
+ 1 &amp; -1 \\
+- 1 &amp; 1
+\ end {pmatrix}
+\ end {align}
+``
+と な り ま す． こ れ ら を 使 っ て 全体 の 有限 要素 方程式
+
+`` math
+\ left ({\ bf M} + {\ bf M} _ {\ delta} \ right) \ \ dot {{\ bf f}} + \ left ({\ bf S} + {\ bf S} _ {\ delta} \ right) \ {\ bf f} = 0
+``
+を 組 み 立 て て い き ま す． 時間 方向 の 離散 化 に ク ラ ン ク ・ ニ コ ル ソ ン 法 を 用 い る と
+
+`` math
+\ left ({\ bf M} + {\ bf M} _ {\ delta} \ right) \ \ cfrac {{\ bf f} ^ {n + 1} - {\ bf f} ^ n} {\ Delta t } + \ left ({\ bf S} + {\ bf S} _ {\ delta} \ right) \ \ cfrac {1} {2} \ left ({\ bf f} ^ {n + 1} + {\ bf f} ^ n \ right) = 0
+``
+N 得 ら れ ま す． $ n $ は 時間 ス テ ッ プ で す． さ ら に 変 形 す る と
+
+`` math
+\ left (\ cfrac {1} {\ Delta t} \ left ({\ bf M} + {\ bf M} _ {\ delta} \ right) + \ cfrac {1} {2} \ left ({\ bf S} + {\ bf S} _ {\ delta} \ right) \ right) {\ bf f} ^ {n + 1}
+=
+\ left (\ cfrac {1} {\ Delta t} \ left ({\ bf M} + {\ bf M} _ {\ delta} \ right) - \ cfrac {1} {2} \ left ({\ bf S} + {\ bf S} _ {\ delta} \ right) \ right) {\ bf f} ^ n
+``
+と な り ま す． こ の 式 を よ く 見 て み る と ， 左 辺 が 未知 量 ， 右 辺 は 既知 量 で ， $ {\ bf A} {\ bf x} = {\ bf x} = {\ bf b} $ と い う 連 立 1 次て い る こ と が 分 か り ま す． つ ま り ， こ の 連 立 1 次 方程式 を 解 け ば 次 の 時刻 の 物理量 が 得 ら れ る と い う 事 で す．
+
+# Python に よ る 実 装
+各 要素 ご に に ・ ・ め 流行 て 行列 に 足 し こ ん 足 し こ ん で い き ま す． コ ー ド を ィ コ コ に に に に に に に に に に に に に に に 式 式 式 式 式の linalg.solve を 用 い て い ま す． 本来 は 高速 化 の た め に 三重 対 角 行列 ア ル ゴ リ ズ ム や 反復 法 ど olve す す た た た た た 簡 簡 簡 簡 簡 簡 簡 た た 簡 た た 簡 た 簡 た た た た た
+解析 領域 は $ 0 \ le x \ le 2 $ と し ， 境界 条件 は $ f (x = 0, t) = f (x = 2, t) = 0 $ と い う デ ィ リ ク レ 境界 条件 を 与 え ま す．
+初期 条件 は $ 0 \ le x \ le 1 $ で $ f (x, t = 0) = \ sin (\ pi x) $ ， そ れ 以外 で $ f (x, t = 0) = 0 $ と し ま す． 移 流U は 全 領域 で 一 様 で $ u = 1.0 $ を 与 え ま す．
+
+実 装 や ア ニ メ ー シ ョ ン の 作成 に は 以下 の サ イ ト を 参考 に し ま し た．
+[【NumPy】 連 立 方程式 を 解 く numpy.linalg.solve](https://algorithm.joho.info/programming/python-numpy-solve/)
+[Python で 波動 方程式 の 数 値 計算 &amp; 結果 の ア ニ メ ー シ ョ ン](https://myscitech.hatenablog.com/entry/2019/12/07/190000)
+
+`` python: 1d_advection.py
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+# 各種 定 数 の 設定
+dt = 0.005 # 時間 刻 み
+xmin = 0.0
+xmax = 2.0
+N = 200
+dx = (xmax - xmin) / N # 空間 刻 み
+U = 1.0 # 移 流 速度
+M = 200
+
+# 変 数 の 初期 化
+f = np.array ([[0.0] * (N + 1) for i in range (M + 1)])
+u = np.zeros ([N + 1])
+
+# マ ト リ ク ス の 初期 化
+A = np.array ([[0.0] * (N + 1) for i in range (N + 1)])
+b = np.array ([0.0] * (N + 1))
+
+# 初期 条件
+for i in range (N + 1):
+  u [i] = U
+  if i * dx &lt;= 1.0:
+    f [0, i] = math.sin (math.pi * i * dx)
+  else:
+    f [0, i] = 0.0
+
+for ti in range (0, M):
+  A.fill (0.0)
+  b.fill (0.0)
+  for i in range (N):
+    u1 = u [i]
+    u2 = u [i + 1]
+    tau = 1.0 / math.sqrt ((2.0 / dt) ** 2 + (2.0 * U / dx) ** 2)
+
+    # 質量 行列
+    A [i, i] = A [i, i] + 1.0 / dt * 2.0 / 6.0 * dx
+    A [i, i + 1] = A [i, i + 1] + 1.0 / dt * 1.0 / 6.0 * dx
+    A [i + 1, i] = A [i + 1, i] + 1.0 / dt * 1.0 / 6.0 * dx
+    A [i + 1, i + 1] = A [i + 1, i + 1] + 1.0 / dt * 2.0 / 6.0 * dx
+
+    # 質量 行列 (SUPG)
+    A [i, i] = A [i, i] + tau / dt / 6.0 * (- 2.0 * u1 - u2)
+    A [i, i + 1] = A [i, i + 1] + tau / dt / 6.0 * (- u1 - 2.0 * u2)
+    A [i + 1, i] = A [i + 1, i] + tau / dt / 6.0 * (2.0 * u1 + u2)
+    A [i + 1, i + 1] = A [i + 1, i + 1] + tau / dt / 6.0 * (u1 + 2.0 * u2)
+
+    # 移 流行 列
+    A [i, i] = A [i, i] + 0.5 / 6.0 * (- 2.0 * u1 - u2)
+    A [i, i + 1] = A [i, i + 1] + 0.5 / 6.0 * (2.0 * u1 + u2)
+    A [i + 1, i] = A [i + 1, i] + 0.5 / 6.0 * (- u1 - 2.0 * u2)
+    A [i + 1, i + 1] = A [i + 1, i + 1] + 0.5 / 6.0 * (u1 + 2.0 * u2)
+
+    # 移 流行 列 (SUPG)
+    A [i, i] = A [i, i] + 0.5 * tau / 3.0 / dx * (u1 ** 2 + u1 * u2 + u2 ** 2)
+    A [i, i + 1] = A [i, i + 1] - 0.5 * tau / 3.0 / dx * (u1 ** 2 + u1 * u2 + u2 ** 2)
+    A [i + 1, i] = A [i + 1, i] - 0.5 * tau / 3.0 / dx * (u1 ** 2 + u1 * u2 + u2 ** 2)
+    A [i + 1, i + 1] = A [i + 1, i + 1] + 0.5 * tau / 3.0 / dx * (u1 ** 2 + u1 * u2 + u2 ** 2)
+
+  for i in range (N):
+    f1 = f [ti, i]
+    f2 = f [ti, i + 1]
+    u1 = u [i]
+    u2 = u [i + 1]
+    tau = 1.0 / math.sqrt ((2.0 / dt) ** 2 + (2.0 * U / dx) ** 2)
+
+    # 質量 行列
+    b [i] = b [i] + 1.0 / dt * dx / 6.0 * (2.0 * f1 + f2)
+    b [i + 1] = b [i + 1] + 1.0 / dt * dx / 6.0 * (f1 + 2.0 * f2)
+
+    # 質量 行列 (SUPG)
+    b [i] = b [i] + tau / dt / 6.0 * ((- - 2.0 * u1 - u2) * f1 + (-u1 - 2.0 * u2) * f2)
+    b [i + 1] = b [i + 1] + tau / dt / 6.0 * ((2.0 * u1 + u2) * f1 + (u1 + 2.0 * u2) * f2)
+
+    # 移 流行 列b[i] = b[i]-0.5/6.0*((-2.0*u1-u2)*f1 + (2.0*u1 + u2)*f2)
+    b[i + 1] = b[i + 1]-0.5/6.0*((- u1-2.0*u2)*f1 + (u1 + 2.0*u2)*f2)
+
+    # Advection matrix (SUPG)
+    b[i] = b[i]-0.5*tau/dx/3.0*(u1**2 + u1*u2 + u2**2)*( f1-f2)
+    b[i + 1] = b[i + 1]-0.5*tau/dx/3.0*(u1**2 + u1*u2 + u2**2)*(-f1 + f2)
+
+  # boundary condition
+  for i in range(N + 1):
+    A[0, i] = 0.0
+    A[N, i] = 0.0
+  A[0, 0] = 1.0
+  A[N, N] = 1.0
+  b[0] = 0.0
+  b[N] = 0.0
+
+  f[ti + 1,] = np.linalg.solve(A, b)
+
+x = np.linspace(xmin, xmax, N + 1) # x-axis setting
+
+fig = plt.figure(figsize=(6,4))
+ax = fig.add_subplot(1,1,1)
+
+# Anime update function
+def update_func(i):
+  # Erase the graph drawn in the previous frame
+  ax.clear()
+
+  ax.plot(x, f[i, :], color='blue')
+  ax.scatter(x, f[i, :], color='blue')
+  #Axis setting
+  ax.set_ylim(-0.1, 1.1)
+  # Set axis label
+  ax.set_xlabel('x', fontsize=12)
+  ax.set_ylabel('f', fontsize=12)
+  #Set subplot title
+  ax.set_title('Time:'+'{:.2f}'.format(dt*i))
+
+ani = animation.FuncAnimation(fig, update_func, frames=M, interval=100, repeat=True)
+#Save animation
+#ani.save('1d_advection.gif', writer='imagemagick')
+
+# Display
+plt.show()
+</code></pre><h1 id="calculation-result">Calculation result</h1>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/412835/d86596a5-e06f-5242-99c3-5b9091ebff57.gif" alt="1d_advection.gif"></p>
+<p>Although some undershoot is seen, it was confirmed that the sine wave is advancing.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

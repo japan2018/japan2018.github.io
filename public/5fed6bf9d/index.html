@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Transform a real ferocious crocodile image into a 100 crocodile-smiling neural style with Keras | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Transform a real ferocious crocodile image into a 100 crocodile-smiling neural style with Keras</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 24, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deep-learning">Deep Learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/neural-network">Neural Network</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/keras">Keras</a></code></small>
+
+</p>
+<pre><code>#What is neural style conversion?
+</code></pre>
+<p>Neural style conversion is one of the machine learning techniques that transforms a target image into the style (texture) of another image to generate a new image. It&rsquo;s a technology used in apps that change Van Gogh&rsquo;s image of a city or people.
+<img width="1077" alt="Screenshot 2020-03-24 15.13.40.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/572487/7679bc6e-b1cc-d994-2646-5b563537c652.png">
+Now, let&rsquo;s try using this technology to see if this time we can transform a real, ferocious crocodile image that seems to eat humans into a gentle crocodile crocodile by transforming its style into a crocodile style that will die 100 days later.
+(Even if it&rsquo;s okay with this image, I&rsquo;ll die if I&rsquo;m not careful!)
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/572487/7485e8e2-0338-21eb-9bf9-c5ff16d71ac1.png" alt="wani_plus_wani.png">
+Basically, the content of the original image (macro structure such as the skeleton of the image) is maintained, and the style (texture) of 100 crocodile style cartoon is adopted. In deep learning, we always aim to achieve a goal by defining a loss function that specifies what we want to achieve and then minimizing that loss function. The image of the loss function that I want to minimize in this example is very rough ↓</p>
+<p>Loss function = (real crocodile image content-generated image content) + (100 crocodile style-generated image style)</p>
+<p>The source code is from this book ↓ by Keras creator. If you are interested in details, please buy it as it is almost the same as this book.
+<a href="https://www.amazon.co.jp/Python%E3%81%A8Keras%E3%81%AB%E3%82%88%E3%82%8B%E3%83%87%E3%82%A3%E3%83%BC%E3%83%97%E3%83%A9%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0-Francois-Chollet/dp/4839964262/ref=sr_1_1?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;crid=1HSLD7YJT37UJ&amp;dchild=1&amp;keywords=python+keras&amp;qid=1585030509books&amp;sprefix=python+keras%2Caps%2C268&amp;sr=1-1">Deep Learning with Python and Keras</a>
+<a href="https://github.com/fchollet/deep-learning-with-python-notebooks/blob/master/8.3-neural-style-transfer.ipynb">Source code</a></p>
+<p>#Environment
+I use Google Colab. With no configuration required and free access to the GPU, you can easily process images. Save the image to use in Google Drive and load the image from Google Colab.</p>
+<p>#Neural style conversion using Keras in Google Colab
+First, save the target image and style image you want to process in google drive. After saving, open the notebook with google colab. Please execute ↓ to access google drive and allow access on the google drive side. Then you will get the authorization code, so enter it in the form that appears after executing the code below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> google.colab <span style="color:#f92672">import</span> drive
+drive<span style="color:#f92672">.</span>mount(<span style="color:#e6db74">&#39;/content/drive&#39;</span>)
+</code></pre></div><p>Next, define the image path. Make sure that the images processed in the following will have the same size.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> keras
+keras<span style="color:#f92672">.</span>__version__
+<span style="color:#f92672">from</span> keras.preprocessing.image <span style="color:#f92672">import</span> load_img, img_to_array
+
+<span style="color:#75715e"># The target image path. Replace path with the location you saved.</span>
+target_image_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/content/drive/My Drive/Colab Notebooks/wani/wani2.png&#39;</span>
+<span style="color:#75715e"># Style image path. Replace path with the location you saved.</span>
+style_reference_image_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/content/drive/My Drive/Colab Notebooks/wani/100wani.png&#39;</span>
+
+<span style="color:#75715e"># Generated image size</span>
+width, height <span style="color:#f92672">=</span> load_img(target_image_path)<span style="color:#f92672">.</span>size
+img_height <span style="color:#f92672">=</span> <span style="color:#ae81ff">400</span>
+img_width <span style="color:#f92672">=</span> int(width <span style="color:#f92672">*</span> img_height <span style="color:#f92672">/</span> height)
+</code></pre></div><p>Next, create an auxiliary function to read the image exchanged with VGG19, pre-process, and post-process.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> keras.applications <span style="color:#f92672">import</span> vgg19
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">preprocess_image</span>(image_path):
+    img <span style="color:#f92672">=</span> load_img(image_path, target_size<span style="color:#f92672">=</span>(img_height, img_width))
+    img <span style="color:#f92672">=</span> img_to_array(img)
+    img <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>expand_dims(img, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+    img <span style="color:#f92672">=</span> vgg19<span style="color:#f92672">.</span>preprocess_input(img)
+    <span style="color:#66d9ef">return</span> img
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">deprocess_image</span>(x):
+    x[:, :, <span style="color:#ae81ff">0</span>] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">103.939</span>
+    x[:, :, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">116.779</span>
+    x[:, :, <span style="color:#ae81ff">2</span>] <span style="color:#f92672">+=</span> <span style="color:#ae81ff">123.68</span>
+    x <span style="color:#f92672">=</span> x[:, :, ::<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+    x <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>clip(x, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>)<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#39;uint8&#39;</span>)
+    <span style="color:#66d9ef">return</span> x
+</code></pre></div><p>Then define VGG19.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> keras <span style="color:#f92672">import</span> backend <span style="color:#66d9ef">as</span> K
+
+target_image <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>constant(preprocess_image(target_image_path))
+style_reference_image <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>constant(preprocess_image(style_reference_image_path))
+
+<span style="color:#75715e">#Placeholder to hold generated image</span>
+combination_image <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>placeholder((<span style="color:#ae81ff">1</span>, img_height, img_width, <span style="color:#ae81ff">3</span>))
+
+<span style="color:#75715e"># Combine 3 images into 1 batch</span>
+input_tensor <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>concatenate((target_image,
+                              style_reference_image,
+                              combination_image], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+
+<span style="color:#75715e"># Build VGG19 using a batch of 3 images as input</span>
+<span style="color:#75715e"># This model is loaded with trained ImageNet weights</span>
+model <span style="color:#f92672">=</span> vgg19<span style="color:#f92672">.</span>VGG19(input_tensor<span style="color:#f92672">=</span>input_tensor,
+                    weights<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;imagenet&#39;</span>,
+                    include_top<span style="color:#f92672">=</span>False)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Model loaded.&#39;</span>)
+</code></pre></div><p>Define the loss function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Content loss function</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">content_loss</span>(base, combination):
+    <span style="color:#66d9ef">return</span> K<span style="color:#f92672">.</span>sum(K<span style="color:#f92672">.</span>square(combination<span style="color:#f92672">-</span>base))
+
+<span style="color:#75715e"># Style loss function</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">gram_matrix</span>(x):
+    features <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>batch_flatten(K<span style="color:#f92672">.</span>permute_dimensions(x, (<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>)))
+    gram <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>dot(features, K<span style="color:#f92672">.</span>transpose(features))
+    <span style="color:#66d9ef">return</span> gram
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">style_loss</span>(style, combination):
+    S <span style="color:#f92672">=</span> gram_matrix(style)
+    C <span style="color:#f92672">=</span> gram_matrix(combination)
+    channels <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+    size <span style="color:#f92672">=</span> img_height <span style="color:#f92672">*</span> img_width
+    <span style="color:#66d9ef">return</span> K<span style="color:#f92672">.</span>sum(K<span style="color:#f92672">.</span>square(S<span style="color:#f92672">-</span>C)) <span style="color:#f92672">/</span> (<span style="color:#ae81ff">4.</span> <span style="color:#f92672">*</span> (channels <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">*</span> (size <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>))
+
+<span style="color:#75715e"># Total variable loss function</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_variation_loss</span>(x):
+    a <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>square(
+        x[:, :img_height<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, :img_width<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, :]<span style="color:#f92672">-</span>x[:, <span style="color:#ae81ff">1</span>:, :img_width<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, :])
+    b <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>square(
+        x[:, :img_height<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, :img_width<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, :]<span style="color:#f92672">-</span>x[:, :img_height<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>:, :])
+    <span style="color:#66d9ef">return</span> K<span style="color:#f92672">.</span>sum(K<span style="color:#f92672">.</span>pow(a <span style="color:#f92672">+</span> b, <span style="color:#ae81ff">1.25</span>))
+</code></pre></div><p>Define the final loss function (weighted average of these three functions) to be minimized.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">outputs_dict <span style="color:#f92672">=</span> dict([(layer<span style="color:#f92672">.</span>name, layer<span style="color:#f92672">.</span>output) <span style="color:#66d9ef">for</span> layer <span style="color:#f92672">in</span> model<span style="color:#f92672">.</span>layers])
+content_layer <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;block5_conv2&#39;</span>
+style_layers <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#39;block1_conv1&#39;</span>,
+                <span style="color:#e6db74">&#39;block2_conv1&#39;</span>,
+                <span style="color:#e6db74">&#39;block3_conv1&#39;</span>,
+                <span style="color:#e6db74">&#39;block4_conv1&#39;</span>,
+                <span style="color:#e6db74">&#39;block5_conv1&#39;</span>]
+
+total_variation_weight <span style="color:#f92672">=</span> <span style="color:#ae81ff">1e-4</span>
+style_weight <span style="color:#f92672">=</span> <span style="color:#ae81ff">1.</span>
+content_weight <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.025</span>
+
+loss <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>variable(<span style="color:#ae81ff">0.</span>)
+layer_features <span style="color:#f92672">=</span> outputs_dict[content_layer]
+target_image_features <span style="color:#f92672">=</span> layer_features[<span style="color:#ae81ff">0</span>, :, :, :]
+combination_features <span style="color:#f92672">=</span> layer_features[<span style="color:#ae81ff">2</span>, :, :, :]
+loss <span style="color:#f92672">+=</span> content_weight <span style="color:#f92672">*</span> content_loss(target_image_features,
+                                      combination_features)<span style="color:#66d9ef">for</span> layer_name <span style="color:#f92672">in</span> style_layers:
+    layer_features <span style="color:#f92672">=</span> outputs_dict[layer_name]
+    style_reference_features <span style="color:#f92672">=</span> layer_features[<span style="color:#ae81ff">1</span>, :, :, :]
+    combination_features <span style="color:#f92672">=</span> layer_features[<span style="color:#ae81ff">2</span>, :, :, :]
+    sl <span style="color:#f92672">=</span> style_loss(style_reference_features, combination_features)
+    loss <span style="color:#f92672">+=</span> (style_weight <span style="color:#f92672">/</span> len(style_layers)) <span style="color:#f92672">*</span> sl
+loss <span style="color:#f92672">+=</span> total_variation_weight <span style="color:#f92672">*</span> total_variation_loss(combination_image)
+</code></pre></div><p>勾配降下法のプロセスを定義</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">grads <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>gradients(loss, combination_image)[<span style="color:#ae81ff">0</span>]
+fetch_loss_and_grads <span style="color:#f92672">=</span> K<span style="color:#f92672">.</span>function([combination_image], [loss, grads])
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Evaluator</span>(object):
+
+    <span style="color:#66d9ef">def</span> __init__(self):
+        self<span style="color:#f92672">.</span>loss_value <span style="color:#f92672">=</span> None
+        self<span style="color:#f92672">.</span>grads_values <span style="color:#f92672">=</span> None
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">loss</span>(self, x):
+        <span style="color:#66d9ef">assert</span> self<span style="color:#f92672">.</span>loss_value <span style="color:#f92672">is</span> None
+        x <span style="color:#f92672">=</span> x<span style="color:#f92672">.</span>reshape((<span style="color:#ae81ff">1</span>, img_height, img_width, <span style="color:#ae81ff">3</span>))
+        outs <span style="color:#f92672">=</span> fetch_loss_and_grads([x])
+        loss_value <span style="color:#f92672">=</span> outs[<span style="color:#ae81ff">0</span>]
+        grad_values <span style="color:#f92672">=</span> outs[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>flatten()<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#39;float64&#39;</span>)
+        self<span style="color:#f92672">.</span>loss_value <span style="color:#f92672">=</span> loss_value
+        self<span style="color:#f92672">.</span>grad_values <span style="color:#f92672">=</span> grad_values
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>loss_value
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">grads</span>(self, x):
+        <span style="color:#66d9ef">assert</span> self<span style="color:#f92672">.</span>loss_value <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None
+        grad_values <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>copy(self<span style="color:#f92672">.</span>grad_values)
+        self<span style="color:#f92672">.</span>loss_value <span style="color:#f92672">=</span> None
+        self<span style="color:#f92672">.</span>grad_values <span style="color:#f92672">=</span> None
+        <span style="color:#66d9ef">return</span> grad_values
+
+evaluator <span style="color:#f92672">=</span> Evaluator()
+</code></pre></div><p>やっと最後に実行です！</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> scipy.optimize <span style="color:#f92672">import</span> fmin_l_bfgs_b
+<span style="color:#75715e">#from scipy.misc import imsave</span>
+<span style="color:#f92672">import</span> imageio
+<span style="color:#f92672">import</span> time
+
+result_prefix <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;style_transfer_result&#39;</span>
+iterations <span style="color:#f92672">=</span> <span style="color:#ae81ff">30</span>
+
+<span style="color:#75715e"># Run scipy-based optimization (L-BFGS) over the pixels of the generated image</span>
+<span style="color:#75715e"># so as to minimize the neural style loss.</span>
+<span style="color:#75715e"># This is our initial state: the target image.</span>
+<span style="color:#75715e"># Note that `scipy.optimize.fmin_l_bfgs_b` can only process flat vectors.</span>
+x <span style="color:#f92672">=</span> preprocess_image(target_image_path)
+x <span style="color:#f92672">=</span> x<span style="color:#f92672">.</span>flatten()
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(iterations):
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Start of iteration&#39;</span>, i)
+    start_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    x, min_val, info <span style="color:#f92672">=</span> fmin_l_bfgs_b(evaluator<span style="color:#f92672">.</span>loss, x,
+                                     fprime<span style="color:#f92672">=</span>evaluator<span style="color:#f92672">.</span>grads, maxfun<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Current loss value:&#39;</span>, min_val)
+    <span style="color:#75715e"># Save current generated image</span>
+    img <span style="color:#f92672">=</span> x<span style="color:#f92672">.</span>copy()<span style="color:#f92672">.</span>reshape((img_height, img_width, <span style="color:#ae81ff">3</span>))
+    img <span style="color:#f92672">=</span> deprocess_image(img)
+    fname <span style="color:#f92672">=</span> result_prefix <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;_at_iteration_</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">.png&#39;</span> <span style="color:#f92672">%</span> i
+    <span style="color:#75715e">#imsave(fname, img)</span>
+    imageio<span style="color:#f92672">.</span>imwrite(fname, img)
+    end_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Image saved as&#39;</span>, fname)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Iteration </span><span style="color:#e6db74">%d</span><span style="color:#e6db74"> completed in </span><span style="color:#e6db74">%d</span><span style="color:#e6db74">s&#39;</span> <span style="color:#f92672">%</span> (i, end_time <span style="color:#f92672">-</span> start_time))
+</code></pre></div><p>画像を出力します</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> scipy.optimize <span style="color:#f92672">import</span> fmin_l_bfgs_b
+<span style="color:#f92672">from</span> matplotlib <span style="color:#f92672">import</span> pyplot <span style="color:#66d9ef">as</span> plt
+
+<span style="color:#75715e"># コンテンツ画像</span>
+plt<span style="color:#f92672">.</span>imshow(load_img(target_image_path, target_size<span style="color:#f92672">=</span>(img_height, img_width)))
+plt<span style="color:#f92672">.</span>figure()
+
+<span style="color:#75715e"># スタイル画像</span>
+plt<span style="color:#f92672">.</span>imshow(load_img(style_reference_image_path, target_size<span style="color:#f92672">=</span>(img_height, img_width)))
+plt<span style="color:#f92672">.</span>figure()
+
+<span style="color:#75715e"># 生成画像</span>
+plt<span style="color:#f92672">.</span>imshow(img)
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><h1 id="出力結果">出力結果</h1>
+<p>出力結果は、、、、、、、、、、
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/572487/fe51e58a-6191-dbbf-9a3b-946c3055309a.png" alt="wani_result.png">
+なんかイメージしていたのと違う！！！！！全然ポップで優しいワニ感無し！！！！！！
+まぁ、これがディープラーニングあるあるなのですが、とりあえず割と簡単にGoogle ColabやKerasを使えばディープラーニングが試せることは体験して頂けたのではないでしょうか。こちらのコードで自分でいろいろな画像処理を試せるので皆さんも是非試してみてください。</p>
+<p>ほんとKerasすごい。再掲しておきますが今回のコードは<a href="https://www.amazon.co.jp/Python%E3%81%A8Keras%E3%81%AB%E3%82%88%E3%82%8B%E3%83%87%E3%82%A3%E3%83%BC%E3%83%97%E3%83%A9%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0-Francois-Chollet/dp/4839964262/ref=sr_1_1?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;crid=1HSLD7YJT37UJ&amp;dchild=1&amp;keywords=python+keras&amp;qid=1585030509&amp;s=books&amp;sprefix=python+keras%2Caps%2C268&amp;sr=1-1">PythonとKerasによるディープラーニング</a>に掲載されている↓こちらのコードを使っております。
+<a href="https://github.com/fchollet/deep-learning-with-python-notebooks/blob/master/8.3-neural-style-transfer.ipynb">ソースコード</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

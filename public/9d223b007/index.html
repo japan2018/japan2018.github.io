@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Roughly speed up Python with numba | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Roughly speed up Python with numba</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numba">Numba</a></code></small>
+
+</p>
+<pre><code>A library called [numba](http://numba.pydata.org/) can speed up Python code relatively easily.
+</code></pre>
+<p>Hopefully you can speed it up by writing <code>from numba import jit</code> and writing <code>@jit</code> in the line before the function you want to speed up.</p>
+<p>As a mechanism, numba seems to get the virtual machine code of Python, compile it into LLVM IR, and make it native code using LLVM.
+At the first execution, the compile process runs, so it will be slightly slower, but if it is a heavy process, numba may be faster from the viewpoint of compile time.</p>
+<h1 id="advantages-and-disadvantages">Advantages and disadvantages</h1>
+<p>I will tell you earlier.</p>
+<h2 id="advantages">Advantages</h2>
+<ul>
+<li>In some cases, the code itself can be easily speeded up without modification
+-Even if there is a code modification, it is often just a minor modification</li>
+<li>You can easily use it in a <code>.py</code> file without the need to build it in a separate file.</li>
+</ul>
+<h2 id="disadvantage">Disadvantage</h2>
+<ul>
+<li>Not all Python features seem to be supported, in some cases just adding @jit`
+-Because the handling of the type becomes strict, the part that used to work with &ldquo;Nana&rdquo; until now will become an error. Also, it may be necessary to devise a method to get numba to perform type inference.</li>
+<li>Of course, you need numba to run it. Depending on the environment, it may be difficult to install numba
+-It seems easy in a conda environment. There are quite a few environments where you can enter with pip. My Arch Linux is currently Python 3.8, LLVM 9.0, and both of them do not support numba at the moment, so I gave up building and use the conda environment with Docker.</li>
+<li>It takes a long time to compile, so if you put it in the dark cloud it will be counterproductive</li>
+</ul>
+<p>#Example</p>
+<p>Here are some very successful cases.
+I don&rsquo;t know, but there is a very slow function.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> sys
+sys<span style="color:#f92672">.</span>setrecursionlimit(<span style="color:#ae81ff">100000</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">ack</span>(m, n):
+    <span style="color:#66d9ef">if</span> m <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">return</span> n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">if</span> n <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">return</span> ack(m<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">return</span> ack(m<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, ack(m, n<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>))
+</code></pre></div><p>I&rsquo;ll take a little time.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> contextlib <span style="color:#f92672">import</span> contextmanager
+
+<span style="color:#a6e22e">@contextmanager</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">timer</span>():
+    t <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>perf_counter()
+    <span style="color:#66d9ef">yield</span> None
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#39;Elapsed:&#39;</span>, time<span style="color:#f92672">.</span>perf_counter()<span style="color:#f92672">-</span>t)
+
+<span style="color:#66d9ef">with</span> timer():
+    <span style="color:#66d9ef">print</span>(ack(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">10</span>))
+</code></pre></div><blockquote>
+<p>8189
+Elapsed: 10.270420542001375</p>
+</blockquote>
+<p>It took 10 seconds.</p>
+<p>Larger numbers will take more time, but it is not recommended as it really takes time.
+Especially, if you increase 3 to 4, it probably won&rsquo;t finish until you die, so I don&rsquo;t recommend it at all.
+This function is <a href="https://en.wikipedia.org/wiki/%E3%82%A2%E3%83%83%E3%82%AB%E3%83%BC%E3%83%9EAlsoknownas%E3%83%B3%E9%96%A2%E6%95%B0">Ackerman function</a>.</p>
+<p>Let&rsquo;s make this faster with numba.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">from</span> numba <span style="color:#f92672">import</span> jit
+
+<span style="color:#a6e22e">@jit</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">ack</span>(m, n):
+    <span style="color:#66d9ef">if</span> m <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">return</span> n <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">if</span> n <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        <span style="color:#66d9ef">return</span> ack(m<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>)
+    <span style="color:#66d9ef">return</span> ack(m<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>, ack(m, n<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>))
+
+<span style="color:#75715e"># First time</span>
+<span style="color:#66d9ef">with</span> timer():
+    <span style="color:#66d9ef">print</span>(ack(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">10</span>))
+
+<span style="color:#75715e"># Second time</span>
+<span style="color:#66d9ef">with</span> timer():
+    <span style="color:#66d9ef">print</span>(ack(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">10</span>))
+
+<span style="color:#75715e"># Third time</span>
+<span style="color:#66d9ef">with</span> timer():
+    <span style="color:#66d9ef">print</span>(ack(<span style="color:#ae81ff">3</span>, <span style="color:#ae81ff">10</span>))
+</code></pre></div><blockquote>
+<p>8189
+Elapsed: 0.7036043469997821
+8189
+Elapsed: 0.4371343919992796
+8189
+Elapsed: 0.4372558859977289</p>
+</blockquote>
+<p>What took 10 seconds was reduced to 0.7 seconds for the first time and 0.4 seconds after the second time.
+It would be a great deal if you could just add one line and this would happen.</p>
+<h1 id="if-its-not-faster-than-you-think">If it&rsquo;s not faster than you think</h1>
+<p>Object mode may be used.</p>
+<p>numba has No Python mode and Object mode, and once it is compiled in No Python mode, it will be compiled in Object mode if it fails.
+(However, this specification will disappear in the future, only No Python mode by default, Object mode seems to be optional)</p>
+<p>The former handles all types directly, while the latter strikes Python objects from the Python C API, which is faster.
+Furthermore, in the latter case, the loop may not be efficiently rewritten into native code, but in the former case, the loop will be more efficient. (loop-jitting)</p>
+<p>You can write <code>@jit(nopython=True)</code> or <code>@njit</code> to force No Python mode, but this often results in &ldquo;unknown type&rdquo; errors.</p>
+<p>Basically,</p>
+<ul>
+<li>Put only one type in one variable</li>
+<li>If there are multiple <code>return</code>s, make sure that every <code>return</code> returns the same type</li>
+<li>Set the function called in No Python mode to No Python mode</li>
+</ul>
+<p>You can clarify the type by the method such as.</p>
+<h2 id="relatively-easy-to-support-no-python-mode">Relatively easy to support No Python mode</h2>
+<ul>
+<li>Cut out only heavy calculation part into another function and make it correspond to numba</li>
+<li>Even if you cut out, think about putting out the part that is messing with the type or assigning it to the object outside
+-Considering how to do something with numba in the form of pre-processing or post-processing of the corresponding part of numba</li>
+</ul>
+<p>Is recommended.
+Be aware that Python is good at Python, and Python is weak at numba.</p>
+<h1 id="try-to-parallelize">Try to parallelize</h1>
+<p>If you use <code>@jit(parallel=True)</code>, you can use <code>prange</code> instead of <code>range</code> in the for loop (<code>from numba import prange</code> is required).</p>
+<p>Loops written with <code>prange</code> are parallelized.</p>
+<h1 id="compile-result-cache">Compile result cache</h1>
+<p>With <code>@jit(cache=True)</code>, you can save the compilation result to a cache file and avoid the trouble of compiling every time.</p>
+<h1 id="use-fastmath">use <code>fastmath</code></h1>
+<p>It can be used with <code>@jit(fastmath=True)</code>.
+Enable fastmath also found in gcc and clang. It&rsquo;s a rather dangerous optimization that speeds up float calculations.</p>
+<h1 id="use-cuda">Use CUDA</h1>
+<p>It&rsquo;s not very easy, but CUDA can be used for the time being.
+If you&rsquo;ve used CUDA before, I think you can figure it out with the following code.</p>
+<p>Personally, I thought this would be cupy.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> numba <span style="color:#f92672">import</span> cuda
+
+<span style="color:#a6e22e">@cuda.jit</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">add</span>(a, b, n):
+    idx <span style="color:#f92672">=</span> cuda<span style="color:#f92672">.</span>threadIdx<span style="color:#f92672">.</span>x <span style="color:#f92672">+</span> cuda<span style="color:#f92672">.</span>blockIdx<span style="color:#f92672">.</span>x <span style="color:#f92672">*</span> cuda<span style="color:#f92672">.</span>blockDim<span style="color:#f92672">.</span>x
+    <span style="color:#66d9ef">if</span> idx <span style="color:#f92672">&lt;</span>n:
+        a[idx] <span style="color:#f92672">+=</span> b[idx]
+
+N <span style="color:#f92672">=</span> <span style="color:#ae81ff">1000000</span>
+a_host <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(np<span style="color:#f92672">.</span>ones(N))
+b_host <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(np<span style="color:#f92672">.</span>ones(N))
+a_dev <span style="color:#f92672">=</span> cuda<span style="color:#f92672">.</span>to_device(a_host)
+b_dev <span style="color:#f92672">=</span> cuda<span style="color:#f92672">.</span>to_device(b_host)
+
+n_thread <span style="color:#f92672">=</span> <span style="color:#ae81ff">64</span>
+n_block <span style="color:#f92672">=</span> N <span style="color:#f92672">//</span> n_thread <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+
+add[n_block, n_thread](a_dev,b_dev,N)
+
+a_dev<span style="color:#f92672">.</span>copy_to_host(a_host)
+
+<span style="color:#66d9ef">print</span>(a_host) <span style="color:#75715e"># Expect: [2, 2, ..., 2]</span>
+</code></pre></div><p>If you get angry that <code>libNVVM</code> is missing, you may not have CUDA installed (you can install it with <code>conda install cudatoolkit</code> etc.), or you need to set environment variables.</p>
+<p>Setting example with Google Colab etc.:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> os
+os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;NUMBAPRO_LIBDEVICE&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/usr/local/cuda-10.0/nvvm/libdevice&#34;</span>
+os<span style="color:#f92672">.</span>environ[<span style="color:#e6db74">&#39;NUMBAPRO_NVVM&#39;</span>] <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/usr/local/cuda-10.0/nvvm/lib64/libnvvm.so&#34;</span>
+</code></pre></div><p>#Summary
+You can use numba to roughly speed up your Python code.
+I looked at the simple usage.</p>
+<p>I&rsquo;m glad if you can use it as a reference.</p>
+<h1 id="references">References</h1>
+<p><a href="https://numba.pydata.org/numba-doc/dev/index.html">Official document</a> is not very long and very helpful if you read only the necessary parts.
+<a href="https://numba.pydata.org/numba-doc/dev/user/performance-tips.html">Performance Tips</a> is especially useful.</p>
+<p>For environment variable settings when using CUDA,
+<a href="https://colab.research.google.com/github/cbernet/maldives/blob/master/numba/numba_cuda.ipynb">https://colab.research.google.com/github/cbernet/maldives/blob/master/numba/numba_cuda.ipynb</a>
+I referred to.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

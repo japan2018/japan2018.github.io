@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] It was too easy to use an existing database with Django | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] It was too easy to use an existing database with Django</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/django">Django</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/postgresql">PostgreSQL</a></code></small>
+
+</p>
+<pre><code>#Purpose
+</code></pre>
+<p>From an acquaintance who read the article the other day
+&ldquo;So, if you already have a DB in use, can you attach Django later?&rdquo;
+There was an arbitrary request, so I also verified it.</p>
+<p>If you say from the conclusion, it was possible. Moreover, it is simple.
+Obviously, it seems that the supported database products and versions are somewhat limited.
+<a href="https://docs.djangoproject.com/en/2.1/howto/legacy-databases/">This area</a> may be helpful.</p>
+<p>#manner
+Reuse the application from the last article, but delete the database side tables. Now you have the Django code, but you don&rsquo;t have a database yet.</p>
+<h2 id="status-quo-confirmation">Status quo confirmation</h2>
+<p>Although the settings are written in settings.py, since the database side is not ready,
+If you try to start the server in this state, it will look like this.
+Well, that&rsquo;s right.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; python manage.py runserver
+
+~Omitted~
+django.db.utils.OperationalError: FATAL: database <span style="color:#e6db74">&#34;webshopping&#34;</span> does not exist
+</code></pre></div><h2 id="prepare-the-database">Prepare the database</h2>
+<p>Prepare a suitable database and table to look like an existing database.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; psql -U postgres -W
+User postgres password: ********
+
+postgres<span style="color:#f92672">=</span><span style="color:#75715e"># CREATE DATABASE newshopping;</span>
+CREATE DATABASE
+
+postgres<span style="color:#f92672">=</span><span style="color:#75715e"># \c newshopping;</span>
+newshopping<span style="color:#f92672">=</span><span style="color:#75715e"># CREATE TABLE items(</span>
+                item_name TEXT PRIMARY KEY,
+                price INTEGER
+              <span style="color:#f92672">)</span>;
+CREATE TABLE
+</code></pre></div><p>Furthermore, it throws in appropriate data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">postgres<span style="color:#f92672">=</span><span style="color:#75715e"># INSERT INTO items VALUES(&#39;fragile window glass&#39;, 50000);</span>
+INSERT <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+postgres<span style="color:#f92672">=</span><span style="color:#75715e"># INSERT INTO items VALUES(&#39;Difficult window&#39;, 99000);</span>
+INSERT <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+
+newshopping<span style="color:#f92672">=</span><span style="color:#75715e"># SELECT * FROM items;</span>
+     item_name | price
+- -------------------+-------
+ Fragile window glass | <span style="color:#ae81ff">50000</span>
+ Non-breakable window glass | <span style="color:#ae81ff">99000</span>
+
+<span style="color:#f92672">(</span><span style="color:#ae81ff">2</span> lines<span style="color:#f92672">)</span>
+</code></pre></div><p>So, the data seems to be inserted firmly.</p>
+<h2 id="check-settingspy">Check settings.py</h2>
+<p>If you change your database product, you need to change settings.py.
+For how to write the ENGINE part, please refer to <a href="https://docs.djangoproject.com/en/2.2/ref/settings/#s-engine">Around here</a>. For postgresql, the following is OK.
+The NAME part is the distinguished name of the database. I created it with the name newshopping, so I will write it exactly as it is.
+There is nothing special about the other parameters. It is OK if you write the user name, password and host name to access.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:settings.py" data-lang="python:settings.py">DATABASES <span style="color:#f92672">=</span> {
+    <span style="color:#e6db74">&#39;default&#39;</span>: {
+        <span style="color:#e6db74">&#39;ENGINE&#39;</span>:<span style="color:#e6db74">&#39;django.db.backends.postgresql_psycopg2&#39;</span>,
+        <span style="color:#e6db74">&#39;NAME&#39;</span>:<span style="color:#e6db74">&#39;newshopping&#39;</span>,
+        <span style="color:#e6db74">&#39;USER&#39;</span>:<span style="color:#e6db74">&#39;your_db_username&#39;</span>,
+        <span style="color:#e6db74">&#39;PASSWORD&#39;</span>:<span style="color:#e6db74">&#39;your_db_password&#39;</span>,
+        <span style="color:#e6db74">&#39;HOST&#39;</span>:<span style="color:#e6db74">&#39;localhost&#39;</span>,
+        <span style="color:#e6db74">&#39;PORT&#39;</span>:<span style="color:#e6db74">&#39;&#39;</span>,
+    }
+}
+</code></pre></div><h2 id="using-django-tools-to-link">Using django tools to link</h2>
+<p>The URL of <a href="https://docs.djangoproject.com/en/2.1/howto/legacy-databases/">here</a>, which I pasted at the beginning, describes in detail how to use the existing database. There are tools that can adjust the.
+How to start up is like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; python manage.py inspectdb
+
+class Items<span style="color:#f92672">(</span>models.Model<span style="color:#f92672">)</span>:
+    item_name <span style="color:#f92672">=</span> models.TextField<span style="color:#f92672">(</span>primary_key<span style="color:#f92672">=</span>True<span style="color:#f92672">)</span>
+    price <span style="color:#f92672">=</span> models.IntegerField<span style="color:#f92672">(</span>blank<span style="color:#f92672">=</span>True, null<span style="color:#f92672">=</span>True<span style="color:#f92672">)</span>
+
+    class Meta:
+        managed <span style="color:#f92672">=</span> False
+        db_table <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;items&#39;</span>
+</code></pre></div><p>If the settings in settings.py are correct, the code of the class corresponding to Model will be returned as above.
+You can paste this into your Models.py or write it directly to your existing Models.py as follows:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; python manage.py inspectdb &gt;&gt; path to models.py /models.py
+</code></pre></div><p>If you set it to &ldquo;&gt;&rdquo;, it will be overwritten, so we recommend setting it to &ldquo;&raquo;&rdquo;.
+After that, it is better to comment out the existing descriptions that are no longer needed.</p>
+<p>Looking at models.py&hellip;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:models.py" data-lang="python:models.py"><span style="color:#75715e"># This is an auto-generated Django model module.</span>
+<span style="color:#75715e"># You&#39;ll have to do the following manually to clean this up:</span>
+<span style="color:#75715e"># * Rearrange models&#39; order</span>
+<span style="color:#75715e"># * Make sure each model has one field with primary_key=True</span>
+<span style="color:#75715e"># * Make sure each ForeignKey has `on_delete` set to the desired behavior.</span>
+<span style="color:#75715e"># * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table</span>
+<span style="color:#75715e"># Feel free to rename the models, but don&#39;t rename db_table values or field names.</span>
+<span style="color:#f92672">from</span> django.db <span style="color:#f92672">import</span> models
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Items</span>(models<span style="color:#f92672">.</span>Model):
+    item_name <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>TextField(primary_key<span style="color:#f92672">=</span>True)
+    price <span style="color:#f92672">=</span> models<span style="color:#f92672">.</span>IntegerField(blank<span style="color:#f92672">=</span>True, null<span style="color:#f92672">=</span>True)
+
+    <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Meta</span>:
+        managed <span style="color:#f92672">=</span> False
+        db_table <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;items&#39;</span>
+
+</code></pre></div><p>The class definition has been added successfully!</p>
+<h2 id="final-coordination-with-existing-code">Final coordination with existing code</h2>
+<p>By the way, I made a mistake in naming the table.
+I passed the code through the &ldquo;Item&rdquo; class, but the class of the automatically generated Model is &ldquo;Items&rdquo;. This is because the table name in the database is &ldquo;items&rdquo;.</p>
+<p>But it&rsquo;s okay. After all, since it is a class definition, it is safe to change this class name.
+So I messed around with the class definition part.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:models.py" data-lang="python:models.py"><span style="color:#75715e"># ~ Omitted ~</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Item</span>(models<span style="color:#f92672">.</span>Model):
+<span style="color:#75715e"># ~ Omitted ~</span>
+</code></pre></div><h2 id="operation-check">Operation check</h2>
+<p>Now, start the server and check the operation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">&gt; python manage.py runserver
+</code></pre></div><p>No problem at all!
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/495652/99bee721-259e-e718-9563-4b831b29bd44.png" alt="image.png"></p>
+<p>#Conclusion</p>
+<ul>
+<li>If you want to use existing DB with Django, use python manage.py inspectdb! Because it ends in a moment!</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

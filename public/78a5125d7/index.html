@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I checked the output specification of PyTorch Bidirectional LSTM | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I checked the output specification of PyTorch Bidirectional LSTM</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 12, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lstm">LSTM</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pytorch">PyTorch</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>As stated in <a href="https://pytorch.org/docs/stable/nn.html?highlight=lstm#torch.nn.LSTM">LSTM Reference</a>,whenhandlingBidirectionalLSTMwithPyTorch,whendeclaringLSTMIt&rsquo;sOKtospecify<code>bidirectional=True</code>inthe,anditisveryeasytohandle(KerascanjustsurroundtheLSTMwithBidrectional).
+However, even if I look at the reference, I don&rsquo;t think much about the output when LSTM is set to Bidirectional.
+I didn&rsquo;t quite understand the output specifications of Bidirectional LSTM in PyTorch even after a quick google, so I will briefly summarize here.</p>
+<p>#Reference</p>
+<ol>
+<li><a href="https://en.wikipedia.org/wiki/Bidirectional_recurrent_neural_networks">Bidirectional recurrent neural networks</a></li>
+<li><a href="https://towardsdatascience.com/understanding-bidirectional-rnn-in-pytorch-5bd25a5dd66">Understanding Bidirectional RNN in PyTorch</a></li>
+</ol>
+<ul>
+<li><a href="https://stackoverflow.com/questions/53010465/bidirectional-lstm-output-question-in-pytorch">Bidirectional LSTM output question in PyTorch</a></li>
+<li><a href="https://qiita.com/t_Signull/items/21b82be280b46f467d1b">Understanding LSTM-along with recent trends</a></li>
+</ul>
+<h1 id="specification-check">Specification check</h1>
+<p>As you can see from References 1 and 2, you can see that the bidirectional RNN and LSTM are simple because the front and rear RNNs and LSTMs overlap.</p>
+<p>I will actually use it for the time being.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> torch
+<span style="color:#f92672">import</span> torch.nn <span style="color:#f92672">as</span> nn
+
+<span style="color:#75715e"># The embedding dimension number of each series is 5</span>
+<span style="color:#75715e"># The hidden layer size of the LSTM layer is 6</span>
+<span style="color:#75715e"># batch_first=True and input format is (batch_size, vocab_size, embedding_dim)</span>
+Declare bidirectional LSTM <span style="color:#66d9ef">with</span> <span style="color:#75715e">#bidrectional=True</span>
+bilstm <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>LSTM(<span style="color:#ae81ff">5</span>, <span style="color:#ae81ff">6</span>, batch_first<span style="color:#f92672">=</span>True, bidirectional<span style="color:#f92672">=</span>True)
+
+<span style="color:#75715e"># Batch size 1</span>
+<span style="color:#75715e"># Series length is 4</span>
+<span style="color:#75715e"># The embedding dimension of each series is 5</span>
+Generate a tensor that <span style="color:#f92672">is</span> <span style="color:#75715e">#</span>
+a <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>rand(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">4</span>, <span style="color:#ae81ff">5</span>)
+<span style="color:#66d9ef">print</span>(a)
+<span style="color:#75715e">#tensor([[[0.1360, 0.4574, 0.4842, 0.6409, 0.1980],</span>
+<span style="color:#75715e"># [0.0364, 0.4133, 0.0836, 0.2871, 0.3542],</span>
+<span style="color:#75715e"># [0.7796, 0.7209, 0.1754, 0.0147, 0.6572],</span>
+<span style="color:#75715e"># [0.1504, 0.1003, 0.6787, 0.1602, 0.6571]]])</span>
+
+<span style="color:#75715e">#As with normal LSTM, there are two outputs, so receive both</span>
+out, hc <span style="color:#f92672">=</span> bilstm(a)
+
+<span style="color:#66d9ef">print</span>(out)
+<span style="color:#75715e">#tensor([[[-0.0611, 0.0054, -0.0828, 0.0416, -0.0570, -0.1117, 0.0902, -0.0747, -0.0215, -0.1434, -0.2318, 0.0783],</span>
+<span style="color:#75715e"># [-0.1194, -0.0127, -0.2058, 0.1152, -0.1627, -0.2206, 0.0747, -0.0210, 0.0307, -0.0708, -0.2458, 0.1627],</span>
+<span style="color:#75715e"># [-0.0163, -0.0568, -0.0266, 0.0878, -0.1461, -0.1745, 0.1097, 0.0230, 0.0353, -0.0739, -0.2186, 0.0818],</span>
+<span style="color:#75715e"># [-0.1145, -0.0460, -0.0732, 0.0950, -0.1765, -0.2599, 0.0063, 0.0143, 0.0124, 0.0089, -0.1188, 0.0996]]],</span>
+<span style="color:#75715e">#grad_fn=&lt;TransposeBackward0&gt;)</span>
+<span style="color:#66d9ef">print</span>(hc)
+<span style="color:#75715e">#(tensor([[[-0.1145, -0.0460, -0.0732, 0.0950, -0.1765, -0.2599]],</span>
+<span style="color:#75715e"># [[ 0.0902, -0.0747, -0.0215, -0.1434, -0.2318, 0.0783]]],</span>
+<span style="color:#75715e"># grad_fn=&lt;StackBackward&gt;),</span>
+<span style="color:#75715e">#tensor([[[-0.2424, -0.1340, -0.1559, 0.3499, -0.3792, -0.5514]],</span>
+<span style="color:#75715e"># [[ 0.1876, -0.1413, -0.0384, -0.2345, -0.4982, 0.1573]]],</span>
+<span style="color:#75715e">#grad_fn=&lt;StackBackward&gt;))</span>
+</code></pre></div><p>Like normal LSTM, there are two outputs, <code>out</code> and <code>hc</code>, and <code>hc</code> returns in a tuple format as <code>hc=(h,c)</code> like normal LSTM. I think there are two differences from the output of a normal LSTM.</p>
+<ul>
+<li>The dimension of each element of <code>out</code> is not the size of the hidden layer dimension of LSTM (6 this time), but the doubled value (12 this time)</li>
+<li>Two elements <code>hc</code> and <code>c</code> of <code>hc</code> are returned</li>
+</ul>
+<p>The following is a brief explanation of what these things mean.</p>
+<p>(<code>c</code> is omitted. I have written the embedding layer, but I have not done it with LSTM.)</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/7859be7e-13fc-c4e2-a7b9-92d9f21045a6.png" alt="image.png"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/240999/faadf786-e81e-3e1a-b889-0b87433d4cba.png" alt="image.png"></p>
+<p>As you can see from the figure above, each element of <code>out</code> joins each hidden layer vector in the forward and backward directions. (So the dimension of each element is twice as much as usual.)
+Also, <code>h</code> in <code>hc=(h,c)</code> returns the last hidden layer vector in each of the forward and backward directions.</p>
+<p>That is,</p>
+<ul>
+<li>The first half of the last element of <code>out</code> matches <code>h[0]</code> when <code>hc=(h,c)</code></li>
+<li>The latter half of the first element of <code>out</code> matches <code>h[1]</code> when <code>hc=(h,c)</code></li>
+</ul>
+<p>Will do. You can read it from the output of the source code of the sample above, which is what it means.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">print</span>(out[:,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>][:,:<span style="color:#ae81ff">6</span>]) <span style="color:#75715e"># half of the last element of out</span>
+<span style="color:#66d9ef">print</span>(hc[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>]) <span style="color:#75715e"># value of the last hidden layer of forward LSTM</span>
+<span style="color:#75715e">#tensor([[-0.1145, -0.0460, -0.0732, 0.0950, -0.1765, -0.2599]], grad_fn=&lt;SliceBackward&gt;)</span>
+<span style="color:#75715e">#tensor([[-0.1145, -0.0460, -0.0732, 0.0950, -0.1765, -0.2599]], grad_fn=&lt;SelectBackward&gt;)</span>
+
+<span style="color:#66d9ef">print</span>(out[:,<span style="color:#ae81ff">0</span>][:,<span style="color:#ae81ff">6</span>:]) <span style="color:#75715e"># The second half of the first element of out</span>
+<span style="color:#66d9ef">print</span>(hc[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">1</span>]) <span style="color:#75715e"># Value of the last hidden layer of backward LSTM</span>
+<span style="color:#75715e">#tensor([[ 0.0902, -0.0747, -0.0215, -0.1434, -0.2318, 0.0783]], grad_fn=&lt;SliceBackward&gt;)</span>
+<span style="color:#75715e">#tensor([[ 0.0902, -0.0747, -0.0215, -0.1434, -0.2318, 0.0783]], grad_fn=&lt;SelectBackward&gt;)</span>
+</code></pre></div><p>Once you know the output specifications, you can cook as you like.
+When making a Many to One model such as sentence classification into Bidirectional LSTM, there seem to be various methods such as combining the second return value of LSTM, averaging, and taking the element product.
+In case of Keras, it seems that Keras joins (by default) on the side of Keras, but in case of PyTorch, it seems that you need to implement these processes yourself.
+For example, when I use <a href="https://qiita.com/m__k/items/841950a57a0d7ff05506">LSTM sentence classification</a> that I posted in the past as Bidirectional LSTM, it looks like this.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">LSTMClassifier</span>(nn<span style="color:#f92672">.</span>Module):
+    <span style="color:#66d9ef">def</span> __init__(self, embedding_dim, hidden_dim, vocab_size, tagset_size, batch_size<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>):
+        super(LSTMClassifier, self)<span style="color:#f92672">.</span>__init__()
+        self<span style="color:#f92672">.</span>batch_size <span style="color:#f92672">=</span> batch_size
+        self<span style="color:#f92672">.</span>hidden_dim <span style="color:#f92672">=</span> hidden_dim
+        self<span style="color:#f92672">.</span>word_embeddings <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Embedding(vocab_size, embedding_dim, padding_idx<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+        self<span style="color:#f92672">.</span>bilstm <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>LSTM(embedding_dim, hidden_dim, batch_first<span style="color:#f92672">=</span>True, bidirectional<span style="color:#f92672">=</span>True)
+        <span style="color:#75715e"># Hidden_dim is doubled because it receives the combination of the last hidden layer vector in the forward and backward directions</span>
+        self<span style="color:#f92672">.</span>hidden2tag <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>Linear(hidden_dim <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>, tagset_size)
+        self<span style="color:#f92672">.</span>softmax <span style="color:#f92672">=</span> nn<span style="color:#f92672">.</span>LogSoftmax()
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">forward</span>(self, sentence):
+        embeds <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>word_embeddings(sentence)
+        _, bilstm_hc <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>bilstm(embeds)
+        <span style="color:#75715e">#bilstm_out[0][0]-&gt;Last hidden layer vector of forward LSTM</span>
+        <span style="color:#75715e">#bilstm_out[0][1]-&gt; Backward LSTM last hidden layer vector</span>
+        bilstm_out <span style="color:#f92672">=</span> torch<span style="color:#f92672">.</span>cat([bilstm_hc[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>], bilstm_hc[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">1</span>]], dim<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)tag_space <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>hidden2tag(bilstm_out)
+         tag_scores <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>softmax(tag_space<span style="color:#f92672">.</span>squeeze())
+         <span style="color:#66d9ef">return</span> tag_scores
+</code></pre></div><h1 id="in-conclusion">in conclusion</h1>
+<ul>
+<li>It may seem like this is immediately understandable to the public, but is it a moment when you handle Bidirectional LSTM with PyTorch like yourself? I would appreciate if you could help someone who thinks that this article is available for you to investigate.</li>
+<li>By the way, GRU also becomes Bidirectional GRU with <code>bidirectional=True</code> like LSTM. I think there is no problem with the output format if the above LSTM specifications are known.</li>
+</ul>
+<p>end</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] How to make face image data set used in machine learning (2: Frame analysis of moving image and acquisition of candidate image) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] How to make face image data set used in machine learning (2: Frame analysis of moving image and acquisition of candidate image)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  May 21, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-processing"> image processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+</p>
+<pre><code>[Last time](http://qiita.com/ligerbolt/items/aeaa88980030fba940b6) introduced how to collect candidate images using Bing Image Search API.
+</code></pre>
+<p>This time, I will introduce a method of frame analysis and collection of videos.</p>
+<h1 id="development-environment-used-this-time">Development environment used this time</h1>
+<ul>
+<li>MacOS X El Capitan 10.11.4</li>
+<li>Python 3.5</li>
+<li>OpenCV 3.1</li>
+</ul>
+<h1 id="merits-of-extracting-candidate-images-from-videos">Merits of extracting candidate images from videos</h1>
+<p>The video basically uses the same mechanism as flipbook comics, and still images are switched within a short time to express movement.
+At this time, the still images that make up the moving image are frame images, and the number of frame images that make up the moving image per unit time is
+The frame rate is expressed in units of fps (how many frame images are used per second).</p>
+<ul>
+<li>Generally, domestic television broadcasting (signal standard NTSC) consists of about 30 frame images (29.97fps) per second.</li>
+</ul>
+<p>In other words, if you extract a frame image of a scene that shows a face from a video, you can secure some candidate images even from a video with a short scene.
+Also, in many videos such as DVD, the subject&rsquo;s face is taken from the camera&rsquo;s point of view, and the correction of the amount of light is also appropriate, so
+Another advantage is that there is a high possibility that facial images suitable for learning can be extracted from the candidate images extracted from the video.</p>
+<p>This time, I would like to use OpenCV, which I used last time, to extract the frame images that are the candidate images from the video.</p>
+<h2 id="capture-video-capture-with-quicktime-player">Capture video capture with QuickTime Player</h2>
+<p>This time I will use the free tool QuickTime Player to capture the video.</p>
+<p>You may find it inconvenient to capture the video, but the .mov format video captured and output by QuickTime Player has the advantage that the file can be read smoothly with OpenCV.
+(If you already have an OpenCV-readable video, skip this step.)</p>
+<p>Also, when extracting all frame images from a long-time movie such as a DVD, the number will be enormous and not all frame images will show the face properly. Therefore, we also aim to extract the frame image with the face efficiently by partially capturing the video scene where the face is reflected from the video.
+Furthermore, using this method, candidate images can also be extracted from the moving images published on the web.</p>
+<p><strong>※※※ Note ※※※</strong>
+**The video captured this time is based on the premise of machine learning. **
+**Please refrain from redistributing the captured video. **
+** Also, when capturing videos etc. posted on the web, **
+**Please do not touch the terms and conditions of each video site that publishes videos! **</p>
+<p>As for the capture method, the detailed description is posted in &ldquo;Record the screen&rdquo; of <a href="https://support.apple.com/ja-jp/HT201066">Official site</a>.
+I will omit the explanation here.
+If you need to download and install QuickTime Player, go to <a href="https://support.apple.com/ja_JP/downloads/quicktime">here</a>.
+No audio will be included in the captured video, but this time no audio is required so there is no problem.
+‥</p>
+<h2 id="get-frame-image-which-is-a-candidate-image-from-captured-video-with-opencv">Get frame image which is a candidate image from captured video with OpenCV</h2>
+<p>After generating the captured video, extract the frame image that is the candidate image from it.
+Below is a code example that extracts a frame image and saves it as a candidate image.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">import</span> cv2
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">movie_to_image</span>(num_cut):
+
+    video_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/hoge/hoge.mov&#39;</span> <span style="color:#75715e"># capture video path (including file name)</span>
+    output_path <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;/hoge/save/&#39;</span> <span style="color:#75715e"># output folder path</span>
+    
+    <span style="color:#75715e"># Read capture video (capture structure generation)</span>
+    capture <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoCapture(video_path)
+
+    img_count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># number of saved candidate images</span>
+    frame_count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># number of frame images read</span>
+
+<span style="color:#75715e"># Loop as long as there is a frame image</span>
+    <span style="color:#66d9ef">while</span>(capture<span style="color:#f92672">.</span>isOpened()):
+    <span style="color:#75715e"># Get one frame image</span>
+        ret, frame <span style="color:#f92672">=</span> capture<span style="color:#f92672">.</span>read()
+        <span style="color:#66d9ef">if</span> ret <span style="color:#f92672">==</span> False:
+            <span style="color:#66d9ef">break</span>
+
+        <span style="color:#75715e"># Save a specified number of frame images</span>
+        <span style="color:#66d9ef">if</span> frame_count <span style="color:#f92672">%</span>num_cut <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            img_file_name <span style="color:#f92672">=</span> output_path <span style="color:#f92672">+</span> str(img_count) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;.jpg&#34;</span>
+            cv2<span style="color:#f92672">.</span>imwrite(img_file_name, frame)
+            img_count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+            
+        frame_count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+
+    <span style="color:#75715e">#Capture structure open</span>
+    capture<span style="color:#f92672">.</span>release()
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+It<span style="color:#e6db74">&#39;s a sequel.</span>
+<span style="color:#75715e"># Extract the frame image by setting the decimation number to 10</span>
+movie_to_image(int(<span style="color:#ae81ff">10</span>))
+It<span style="color:#e6db74">&#39;s a sequel.</span>
+</code></pre></div><p>What is given as an argument to the <code>movie_to_image</code> method is the number of frame images to be thinned.
+As explained above, in the case of a long movie, saving all frame images as candidate images will result in an enormous number of images.
+Also, if the motion in the video is extremely slow, many face frame images with almost the same structure will be generated.
+I think there are situations where you don&rsquo;t like it.
+These problems are solved by thinning out the frame images saved there to some extent.</p>
+<p>So for a video with a frame rate of 29.97 fps,
+If you set the decimation value to <code>30</code>, you can get about one frame image at 1 second intervals in the video.
+‥</p>
+<h2 id="real-time-candidate-image-acquisition-using-a-web-camera">Real-time candidate image acquisition using a web camera</h2>
+<p>In the above code, the candidate image was generated from the captured video file, but with a slight change in this code
+You can also generate a candidate image in real time while shooting a video with a web camera.</p>
+<p>For example, to use the standard in-camera on MacBook Air,
+All you have to do is change the above code to the following.</p>
+<pre><code>#capture = cv2.VideoCapture(video_path)
+It's a sequel.
+# Give camera device number
+capture = cv2.VideoCapture(0)
+</code></pre><p>‥
+You can also use a web camera with a USB connection, but depending on the camera, there are cases where the device is not recognized and cannot be used.</p>
+<ul>
+<li>In my MBA environment, the built-in camera is <code>0</code>, and the USB connection camera (made by Buffalo) is <code>1</code> or later.
+I confirmed that the camera device number was assigned.</li>
+</ul>
+<p>Also, if there is no machine spec to some extent, real-time processing while shooting may not be able to catch up,
+Especially when saving the total number of frames, the problem tends to become more noticeable.
+In that case, adjust the number of thinnings to solve the problem.
+‥
+‥
+Although it is simple, the above is an explanation of an example of collecting candidate images by frame analysis of moving images.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

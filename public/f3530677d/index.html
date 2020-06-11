@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Simulate temperature measurement with Raspberry Pi &#43; Flask &#43; SQLite &#43; Ajax | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Simulate temperature measurement with Raspberry Pi + Flask + SQLite + Ajax</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 10, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/flask">Flask</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/sqlite3">SQLite3</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/raspberrypi">RaspberryPi</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ajax">Ajax</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>It is convenient to be able to debug with software alone when measuring temperature with Raspberry Pi and acquiring sensor status with GPIO.
+Therefore, we created a debug environment that simulates temperature measurement and acquisition of sensor status with GPIO, and displays it on a website (created with Flask).
+Save the simulated temperature and sensor state in SQLite and refresh the page via Ajax.
+The temperature and sensor values are hard to understand, so it looks as if the living room temperature and sensor had changed.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543183/7dcdff15-b744-6c9e-b570-73a8e986527e.png" alt="sensor_off.png"></p>
+<p>No breadboard or wiring is required in this environment.
+It is not suitable for temperature measurement or sensor status acquisition that requires real-time processing. We assume an environment where the temperature should be known every 30 seconds.</p>
+<h1 id="operation-image">Operation image</h1>
+<ul>
+<li>The temperature and sensor status arrows are updated.</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543183/0847a582-6619-f86d-8b08-3e0256c46c26.gif" alt="sensor_demo.gif"></p>
+<p>#Environment</p>
+<ul>
+<li>Raspberry Pi3 B</li>
+<li>Python 3.7.2</li>
+<li>Flask</li>
+<li>SQLite3</li>
+<li>Sqlalchemy</li>
+<li>jQuery 3.4.1</li>
+</ul>
+<h1 id="install">Install</h1>
+<h2 id="python-environment">Python environment</h2>
+<ul>
+<li>Here, create a Sensor folder and install the environment with pipenv.</li>
+<li>Installation of pipenv and Web server (Nginx, uWSGI, etc.) is omitted.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ mkdir Sensor
+$ cd Sensor
+$ pipenv install --python 3.7.2
+$ pipenv install flask
+$ pipenv install sqlalchemy
+$ pipenv shell
+</code></pre></div><h3 id="folder-and-file-structure">Folder and file structure</h3>
+<ul>
+<li>Create the following folders and files.</li>
+<li>jQuery downloads the appropriate version from <a href="https://jquery.com/">jQuery</a>.</li>
+<li>Download the arrow icon (On/Off) from <a href="https://sozai.cman.jp/icon/arrow/base1/">[Free Icon] Arrow (Up/Down/Left/Right)</a>.</li>
+<li>Backgrounds can be downloaded from <a href="https://www.irasutoya.com/">Cute free material collection Irasutoya</a> etc.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">└ Sensor/
+  ├ server.py
+  ├ app/
+  │ ├ app.py
+  │ └ static/
+  │ │ ├ css/
+  │ │ │ └ sample.css
+  │ │ ├ img/
+  │ │ │ ├ arrow_on.png <span style="color:#75715e"># On arrow</span>
+  │ │ │ ├ arrow_off.png Arrow when <span style="color:#75715e"># Off</span>
+  │ │ │ └ bg_house_living.jpg <span style="color:#75715e"># background image</span>
+  │ │ ├ jquery/
+  │ │ │ └ jquery-3.4.1-min.js
+  │ │ └ js/
+  │ │ └ sample.js
+  │ └ templates/
+  │ └ index.html
+  ├ models/ <span style="color:#75715e"># SQLite3 definition</span>
+  │ ├ __init__.py
+  │ ├ database.py
+  │ └ models.py
+  └ output_log/ <span style="color:#75715e"># background execution log folder</span>
+</code></pre></div><h1 id="source-code">Source code</h1>
+<h3 id="server-main-processing">Server main processing</h3>
+<ul>
+<li>Initialize Database with init_db(). (Only executed if *.db file does not exist)</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-server.py" data-lang="server.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">from</span> flask <span style="color:#f92672">import</span> Flask
+<span style="color:#f92672">from</span> app.app <span style="color:#f92672">import</span> app
+<span style="color:#f92672">from</span> models.database <span style="color:#f92672">import</span> init_db
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    <span style="color:#75715e"># Database initialization</span>
+    init_db()
+    <span style="color:#75715e"># Application start (all access permission at host=0,0,0,0)</span>
+    app<span style="color:#f92672">.</span>run(host<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;0.0.0.0&#39;</span>, debug<span style="color:#f92672">=</span>True)
+</code></pre></div><h3 id="temperature-and-sensor-simulation">Temperature and sensor simulation</h3>
+<ul>
+<li>Simulate temperature and sensor every 3 seconds.</li>
+<li>Temperature is simulated at 25 degrees + α.</li>
+<li>The sensor simulates 0 or 1.</li>
+</ul>
+<p>(reference)
+<a href="https://qiita.com/montblanc18/items/05715730d99d450fd0d3">How to execute in Python at regular intervals and verification</a></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sensor.py" data-lang="sensor.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> threading
+<span style="color:#f92672">import</span> random
+<span style="color:#f92672">from</span> models.models <span style="color:#f92672">import</span> SensorCurrent
+<span style="color:#f92672">from</span> models.database <span style="color:#f92672">import</span> db_session
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime
+
+<span style="color:#75715e">#Periodic execution processing</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">schedule</span>():
+    <span style="color:#75715e"># Temperature simulation (25 degrees + α)</span>
+    now <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    temp <span style="color:#f92672">=</span> <span style="color:#ae81ff">25</span> <span style="color:#f92672">+</span> now <span style="color:#f92672">%</span><span style="color:#ae81ff">5</span> <span style="color:#f92672">+</span> (now <span style="color:#f92672">/</span> <span style="color:#ae81ff">10</span>) <span style="color:#f92672">%</span><span style="color:#ae81ff">10</span>
+    <span style="color:#75715e"># Round down to two decimal places</span>
+    str <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;{0:.2f}&#34;</span><span style="color:#f92672">.</span>format(temp)
+    temp <span style="color:#f92672">=</span> float(str)
+    
+    <span style="color:#75715e"># Simulate sensor status (0 or 1)</span>
+    sensor <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>)
+
+    <span style="color:#75715e"># Update current data</span>
+    current <span style="color:#f92672">=</span> SensorCurrent<span style="color:#f92672">.</span>query<span style="color:#f92672">.</span>first()
+    current<span style="color:#f92672">.</span>temp1 <span style="color:#f92672">=</span> temp
+    current<span style="color:#f92672">.</span>sensor1 <span style="color:#f92672">=</span> sensor
+    db_session<span style="color:#f92672">.</span>commit()
+    db_session<span style="color:#f92672">.</span>close()
+
+<span style="color:#75715e">#Periodic execution setting process</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">scheduler</span>(interval, f, wait <span style="color:#f92672">=</span> True):
+    base_time <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    next_time <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    <span style="color:#66d9ef">while</span> True:
+        t <span style="color:#f92672">=</span> threading<span style="color:#f92672">.</span>Thread(target <span style="color:#f92672">=</span> f)
+        t<span style="color:#f92672">.</span>start()
+        <span style="color:#66d9ef">if</span> wait:
+            t<span style="color:#f92672">.</span>join()
+        next_time <span style="color:#f92672">=</span> ((base_time<span style="color:#f92672">-</span>time<span style="color:#f92672">.</span>time()) <span style="color:#f92672">%</span>interval) <span style="color:#f92672">or</span> interval
+        time<span style="color:#f92672">.</span>sleep(next_time)
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    <span style="color:#75715e">#Periodic execution setting (3 seconds interval)</span>
+    scheduler(<span style="color:#ae81ff">3</span>, schedule, True)
+</code></pre></div><h3 id="application-main-processing">Application main processing</h3>
+<ul>
+<li>Describe website display and Ajax processing.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-/app/app.py" data-lang="/app/app.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">from</span> flask <span style="color:#f92672">import</span> Flask,render_template,request, json, jsonify
+<span style="color:#f92672">from</span> models.models <span style="color:#f92672">import</span> SensorCurrent
+
+app <span style="color:#f92672">=</span> Flask(__name__)
+
+<span style="color:#75715e"># Website display processing</span>
+<span style="color:#a6e22e">@app.route</span>(<span style="color:#e6db74">&#34;/&#34;</span>)
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">index</span>():
+    Get current temperature <span style="color:#f92672">and</span> sensor data <span style="color:#f92672">from</span> <span style="color:#75715e">#SQlite</span>
+    data <span style="color:#f92672">=</span> SensorCurrent<span style="color:#f92672">.</span>query<span style="color:#f92672">.</span>first()
+    <span style="color:#66d9ef">return</span> render_template(<span style="color:#e6db74">&#34;index.html&#34;</span>,sensor<span style="color:#f92672">=</span>data)
+
+<span style="color:#75715e"># Ajax processing</span>
+<span style="color:#a6e22e">@app.route</span>(<span style="color:#e6db74">&#34;/currdata&#34;</span>, methods<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;POST&#39;</span>])
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getCurrData</span>():
+    Get current temperature <span style="color:#f92672">and</span> sensor data <span style="color:#f92672">from</span> <span style="color:#75715e">#SQlite</span>
+    data <span style="color:#f92672">=</span> SensorCurrent<span style="color:#f92672">.</span>query<span style="color:#f92672">.</span>first()
+    <span style="color:#75715e">#Convert to JSON and return the result</span>
+    json_data <span style="color:#f92672">=</span> {
+        <span style="color:#e6db74">&#39;sensor1&#39;</span>: data<span style="color:#f92672">.</span>sensor1,
+        <span style="color:#e6db74">&#39;temp1&#39;</span>: data<span style="color:#f92672">.</span>temp1
+    }
+    <span style="color:#66d9ef">return</span> jsonify(Result<span style="color:#f92672">=</span>json<span style="color:#f92672">.</span>dumps(json_data))
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    app<span style="color:#f92672">.</span>run(debug<span style="color:#f92672">=</span>True)
+</code></pre></div><h3 id="database-definition">Database definition</h3>
+<ul>
+<li>Define the SQLite3 database (sensor.db).</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-models/database.py" data-lang="models/database.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> create_engine
+<span style="color:#f92672">from</span> sqlalchemy.orm <span style="color:#f92672">import</span> scoped_session, sessionmaker
+<span style="color:#f92672">from</span> sqlalchemy.ext.declarative <span style="color:#f92672">import</span> declarative_base
+<span style="color:#f92672">import</span> os
+
+<span style="color:#75715e"># Database file settings</span>
+databese_file <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>abspath(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>dirname(__file__)),<span style="color:#e6db74">&#39;sensor.db&#39;</span>)
+engine <span style="color:#f92672">=</span> create_engine(<span style="color:#e6db74">&#39;sqlite:///&#39;</span> <span style="color:#f92672">+</span> databese_file, convert_unicode<span style="color:#f92672">=</span>True)
+db_session <span style="color:#f92672">=</span> scoped_session(sessionmaker(autocommit<span style="color:#f92672">=</span>False,autoflush<span style="color:#f92672">=</span>False,bind<span style="color:#f92672">=</span>engine))
+Base <span style="color:#f92672">=</span> declarative_base()
+Base<span style="color:#f92672">.</span>query <span style="color:#f92672">=</span> db_session<span style="color:#f92672">.</span>query_property()
+
+<span style="color:#75715e"># Database initialization</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">init_db</span>():
+    <span style="color:#f92672">import</span> models.models
+    Base<span style="color:#f92672">.</span>metadata<span style="color:#f92672">.</span>create_all(bind<span style="color:#f92672">=</span>engine)
+</code></pre></div><h3 id="table-definition">table definition</h3>
+<ul>
+<li>Define current data table (currdata) for temperature and sensor.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-models/models.py" data-lang="models/models.py"><span style="color:#75715e"># -*- coding: utf-8 -*-</span>
+
+<span style="color:#f92672">from</span> sqlalchemy <span style="color:#f92672">import</span> Column, Integer, Float, String, Text, DateTime
+<span style="color:#f92672">from</span> models.database <span style="color:#f92672">import</span> Base
+<span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime
+
+<span style="color:#75715e">#Current data table definition of temperature and sensor</span>
+<span style="color:#75715e"># Store 1 temperature data, 1 sensor data here</span>
+<span style="color:#75715e"># Please set the table definition appropriately</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SensorCurrent</span>(Base):__tablename__ <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;currdata&#39;</span>
+    id <span style="color:#f92672">=</span> Column(Integer, primary_key<span style="color:#f92672">=</span>True)
+    name <span style="color:#f92672">=</span> Column(String(<span style="color:#ae81ff">128</span>))
+    temp1 <span style="color:#f92672">=</span> Column(Float)
+    sensor1 <span style="color:#f92672">=</span> Column(Integer)
+    date <span style="color:#f92672">=</span> Column(DateTime, default<span style="color:#f92672">=</span>datetime<span style="color:#f92672">.</span>now())
+
+    <span style="color:#66d9ef">def</span> __init__(self, name<span style="color:#f92672">=</span>None, temp1<span style="color:#f92672">=</span>None, sensor1<span style="color:#f92672">=</span>None, date<span style="color:#f92672">=</span>None):
+        self<span style="color:#f92672">.</span>name <span style="color:#f92672">=</span> name
+        self<span style="color:#f92672">.</span>temp1 <span style="color:#f92672">=</span> temp1
+        self<span style="color:#f92672">.</span>sensor1 <span style="color:#f92672">=</span> sensor1
+        self<span style="color:#f92672">.</span>date <span style="color:#f92672">=</span> date
+
+    <span style="color:#66d9ef">def</span> __repr__(self):
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;&lt;Name </span><span style="color:#e6db74">%r</span><span style="color:#e6db74">&gt;&#39;</span> <span style="color:#f92672">%</span>(self<span style="color:#f92672">.</span>name)
+</code></pre></div><h3 id="main-page-using-flask">Main page using Flask</h3>
+<ul>
+<li>Get and display current data at startup. (The default arrow is Off)</li>
+<li>Use Ajax to get the current data every 2 seconds and rewrite the page.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-app/templates/index.html" data-lang="app/templates/index.html"><span style="color:#75715e">&lt;!DOCTYPE html&gt;</span>
+&lt;<span style="color:#f92672">html</span> <span style="color:#a6e22e">lang</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ja&#34;</span>&gt;
+    &lt;<span style="color:#f92672">head</span>&gt;
+        &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">charset</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8&#34;</span>&gt;
+        &lt;<span style="color:#f92672">title</span>&gt;{{sensor.name}}&lt;/<span style="color:#f92672">title</span>&gt;
+        &lt;<span style="color:#f92672">meta</span> <span style="color:#a6e22e">name</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;viewport&#34;</span> <span style="color:#a6e22e">content</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;width=device-width,initial-scale=1.0&#34;</span>&gt;
+        &lt;<span style="color:#f92672">link</span> <span style="color:#a6e22e">rel</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;stylesheet&#34;</span> <span style="color:#a6e22e">type</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;text/css&#34;</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../static/css/sample.css&#34;</span>&gt;
+        &lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../static/jquery/jquery-3.4.1.min.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+        &lt;<span style="color:#f92672">script</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../static/js/sample.js&#34;</span>&gt;&lt;/<span style="color:#f92672">script</span>&gt;
+    &lt;/<span style="color:#f92672">head</span>&gt;
+    &lt;<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">h1</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;h1_temp1&#34;</span>&gt;Temp: {{sensor.temp1}}&lt;/<span style="color:#f92672">h1</span>&gt;
+    &lt;<span style="color:#f92672">h1</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;h1_sensor1&#34;</span>&gt;Sensor: {{sensor.sensor1}}&lt;/<span style="color:#f92672">h1</span>&gt;
+    
+    &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sample-box&#34;</span>&gt;
+        &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sample-box-bg&#34;</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../static/img/bg_house_living.jpg&#34;</span> <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>&gt;
+        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sample-sensor&#34;</span>&gt;
+            &lt;<span style="color:#f92672">img</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sample-sensor-img&#34;</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sensor1&#34;</span> <span style="color:#a6e22e">src</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;../static/img/arrow_off.png&#34;</span> <span style="color:#a6e22e">alt</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>&gt;
+        &lt;/<span style="color:#f92672">div</span>&gt;
+        &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;temp1&#34;</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;sample-tempareture&#34;</span>&gt;
+        &lt;/<span style="color:#f92672">div</span>&gt;
+    &lt;/<span style="color:#f92672">div</span>&gt;
+    &lt;/<span style="color:#f92672">body</span>&gt;
+    &lt;<span style="color:#f92672">script</span>&gt;
+        <span style="color:#a6e22e">setInterval</span>(<span style="color:#66d9ef">function</span> () {
+           <span style="color:#a6e22e">getcurrdata</span>();
+        }, <span style="color:#ae81ff">2000</span>);
+    &lt;/<span style="color:#f92672">script</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</code></pre></div><h3 id="current-data-acquisition-process">Current data acquisition process</h3>
+<ul>
+<li>Get the current data using Ajax.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-app/static/js/sample.js" data-lang="app/static/js/sample.js"><span style="color:#75715e">// Get current data
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">function</span> <span style="color:#a6e22e">getcurrdata</span>() {
+    <span style="color:#a6e22e">$</span>.<span style="color:#a6e22e">ajax</span>({
+        <span style="color:#a6e22e">type</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;POST&#39;</span>,
+        <span style="color:#a6e22e">url</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;/currdata&#39;</span>,
+        <span style="color:#a6e22e">data</span><span style="color:#f92672">:</span> <span style="color:#e6db74">``</span>,
+        <span style="color:#a6e22e">contentType</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;application/json&#39;</span>
+    })
+    .<span style="color:#a6e22e">done</span>( (<span style="color:#a6e22e">data</span>) =&gt; {
+        <span style="color:#75715e">// Data acquisition successful
+</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34;success&#34;</span>);
+        <span style="color:#75715e">// extract data from JSON
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">json_data</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">JSON</span>.<span style="color:#a6e22e">parse</span>(<span style="color:#a6e22e">data</span>.<span style="color:#a6e22e">Result</span>);
+        <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">sensor1</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">json_data</span>.<span style="color:#a6e22e">sensor1</span>;
+        <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">temp1</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">json_data</span>.<span style="color:#a6e22e">temp1</span>;
+
+        <span style="color:#75715e">// set temperature in background image
+</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#34;#temp1&#34;</span>).<span style="color:#a6e22e">html</span>(<span style="color:#a6e22e">temp1</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;℃&#34;</span>);
+        <span style="color:#75715e">// Temperature setting (for confirmation)
+</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#34;#h1_temp1&#34;</span>).<span style="color:#a6e22e">html</span>(<span style="color:#e6db74">&#34;Temp :&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">temp1</span>);
+
+        <span style="color:#75715e">// sensor image setting
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">sensor1</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
+            <span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#34;#sensor1&#34;</span>).<span style="color:#a6e22e">attr</span>(<span style="color:#e6db74">&#34;src&#34;</span>, <span style="color:#e6db74">&#34;../static/img/arrow_off.png&#34;</span>);
+        } <span style="color:#66d9ef">else</span> {
+            <span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#34;#sensor1&#34;</span>).<span style="color:#a6e22e">attr</span>(<span style="color:#e6db74">&#34;src&#34;</span>, <span style="color:#e6db74">&#34;../static/img/arrow_on.png&#34;</span>);
+        }
+        <span style="color:#75715e">// sensor setting (for confirmation)
+</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">$</span>(<span style="color:#e6db74">&#34;#h1_sensor1&#34;</span>).<span style="color:#a6e22e">html</span>(<span style="color:#e6db74">&#34;Sensor :&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">sensor1</span>);
+    })
+    .<span style="color:#a6e22e">fail</span>( (<span style="color:#a6e22e">data</span>) =&gt; {
+        <span style="color:#75715e">// Data acquisition failure
+</span><span style="color:#75715e"></span>        <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>(<span style="color:#e6db74">&#34;error&#34;</span>);
+    });
+}
+</code></pre></div><h3 id="css-for-main-page">CSS for main page</h3>
+<ul>
+<li>It supports responsive design simply.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-app/static/css/sample.css" data-lang="app/static/css/sample.css">@<span style="color:#66d9ef">charset</span> <span style="color:#e6db74">&#34;utf-8&#34;</span>;
+
+@<span style="color:#66d9ef">media</span> <span style="color:#f92672">screen</span> <span style="color:#f92672">and</span> <span style="color:#f92672">(</span><span style="color:#f92672">min-width</span><span style="color:#f92672">:</span> <span style="color:#f92672">481px</span><span style="color:#f92672">)</span> {
+  .<span style="color:#a6e22e">sample-box</span> {
+    <span style="color:#66d9ef">position</span>: <span style="color:#66d9ef">relative</span>;
+    <span style="color:#66d9ef">display</span>:<span style="color:#66d9ef">inline</span><span style="color:#f92672">-</span><span style="color:#66d9ef">block</span>;
+  }
+  .<span style="color:#a6e22e">sample-box-bg</span> {
+  }
+
+  .<span style="color:#a6e22e">sample-sensor</span> {
+    <span style="color:#66d9ef">position</span>: <span style="color:#66d9ef">absolute</span>;
+    <span style="color:#66d9ef">left</span>: <span style="color:#ae81ff">60</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">top</span>: <span style="color:#ae81ff">5</span><span style="color:#66d9ef">%</span>;
+  }
+  .<span style="color:#a6e22e">sample-sensor-img</span> {
+  }
+
+  .<span style="color:#a6e22e">sample-tempareture</span> {
+    <span style="color:#66d9ef">position</span>: <span style="color:#66d9ef">absolute</span>;
+    <span style="color:#66d9ef">top</span>: <span style="color:#ae81ff">35</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">left</span>: <span style="color:#ae81ff">55</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">color</span>: RED;
+    <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">36</span><span style="color:#66d9ef">px</span>;
+  }
+}
+
+@<span style="color:#66d9ef">media</span> <span style="color:#f92672">screen</span> <span style="color:#f92672">and</span> <span style="color:#f92672">(</span><span style="color:#f92672">max-width</span><span style="color:#f92672">:</span> <span style="color:#f92672">480px</span><span style="color:#f92672">)</span> {
+  .<span style="color:#a6e22e">sample-box</span> {
+    <span style="color:#66d9ef">position</span>: <span style="color:#66d9ef">relative</span>;
+    <span style="color:#66d9ef">display</span>:<span style="color:#66d9ef">inline</span><span style="color:#f92672">-</span><span style="color:#66d9ef">block</span>;
+  }
+  .<span style="color:#a6e22e">sample-box-bg</span> {
+    <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">100</span><span style="color:#66d9ef">%</span>;
+  }
+
+  .<span style="color:#a6e22e">sample-sensor</span> {
+    <span style="color:#66d9ef">position</span>: <span style="color:#66d9ef">absolute</span>;
+    <span style="color:#66d9ef">left</span>: <span style="color:#ae81ff">60</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">top</span>: <span style="color:#ae81ff">5</span><span style="color:#66d9ef">%</span>;
+  }
+  .<span style="color:#a6e22e">sample-sensor-img</span> {
+    <span style="color:#66d9ef">width</span>: <span style="color:#ae81ff">70</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">height</span>: <span style="color:#ae81ff">70</span><span style="color:#66d9ef">%</span>;
+  }
+
+  .<span style="color:#a6e22e">sample-tempareture</span> {
+    <span style="color:#66d9ef">position</span>: <span style="color:#66d9ef">absolute</span>;
+    <span style="color:#66d9ef">top</span>: <span style="color:#ae81ff">35</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">left</span>: <span style="color:#ae81ff">55</span><span style="color:#66d9ef">%</span>;
+    <span style="color:#66d9ef">color</span>: RED;
+    <span style="color:#66d9ef">font-size</span>: <span style="color:#ae81ff">22</span><span style="color:#66d9ef">px</span>;
+  }
+}
+</code></pre></div><h1 id="method-of-operation">Method of operation</h1>
+<p>From temperature and sensor simulation to website display.</p>
+<h3 id="set-temperature-and-initial-value-of-sensor">Set temperature and initial value of sensor</h3>
+<ul>
+<li>Add initial values of temperature and sensor (only one case) to the currdata table.</li>
+<li>Start python in the Sensor folder and execute the following source code.</li>
+<li>You only need to run it once.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$python
+from models.database import db_session
+from models.models import SensorCurrent
+data <span style="color:#f92672">=</span> SensorCurrent<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;sample&#34;</span>,25.3, 0<span style="color:#f92672">)</span>
+db_session.add<span style="color:#f92672">(</span>data<span style="color:#f92672">)</span>
+db_session.commit<span style="color:#f92672">()</span>
+exit<span style="color:#f92672">()</span>
+</code></pre></div><h3 id="start-simulating-temperature-and-sensor">Start simulating temperature and sensor</h3>
+<ul>
+<li>From the Sensor folder, launch the app that simulates temperature and sensor in the background.</li>
+<li>I run it in the background because I want to run it at the same time as the server app.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e"># Run in the folder below</span>
+<span style="color:#f92672">(</span>Sensor<span style="color:#f92672">)</span> pi@raspberrypi:~/Sensor $
+
+<span style="color:#75715e"># Execute the following command</span>
+nohup python sensor.py &gt;./output_log/out.log &amp;
+</code></pre></div><ul>
+<li>If you have already started simulating, kill the process before starting.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e"># find the process running python</span>
+$ ps aux | grep python
+pi <span style="color:#ae81ff">22965</span> 0.7 2.0 <span style="color:#ae81ff">32200</span> <span style="color:#ae81ff">19176</span> pts/2 S 16:43 0:27 python sensor.py
+
+<span style="color:#75715e"># kill the sensor.py process</span>
+$ kill -9 <span style="color:#f92672">(</span>process id of sensor.py -&gt; <span style="color:#ae81ff">22965</span> here<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="start-the-web-server">Start the web server</h3>
+<ul>
+<li>Start the server main process.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#75715e"># Run in the folder below</span>
+<span style="color:#f92672">(</span>Sensor<span style="color:#f92672">)</span> pi@raspberrypi:~/Sensor $
+
+<span style="color:#75715e"># Execute the following command</span>
+python server.py
+</code></pre></div><h3 id="display-confirmation">Display confirmation</h3>
+<ul>
+<li>Launch the browser and access <a href="http://127.0.0.1:5000">http://127.0.0.1:5000</a>.</li>
+<li>It is OK to access the local IP address of the web server.</li>
+<li>When accessing from a smartphone, I think that the responsive design is simply applied.</li>
+</ul>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/543183/1d6ae998-14c0-34cc-46ce-d75dc296a29d.png" alt="sensor_on.png"></p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>If you want to try IoT with Raspberry Pi, but you are also developing the hardware at the same time, or you can not prepare a breadboard or wiring, you can easily simulate it. The temperature and the number of sensors can be freely designed by the definition of SQLite, so I will utilize them from now on.</p>
+<p>#Reference
+I referred to the following site.
+<a href="https://qiita.com/kiyokiyo_kzsby/items/f8aa0bf68007e18d6882">Web application development inexperienced person can use Flask, SQLite and Heroku to publish the service in a week</a><a href="https://qiita.com/ochomaki/items/447c25cecbb5aee35ca1">StartuptheWebserverwithRaspberrypi+Nginx+uWSGIanddeploytheDjangoapplication(1)</a>
+<a href="https://qiita.com/montblanc18/items/05715730d99d450fd0d3">Method and verification to execute in regular cycle with Python</a>
+<a href="https://qiita.com/alancodvo/items/15dc36d243e842448d33">Let&rsquo;s save time by running in the background! ! </a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

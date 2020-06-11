@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Understanding Word2Vec | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Understanding Word2Vec</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 13, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/natural-language-processing"> natural language processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/gensim"> gensim</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/word2vec"> word2vec</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>I have summarized what I have learned about Word2Vec, which is now a standard method for natural language processing.
+The outline of the algorithm is organized and the model is created using the library.</p>
+<p>##reference
+I have referred to the following to understand Word2Vec.</p>
+<ul>
+<li><a href="https://www.amazon.co.jp/dp/4873118360/ref=cm_sw_r_tw_dp_U_x_D.7gEbSDN9PNF">Deep Learning from Zero ❷-Natural Language Processing Edition</a>K.Saito(Author)</li>
+<li><a href="https://qiita.com/Hironsan/items/11b388575a058dc8a46a">How to understand Word2vec with pictures
+</a></li>
+<li><a href="https://arxiv.org/abs/1301.3781">Efficient Estimation of Word Representations in Vector Space
+(Original paper)</a></li>
+<li><a href="https://radimrehurek.com/gensim/models/word2vec.html">gensim API reference</a></li>
+</ul>
+<p>#Word2Vec overview
+The following describes the concept of natural language processing, which is the premise of Word2Vec.</p>
+<h2 id="distributed-representation-of-words">Distributed representation of words</h2>
+<p>Representing a word with a fixed-length vector is called a &ldquo;word distributed expression.&rdquo; If the word can be expressed as a vector, the meaning of the word can be grasped quantitatively, and it can be applied to various processes. <strong>Word2Vec is also a method aimed at acquiring distributed expressions of words</strong>.</p>
+<h2 id="distribution-hypothesis">Distribution hypothesis</h2>
+<p>Various vectorization methods have been studied in the world of natural language processing, but the main method is based on the idea that &ldquo;the meaning of words is formed by surrounding words&rdquo; ** It is called *. Word2Vec introduced in this article is also based on the distribution hypothesis. **</p>
+<h2 id="count-based-and-inference-based">Count-based and inference-based</h2>
+<p>There are two main methods for acquiring the distributed expression of words: a count-based method** and a reasoning-based method**. The count-based method expresses words according to the frequency of surrounding words, and obtains a distributed expression of words from the statistical data of the entire corpus. On the other hand, the inference-based method is a method in which a neural network is used to **update weights repeatedly while seeing a small number of learning samples**. **Word2Vec corresponds to the latter**.</p>
+<p>#Word2vec algorithm
+The contents of the Word2Vec algorithm are explained below.</p>
+<h2 id="neural-network-model-used-in-word2vec">Neural network model used in Word2vec</h2>
+<p>Word2vec uses the following two models.</p>
+<ul>
+<li>CBOW(continuous bag-of-words)</li>
+<li>skip-gram</li>
+</ul>
+<p>I will explain the mechanism of each model.</p>
+<p>##CBOW model
+###Overview
+The CBOW model is a neural network whose purpose is to <strong>guess the target from the context</strong>. By training this CBOW model to make the most accurate guesses, we can obtain a distributed representation of words.</p>
+<p>How much of the context before and after is used is determined at each model creation, but if one word before and after is used as the context, for example, in the following example, the words &ldquo;every morning&rdquo;, &ldquo;is&rdquo;, and &ldquo;?&rdquo; are guessed. I will.</p>
+<p>|me|is|every morning|? | Drink | drink | |
+|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|: &mdash;:|</p>
+<p>The model structure of CBOW is shown below. There are two input layers, and it reaches the output layer through the middle layer.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/f1c71b40-0eef-8140-9d98-0e9c803911e1.png" alt="NN.png"></p>
+<p>The middle layer in the above figure is the &ldquo;averaged&rdquo; value after conversion by full combination of each input layer. If the first input layer is converted to $h_1$ and the second input layer is converted to $h_2$, the neurons in the middle layer are $\frac{1}{2}(h_1+h_2)$.</p>
+<p>The transformation from the input layer to the hidden layer is performed by the fully connected layer (weight is $W_{in}$). At this time, the weight $W_{in}$ of the fully connected layer is a matrix in the shape of $8×3$, but this **weight is the distributed expression of the word created using CBOW**.</p>
+<h3 id="learning-the-cbow-model">Learning the CBOW model</h3>
+<p>The CBOW model outputs the score of each word in the output layer, and the &ldquo;probability&rdquo; can be obtained by applying the Softmax function to the score. This probability indicates which word appears in the center when the preceding and following words are given.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/fdddb635-0ccd-491b-3e9c-27aaaa3ae530.png" alt="nn3.png"></p>
+<p>In the above example, the context is &ldquo;every morning&rdquo; and &ldquo;wo&rdquo;, and the word that the neural network expects is &ldquo;coffee&rdquo;. At this time, in the neural network with appropriate weight, it can be expected that the correct answer neuron is high in the neuron expressing &ldquo;probability&rdquo;. In CBOW learning, the cross entropy error between the correct label and the probability output by the neural network is calculated, and the loss is taken as the loss to proceed with the learning.</p>
+<p>The loss function of the CBOW model is expressed as
+(When the context used to create the model is one word before and after)</p>
+<pre><code class="language-math" data-lang="math">
+L = -\frac{1}{T}\sum_{t=1}^{T}logP(w_{t}|w_{t-1},w_{t+1})
+
+</code></pre><p>By learning in the direction of making the above loss function as small as possible, the weight at that time can be acquired as a distributed expression of words.</p>
+<p>##skip-gram model
+The skip-gram model is a model that reverses the context and target handled by CBOW. It is a model that predicts multiple contexts before and after from the central word as shown below.</p>
+<p>|I| | Coffee |? | Drink | |
+|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|:&mdash;:|: &mdash;:|</p>
+<p>The image of the skip-Gram model is as follows.</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/03efeff8-3afe-9020-cafb-d82e0e43bd65.png" alt="nn4.png"></p>
+<p>The skip-gram has one input layer and as many output layers as there are contexts. The loss is calculated individually for each output layer, and the sum of these is used as the final loss.</p>
+<p>The loss function of the skip-gram model is expressed by the formula below.
+(When the context used to create the model is one word before and after)</p>
+<pre><code class="language-math" data-lang="math">
+L = -\frac{1}{T}\sum_{t=1}^{T}(logP(w_{t-1}|w_{t}) + logP(w_{t+1}|w_{t }))
+
+</code></pre><p>Since the skip-gram model infers only the number of contexts, its loss function needs to find the sum of the losses found in each context.</p>
+<p>##CBOW and skip-gram
+It is said that the skip-gram model gives better results for CBOW and skip-gram, and that as the corpus grows in size, excellent results can be obtained in terms of the performance of frequent words and analogy problems. It is. On the other hand, skip-gram has a large learning cost because it is necessary to find the loss corresponding to the number of contexts, and CBOW learns faster.</p>
+<p>#Create Word2vec model using library
+In the following, we will actually create a model of Word2Vec using the library.
+##data set
+You can easily create a Word2Vec model using gensim, a python library. This time the data set will be <a href="https://www.rondhuit.com/download.html#ldcc">[livedoor news corpus]</a>.Ifyouareinterestedinthedetailsofthedatasetandthemethodofmorphologicalanalysis,pleasereferto<a href="https://qiita.com/gk/items/e49f68d7e2fed6e300ea">Postedinapreviouslypostedarticle</a>. I will.</p>
+<p>In the case of Japanese, pre-processing that decomposes sentences into morpheme units is required in advance, so after decomposing all sentences into morphemes, it is put into the following data frame.</p>
+<p>![Screenshot 2020-01-13 21.07.38.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/1c6fa150-6b85-a2c6-c0f9-(3f3ca0765711.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/395230/1c6fa150-6b85-a2c6-c0f9-(3f3ca0765711.png)</a></p>
+<p>The column on the far right is a sentence that is morphologically analyzed and separated into half-width spaces. Use this to create a Word2Vec model.</p>
+<p>##Model learning
+Create a Word2vec model using gensim. The following are the main parameters for creating a model.</p>
+<table>
+<thead>
+<tr>
+<th align="left">Parameter name</th>
+<th align="left">Parameter meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">sg</td>
+<td align="left">1 learns with skip-gram and 0 learns with CBOW</td>
+</tr>
+<tr>
+<td align="left">size</td>
+<td align="left">Specify how many dimensions of distributed representation should be acquired</td>
+</tr>
+<tr>
+<td align="left">window</td>
+<td align="left">Specify the number of words before and after recognition as context</td>
+</tr>
+<tr>
+<td align="left">min_count</td>
+<td align="left">Ignore words that occur less than the specified number of times</td>
+</tr>
+</tbody>
+</table>
+<p>Below is the code to create the Word2Vec model. You can create a model in one line as long as you can create the text to enter.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+sentences <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> text <span style="color:#f92672">in</span> df[<span style="color:#ae81ff">3</span>]:
+    text_list <span style="color:#f92672">=</span> text<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#39;&#39;</span>)
+    sentences<span style="color:#f92672">.</span>append(text_list)
+
+<span style="color:#f92672">from</span> gensim.models <span style="color:#f92672">import</span> Word2Vec
+model <span style="color:#f92672">=</span> Word2Vec(sentences, sg<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>, size<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>, window<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, min_count<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+
+</code></pre></div><h2 id="what-you-can-do-with-word2vec">What you can do with Word2Vec</h2>
+<p>With the model of Word2Vec, we were able to obtain a distributed representation of words. By using the distributed expression of words, the semantic distance between words can be expressed quantitatively, and the meanings of words can be added or subtracted.</p>
+<p>Let&rsquo;s check the words near &ldquo;family&rdquo; using the model we created earlier.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> model<span style="color:#f92672">.</span>most_similar(<span style="color:#e6db74">&#39;family&#39;</span>):
+    <span style="color:#66d9ef">print</span>(i)
+</code></pre></div><pre><code>('Parent and child', 0.7739133834838867)
+('Lover', 0.7615703344345093)
+('Kizuna', 0.7321233749389648)
+('Friends', 0.7270181179046631)
+('Dan Ran', 0.724891185760498)('Friends', 0.7237613201141357)
+('Futari', 0.7198089361190796)
+('Couple', 0.6997368931770325)
+('Between', 0.6886075735092163)
+('Deepen', 0.6761922240257263)
+</code></pre><p>Words that seem to have a similar meaning to &ldquo;family&rdquo; such as &ldquo;parent and child&rdquo; and &ldquo;lover&rdquo; have risen to the top.
+Next, let&rsquo;s try arithmetic calculation with words. The following is the calculation of &ldquo;life&rdquo;-&ldquo;happiness&rdquo;.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> model<span style="color:#f92672">.</span>most_similar(positive<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;life&#39;</span>, negative<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;happiness&#39;</span>):
+    <span style="color:#66d9ef">print</span>(i)
+</code></pre></div><pre><code>('Cash', 0.31968846917152405)
+('Ora', 0.29543358087539673)
+('Repair', 0.29313164949417114)
+('Fundraising', 0.2858077883720398)
+('User', 0.2797638177871704)
+('Frequency', 0.27897265553474426)
+('Appropriate', 0.2780274450778961)
+('Tax', 0.27565300464630127)
+('Kara', 0.273759663105011)
+('Budget', 0.2734326720237732)
+</code></pre><p>This time, the learned corpus itself is not that big, so it feels subtle, but the word &ldquo;cash&rdquo; is at the top. What the distributed expression of words looks like depends on the corpus to be input, so I think it is necessary to consider what kind of corpus to input depending on the situation where you want to use Word2Vec.</p>
+<p>#Next
+I was able to get a rough understanding of Word2Vec. We would like to summarize Doc2vec, which is a development of Word2Vec, from the next time. Thank you for visiting our website.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

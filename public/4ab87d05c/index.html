@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Summarize the amount of calculation of collection type (list/tuple/dictionary/set) according to usage for speeding up python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Summarize the amount of calculation of collection type (list/tuple/dictionary/set) according to usage for speeding up python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 17, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/high-speed"> high-speed</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/eta-structure"> eta structure</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/calculation-amount"> calculation amount</a></code></small>
+
+</p>
+<pre><code>It is the 6th day of [Python Part 2 Advent Calendar 2019](https://qiita.com/advent-calendar/2019/python2).Yesterdaywas[bluepost59-san](https://qiita.com/bluepost59)'s[Introduction](https://qiita.com/bluepost59/items/48198ac6600543bf2459). A comprehensive list of comprehension notation patterns useful for speeding up was introduced.
+</code></pre>
+<p>This article is also aimed at speeding up. In order to organize the performance of more basic processing, I would like to summarize the calculation amount of python&rsquo;s collection type (list/tuple/dictionary/set) by usage.</p>
+<p>The following is a detailed article that summarizes the calculation amount for each collection type.</p>
+<ul>
+<li><a href="https://wiki.python.org/moin/TimeComplexity">The Python Wiki &raquo;TimeComplexity</a></li>
+<li><a href="https://www.pythonlikeyoumeanit.com/Module2_EssentialsOfPython/DataStructures.html#">Python Like You Mean It</a></li>
+<li><a href="https://qiita.com/Hironsan/items/68161ee16b1c9d7b25fb">Embarrassing calculation amount unless you know Pythonista</a></li>
+</ul>
+<p>On the other hand, there weren&rsquo;t many articles that gave a glimpse of various collection-type computations for different purposes, so I hope to write something that will be helpful from a different angle.</p>
+<p>I will write about Python, which is a CPython implementation. So it may not be helpful for other implementations such as PyPy.</p>
+<p>#Computational expression notation
+In this article, the time complexity is expressed in the $O$ notation. Unless stated otherwise, we will discuss <strong>Average amount of computation</strong>. In this article, $n$ refers to the length of the target collection type, and $k$ refers to the length of the collection type that is added or deleted.</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Complexity</th>
+<th>Overview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$O(1)$</td>
+<td>Constant time</td>
+<td>Processing speed does not depend on size</td>
+</tr>
+<tr>
+<td>$O(n)$</td>
+<td>Linear time</td>
+<td>Processing speed is linearly proportional to size</td>
+</tr>
+</tbody>
+</table>
+<p>ref: <a href="https://qiita.com/asksaito/items/59e0d48408f1eab081b5">About calculation order</a></p>
+<h1 id="verification-environment">Verification environment</h1>
+<ul>
+<li>Python: 3.6.5</li>
+<li>Execution speed measurement: jupyter magic command (timeit)</li>
+</ul>
+<p>#List of uses</p>
+<ul>
+<li><a href="#GetLength">Get Length</a></li>
+<li><a href="#ValueReference">Value Reference</a></li>
+<li><a href="#iteration">Iteration</a></li>
+<li><a href="#inoperator">in operator</a></li>
+<li><a href="#Valueassignment">Value assignment</a></li>
+<li><a href="#AddValue">Add Value</a></li>
+<li><a href="#Deletevalue">Delete value</a></li>
+</ul>
+<p>#Get length</p>
+<table>
+<thead>
+<tr>
+<th>Data structure</th>
+<th>Complexity</th>
+<th>Notation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list/tuple</td>
+<td>$O(1)$</td>
+<td>len(seq)</td>
+</tr>
+<tr>
+<td>dictionary</td>
+<td>$O(1)$</td>
+<td>len(dic)</td>
+</tr>
+<tr>
+<td>set</td>
+<td>$O(1)$</td>
+<td>len(sets)</td>
+</tr>
+</tbody>
+</table>
+<p>Regardless of the size of any data structure, you can get the length with similar processing speed.
+It does not calculate the length, but stores the length itself, so only the reference cost is required, which is $O(1)$.</p>
+<p>#Value reference</p>
+<table>
+<thead>
+<tr>
+<th>Data structure</th>
+<th>Complexity</th>
+<th>Notation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list/tuple</td>
+<td>$O(1)$</td>
+<td>seq[i]</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(k)$</td>
+<td>seq[i:j]</td>
+</tr>
+<tr>
+<td>dictionary</td>
+<td>$O(1)$</td>
+<td>dic[key]</td>
+</tr>
+<tr>
+<td>set</td>
+<td>$O(1)$</td>
+<td>sets[i]</td>
+</tr>
+</tbody>
+</table>
+<p>Regardless of the size of any data structure, the value can be referenced with the same processing speed.
+However, the slice depends on the length of the reference range</p>
+<p>#Iteration</p>
+<table>
+<thead>
+<tr>
+<th>Data structure</th>
+<th>Complexity</th>
+<th>Notation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list/tuple</td>
+<td>$O(n)$</td>
+<td>for item in seq</td>
+</tr>
+<tr>
+<td>dictionary</td>
+<td>$O(n)$</td>
+<td>for key in dic.keys()</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(n)$</td>
+<td>for item in dic.values()</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(n)$</td>
+<td>for key, item in dic.items()</td>
+</tr>
+<tr>
+<td>set</td>
+<td>$O(n)$</td>
+<td>for item in sets</td>
+</tr>
+</tbody>
+</table>
+<p>Iteration can be performed with the same speed of processing regardless of the size of any data structure.</p>
+<p>In terms of calculation amount, iterating the index and referencing the value in the loop is the same as the process described in the table, but in reality there is a considerable speed difference, so iterate by the method in the table I think it&rsquo;s good.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">iter_index</span>(seq:List[int], index:List[int]):
+    <span style="color:#e6db74">&#34;&#34;&#34;Iterate index and refer to it in loop&#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">for</span> idx <span style="color:#f92672">in</span> index:
+        seq[idx]
+
+seq <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">10000</span>))
+index <span style="color:#f92672">=</span> list(range(len(seq)))
+<span style="color:#f92672">%</span>timeit iter_index(seq, index)
+<span style="color:#75715e"># &gt;&gt;&gt; 281 µs ± 4.25 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">iter_list</span>(seq:List[int]):
+    <span style="color:#e6db74">&#34;&#34;&#34;Direct collection iteration&#34;&#34;&#34;</span>
+    <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> seq:
+        item
+        
+<span style="color:#f92672">%</span>timeit iter_list(seq)
+<span style="color:#75715e"># &gt;&gt;&gt; 119 µs ± 2.08 µs per loop (mean ± std.dev. of 7 runs, 10000 loops each)</span>
+<span style="color:#75715e"># 2-3 times faster</span>
+</code></pre></div><p>#inoperator
+| Data structure | Complexity | Notation |
+| &mdash; | &mdash; | &mdash; |
+list/tuple | $O(n)$ | item in seq |
+| dictionary | $O(1)$ | key in dic.keys() |
+| | $O(n)$ | item in dic.values() |
+| | $O(1)$ | (key, item) in dic.items() |
+| set | $O(1)$ | item in sets |</p>
+<p>As you can see intuitively, list/tuple is $O(n)$. Also, dictionary.values() is $O(n)$.
+I think it&rsquo;s worth remembering that everything else is $O(1)$. This is because dictionary type key and set type are implemented in hash table. See the following articles for details.
+ref: <a href="https://qiita.com/kitadakyou/items/6f877edd263f097e78f4">The reason and the reason why it became a bomb speed just by changing from &ldquo;in list&rdquo; to &ldquo;in set&rdquo; in Python</a></p>
+<h2 id="case-where-in-set-is-slower">Case where &ldquo;in set&rdquo; is slower</h2>
+<p>It is faster to use the set type for the in operator, but in reality the list type is used more frequently, so I think that there are many cases where the list type is converted to the set type and then passed to the in operator. .. Considering the cost of conversion, some cautions are required. (Below, I will examine only list, but similar discussion can be made with tuple instead of list.)
+When I actually measured &ldquo;in list&rdquo;, &ldquo;in set&rdquo;, and &ldquo;conversion from list to set &amp; in set&rdquo;, the following results were obtained.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># &#34;In list&#34;</span>
+lists <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">100000</span>))
+<span style="color:#f92672">%</span>timeit <span style="color:#ae81ff">50000</span> <span style="color:#f92672">in</span> lists
+<span style="color:#75715e"># &gt;&gt;&gt; 622 µs ± 47.8 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+
+<span style="color:#75715e"># &#34;In set&#34;</span>
+sets <span style="color:#f92672">=</span> set(lists)
+<span style="color:#f92672">%</span>timeit <span style="color:#ae81ff">50000</span> <span style="color:#f92672">in</span> sets
+<span style="color:#75715e"># &gt;&gt;&gt; 54.8 ns ± 4.39 ns per loop (mean ± std.dev. of 7 runs, 10000000 loops each)</span>
+
+<span style="color:#75715e"># &#34;Convert list to set &amp; in set&#34;</span>
+<span style="color:#f92672">%</span>timeit <span style="color:#ae81ff">50000</span> <span style="color:#f92672">in</span> set(lists)
+<span style="color:#75715e"># &gt;&gt;&gt; 2.94 ms ± 61.2 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)</span>
+</code></pre></div><p>When the size of the above process is changed and measured,</p>
+<table>
+<thead>
+<tr>
+<th>size</th>
+<th>in set / in list ratio</th>
+<th>in set(list) / in list ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td>100</td>
+<td>19</td>
+<td>3</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>112</td>
+<td>3</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>1118</td>
+<td>3</td>
+</tr>
+<tr>
+<td>100000</td>
+<td>11350</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<p>That is,</p>
+<ul>
+<li>&ldquo;In set&rdquo; is faster than &ldquo;in list&rdquo;. The speed difference increases linearly as the size increases</li>
+<li>However, &ldquo;list to set conversion &amp; in set&rdquo; is about 3-5 times slower than &ldquo;in list&rdquo; **</li>
+</ul>
+<p>Therefore, in the following cases, using &ldquo;in set&rdquo; may <em>may</em> be slower.</p>
+<ul>
+<li>Need to convert list to set</li>
+<li>In addition, the number of times &ldquo;in set&rdquo; is used in the converted set is less than 5 times.</li>
+</ul>
+<p>#Valueassignment</p>
+<table>
+<thead>
+<tr>
+<th>Data structure</th>
+<th>Complexity</th>
+<th>Notation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list</td>
+<td>$O(1)$</td>
+<td>seq[i] = item</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(k)$</td>
+<td>seq[i:j] = lists</td>
+</tr>
+<tr>
+<td>dictionary</td>
+<td>$O(1)$</td>
+<td>dic[key] = item</td>
+</tr>
+</tbody>
+</table>
+<p>Assignment refers to an operation that changes the value and does not change the length.
+The value of set cannot be changed and must be removed and added.</p>
+<h1 id="add-value">Add value</h1>
+<table>
+<thead>
+<tr>
+<th>Data structure</th>
+<th>Complexity</th>
+<th>Notation</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list</td>
+<td>$O(1)$</td>
+<td>seq.append(item)</td>
+<td>Add value to the back</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(n)$</td>
+<td>seq.insert(item, i)</td>
+<td>Add value to i-th</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(k)$</td>
+<td>seq.extend(list)</td>
+<td>Join list at the back</td>
+</tr>
+<tr>
+<td>dictionary</td>
+<td>$O(1)$</td>
+<td>dic[key] = item</td>
+<td>Add elements to dictionary</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(k)$</td>
+<td>dic.update(dic2)</td>
+<td>Combining dictionaries</td>
+</tr>
+<tr>
+<td>set</td>
+<td>$O(1)$</td>
+<td>sets.add(item)</td>
+<td>Add element to set</td>
+</tr>
+</tbody>
+</table>
+<p>The calculation amount depends on where to add the value to list. I think the algorithm should be designed to add the value at the end as much as possible.In addition, all the above addition methods are destructive (the ones before addition are not left), so if you do not pay attention to the scope of variables, you may have an unexpected adverse effect.</p>
+<h2 id="sequential-addition-or-combination">Sequential addition or combination</h2>
+<p>When you decide the value to add after filtering with the conditional expression, there are two options as follows.</p>
+<ul>
+<li>Add values sequentially during the filter</li>
+<li>Create a collection type of values to add with a filter and then combine them together</li>
+</ul>
+<p>Intuitively, it seems that it is less wasteful to add sequentially, but it is a subtle problem because for is slow in python and it is better to use comprehension notation as much as possible. The results of the tests are shown below. According to the result, there seems to be little speed difference. I would like to use the more convenient one.
+Personally, the comprehension notation is (should) have fewer side effects (because less assignment/definition of values is required), so I prefer the latter method.</p>
+<h3 id="list">list</h3>
+<p>If the iteration of the added value is long, it seems faster to make a list once with comprehension and then extend it.
+Note. 1) If you add destructively, the size will change and the measurement will be incorrect, so copy the list and send it to the function.
+Note.2) append is known to be slow, so assign it to a variable and then use it in a loop. (Reference: <a href="https://qiita.com/intermezzo-fr/items/43f90e07e4cebe63aeb6">Python list comprehension speed</a>)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">addition_extend</span>(base:List[int], add:List[int]):
+    add <span style="color:#f92672">=</span> [f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> add <span style="color:#66d9ef">if</span> f]
+    base<span style="color:#f92672">.</span>extend(add)
+    <span style="color:#66d9ef">return</span> base
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">addition_append</span>(base:List[int], add:List[int]):
+    base_a <span style="color:#f92672">=</span> base<span style="color:#f92672">.</span>append
+    <span style="color:#66d9ef">for</span> ad <span style="color:#f92672">in</span> add:
+        <span style="color:#66d9ef">if</span> ad:
+            base_a(ad)
+    <span style="color:#66d9ef">return</span> base
+
+base <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">10000</span>))
+add <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">10</span>))
+<span style="color:#f92672">%</span>timeit addition_extend(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 43.9 µs ± 6.94 µs per loop (mean ± std.dev. of 7 runs, 10000 loops each)</span>
+<span style="color:#f92672">%</span>timeit addition_append(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 39 µs ± 66.1 ns per loop (mean ± std.dev. of 7 runs, 10000 loops each)</span>
+
+base <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">10</span>))
+add <span style="color:#f92672">=</span> list(range(<span style="color:#ae81ff">10000</span>))
+<span style="color:#f92672">%</span>timeit addition_extend(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 373 µs ± 45.9 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+<span style="color:#f92672">%</span>timeit addition_append(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 540 µs ± 27.3 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+</code></pre></div><h3 id="dictionary">dictionary</h3>
+<p>I tried the dictionary as well. It seems that sequential substitution is faster for dictionaries. However, the fluctuation is so great that it doesn&rsquo;t seem that much different.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">addition_update</span>(base:Dict[str, int], add:Dict[str, int]):
+    add <span style="color:#f92672">=</span> {f: g <span style="color:#66d9ef">for</span> f, g <span style="color:#f92672">in</span> add<span style="color:#f92672">.</span>items() <span style="color:#66d9ef">if</span> g}
+    base<span style="color:#f92672">.</span>update(add)
+    <span style="color:#66d9ef">return</span> base
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">addition_assign</span>(base:Dict[str, int], add:Dict[str, int]):
+    <span style="color:#66d9ef">for</span> ad, val <span style="color:#f92672">in</span> add<span style="color:#f92672">.</span>items():
+        <span style="color:#66d9ef">if</span> val:
+            base[ad] <span style="color:#f92672">=</span> val
+    <span style="color:#66d9ef">return</span> base
+
+base <span style="color:#f92672">=</span> {str(f): f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10000</span>)}
+add <span style="color:#f92672">=</span> {str(f): f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>)}
+<span style="color:#f92672">%</span>timeit addition_update(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 365 µs ± 62.1 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+<span style="color:#f92672">%</span>timeit addition_assign(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 312 µs ± 16.9 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)</span>
+
+
+base <span style="color:#f92672">=</span> {str(f): f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10</span>)}
+add <span style="color:#f92672">=</span> {str(f): f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">10000</span>)}
+<span style="color:#f92672">%</span>timeit addition_update(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 1.16 ms ± 35.6 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+<span style="color:#f92672">%</span>timeit addition_assign(copy(base), add)
+<span style="color:#75715e"># &gt;&gt;&gt; 919 µs ± 45.5 µs per loop (mean ± std.dev. of 7 runs, 1000 loops each)</span>
+</code></pre></div><p>#Deletevalue</p>
+<table>
+<thead>
+<tr>
+<th>Data structure</th>
+<th>Complexity</th>
+<th>Notation</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list</td>
+<td>$O(1)$</td>
+<td>seq.pop()</td>
+<td>Delete the last value</td>
+</tr>
+<tr>
+<td></td>
+<td>$O(n)$</td>
+<td>seq.delete(i)</td>
+<td>Delete i-th value</td>
+</tr>
+<tr>
+<td>dictionary</td>
+<td>$O(1)$</td>
+<td>dic.pop(key)</td>
+<td>delete by specifying key</td>
+</tr>
+<tr>
+<td>set</td>
+<td>$O(1)$</td>
+<td>sets.discard(item)</td>
+<td>Delete by specifying a value</td>
+</tr>
+</tbody>
+</table>
+<p>It is better to limit the list as far as possible even when deleting values.
+The problem is what happens when there are multiple values to delete. Intuitively, it seems that it will be faster to recreate it when the value to be deleted increases. There are two things to look at in this regard: I will write the result first.</p>
+<ul>
+<li>pop vs slice: <strong>slice</strong> looks better</li>
+<li>delete vs recreate: <strong>recreate</strong> seems better</li>
+</ul>
+<h2 id="pop-vs-slice">pop vs slice</h2>
+<p>Popping a list of size n k times is $O(k)$, slice is $O(n-k)$. However, if n&gt; k, it cannot be pop, and if n &lt;k, it cannot be slice, so I measured the speed with the following code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">pop</span>(seq:List[int], num:int):
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(num):
+        seq<span style="color:#f92672">.</span>pop()
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">slices</span>(seq:List[int], num:int):
+    seq[:<span style="color:#f92672">-</span>num]
+</code></pre></div><p>Below is a table that measures the execution speed ratio of pop and slice by changing the length of the list and the number of deletions. *** Italic part *** is the case where slice was faster. Basically slice seems to be better.</p>
+<table>
+<thead>
+<tr>
+<th>pop / slice ratio</th>
+<th>Number of deletions: 1</th>
+<th>10</th>
+<th>100</th>
+<th>1000</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list size: 10</td>
+<td><em><strong>1.2</strong></em></td>
+<td><em><strong>3.0</strong></em></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>100</td>
+<td><em><strong>1.0</strong></em></td>
+<td><em><strong>1.6</strong></em></td>
+<td><em><strong>10.9</strong></em></td>
+<td></td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.6</td>
+<td>0.7</td>
+<td><em><strong>2.1</strong></em></td>
+<td><em><strong>32.5</strong></em></td>
+</tr>
+<tr>
+<td>10000</td>
+<td>0.6</td>
+<td>0.5</td>
+<td>0.5</td>
+<td><em><strong>1.7</strong></em></td>
+</tr>
+</tbody>
+</table>
+<h2 id="delete-vs-recreate">delete vs recreate</h2>
+<p>Delete list of size n k times $O(kn)$, recreate it $O(n)$. Apparently it seems faster to recreate it, but I tried measuring the speed with the following code.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">delete</span>(lists:List[int], cond:Set[int]):
+    <span style="color:#66d9ef">for</span> con <span style="color:#f92672">in</span> cond:
+        <span style="color:#66d9ef">try</span>:
+            lists<span style="color:#f92672">.</span>remove(con)
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">ValueError</span>:
+                <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">return</span> lists
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">recreate</span>(lists:List[int], cond:Set[int]):
+    <span style="color:#66d9ef">return</span> [f <span style="color:#66d9ef">for</span> f <span style="color:#f92672">in</span> lists <span style="color:#66d9ef">if</span> f <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> cond]
+</code></pre></div><p>The table below shows the execution speed ratio of delete and recreate by changing the length of the list and the number of deletions. *** Italic part *** is the case where recreate is faster. Basically, recreate seems better.</p>
+<table>
+<thead>
+<tr>
+<th>delete / recreate ratio</th>
+<th>Number of deletions: 1</th>
+<th>10</th>
+<th>100</th>
+<th>1000</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>list size: 10</td>
+<td>0.7</td>
+<td><em><strong>1.5</strong></em></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.3</td>
+<td><em><strong>1.3</strong></em></td>
+<td><em><strong>3.5</strong></em></td>
+<td></td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.2</td>
+<td><em><strong>1.2</strong></em></td>
+<td><em><strong>12.8</strong></em></td>
+<td><em><strong>6.0</strong></em></td>
+</tr>
+<tr>
+<td>10000</td>
+<td>0.3</td>
+<td><em><strong>1.8</strong></em></td>
+<td><em><strong>114.7</strong></em></td>
+<td><em><strong>117.4</strong></em></td>
+</tr>
+</tbody>
+</table>
+<p>#Summary
+The calculation amount of the collection type is summarized according to usage. Python is said to be a slow processing language, but I&rsquo;d appreciate it if you could use it as a reference to make the processing time a bit acceptable!</p>
+<p>Tomorrow is <a href="https://qiita.com/typecprint">typecprint-san</a>!</p>
+<h1 id="refs">refs</h1>
+<ul>
+<li><a href="https://wiki.python.org/moin/TimeComplexity">The Python Wiki &raquo;TimeComplexity</a></li>
+<li><a href="https://www.pythonlikeyoumeanit.com/Module2_EssentialsOfPython/DataStructures.html#">Python Like You Mean It</a></li>
+<li><a href="https://qiita.com/Hironsan/items/68161ee16b1c9d7b25fb">Embarrassing calculation amount unless you know Pythonista</a></li>
+<li><a href="https://qiita.com/asksaito/items/59e0d48408f1eab081b5">About calculation order</a></li>
+<li><a href="https://qiita.com/kitadakyou/items/6f877edd263f097e78f4">The case and the reason why it became an explosion speed just by changing from &ldquo;in list&rdquo; to &ldquo;in set&rdquo; in Python</a>-<a href="https://qiita.com/intermezzo-fr/items/43f90e07e4cebe63aeb6">SpeedofPythonlistcomprehension</a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

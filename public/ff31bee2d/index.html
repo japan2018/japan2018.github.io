@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Sine curve estimation with self-made deep learning module (python) &#43; LSTM | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Sine curve estimation with self-made deep learning module (python) + LSTM</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 24, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/deeplearning">DeepLearning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/theano">Theano</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/lstm">LSTM</a></code></small>
+
+</p>
+<pre><code>2017.9.16 Added.
+</code></pre>
+<p>Recently I upgraded a little.
+<a href="https://github.com/uyuutosa/Optimizer_with_theano">https://github.com/uyuutosa/Optimizer_with_theano</a></p>
+<p>Also, I made it possible to try neural style by copy and paste.
+<a href="http://qiita.com/uyuutosa/items/09557f2f99e77a1b9cc2">http://qiita.com/uyuutosa/items/09557f2f99e77a1b9cc2</a>
+For reference only.</p>
+<p>I made my own deep learning module in Python (on the way). For my own study.
+The name is Optimizer with no twist.
+We aim to establish a network with a small number of keystrokes.
+I use theano internally, but I think that Define by Run chainer is upward compatible, so
+May change to chainer.</p>
+<p>The program is described at the end of the article.</p>
+<p>The implementation of LSTM and Taylor is dubious.</p>
+<h1 id="example-of-use">Example of use</h1>
+<p>Like Keras, I am able to write the network in a sweet potato style. Here, the sine curve is used as the correct value for estimation by a three-layer network.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e">#Definition of data and label: Sine curve</span>
+x_arr <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span>rand(<span style="color:#ae81ff">50</span>)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX) <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span>
+y_arr <span style="color:#f92672">=</span> sin(x_arr <span style="color:#f92672">/</span> <span style="color:#ae81ff">5.</span> <span style="color:#f92672">*</span> pi)
+
+<span style="color:#75715e"># Network construction</span>
+o <span style="color:#f92672">=</span> optimizer(x_arr, y_arr)
+o <span style="color:#f92672">=</span> o<span style="color:#f92672">.</span>taylor(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">6</span>)\ <span style="color:#75715e"># 1st layer: (self-proclaimed) Taylor expansion layer</span>
+     <span style="color:#f92672">.</span>tanh()\ <span style="color:#75715e"># tanh activation function</span>
+     <span style="color:#f92672">.</span>dense(<span style="color:#ae81ff">1</span>)\ <span style="color:#75715e"># 2nd layer: fully connected layer</span>
+     <span style="color:#f92672">.</span>loss(alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>)\ <span style="color:#75715e"># Definition of loss function (learning rate 0.1)</span>
+     <span style="color:#f92672">.</span>optimize() <span style="color:#75715e"># optimization</span>
+</code></pre></div><p>When you optimize, the following output will appear.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">loss: 1.51645341078
+loss: 0.0678153863793
+loss: 0.0198567226285
+loss: 0.0202341528014
+loss: 0.00505698460546
+loss: 0.00519401907162
+loss: 0.00594055800437
+loss: 0.00498228924313
+loss: 0.0044779176335
+loss: 0.00413105668256
+</code></pre></div><p>Graph output with view()</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">o<span style="color:#f92672">.</span>view()
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/85968/99da5712-757c-353c-6d1c-6c50c1572f38.png" alt="Unknown.png">
+You can check.</p>
+<p>The result of the correct answer and the estimation is as follows. To estimate using the learned network, use pred().</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>scatter(arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">0.1</span>), o<span style="color:#f92672">.</span>pred(arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">0.1</span>)), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Exact&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(x_arr, y_arr, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>);plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;y&#34;</span>)
+plt<span style="color:#f92672">.</span>legend()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/85968/7b87f468-cbbd-8baa-8c86-1531ae986698.png" alt="Unknown.png"></p>
+<h2 id="display-calculation-graph">Display calculation graph</h2>
+<p>For example, the following mysterious network</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">o <span style="color:#f92672">=</span> optimizer(x_arr, y_arr)
+o <span style="color:#f92672">=</span> o<span style="color:#f92672">.</span>dense(<span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>sigmoid()\
+     <span style="color:#f92672">.</span>dense(<span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>relu()\
+     <span style="color:#f92672">.</span>dense(<span style="color:#ae81ff">3</span>)<span style="color:#f92672">.</span>tanh()\
+     <span style="color:#f92672">.</span>dense(<span style="color:#ae81ff">4</span>)<span style="color:#f92672">.</span>sigmoid()\
+     <span style="color:#f92672">.</span>lstm()\
+     <span style="color:#f92672">.</span>loss()
+</code></pre></div><p>The following method</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">o<span style="color:#f92672">.</span>view_graph()
+</code></pre></div><p>Visualize with.
+It is as follows.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/85968/9e96a399-f664-a827-c8ff-476dc35defb7.png" alt="Unknown.png"></p>
+<h2 id="lstm">LSTM</h2>
+<p>I&rsquo;m not sure how the recursive structure works for simple sine curve fitting, but I tried it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">arr <span style="color:#f92672">=</span> arange(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">10.</span>, <span style="color:#ae81ff">0.01</span>)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)
+y_arr <span style="color:#f92672">=</span> sin(arr[<span style="color:#ae81ff">100</span>:] <span style="color:#f92672">*</span> pi)
+x_arr <span style="color:#f92672">=</span> sin(arr[:<span style="color:#f92672">-</span><span style="color:#ae81ff">100</span>] <span style="color:#f92672">*</span> pi)
+o <span style="color:#f92672">=</span> optimizer(x_arr, y_arr)
+o <span style="color:#f92672">=</span> o<span style="color:#f92672">.</span>lstm()<span style="color:#f92672">.</span>loss()<span style="color:#f92672">.</span>optimize()
+</code></pre></div><p>The sin wave is the data, and the $\pi$ phase shift from it is the label.</p>
+<p>You can cut it with Ctrl-c when the loss has fallen.
+The result is:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">plt<span style="color:#f92672">.</span>scatter(arange(x_arr<span style="color:#f92672">.</span>size), x_arr, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;b&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arange(x_arr<span style="color:#f92672">.</span>size), o<span style="color:#f92672">.</span>pred(x_arr), color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arange(x_arr<span style="color:#f92672">.</span>size), o<span style="color:#f92672">.</span>y_arr, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;g&#34;</span>)
+</code></pre></div><p><img src="https://qiita-image-store.s3.amazonaws.com/0/85968/c23c0f58-907b-5c5d-56cc-590eb59af5aa.png" alt="Unknown.png"></p>
+<p>The label is flipped over the data. It worked because the predict almost matched the label. Only the ones that worked are posted.</p>
+<p>Now that I&rsquo;ve learned cleanly, I&rsquo;ll try different frequencies.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">arr <span style="color:#f92672">=</span> arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">0.01</span>)
+plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">311</span>)
+data <span style="color:#f92672">=</span> sin(arr <span style="color:#f92672">*</span> pi)
+plt<span style="color:#f92672">.</span>scatter(arr, data, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arr, o<span style="color:#f92672">.</span>pred(data), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Predict&#34;</span>)
+plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">312</span>)
+data <span style="color:#f92672">=</span> sin(arr <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> pi)
+plt<span style="color:#f92672">.</span>scatter(arr, data, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arr, o<span style="color:#f92672">.</span>pred(data), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Predict&#34;</span>)
+plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">313</span>)
+data <span style="color:#f92672">=</span> sin(arr <span style="color:#f92672">/</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">*</span> pi)
+plt<span style="color:#f92672">.</span>scatter(arr, data, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arr, o<span style="color:#f92672">.</span>pred(data), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Predict&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>);plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;y&#34;</span>)
+plt<span style="color:#f92672">.</span>legend()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p>It became as follows.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/85968/3797c1d5-c1ee-3f97-5b45-f4575f23166b.png" alt="Unknown.png"></p>
+<p>Even if the frequency is different from the training data, it is inverted clearly.</p>
+<p>The learners are populated with data from left to right. Since LSTM has a recurrent structure, I thought that this estimation result should depend on the order of input, so I decided to put random.shuffle(arr) in the above program and put the data in the learner. I made it random.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">arr <span style="color:#f92672">=</span> arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">0.01</span>)
+random<span style="color:#f92672">.</span>shuffle(arr)
+<span style="color:#75715e">#arr = random.rand(1000) * 10</span>
+plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">311</span>)
+data <span style="color:#f92672">=</span> sin(arr <span style="color:#f92672">*</span> pi)
+plt<span style="color:#f92672">.</span>scatter(arr, data, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arr, o<span style="color:#f92672">.</span>pred(data), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Predict&#34;</span>)
+plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">312</span>)
+data <span style="color:#f92672">=</span> sin(arr <span style="color:#f92672">/</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">*</span> pi)
+plt<span style="color:#f92672">.</span>scatter(arr, data, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arr, o<span style="color:#f92672">.</span>pred(data), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Predict&#34;</span>)
+plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">313</span>)
+data <span style="color:#f92672">=</span> sin(arr <span style="color:#f92672">/</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">*</span> pi)
+plt<span style="color:#f92672">.</span>scatter(arr, data, color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;r&#34;</span>, label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True data&#34;</span>)
+plt<span style="color:#f92672">.</span>scatter(arr, o<span style="color:#f92672">.</span>pred(data), label<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Predict&#34;</span>)
+plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;x&#34;</span>);plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;y&#34;</span>)
+plt<span style="color:#f92672">.</span>legend()
+plt<span style="color:#f92672">.</span>show()
+</code></pre></div><p>The result is this.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/85968/fc758e82-e3b7-7a97-1798-ed867df20299.png" alt="Unknown.png"></p>
+<p>Low frequencies can be reproduced, but high frequencies stand out like noise. After all, the order seems important.</p>
+<h1 id="mnist">MNIST</h1>
+<h2 id="full-combination">Full combination</h2>
+<p>You can set some datasets with <code>set_datasets()</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">o <span style="color:#f92672">=</span> optimizer(n_batch<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span>)
+o<span style="color:#f92672">.</span>set_datasets(<span style="color:#e6db74">&#34;mnist&#34;</span>, is_one_hot<span style="color:#f92672">=</span>False)
+o <span style="color:#f92672">=</span> o<span style="color:#f92672">.</span>dense(<span style="color:#ae81ff">10</span>)<span style="color:#f92672">.</span>loss_softmax_cross_entropy()<span style="color:#f92672">.</span>opt_sgd(<span style="color:#ae81ff">0.000001</span>)<span style="color:#f92672">.</span>optimize(<span style="color:#ae81ff">100000</span>,<span style="color:#ae81ff">10000</span>)
+
+<span style="color:#f92672">import</span> pylab <span style="color:#f92672">as</span> p
+<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">9</span>):
+    
+    idx <span style="color:#f92672">=</span> random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">59999</span>)
+    p<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">331</span> <span style="color:#f92672">+</span> n)
+    p<span style="color:#f92672">.</span>tick_params(labelbottom<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;off&#34;</span>)
+    p<span style="color:#f92672">.</span>tick_params(labelleft<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;off&#34;</span>)
+    p<span style="color:#f92672">.</span>title(o<span style="color:#f92672">.</span>pred_func(o<span style="color:#f92672">.</span>x_train_arr[idx:idx<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>])<span style="color:#f92672">.</span>argmax(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)[<span style="color:#ae81ff">0</span>])
+    p<span style="color:#f92672">.</span>imshow(o<span style="color:#f92672">.</span>x_train_arr[idx:idx<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">28</span>,<span style="color:#ae81ff">28</span>))
+</code></pre></div><p>output</p>
+<pre><code>Iter. 0: loss = 2.3025851249694824
+Iter. 10000: loss = 0.3245639503002167
+Iter. 20000: loss = 0.22792282700538635
+KeyboardInterrupt
+```![Unknown.png](https://qiita-image-store.s3.amazonaws.com/0/85968/140220ee-b829-26fc-7a81-5f32c3478999.png)
+
+## CNN
+
+```python
+o = optimizer(n_batch=5)
+o.set_datasets(&quot;mnist&quot;, is_one_hot=False)
+#o = o.reshape((n_batch,1,28,28)).conv2d(kshape=(4,1,24,24)).relu().pool()
+o = o.reshape((1, 28, 28))\
+     .conv_and_pool(8, 20, 20)\
+     .conv_and_pool( 4,  5,  5).sigmoid()
+o = o.flatten().dropout(0.5).dense(10).loss_softmax_cross_entropy()
+o = o.opt_Adam(0.008).optimize(10000000,1000)
+</code></pre><h1 id="コード">コード</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> theano
+<span style="color:#f92672">import</span> theano.tensor <span style="color:#f92672">as</span> T
+<span style="color:#f92672">import</span> theano.tensor.nnet <span style="color:#f92672">as</span> nnet
+<span style="color:#f92672">import</span> theano.tensor.signal <span style="color:#f92672">as</span> signal 
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">import</span> copy <span style="color:#f92672">as</span> cp
+<span style="color:#f92672">from</span> theano.printing <span style="color:#f92672">import</span> pydotprint
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> matplotlib <span style="color:#f92672">as</span> mpl
+<span style="color:#f92672">from</span> theano.tensor.shared_randomstreams <span style="color:#f92672">import</span> RandomStreams
+<span style="color:#f92672">from</span> sklearn.datasets <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+<span style="color:#f92672">from</span> sklearn.datasets <span style="color:#f92672">import</span> fetch_mldata
+<span style="color:#f92672">from</span> sklearn.cross_validation <span style="color:#f92672">import</span> train_test_split
+mpl<span style="color:#f92672">.</span>rc(<span style="color:#e6db74">&#34;savefig&#34;</span>, dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">1200</span>)
+
+<span style="color:#f92672">%</span>config InlineBackend<span style="color:#f92672">.</span>rc <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#39;font.size&#39;</span>: <span style="color:#ae81ff">20</span>, <span style="color:#e6db74">&#39;figure.figsize&#39;</span>: (<span style="color:#ae81ff">12.0</span>, <span style="color:#ae81ff">8.0</span>),<span style="color:#e6db74">&#39;figure.facecolor&#39;</span>: <span style="color:#e6db74">&#39;white&#39;</span>, <span style="color:#e6db74">&#39;savefig.dpi&#39;</span>: <span style="color:#ae81ff">72</span>, <span style="color:#e6db74">&#39;figure.subplot.bottom&#39;</span>: <span style="color:#ae81ff">0.125</span>, <span style="color:#e6db74">&#39;figure.edgecolor&#39;</span>: <span style="color:#e6db74">&#39;white&#39;</span>}
+<span style="color:#f92672">%</span>matplotlib inline
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">optimizer</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, x_arr<span style="color:#f92672">=</span>None, y_arr<span style="color:#f92672">=</span>None, 
+                 out<span style="color:#f92672">=</span>None, thetalst<span style="color:#f92672">=</span>None, nodelst<span style="color:#f92672">=</span>None,
+                 test_size<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>, n_batch<span style="color:#f92672">=</span><span style="color:#ae81ff">500</span>):
+        
+        self<span style="color:#f92672">.</span>n_batch <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(int(n_batch))
+        
+        <span style="color:#66d9ef">if</span> x_arr <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None <span style="color:#f92672">and</span> y_arr <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+            self<span style="color:#f92672">.</span>set_data(x_arr, y_arr, test_size)
+            self<span style="color:#f92672">.</span>set_variables()
+        
+        
+        
+        self<span style="color:#f92672">.</span>thetalst <span style="color:#f92672">=</span> [] <span style="color:#75715e">#if thetalst is None else thetalst</span>
+        
+        self<span style="color:#f92672">.</span>n_view <span style="color:#f92672">=</span> None
+        self<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">=</span> []
+        self<span style="color:#f92672">.</span>tmplst <span style="color:#f92672">=</span> []
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_data</span>(self, x_arr, y_arr, test_size<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>):
+        self<span style="color:#f92672">.</span>x_train_arr, \
+        self<span style="color:#f92672">.</span>x_test_arr,\
+        self<span style="color:#f92672">.</span>y_train_arr,\
+        self<span style="color:#f92672">.</span>y_test_arr,\
+        <span style="color:#f92672">=</span> train_test_split(x_arr<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX),
+                           y_arr<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX),
+                           test_size <span style="color:#f92672">=</span> test_size)
+        
+        self<span style="color:#f92672">.</span>nodelst <span style="color:#f92672">=</span> [[int(np<span style="color:#f92672">.</span>prod(self<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>:]))]] <span style="color:#75715e"># if nodelst is None else nodelst</span>
+        
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_variables</span>(self):
+        <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">.</span>get_value() <span style="color:#f92672">&gt;</span> self<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]: 
+            self<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">.</span>set_value(int(self<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]))
+        self<span style="color:#f92672">.</span>n_data <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]
+        n_xdim <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>ndim
+        n_ydim <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>y_train_arr<span style="color:#f92672">.</span>ndim
+        <span style="color:#66d9ef">if</span>  n_xdim <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            self<span style="color:#f92672">.</span>x <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>scalar()
+        <span style="color:#66d9ef">if</span>  n_xdim <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            self<span style="color:#f92672">.</span>x_train_arr <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>x_train_arr[:,None]
+            self<span style="color:#f92672">.</span>x_test_arr <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>x_test_arr[:,None]
+            self<span style="color:#f92672">.</span>x <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>matrix()
+        <span style="color:#66d9ef">elif</span> n_xdim <span style="color:#f92672">==</span> <span style="color:#ae81ff">2</span>:
+            self<span style="color:#f92672">.</span>x <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>matrix()
+        <span style="color:#66d9ef">elif</span> n_xdim <span style="color:#f92672">==</span> <span style="color:#ae81ff">3</span>:
+            self<span style="color:#f92672">.</span>x <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>tensor3()
+        <span style="color:#66d9ef">else</span>:
+            self<span style="color:#f92672">.</span>x <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>tensor4()
+            
+        <span style="color:#66d9ef">if</span> n_ydim <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            self<span style="color:#f92672">.</span>y <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>scalar()
+        <span style="color:#66d9ef">if</span> n_ydim <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            self<span style="color:#f92672">.</span>y_train_arr <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>y_train_arr[:,None]
+            self<span style="color:#f92672">.</span>y_test_arr <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>y_test_arr[:,None]
+            self<span style="color:#f92672">.</span>y <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>matrix()
+        <span style="color:#66d9ef">elif</span> n_ydim <span style="color:#f92672">==</span> <span style="color:#ae81ff">2</span>:
+            self<span style="color:#f92672">.</span>y <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>matrix()
+        <span style="color:#66d9ef">elif</span> n_ydim <span style="color:#f92672">==</span> <span style="color:#ae81ff">3</span>:
+            self<span style="color:#f92672">.</span>y <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>tensor3()
+        <span style="color:#66d9ef">else</span>:
+            self<span style="color:#f92672">.</span>y <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>tensor4()
+            
+        self<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>x  <span style="color:#75715e">#if out is None else out</span>
+        self<span style="color:#f92672">.</span>batch_shape_of_C <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>concatenate([T<span style="color:#f92672">.</span>as_tensor([self<span style="color:#f92672">.</span>n_batch]), theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">3</span>]))], axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">set_datasets</span>(self, data<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;mnist&#34;</span>, data_home<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;data_dir_for_optimizer&#34;</span>, is_one_hot<span style="color:#f92672">=</span>True):
+        
+        <span style="color:#66d9ef">if</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;mnist&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> fetch_mldata(<span style="color:#e6db74">&#39;MNIST original&#39;</span>, data_home<span style="color:#f92672">=</span>data_home)
+            <span style="color:#66d9ef">if</span> is_one_hot <span style="color:#f92672">==</span> True:
+                idx <span style="color:#f92672">=</span> data_dic[<span style="color:#e6db74">&#34;target&#34;</span>]
+                arr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((idx<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#ae81ff">10</span>))<span style="color:#f92672">.</span>flatten()
+                arr[idx<span style="color:#f92672">.</span>flatten()<span style="color:#f92672">.</span>astype(int) <span style="color:#f92672">+</span> np<span style="color:#f92672">.</span>arange(idx<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]) <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span>]  <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+                data_dic[<span style="color:#e6db74">&#34;target&#34;</span>] <span style="color:#f92672">=</span> arr<span style="color:#f92672">.</span>reshape(idx<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>], <span style="color:#ae81ff">10</span>)
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;boston&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> load_boston()   
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;digits&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> load_digits()
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;iris&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> load_iris()
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;linnerud&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> load_linnerud()
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;xor&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;data&#34;</span>: np<span style="color:#f92672">.</span>array([[<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>], [<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>], [<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>], [<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>]]),<span style="color:#75715e">##.repeat(20, axis=0),</span>
+                        <span style="color:#e6db74">&#34;target&#34;</span>: np<span style="color:#f92672">.</span>array([<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">0</span>])}<span style="color:#75715e">#.repeat(20, axis=0)}</span>
+            <span style="color:#75715e">#data_dic = {&#34;data&#34;: np.array([[0,0], [0,1], [1,0], [1,1]]).repeat(20, axis=0),</span>
+            <span style="color:#75715e">#            &#34;target&#34;: np.array([0,1,1,0]).repeat(20, axis=0)}</span>
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;serial&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;data&#34;</span>: np<span style="color:#f92672">.</span>array(np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">20</span>)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">4</span>))<span style="color:#f92672">.</span>repeat(<span style="color:#ae81ff">20</span>, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>),
+                        <span style="color:#e6db74">&#34;target&#34;</span>: np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">5</span>)<span style="color:#f92672">.</span>repeat(<span style="color:#ae81ff">20</span>, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)}
+        <span style="color:#66d9ef">elif</span> data <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;sin&#34;</span>:
+            data_dic <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;data&#34;</span>: np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">0.01</span>)[:,None],
+                        <span style="color:#e6db74">&#34;target&#34;</span>: np<span style="color:#f92672">.</span>sin(np<span style="color:#f92672">.</span>arange(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">0.01</span>) <span style="color:#f92672">*</span> np<span style="color:#f92672">.</span>pi)}self<span style="color:#f92672">.</span>set_data(data_dic[<span style="color:#e6db74">&#34;data&#34;</span>], data_dic[<span style="color:#e6db74">&#34;target&#34;</span>])
+        self<span style="color:#f92672">.</span>set_variables()
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">copy</span>(self):
+        <span style="color:#66d9ef">return</span> cp<span style="color:#f92672">.</span>copy(self)
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_node</span>(self, n_out):
+        self<span style="color:#f92672">.</span>nodelst <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>nodelst <span style="color:#f92672">+</span> [n_out]
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_curr_node</span>(self):
+        <span style="color:#66d9ef">return</span> list(self<span style="color:#f92672">.</span>nodelst[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dropout</span>(self, rate<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>, seed<span style="color:#f92672">=</span>None):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        
+        srng <span style="color:#f92672">=</span> RandomStreams(seed)
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>where(srng<span style="color:#f92672">.</span>uniform(size<span style="color:#f92672">=</span>obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>shape) <span style="color:#f92672">&gt;</span> rate, obj<span style="color:#f92672">.</span>out, <span style="color:#ae81ff">0</span>)
+        
+        <span style="color:#66d9ef">return</span> obj
+    
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">dense</span>(self, n_out):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+        
+        <span style="color:#75715e">#theta =  theano.shared(np.random.rand(n_in, n_out).astype(theano.config.floatX))</span>
+        <span style="color:#75715e">#b  =     theano.shared(np.random.rand(n_out).astype(theano.config.floatX))</span>
+        theta <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>zeros((n_in, n_out))<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        <span style="color:#75715e">#b     =  theano.shared(np.zeros((n_out)).astype(theano.config.floatX))</span>
+        b <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(<span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(dtype<span style="color:#f92672">=</span>theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)[<span style="color:#ae81ff">0</span>])
+        
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>dot(theta) <span style="color:#f92672">+</span> b
+        <span style="color:#75715e">#obj.out   = theta.dot(obj.out.flatten())+b</span>
+        obj<span style="color:#f92672">.</span>thetalst <span style="color:#f92672">+=</span> [theta,b]
+        
+        obj<span style="color:#f92672">.</span>update_node([n_out])
+        
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">lstm</span>(self):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        
+        curr_shape <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+        n_in <span style="color:#f92672">=</span> n_out <span style="color:#f92672">=</span> curr_shape[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]
+        
+        <span style="color:#75715e">#batch_shape_of_h = T.concatenate(</span>
+        <span style="color:#75715e">#batch_shape_of_C = T.concatenate(, axis=0)</span>
+<span style="color:#75715e">#        h = T.ones(theano.sharedl())</span>
+        h <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>zeros([obj<span style="color:#f92672">.</span>n_batch, <span style="color:#f92672">*</span>curr_shape], dtype<span style="color:#f92672">=</span>theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)
+        C <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>zeros([obj<span style="color:#f92672">.</span>n_batch, n_out], dtype<span style="color:#f92672">=</span>theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)
+        
+        Wi <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Wf <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Wc <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Wo <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        bi <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        bf <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        bc <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        bo <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Ui <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Uf <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Uc <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        Uo <span style="color:#f92672">=</span>  theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(n_in, n_out)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        
+        i <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>sigmoid(obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>dot(Wi) <span style="color:#f92672">+</span> h<span style="color:#f92672">.</span>dot(Ui) <span style="color:#f92672">+</span> bi)
+        
+        C_tilde <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>tanh(obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>dot(Wc) <span style="color:#f92672">+</span> h<span style="color:#f92672">.</span>dot(Uc) <span style="color:#f92672">+</span> bc)
+        
+        f <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>sigmoid(obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>dot(Wf) <span style="color:#f92672">+</span> h<span style="color:#f92672">.</span>dot(Uf) <span style="color:#f92672">+</span> bf)
+        
+        tmp <span style="color:#f92672">=</span> (i <span style="color:#f92672">*</span> C_tilde <span style="color:#f92672">+</span> f <span style="color:#f92672">*</span> C)<span style="color:#f92672">.</span>reshape(C<span style="color:#f92672">.</span>shape)
+        
+        obj<span style="color:#f92672">.</span>tmplst <span style="color:#f92672">+=</span> [(C, tmp)]
+        
+        C <span style="color:#f92672">=</span> tmp
+        
+        o <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>sigmoid(obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>dot(Wo) <span style="color:#f92672">+</span> h<span style="color:#f92672">.</span>dot(Uo) <span style="color:#f92672">+</span> bo)
+        
+        tmp <span style="color:#f92672">=</span> (o <span style="color:#f92672">*</span> T<span style="color:#f92672">.</span>tanh(C))<span style="color:#f92672">.</span>reshape(h<span style="color:#f92672">.</span>shape)
+        
+        obj<span style="color:#f92672">.</span>tmplst <span style="color:#f92672">+=</span> [(h, tmp)]
+        
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span>  tmp
+        
+        obj<span style="color:#f92672">.</span>thetalst <span style="color:#f92672">+=</span> [Wi, bi, Ui, Wf, bf, Uf, Wc, bc, Uc, Wo, bo, Uo]
+        
+        obj<span style="color:#f92672">.</span>update_node([n_out])
+        
+        <span style="color:#66d9ef">return</span> obj
+
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">conv2d</span>(self, kshape<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">3</span>), mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;full&#34;</span>, reshape<span style="color:#f92672">=</span>None):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        
+        n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+        
+        <span style="color:#66d9ef">if</span> reshape <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+            obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>reshape(reshape)
+            n_in <span style="color:#f92672">=</span> reshape
+            
+        <span style="color:#66d9ef">if</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>ndim <span style="color:#f92672">==</span> <span style="color:#ae81ff">2</span>:
+            obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out[None, :, :]
+            n_in <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1</span>, n_in[<span style="color:#ae81ff">1</span>], n_in[<span style="color:#ae81ff">2</span>])
+        <span style="color:#66d9ef">elif</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>ndim <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+            obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out[None, None, :]
+            n_in <span style="color:#f92672">=</span> [<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> list(n_in)
+            
+        <span style="color:#66d9ef">if</span> mode <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;full&#34;</span>:
+            n_out <span style="color:#f92672">=</span> [kshape[<span style="color:#ae81ff">0</span>], n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">+</span> (kshape[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>), n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">+</span> (kshape[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)]
+            <span style="color:#75715e">#n_out = [n_in[0], kshape[0], n_in[-2] + (kshape[-2] - 1), n_in[-1] + (kshape[-2] - 1)]</span>
+        <span style="color:#66d9ef">elif</span> mode <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;valid&#34;</span>:
+            n_out <span style="color:#f92672">=</span> [kshape[<span style="color:#ae81ff">0</span>], n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">-</span> (kshape[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>), n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">-</span> (kshape[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)]
+        
+        theta <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(<span style="color:#f92672">*</span>kshape)<span style="color:#f92672">.</span>astype(dtype<span style="color:#f92672">=</span>theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        b <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(<span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>astype(dtype<span style="color:#f92672">=</span>theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)[<span style="color:#ae81ff">0</span>])
+        obj<span style="color:#f92672">.</span>b <span style="color:#f92672">=</span> b
+            
+        
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>conv2d(obj<span style="color:#f92672">.</span>out, theta, border_mode<span style="color:#f92672">=</span>mode) <span style="color:#f92672">+</span> b
+        obj<span style="color:#f92672">.</span>thetalst <span style="color:#f92672">+=</span> [theta, b]
+        
+        obj<span style="color:#f92672">.</span>update_node(n_out)
+        
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">conv_and_pool</span>(self, fnum, height, width, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;full&#34;</span>, ds<span style="color:#f92672">=</span>(<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">2</span>)):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+        kshape <span style="color:#f92672">=</span> (fnum, n_in[<span style="color:#ae81ff">0</span>], height, width)
+        n_batch <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">.</span>get_value()
+        obj <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>conv2d(kshape<span style="color:#f92672">=</span>kshape)
+        <span style="color:#75715e">#.reshape((n_batch, np.array(n_in, dtype=int).sum()))\if mode == &#34;full&#34;:</span>
+            obj <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>relu()<span style="color:#f92672">.</span>pool(ds<span style="color:#f92672">=</span>ds)
+            n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+            obj <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>reshape((kshape[<span style="color:#ae81ff">0</span>], <span style="color:#f92672">*</span>n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>:]))
+            <span style="color:#75715e">#obj = obj.reshape((kshape[0], M[0]+(m[0]-1),M[1]+(m[1]-1)))</span>
+        <span style="color:#66d9ef">elif</span> mode <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;valid&#34;</span>:
+            n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+            obj <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>reshape((kshape[<span style="color:#ae81ff">0</span>], <span style="color:#f92672">*</span>n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>:]))
+        <span style="color:#66d9ef">return</span> obj
+            
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">pool</span>(self, ds<span style="color:#f92672">=</span>(<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">2</span>)):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+        
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> signal<span style="color:#f92672">.</span>pool<span style="color:#f92672">.</span>pool_2d(obj<span style="color:#f92672">.</span>out, ds<span style="color:#f92672">=</span>ds, ignore_border<span style="color:#f92672">=</span>True)
+        
+        n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>] <span style="color:#f92672">//</span> ds[<span style="color:#ae81ff">0</span>] <span style="color:#75715e">#+ (1 if (n_in[-2] % ds[0]) else 0) </span>
+        n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> n_in[<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>] <span style="color:#f92672">//</span> ds[<span style="color:#ae81ff">1</span>] <span style="color:#75715e">#+ (1 if (n_in[-1] % ds[1]) else 0) </span>
+        
+        obj<span style="color:#f92672">.</span>update_node(n_in)
+        <span style="color:#75715e">#print(obj.nodelst)</span>
+        
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mean</span>(self, axis):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        
+        n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>mean(axis<span style="color:#f92672">=</span>axis)
+        obj<span style="color:#f92672">.</span>update_node(np<span style="color:#f92672">.</span>ones(n_in)<span style="color:#f92672">.</span>mean(axis<span style="color:#f92672">=</span>axis)<span style="color:#f92672">.</span>shape)
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">reshape</span>(self, shape):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>reshape([obj<span style="color:#f92672">.</span>n_batch, <span style="color:#f92672">*</span>shape])
+        obj<span style="color:#f92672">.</span>update_node(shape)
+        <span style="color:#66d9ef">return</span> obj
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">reshape_</span>(self, shape):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>reshape(shape)
+        obj<span style="color:#f92672">.</span>update_node(shape[<span style="color:#ae81ff">1</span>:])
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">flatten</span>(self):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        n_in <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>get_curr_node()
+        last_ndim <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(n_in)<span style="color:#f92672">.</span>prod()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>reshape((obj<span style="color:#f92672">.</span>n_batch, last_ndim))
+        obj<span style="color:#f92672">.</span>update_node([last_ndim])
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">taylor</span>(self, M, n_out):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        n_in <span style="color:#f92672">=</span> int(np<span style="color:#f92672">.</span>asarray(obj<span style="color:#f92672">.</span>get_curr_node())<span style="color:#f92672">.</span>sum())
+        
+        x_times <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>concatenate([obj<span style="color:#f92672">.</span>out, T<span style="color:#f92672">.</span>ones((obj<span style="color:#f92672">.</span>n_batch, <span style="color:#ae81ff">1</span>))<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(M<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+            idx <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array([<span style="color:#e6db74">&#34;:,&#34;</span>])<span style="color:#f92672">.</span>repeat(i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>tolist()
+            a <span style="color:#f92672">=</span> dict()
+            <span style="color:#66d9ef">exec</span> (<span style="color:#e6db74">&#34;x_times = x_times[:,&#34;</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(idx) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;None] * x_times&#34;</span>, locals(), a)
+            x_times <span style="color:#f92672">=</span> a[<span style="color:#e6db74">&#34;x_times&#34;</span>]
+
+        x_times <span style="color:#f92672">=</span> x_times<span style="color:#f92672">.</span>reshape((obj<span style="color:#f92672">.</span>n_batch, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>))
+        <span style="color:#75715e">#x_times = x_times.reshape(self.n_batch, (n_in+1) ** M)</span>
+
+        theta <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>ones(((n_in<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">**</span> M, n_out))<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        obj<span style="color:#f92672">.</span>theta <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>ones(((n_in<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>) <span style="color:#f92672">**</span> M, n_out))<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        <span style="color:#75715e">#theta = theano.shared(np.random.rand(n_out, (n_in+1) ** M).astype(theano.config.floatX))</span>
+        
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> x_times<span style="color:#f92672">.</span>dot(theta<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX))
+        obj<span style="color:#f92672">.</span>thetalst <span style="color:#f92672">+=</span> [theta]
+        
+        obj<span style="color:#f92672">.</span>update_node([n_out])
+        
+        <span style="color:#66d9ef">return</span> obj
+
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">relu</span>(self, ):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>relu(obj<span style="color:#f92672">.</span>out)
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">tanh</span>(self, ):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>tanh(obj<span style="color:#f92672">.</span>out)
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">sigmoid</span>(self, ):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>sigmoid(obj<span style="color:#f92672">.</span>out)
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">softmax</span>(self, ):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>softmax(obj<span style="color:#f92672">.</span>out)
+        <span style="color:#66d9ef">return</span> obj
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">loss_msq</span>(self):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>loss <span style="color:#f92672">=</span>  T<span style="color:#f92672">.</span>mean((obj<span style="color:#f92672">.</span>out <span style="color:#f92672">-</span> obj<span style="color:#f92672">.</span>y) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>)
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">loss_cross_entropy</span>(self):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>loss <span style="color:#f92672">=</span>  <span style="color:#f92672">-</span>T<span style="color:#f92672">.</span>mean(obj<span style="color:#f92672">.</span>y <span style="color:#f92672">*</span> T<span style="color:#f92672">.</span>log(obj<span style="color:#f92672">.</span>out <span style="color:#f92672">+</span> <span style="color:#ae81ff">1e-4</span>))
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">loss_softmax_cross_entropy</span>(self):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> nnet<span style="color:#f92672">.</span>softmax(obj<span style="color:#f92672">.</span>out)
+        tmp_y <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>cast(obj<span style="color:#f92672">.</span>y, <span style="color:#e6db74">&#34;int32&#34;</span>)
+        obj<span style="color:#f92672">.</span>loss  <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>T<span style="color:#f92672">.</span>mean(T<span style="color:#f92672">.</span>log(obj<span style="color:#f92672">.</span>out)[T<span style="color:#f92672">.</span>arange(obj<span style="color:#f92672">.</span>y<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]), tmp_y<span style="color:#f92672">.</span>flatten()])
+        obj<span style="color:#f92672">.</span>out <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out<span style="color:#f92672">.</span>argmax(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#75715e">#obj.out2 = obj.out.argmax(axis=1)</span>
+        <span style="color:#75715e">#obj.out2 = obj.out[T.arange(obj.y.shape[0]), tmp_y.flatten()]</span>
+        
+        
+<span style="color:#75715e">#        obj.loss2 = T.log(obj.out)[T.arange(obj.y.shape[0]), tmp_y.flatten()]</span>
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">opt_sgd</span>(self, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> theta <span style="color:#f92672">in</span> obj<span style="color:#f92672">.</span>thetalst:
+            obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> [(theta, theta <span style="color:#f92672">-</span> (alpha <span style="color:#f92672">*</span> T<span style="color:#f92672">.</span>grad(obj<span style="color:#f92672">.</span>loss, wrt<span style="color:#f92672">=</span>theta)))]
+            
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> obj<span style="color:#f92672">.</span>tmplst
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">opt_RMSProp</span>(self, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>, gamma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>, ep<span style="color:#f92672">=</span><span style="color:#ae81ff">1e-8</span>):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">=</span> []
+        obj<span style="color:#f92672">.</span>rlst <span style="color:#f92672">=</span> [theano<span style="color:#f92672">.</span>shared(x<span style="color:#f92672">.</span>shape)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> obj<span style="color:#f92672">.</span>thetalst]
+        
+        <span style="color:#66d9ef">for</span> r, theta <span style="color:#f92672">in</span> zip(obj<span style="color:#f92672">.</span>rlst, obj<span style="color:#f92672">.</span>thetalst):
+            g <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>grad(obj<span style="color:#f92672">.</span>loss, wrt<span style="color:#f92672">=</span>theta)
+            obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> [(r, gamma <span style="color:#f92672">*</span> r <span style="color:#f92672">+</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> gamma) <span style="color:#f92672">*</span> g <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>),\
+                              (theta, theta <span style="color:#f92672">-</span> (alpha <span style="color:#f92672">/</span> (T<span style="color:#f92672">.</span>sqrt(r) <span style="color:#f92672">+</span> ep)) <span style="color:#f92672">*</span> g)]
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> obj<span style="color:#f92672">.</span>tmplst
+        <span style="color:#66d9ef">return</span> obj
+                               
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">opt_AdaGrad</span>(self, ini_eta<span style="color:#f92672">=</span><span style="color:#ae81ff">0.001</span>, ep<span style="color:#f92672">=</span><span style="color:#ae81ff">1e-8</span>):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">=</span> []
+                               
+        obj<span style="color:#f92672">.</span>hlst <span style="color:#f92672">=</span> [theano<span style="color:#f92672">.</span>shared(ep<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>ones(x<span style="color:#f92672">.</span>get_value()<span style="color:#f92672">.</span>shape, theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> obj<span style="color:#f92672">.</span>thetalst]obj<span style="color:#f92672">.</span>etalst <span style="color:#f92672">=</span> [theano<span style="color:#f92672">.</span>shared(ini_eta<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>ones(x<span style="color:#f92672">.</span>get_value()<span style="color:#f92672">.</span>shape, theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> obj<span style="color:#f92672">.</span>thetalst]
+        
+        <span style="color:#66d9ef">for</span> h, eta, theta <span style="color:#f92672">in</span> zip(obj<span style="color:#f92672">.</span>hlst, obj<span style="color:#f92672">.</span>etalst, obj<span style="color:#f92672">.</span>thetalst):
+            g   <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>grad(obj<span style="color:#f92672">.</span>loss, wrt<span style="color:#f92672">=</span>theta)
+            obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> [(h,     h <span style="color:#f92672">+</span> g <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>),
+                              (eta,   eta <span style="color:#f92672">/</span> T<span style="color:#f92672">.</span>sqrt(h<span style="color:#f92672">+</span><span style="color:#ae81ff">1e-4</span>)),
+                              (theta, theta <span style="color:#f92672">-</span> eta <span style="color:#f92672">*</span> g)]
+            
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> obj<span style="color:#f92672">.</span>tmplst
+        <span style="color:#66d9ef">return</span> obj
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">opt_Adam</span>(self, alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.001</span>, beta<span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>, gamma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.999</span>, ep<span style="color:#f92672">=</span><span style="color:#ae81ff">1e-8</span>, t<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">=</span> []
+        obj<span style="color:#f92672">.</span>nulst <span style="color:#f92672">=</span> [theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>zeros(x<span style="color:#f92672">.</span>get_value()<span style="color:#f92672">.</span>shape, theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> obj<span style="color:#f92672">.</span>thetalst]
+        obj<span style="color:#f92672">.</span>rlst <span style="color:#f92672">=</span> [theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>zeros(x<span style="color:#f92672">.</span>get_value()<span style="color:#f92672">.</span>shape, theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)) <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> obj<span style="color:#f92672">.</span>thetalst]
+                               
+        <span style="color:#66d9ef">for</span> nu, r, theta <span style="color:#f92672">in</span> zip(obj<span style="color:#f92672">.</span>nulst, obj<span style="color:#f92672">.</span>rlst, obj<span style="color:#f92672">.</span>thetalst):
+            g <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>grad(obj<span style="color:#f92672">.</span>loss, wrt<span style="color:#f92672">=</span>theta)
+            nu_hat <span style="color:#f92672">=</span> nu <span style="color:#f92672">/</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> beta)
+            r_hat <span style="color:#f92672">=</span> r <span style="color:#f92672">/</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> gamma)
+            obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> [(nu, beta <span style="color:#f92672">*</span> nu <span style="color:#f92672">+</span> (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> beta) <span style="color:#f92672">*</span> g),\
+                              (r, gamma <span style="color:#f92672">*</span> r <span style="color:#f92672">+</span>  (<span style="color:#ae81ff">1</span> <span style="color:#f92672">-</span> gamma) <span style="color:#f92672">*</span> g <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>),\
+                              (theta, theta <span style="color:#f92672">-</span> alpha<span style="color:#f92672">*</span>(nu_hat <span style="color:#f92672">/</span> (T<span style="color:#f92672">.</span>sqrt(r_hat) <span style="color:#f92672">+</span> ep)))]
+            
+        obj<span style="color:#f92672">.</span>updatelst <span style="color:#f92672">+=</span> obj<span style="color:#f92672">.</span>tmplst
+        <span style="color:#66d9ef">return</span> obj
+                               
+    
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">optimize</span>(self, n_epoch<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, n_view<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>):
+        obj <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>copy()
+        obj<span style="color:#f92672">.</span>dsize <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]
+        <span style="color:#66d9ef">if</span> obj<span style="color:#f92672">.</span>n_view <span style="color:#f92672">is</span> None: obj<span style="color:#f92672">.</span>n_view <span style="color:#f92672">=</span> n_view  
+        
+        x_train_arr_shared <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(obj<span style="color:#f92672">.</span>x_train_arr)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)
+        y_train_arr_shared <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(obj<span style="color:#f92672">.</span>y_train_arr)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)
+
+        <span style="color:#75715e">#rng = T.shared_randomstreams.RandomStreams(seed=0)</span>
+        <span style="color:#75715e">#obj.idx = rng.permutation(size=(1,), n=obj.x_train_arr.shape[0]).astype(&#34;int64&#34;)</span>
+        <span style="color:#75715e">#obj.idx = rng.permutation(size=(1,), n=obj.x_train_arr.shape[0])[0, 0:obj.n_batch].astype(&#34;int64&#34;)</span>
+        <span style="color:#75715e">#idx = obj.idx * 1</span>
+        i <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(<span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;int32&#34;</span>)
+        idx <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>permutation(obj<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]))
+        
+        obj<span style="color:#f92672">.</span>loss_func <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>function(inputs<span style="color:#f92672">=</span>[i],
+                                      outputs<span style="color:#f92672">=</span>obj<span style="color:#f92672">.</span>loss,
+                                      givens<span style="color:#f92672">=</span>[(obj<span style="color:#f92672">.</span>x,x_train_arr_shared[idx[i:obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">+</span>i],]), 
+                                              (obj<span style="color:#f92672">.</span>y,y_train_arr_shared[idx[i:obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">+</span>i],])],
+                                      updates<span style="color:#f92672">=</span>obj<span style="color:#f92672">.</span>updatelst,
+                                      on_unused_input<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;warn&#39;</span>)
+        
+        i <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(<span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#34;int32&#34;</span>)
+        idx <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>shared(np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>permutation(obj<span style="color:#f92672">.</span>x_train_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]))
+        
+        
+        obj<span style="color:#f92672">.</span>acc_train <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>function(inputs<span style="color:#f92672">=</span>[i],
+                                      <span style="color:#75715e">#outputs=((T.eq(obj.out2[:,None],obj.y))),</span>
+                                      outputs<span style="color:#f92672">=</span>((T<span style="color:#f92672">.</span>eq(obj<span style="color:#f92672">.</span>out[:,None],obj<span style="color:#f92672">.</span>y))<span style="color:#f92672">.</span>sum()<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX) <span style="color:#f92672">/</span> obj<span style="color:#f92672">.</span>n_batch),
+                                      givens<span style="color:#f92672">=</span>[(obj<span style="color:#f92672">.</span>x,x_train_arr_shared[idx[i:obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">+</span>i],]), 
+                                              (obj<span style="color:#f92672">.</span>y,y_train_arr_shared[idx[i:obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">+</span>i],])],
+                                      on_unused_input<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;warn&#39;</span>)
+        <span style="color:#75715e">#idx = rng.permutation(size=(1,), a=obj.x_train_arr.shape[0])#.astype(&#34;int8&#34;)</span>
+        
+        <span style="color:#75715e">#idx = rng.permutation(size=(1,), n=500, ndim=None)[0,0:10]#.astype(&#34;int8&#34;)</span>
+        
+        c <span style="color:#f92672">=</span> T<span style="color:#f92672">.</span>concatenate([obj<span style="color:#f92672">.</span>x,obj<span style="color:#f92672">.</span>y],axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        obj<span style="color:#f92672">.</span>test_func <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>function(inputs<span style="color:#f92672">=</span>[i],
+                               outputs<span style="color:#f92672">=</span>c,
+                               givens<span style="color:#f92672">=</span>[(obj<span style="color:#f92672">.</span>x,x_train_arr_shared[idx[i:obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">+</span>i],]), 
+                                       (obj<span style="color:#f92672">.</span>y,y_train_arr_shared[idx[i:obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">+</span>i],])],
+                               on_unused_input<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;warn&#39;</span>)
+        
+<span style="color:#75715e">#        obj.test_func = theano.function(inputs=[i],</span>
+<span style="color:#75715e">#                               outputs=c,</span>
+<span style="color:#75715e">#                               givens=[(obj.x,x_train_arr_shared[idx[i:obj.n_batch+i],]), </span>
+<span style="color:#75715e">#                                       (obj.y,y_train_arr_shared[idx[i:obj.n_batch+i],])],</span>
+<span style="color:#75715e">#                               on_unused_input=&#39;warn&#39;)</span>
+        
+        obj<span style="color:#f92672">.</span>pred_func <span style="color:#f92672">=</span> theano<span style="color:#f92672">.</span>function(inputs  <span style="color:#f92672">=</span> [obj<span style="color:#f92672">.</span>x],
+                                        outputs <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>out,
+                                        updates <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>tmplst,
+                                        on_unused_input<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;warn&#39;</span>)
+            
+        obj<span style="color:#f92672">.</span>v_loss <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">try</span>:
+            <span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(n_epoch):
+                <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">0</span>,obj<span style="color:#f92672">.</span>dsize<span style="color:#f92672">-</span>obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">.</span>get_value(),obj<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">.</span>get_value()):
+                    mean_loss <span style="color:#f92672">=</span> obj<span style="color:#f92672">.</span>loss_func(i) 
+                
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Epoch. </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">: loss = </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">, acc = </span><span style="color:#e6db74">%s</span><span style="color:#e6db74">.&#34;</span> <span style="color:#f92672">%</span>(epoch, mean_loss, obj<span style="color:#f92672">.</span>acc_train(i)))
+                     
+                obj<span style="color:#f92672">.</span>v_loss <span style="color:#f92672">+=</span> [mean_loss]
+            
+            
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyboardInterrupt</span>  :
+            <span style="color:#66d9ef">print</span> ( <span style="color:#e6db74">&#34;KeyboardInterrupt</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span> )
+            <span style="color:#66d9ef">return</span> obj
+        <span style="color:#66d9ef">return</span> objdef view_params(self):
+        <span style="color:#66d9ef">for</span> theta <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>thetalst:
+            <span style="color:#66d9ef">print</span>(theta<span style="color:#f92672">.</span>get_value()<span style="color:#f92672">.</span>shape)
+            <span style="color:#66d9ef">print</span>(theta<span style="color:#f92672">.</span>get_value())
+            
+        
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">view</span>(self, yscale<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;log&#34;</span>):
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> len(self<span style="color:#f92672">.</span>v_loss):
+            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">ValueError</span>(<span style="color:#e6db74">&#34;Loss value is not be set.&#34;</span>)
+        plt<span style="color:#f92672">.</span>clf()
+        
+        plt<span style="color:#f92672">.</span>xlabel(<span style="color:#e6db74">&#34;IterNum [x</span><span style="color:#e6db74">%s</span><span style="color:#e6db74">]&#34;</span> <span style="color:#f92672">%</span>self<span style="color:#f92672">.</span>n_view)
+        plt<span style="color:#f92672">.</span>ylabel(<span style="color:#e6db74">&#34;Loss&#34;</span>)
+        plt<span style="color:#f92672">.</span>yscale(yscale)
+        plt<span style="color:#f92672">.</span>plot(self<span style="color:#f92672">.</span>v_loss)
+        plt<span style="color:#f92672">.</span>show()
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">view_graph</span>(self, width<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;100%&#39;</span>, res<span style="color:#f92672">=</span><span style="color:#ae81ff">60</span>):
+        path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;examples&#39;</span>; name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;mlp.png&#39;</span>
+        path_name <span style="color:#f92672">=</span> path <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;/&#39;</span> <span style="color:#f92672">+</span> name 
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>exists(path):
+            os<span style="color:#f92672">.</span>mkdirs(path)
+        pydotprint(self<span style="color:#f92672">.</span>loss, path_name)
+        plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(res, res), dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">80</span>)
+        plt<span style="color:#f92672">.</span>subplots_adjust(left<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, right<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span>, bottom<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, top<span style="color:#f92672">=</span><span style="color:#ae81ff">1.0</span>, hspace<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>, wspace<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0</span>)
+        plt<span style="color:#f92672">.</span>axis(<span style="color:#e6db74">&#39;off&#39;</span>)
+        plt<span style="color:#f92672">.</span>imshow(np<span style="color:#f92672">.</span>array(Image<span style="color:#f92672">.</span>open(path_name)))
+        plt<span style="color:#f92672">.</span>show()
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">pred</span>(self, x_arr):
+        x_arr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(x_arr)<span style="color:#f92672">.</span>astype(theano<span style="color:#f92672">.</span>config<span style="color:#f92672">.</span>floatX)
+        self<span style="color:#f92672">.</span>n_batch<span style="color:#f92672">.</span>set_value(int(x_arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]))
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>pred_func(x_arr)
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

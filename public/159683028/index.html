@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Speech recognition by Python MFCC | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Speech recognition by Python MFCC</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 20, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/speech-recognition"> speech recognition</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/librosa"> librosa</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mfcc"> MFCC</a></code></small>
+
+</p>
+<pre><code>In the [previous article](https://qiita.com/k-maru/items/4f12fd0f8344b9e093bd),vowelrecognitionwasperformedusingformantanalysis.IlearnedaboutMFCCinaninternshipat[CyceedCo.,Ltd.](http://www.sciseed.jp/), and verified the classification accuracy, so this article is a continuation of the previous article about MFCC that is often used for speech recognition. I would like to summarize.
+</code></pre>
+<p>##table of contents</p>
+<ul>
+<li>Background</li>
+<li>What is MFCC
+-MFCC derivation process</li>
+<li>Implementation of MFCC derivation program
+-Regarding librosa
+-Derivation of MFCC
+-Phoneme class classification using MFCC</li>
+<li>Implementation of a program for continuous speech recognition
+-Regarding dynamic differences
+-Derivation of primary and secondary differences
+-Phoneme class classification including features of second-order differences</li>
+<li>Consideration</li>
+<li>Summary</li>
+<li>Reference</li>
+</ul>
+<h2 id="background">background</h2>
+<p><a href="https://qiita.com/k-maru/items/4f12fd0f8344b9e093bd">Previous article</a> formant analysis finds the envelope of the spectrum, and the frequencies emphasized in them are used as features from lower to F1 and F2. Used to analyze vowels. With regard to vowels, there are only five phonemes in Japan, and since the phonemes can be basically classified according to the shape of the vocal tract, formant analysis was effective. However, phonemes and consonants in a sentence cannot be fully represented by the features of formant analysis because of the dynamic changes and the large number and difference of organs used for vocalization. Therefore, this time we will perform phoneme classification using MFCC and its dynamic difference, which can express the envelope of the vocal tract spectrum more finely.</p>
+<h2 id="what-is-mfcc">What is MFCC</h2>
+<p>Formants refer to multiple resonance frequencies that are emphasized when speech passes through the vocal tract, and vowels are used for vowel analysis because they change depending on the shape of the vocal tract and tongue. In MFCC, phonemes are converted according to the human auditory characteristics, and the envelope of the spectrum is expressed by using more feature quantities than formant analysis, so that the features of phonemes that cannot be captured by formant analysis can be captured.
+MFCC (Mel Frequency Cepstrum Coefficient) is the cepstrum of the logarithmic power spectrum of the mel filter bank, which will be explained in detail later.</p>
+<h3 id="mfcc-derivation-process">MFCC derivation process</h3>
+<p>The MFCC derivation procedure is as follows.</p>
+<ol>
+<li>Pretreatment
+<ol>
+<li>High frequency emphasis (pre-emphasis)</li>
+<li>Window function</li>
+</ol>
+</li>
+<li>Compress the power spectrum using a mel filter bank.</li>
+<li>Convert the compressed power spectrum into a logarithmic power spectrum.</li>
+<li>Derive the cepstrum by applying the inverse discrete cosine transform to the logarithmic power spectrum.
+Use low-order components of cepstrum (coefficients that represent spectral envelope) for vocal recognition as vocal tract spectrum</li>
+</ol>
+<p>I will explain each detail.</p>
+<h4 id="1-pre-processing">1. Pre-processing</h4>
+<p>First, with regard to preprocessing, since the power of the voice is attenuated as it goes to higher frequencies, high-frequency emphasis processing is performed to compensate for it. In addition, a window function is applied to the discontinuous data so that both ends of the waveform are attenuated.
+The power spectrum is used because the size of the sound (frequency to be emphasized) changes depending on the phoneme (the amplitude spectrum is also one of the expression methods of sound pressure, so some people may analyze it).</p>
+<h4 id="2-compress-the-power-spectrum-using-the-mel-filter-bank">2. Compress the power spectrum using the mel filter bank.</h4>
+<p>Hearing of human beings changes depending on the frequency. The higher the frequency, the harder it is to hear the pitch. The experimentally obtained relationship between the actual frequency and the auditory frequency is called the Mel scale.
+Create a filter according to the number of mel filter banks so that the width is even when the frequency axis is considered on the mel scale. Using this, the power spectrum of the speech waveform obtained by the fast Fourier transform is divided into groups of the number of mel filter banks.</p>
+<h4 id="3-convert-to-logarithmic-power-spectrum">3. Convert to logarithmic power spectrum</h4>
+<p>There are two reasons for making the output (power spectrum) of the mel filter bank a logarithmic power spectrum.
+First, the loudness that humans perceive is proportional to the logarithm of sound pressure, and it becomes more difficult to perceive the difference in loudness as the sound gets louder. In order to correspond to this human hearing characteristic, it is necessary to make it a logarithmic spectrum.
+Second, the speech at a certain time is a convolution of the glottal wave (source wave) with the spectrum of the vocal tract (spectral envelope). It can be separated into linear sums of spectra.
+Below, we explain the separation into linear sums by following the formula.</p>
+<p>Let $y(n)$ be the voice signal at a given time, $v(n)$ be the glottal wave at a given time, and $h(n)$ be the impulse response of the vocal tract.
+$$y(n) = \sum_{m=-\infty}^{\infty}v(m) \cdot h(n-m) = v(n)*h(n)$$</p>
+<p>Fourier transform of audio signal
+$$Y(k) = V(k) \cdot H(k)$$</p>
+<p>It becomes. At this time, the power spectrum of the audio signal becomes $S(k)$ as follows.
+$$S(k) = |Y(k)|^2 = |V(k) \cdot H(k)|^2 $$
+Logarithmically transform this
+$$\log S(k) = 2\log |V(k)| + 2\log |H(k)| $$
+And can be separated into linear sums.</p>
+<h4 id="4-deriving-the-cepstrum">4. Deriving the cepstrum</h4>
+<p>The cepstrum can be obtained by capturing the obtained logarithmic power spectrum like a time signal and performing an inverse discrete Fourier transform.
+Now, let&rsquo;s follow the process of deriving the cepstrum by using the logarithmic power $logS(k)$ used earlier.
+The formula of the inverse discrete Fourier transform is on <a href="http://www.ic.is.tohoku.ac.jp/~swk/lecture/yaruodsp/dft.html">here</a>.
+Since the cepstrum $c(n)$ refers to the inverse discrete Fourier transform of logarithmic power,</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+c(n) &amp;= \frac{1}{N}\sum_{k=0}^{N-1}\log S_{k}e^{(i\frac{2\pi kn}{N}) }\\
+     &amp;= \frac{1}{N}\sum_{k=0}^{N-1}\log S_{k} \cos (\frac{2\pi kn}{N}) + i \log S_{ k} \sin (\frac{2\pi kn}{N})\\
+\end{align}
+</code></pre><p>Also, this power spectrum is line-symmetrical with respect to the Nyquist frequency.
+That is,</p>
+<p>$$\frac{1}{N}\sum_{k=0}^{N-1}i \log S_{k}\sin (\frac{2\pi kn}{N}) = 0$$</p>
+<p>It becomes.
+Therefore, the cepstrum $c(n)$ can be expressed by the inverse discrete cosine transform as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+c(n) &amp;= \frac{1}{N}\sum_{k=0}^{N-1}\log S_{k} \cos (\frac{2\pi kn}{N})\\
+     &amp;= \frac{2}{N}\sum_{k=0}^{N-1}\log V_{k} \cos (\frac{2\pi kn}{N})
+        + \frac{2}{N}\sum_{k=0}^{N-1}\log H_{k} \cos (\frac{2\pi kn}{N}) \\
+\end{align}
+</code></pre><p>Since $v(n)$ is a glottal wave, it contains many complex changes (high-frequency components).
+On the other hand, since $h(n)$ is the impulse response of the vocal tract, it contains many smooth changes (low frequency components).
+Therefore, the low-order component of this cepstrum $c(n)$ represents the vocal tract spectrum $H_{k}$.</p>
+<h2 id="implementation-of-mfcc-derivation-program">Implementation of MFCC derivation program</h2>
+<h3 id="about-librosa">About librosa</h3>
+<p>librosa is a Python package for analyzing music and voice. In this program, it is used to output MFCC and logarithmic power. Please refer to <a href="https://librosa.github.io/librosa/">Documentation</a> for details.</p>
+<h3 id="derivation-of-mfcc">Derivation of MFCC</h3>
+<p>The following packages are used.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Package to use</span>
+<span style="color:#f92672">import</span> cis
+<span style="color:#f92672">import</span> librosa
+<span style="color:#f92672">import</span> sklearn
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> collections <span style="color:#f92672">import</span> defaultdict
+<span style="color:#f92672">import</span> scipy.signal
+</code></pre></div><p>Install librosa in your environment with <code>pip install --upgrade sklearn librosa</code>.
+Also, the <code>cis</code> used in this program is the package described in the Introduction to Practical Image and Sound Processing Learning in Python. <a href="http://www.slp.k.hosei.ac.jp/~itou/book/2018/PythonMedia/files.html">Use this</a> or use for reading audio files Please use other packages instead.</p>
+<p>The program up to the derivation of MFCC is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:mfcc.py" data-lang="python:mfcc.py"><span style="color:#75715e"># Use all average features of voice section as vector</span>
+mfcc_data <span style="color:#f92672">=</span> []
+boin_list <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;a&#34;</span>,<span style="color:#e6db74">&#34;i&#34;</span>,<span style="color:#e6db74">&#34;u&#34;</span>,<span style="color:#e6db74">&#34;e&#34;</span>,<span style="color:#e6db74">&#34;o&#34;</span>]
+nobashi_boin <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;a:&#34;</span>,<span style="color:#e6db74">&#34;i:&#34;</span>,<span style="color:#e6db74">&#34;u:&#34;</span>,<span style="color:#e6db74">&#34;e:&#34;</span>,<span style="color:#e6db74">&#34;o:&#34;</span>]
+remove_list <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;silB&#34;</span>,<span style="color:#e6db74">&#34;silE&#34;</span>,<span style="color:#e6db74">&#34;sp&#34;</span>]
+
+<span style="color:#75715e">#High frequency emphasis</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">preEmphasis</span>(wave, p<span style="color:#f92672">=</span><span style="color:#ae81ff">0.97</span>):
+    Create FIR filter <span style="color:#66d9ef">with</span> <span style="color:#75715e"># coefficient (1.0, -p)</span>
+    <span style="color:#66d9ef">return</span> scipy<span style="color:#f92672">.</span>signal<span style="color:#f92672">.</span>lfilter([<span style="color:#ae81ff">1.0</span>, <span style="color:#f92672">-</span>p], <span style="color:#ae81ff">1</span>, wave)
+<span style="color:#75715e">#mfcc calculation</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mfcc</span>(wave):
+    mfccs <span style="color:#f92672">=</span> librosa<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>mfcc(wave, sr <span style="color:#f92672">=</span> fs, n_fft <span style="color:#f92672">=</span> <span style="color:#ae81ff">512</span>)
+    mfccs <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>average(mfccs, axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+    <span style="color:#75715e"># Make one-dimensional array</span>
+    mfccs <span style="color:#f92672">=</span> mfccs<span style="color:#f92672">.</span>flatten()
+    mfccs <span style="color:#f92672">=</span> mfccs<span style="color:#f92672">.</span>tolist()
+    Remove the features of <span style="color:#75715e">#mfcc from the 1st dimension and 14th dimension onwards</span>
+    mfccs<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+    mfccs <span style="color:#f92672">=</span> mfccs[:<span style="color:#ae81ff">12</span>]
+    mfccs<span style="color:#f92672">.</span>insert(<span style="color:#ae81ff">0</span>,label)
+    <span style="color:#66d9ef">return</span> mfccs
+  
+<span style="color:#75715e">#Read data, calculate mfcc for each phoneme (use data is 500 files)</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">500</span>,<span style="color:#ae81ff">1</span>):
+    data_list <span style="color:#f92672">=</span> []
+    open_file <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;wav/sound-&#34;</span><span style="color:#f92672">+</span>str(i)<span style="color:#f92672">.</span>zfill(<span style="color:#ae81ff">3</span>)<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;.lab&#34;</span>
+    filename <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;wav/sound-&#34;</span><span style="color:#f92672">+</span>str(i)<span style="color:#f92672">.</span>zfill(<span style="color:#ae81ff">3</span>) <span style="color:#75715e"># sampling frequency is 16kHz</span>
+    v, fs <span style="color:#f92672">=</span> cis<span style="color:#f92672">.</span>wavread(filename<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;.wav&#34;</span>)
+    <span style="color:#66d9ef">with</span> open(open_file,<span style="color:#e6db74">&#34;r&#34;</span>) <span style="color:#66d9ef">as</span> f:
+        data <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>readline()<span style="color:#f92672">.</span>split()
+        <span style="color:#66d9ef">while</span> data:
+            data_list<span style="color:#f92672">.</span>append(data)data <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>readline()<span style="color:#f92672">.</span>split()
+        <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(len(data_list)):
+            label <span style="color:#f92672">=</span> data_list[j][<span style="color:#ae81ff">2</span>]
+            <span style="color:#66d9ef">if</span> label <span style="color:#f92672">in</span> boin_list:
+                start <span style="color:#f92672">=</span> int(fs <span style="color:#f92672">*</span> float(data_list[j][<span style="color:#ae81ff">0</span>]))
+                end <span style="color:#f92672">=</span> int(fs <span style="color:#f92672">*</span> float(data_list[j][<span style="color:#ae81ff">1</span>]))
+                voice_data <span style="color:#f92672">=</span> v[start:end]
+                <span style="color:#75715e">#If it is too short, it will not be able to analyze well, so skip it.</span>
+                <span style="color:#66d9ef">if</span> end<span style="color:#f92672">-</span>start <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">512</span>:
+                    <span style="color:#66d9ef">continue</span>
+                <span style="color:#75715e"># Humming windows</span>
+                hammingWindow <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hamming(len(voice_data))
+                voice_data <span style="color:#f92672">=</span> voice_data <span style="color:#f92672">*</span> hammingWindow
+                p <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.97</span>
+                voice_data <span style="color:#f92672">=</span> preEmphasis(voice_data, p)
+                mfcc_data<span style="color:#f92672">.</span>append(mfcc(voice_data))
+</code></pre></div><p>As explained earlier, the higher-order component is a feature that represents the glottal wave, so it is usually used in about 12 dimensions for phoneme recognition. The first dimension represents the orthogonal component of the data, so it is excluded.
+Also, the lab file opened by this program is a file that contains the phoneme start position, end position, and phoneme type by julius segmentation-kit. <a href="https://qiita.com/k-maru/items/4f12fd0f8344b9e093bd">Previous article</a> has an example, so please check if you are interested.</p>
+<h3 id="classifying-phonemes-using-mfcc">Classifying phonemes using MFCC</h3>
+<p>I would like to compare phoneme classification using SVM (Support Vector Machine).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:svm.py" data-lang="python:svm.py"><span style="color:#75715e"># Required packages</span>
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">from</span> sklearn.model_selection <span style="color:#f92672">import</span> train_test_split
+<span style="color:#f92672">from</span> sklearn.preprocessing <span style="color:#f92672">import</span> StandardScaler
+<span style="color:#f92672">from</span> sklearn.svm <span style="color:#f92672">import</span> SVC
+<span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> accuracy_score
+
+<span style="color:#75715e">#Load dataset</span>
+df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(mfcc_data)
+
+x <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>iloc[:,<span style="color:#ae81ff">1</span>:]<span style="color:#75715e">#mfcc feature points</span>
+y <span style="color:#f92672">=</span> df<span style="color:#f92672">.</span>iloc[:,<span style="color:#ae81ff">0</span>]<span style="color:#75715e"># Vowel label</span>
+<span style="color:#75715e">#The label is changed to a number</span>
+label <span style="color:#f92672">=</span> set(y)
+label_list <span style="color:#f92672">=</span> list(label)
+label_list<span style="color:#f92672">.</span>sort()
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(label_list)):
+    y[y <span style="color:#f92672">==</span> label_list[i]] <span style="color:#f92672">=</span>i
+y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(y, dtype <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;int&#34;</span>)
+
+<span style="color:#75715e"># Determine the boundary between teacher data and test data</span>
+x_train, x_test, y_train, y_test <span style="color:#f92672">=</span> train_test_split(x, y, test_size <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.4</span>, random_state <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+
+<span style="color:#75715e"># Data standardization</span>
+sc <span style="color:#f92672">=</span> StandardScaler()
+sc<span style="color:#f92672">.</span>fit(x_train)
+x_train_std <span style="color:#f92672">=</span> sc<span style="color:#f92672">.</span>transform(x_train)
+x_test_std <span style="color:#f92672">=</span> sc<span style="color:#f92672">.</span>transform(x_test)
+
+Create an instance of <span style="color:#75715e">#SVM</span>
+model_linear <span style="color:#f92672">=</span> SVC(kernel<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;linear&#39;</span>, random_state <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+model_poly <span style="color:#f92672">=</span> SVC(kernel <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;poly&#34;</span>, random_state <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+model_rbf <span style="color:#f92672">=</span> SVC(kernel <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;rbf&#34;</span>, random_state <span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+model_linear<span style="color:#f92672">.</span>fit(x_train_std, y_train)
+model_poly<span style="color:#f92672">.</span>fit(x_train_std, y_train)
+model_rbf<span style="color:#f92672">.</span>fit(x_train_std, y_train)
+
+pred_linear_train <span style="color:#f92672">=</span> model_linear<span style="color:#f92672">.</span>predict(x_train_std)
+pred_poly_train <span style="color:#f92672">=</span> model_poly<span style="color:#f92672">.</span>predict(x_train_std)
+pred_rbf_train <span style="color:#f92672">=</span> model_rbf<span style="color:#f92672">.</span>predict(x_train_std)
+accuracy_linear_train <span style="color:#f92672">=</span> accuracy_score(y_train, pred_linear_train)
+accuracy_poly_train <span style="color:#f92672">=</span> accuracy_score(y_train, pred_poly_train)
+accuracy_rbf_train <span style="color:#f92672">=</span> accuracy_score(y_train, pred_rbf_train)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;train_result&#34;</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Linear: &#34;</span><span style="color:#f92672">+</span>str(accuracy_linear_train))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Poly :&#34;</span><span style="color:#f92672">+</span>str(accuracy_poly_train))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;RBF :&#34;</span><span style="color:#f92672">+</span> str(accuracy_rbf_train))
+
+pred_linear_test <span style="color:#f92672">=</span> model_linear<span style="color:#f92672">.</span>predict(x_test_std)
+pred_poly_test <span style="color:#f92672">=</span> model_poly<span style="color:#f92672">.</span>predict(x_test_std)
+pred_rbf_test <span style="color:#f92672">=</span> model_rbf<span style="color:#f92672">.</span>predict(x_test_std)
+accuracy_linear_test <span style="color:#f92672">=</span> accuracy_score(y_test, pred_linear_test)
+accuracy_poly_test <span style="color:#f92672">=</span> accuracy_score(y_test, pred_poly_test)
+accuracy_rbf_test <span style="color:#f92672">=</span> accuracy_score(y_test, pred_rbf_test)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;-&#34;</span><span style="color:#f92672">*</span><span style="color:#ae81ff">40</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;test_result&#34;</span>)
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Linear: &#34;</span><span style="color:#f92672">+</span>str(accuracy_linear_test))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Poly :&#34;</span><span style="color:#f92672">+</span>str(accuracy_poly_test))
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;RBF :&#34;</span><span style="color:#f92672">+</span> str(accuracy_rbf_test))
+</code></pre></div><p>When applied to the mfcc function of librosa, the input phoneme is divided into multiple parts. This time, when comparing the MFCC using only the center of the phonemes that were divided and the MFCC using the average of the entire phoneme labels, it was better to use the average, so that result is included in this article. The results of the previous formant analysis are also included for comparison.
+The phoneme data of about 8200 vowels are used for class classification.</p>
+<pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.8109896432681243
+Poly: 0.7206559263521288
+RBF: 0.8550057537399309
+- ---------------------------------------
+test_result
+Linear: 0.7825503355704698
+Poly: 0.6932885906040268
+RBF: 0.8308724832214766
+</code></pre><pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.885286271290786
+Poly: 0.9113482454340243
+RBF: 0.9201723784116561
+- ---------------------------------------
+test_result
+Linear: 0.8833487226839027
+Poly: 0.8913511849799939
+RBF: 0.9039704524469068
+</code></pre><p>Compared to the formant analysis, <strong>about 7%</strong> the recognition accuracy was improved.
+Also, due to the increase in the amount of features, it was possible to recognize with Linear accuracy with good accuracy.
+Consonants will be classified in the same way.</p>
+<pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.2290266367936271
+Poly: 0.20114513318396812
+RBF: 0.31292008961911877
+- ---------------------------------------
+test_result
+Linear: 0.22357723577235772
+Poly: 0.1991869918699187
+RBF: 0.30720092915214864
+</code></pre><pre><code class="language-text:mfcc" data-lang="text:mfcc">train_result
+train_result
+Linear: 0.5635076681085333
+Poly: 0.647463625639009
+RBF: 0.679315768777035
+- ---------------------------------------
+test_result
+Linear: 0.5396638159834857
+Poly: 0.5364199351223827
+RBF: 0.6004128575641404
+</code></pre><p>The amount of data is about formant analysis (about 5000 consonant data) and mfcc result (about 8500 consonant data).
+The recognition accuracy is greatly improved compared to the formant analysis, but it is not enough as a recognizer.</p>
+<h2 id="implementation-of-a-program-for-continuous-speech-recognition">Implementation of a program for continuous speech recognition</h2>
+<p>In actual continuous speech recognition, analysis processing such as MFCC is performed for each speech frame, and recognition processing for the speech of that frame is performed. Therefore, it is not possible to actually use the MFCC features averaged for each phoneme section for classification.</p>
+<h3 id="regarding-dynamic-differences">Regarding dynamic differences</h3>
+<p>In general, in speech recognition, in addition to the features of MFCC, the logarithmic value of the sum of the outputs of the mel filter bank (hereinafter, logarithmic power spectrum), the logarithmic power spectrum and the first-order difference (dynamic difference), and the second-order difference are calculated. It seems that they often use the added 39 dimensions (<a href="https://www.kspub.co.jp/book/detail/1529274.html">MLP series speech recognition</a>).
+By using the dynamic difference for recognition, it becomes possible to capture the characteristics of dynamically changing phonemes such as consonants and half vowels.
+Consonants in the power spectrum also change more rapidly than vowels, so taking a dynamic difference improves recognition accuracy.</p>
+<p><strong>※ Note</strong>
+In the implementation so far, the accuracy was verified by using the average of the phoneme interval features, but it is necessary to follow the continuous feature change in the dynamic difference. In order to treat it as continuous data, the result of MFCC for each window width is used as a feature.
+In addition, the correction of the program will be entered accordingly.As for the results, see the following results as a different thing from the above results.</p>
+<h3 id="derivation-of-primary-and-secondary-differences">Derivation of primary and secondary differences</h3>
+<p>Now, I would like to implement the program immediately.
+First, the MFCC, the logarithmic power spectrum, and the functions for deriving the dynamic difference between them, which are required to be obtained this time, are collectively prepared below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:function.py" data-lang="python:function.py"><span style="color:#75715e">#High frequency emphasis</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">preEmphasis</span>(wave, p<span style="color:#f92672">=</span><span style="color:#ae81ff">0.97</span>):
+    Create FIR filter <span style="color:#66d9ef">with</span> <span style="color:#75715e"># coefficient (1.0, -p)</span>
+    <span style="color:#66d9ef">return</span> scipy<span style="color:#f92672">.</span>signal<span style="color:#f92672">.</span>lfilter([<span style="color:#ae81ff">1.0</span>, <span style="color:#f92672">-</span>p], <span style="color:#ae81ff">1</span>, wave)
+
+<span style="color:#75715e">#mfcc calculation</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">mfcc</span>(wave):
+    mfccs <span style="color:#f92672">=</span> librosa<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>mfcc(wave, sr <span style="color:#f92672">=</span> fs, n_fft <span style="color:#f92672">=</span> <span style="color:#ae81ff">512</span>)
+    mfccs <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>average(mfccs, axis <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>)
+    <span style="color:#75715e"># Make one-dimensional array</span>
+    mfccs <span style="color:#f92672">=</span> mfccs<span style="color:#f92672">.</span>flatten()
+    mfccs <span style="color:#f92672">=</span> mfccs<span style="color:#f92672">.</span>tolist()
+    Remove the features of <span style="color:#75715e">#mfcc from the 1st dimension and 14th dimension onwards</span>
+    mfccs<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+    mfccs <span style="color:#f92672">=</span> mfccs[:<span style="color:#ae81ff">12</span>]
+    <span style="color:#66d9ef">return</span> mfccs
+
+<span style="color:#75715e">#Calculation of logarithmic power spectrum</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">cal_logpower</span>(wave):
+    S <span style="color:#f92672">=</span> librosa<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>melspectrogram(wave, sr <span style="color:#f92672">=</span> fs,n_fft <span style="color:#f92672">=</span> <span style="color:#ae81ff">512</span>)
+    S <span style="color:#f92672">=</span> sum(S)
+    PS<span style="color:#f92672">=</span>librosa<span style="color:#f92672">.</span>power_to_db(S)
+    PS <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>average(PS)
+    <span style="color:#66d9ef">return</span> PS
+
+<span style="color:#75715e"># How many frames to see before and after (usually 2-5)</span>
+<span style="color:#75715e"># Weight part for frame</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_scale</span>(K):
+    scale <span style="color:#f92672">=</span> []
+    div <span style="color:#f92672">=</span> sum(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>(i<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>) <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,K<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>))
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#f92672">-</span>K,K<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+        scale<span style="color:#f92672">.</span>append(i<span style="color:#f92672">/</span>div)
+    <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>array(scale)
+
+<span style="color:#75715e">#Difference feature extraction</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">make_delta</span>(K, scale, feature):
+    <span style="color:#75715e">#Data reference from the position of itself up to K</span>
+    before <span style="color:#f92672">=</span> [feature[<span style="color:#ae81ff">0</span>]]<span style="color:#f92672">*</span>K
+    <span style="color:#75715e"># K data reference after its own position</span>
+    after <span style="color:#f92672">=</span> []
+    <span style="color:#75715e">#Difference feature amount storage list</span>
+    delta <span style="color:#f92672">=</span> []
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(K<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>):
+        after<span style="color:#f92672">.</span>append(feature[i])
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(len(feature)):
+        <span style="color:#66d9ef">if</span> j <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+            match <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(before <span style="color:#f92672">+</span> after)
+            dif_cal <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(scale, match)
+            delta<span style="color:#f92672">.</span>append(dif_cal)
+            after<span style="color:#f92672">.</span>append(feature[j<span style="color:#f92672">+</span>K<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>])
+            after<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+        <span style="color:#75715e"># There is a part to try as a difference from the back to K+1</span>
+        <span style="color:#66d9ef">elif</span> j <span style="color:#f92672">&lt;</span>(len(feature)<span style="color:#f92672">-</span>K<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+            match <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(before <span style="color:#f92672">+</span> after)
+            dif_cal <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(scale, match)
+            delta<span style="color:#f92672">.</span>append(dif_cal)
+            before<span style="color:#f92672">.</span>append(feature[j])
+            before<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+            after<span style="color:#f92672">.</span>append(feature[j<span style="color:#f92672">+</span>K<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>])
+            after<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+        <span style="color:#75715e">#Data amount-Because data cannot be added to after after K</span>
+        <span style="color:#66d9ef">else</span>:
+            match <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(before <span style="color:#f92672">+</span> after)
+            dif_cal <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dot(scale, match)
+            delta<span style="color:#f92672">.</span>append(dif_cal)
+            before<span style="color:#f92672">.</span>append(feature[j])
+            before<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+            after<span style="color:#f92672">.</span>append(feature[len(feature)<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>])
+            after<span style="color:#f92672">.</span>pop(<span style="color:#ae81ff">0</span>)
+    <span style="color:#66d9ef">return</span> delta
+
+</code></pre></div><p>Next, the program for extracting features up to mfcc and logarithmic power spectrum and their second-order differences is described below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:get_all_feature.py" data-lang="python:get_all_feature.py"><span style="color:#75715e"># Use all features of voice section as vector</span>
+phoneme <span style="color:#f92672">=</span> []
+feature_data <span style="color:#f92672">=</span> []
+delta_list <span style="color:#f92672">=</span> []
+delta_2_list <span style="color:#f92672">=</span> []
+nobashi_boin <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;a:&#34;</span>,<span style="color:#e6db74">&#34;i:&#34;</span>,<span style="color:#e6db74">&#34;u:&#34;</span>,<span style="color:#e6db74">&#34;e:&#34;</span>,<span style="color:#e6db74">&#34;o:&#34;</span>]
+remove_list <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;silB&#34;</span>,<span style="color:#e6db74">&#34;silE&#34;</span>,<span style="color:#e6db74">&#34;sp&#34;</span>]
+
+
+<span style="color:#75715e">#Read data, calculate mfcc for each phoneme (use data is 500 files)</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">500</span>,<span style="color:#ae81ff">1</span>):
+    data_list <span style="color:#f92672">=</span> []
+    open_file <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;wav/sound-&#34;</span><span style="color:#f92672">+</span>str(i)<span style="color:#f92672">.</span>zfill(<span style="color:#ae81ff">3</span>)<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;.lab&#34;</span>
+    filename <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;wav/sound-&#34;</span><span style="color:#f92672">+</span>str(i)<span style="color:#f92672">.</span>zfill(<span style="color:#ae81ff">3</span>) <span style="color:#75715e"># sampling frequency is 16kHz</span>
+    v, fs <span style="color:#f92672">=</span> cis<span style="color:#f92672">.</span>wavread(filename<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;.wav&#34;</span>)
+    <span style="color:#66d9ef">with</span> open(open_file,<span style="color:#e6db74">&#34;r&#34;</span>) <span style="color:#66d9ef">as</span> f:
+        data <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>readline()<span style="color:#f92672">.</span>split()
+        <span style="color:#66d9ef">while</span> data:
+            data_list<span style="color:#f92672">.</span>append(data)
+            data <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>readline()<span style="color:#f92672">.</span>split()
+        <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(len(data_list)):
+            label <span style="color:#f92672">=</span> data_list[j][<span style="color:#ae81ff">2</span>]
+            <span style="color:#66d9ef">if</span> label <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> remove_list:
+                start <span style="color:#f92672">=</span> int(fs <span style="color:#f92672">*</span> float(data_list[j][<span style="color:#ae81ff">0</span>]))
+                end <span style="color:#f92672">=</span> int(fs <span style="color:#f92672">*</span> float(data_list[j][<span style="color:#ae81ff">1</span>]))
+                <span style="color:#75715e">#For extended vowels</span>
+                <span style="color:#66d9ef">if</span> label <span style="color:#f92672">in</span> nobashi_boin:
+                    label <span style="color:#f92672">=</span> label[<span style="color:#ae81ff">0</span>]
+                voice_data <span style="color:#f92672">=</span> v[start:end]
+                <span style="color:#75715e"># Humming windows</span>
+                hammingWindow <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>hamming(len(voice_data))
+                voice_data <span style="color:#f92672">=</span> voice_data <span style="color:#f92672">*</span> hammingWindow
+                p <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.97</span>
+                voice_data <span style="color:#f92672">=</span> preEmphasis(voice_data, p)
+                mfccs <span style="color:#f92672">=</span> librosa<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>mfcc(voice_data, sr <span style="color:#f92672">=</span> fs, n_fft <span style="color:#f92672">=</span> <span style="color:#ae81ff">512</span>)
+                mfccs_T <span style="color:#f92672">=</span> mfccs<span style="color:#f92672">.</span>T
+                S <span style="color:#f92672">=</span> librosa<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>melspectrogram(voice_data, sr <span style="color:#f92672">=</span> fs,n_fft <span style="color:#f92672">=</span> <span style="color:#ae81ff">512</span>)
+                S <span style="color:#f92672">=</span> sum(S)
+                PS<span style="color:#f92672">=</span>librosa<span style="color:#f92672">.</span>power_to_db(S)
+                <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(PS)):
+                    feature <span style="color:#f92672">=</span> mfccs_T[i][<span style="color:#ae81ff">1</span>:<span style="color:#ae81ff">13</span>]<span style="color:#f92672">.</span>tolist()
+                    feature<span style="color:#f92672">.</span>append(PS[i])
+                    feature_data<span style="color:#f92672">.</span>append(feature)
+                    phoneme<span style="color:#f92672">.</span>append(label)
+        K <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+        scale <span style="color:#f92672">=</span> make_scale(K)
+        delta <span style="color:#f92672">=</span> make_delta(K,scale,feature_data[len(delta_list):len(feature_data)])
+        delta_list<span style="color:#f92672">.</span>extend(delta)
+        second_delta <span style="color:#f92672">=</span> make_delta(K,scale,delta)
+        delta_2_list<span style="color:#f92672">.</span>extend(second_delta)
+
+</code></pre></div><p>Now that we have a quadratic difference, we can use <code>phoneme</code>, <code>feature_data</code>, <code>delta_list</code>, <code>delta_2_list</code> to create a data frame. Please create. Also, I think that classification can be used by matching the shape with the SVM program.</p>
+<h3 id="phoneme-class-classification-including-secondary-difference-features">Phoneme class classification including secondary difference features</h3>
+<p>The result of classifying using SVM with the addition of the difference feature amount is as follows.
+For both results, the recognition accuracy is based on the features of MFCC for each window width.
+Vowel phoneme data (about 32500) is used for class classification.</p>
+<pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.8297360883797054
+Poly: 0.8647708674304418
+RBF: 0.8777618657937807
+- ---------------------------------------
+test_result
+Linear: 0.8230149597238204
+Poly: 0.8420406597621788
+RBF: 0.8566168009205984
+</code></pre><pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.8631853518821604
+Poly: 0.9549918166939444
+RBF: 0.9495703764320785
+- ---------------------------------------
+test_result
+Linear: 0.8588415803605677
+Poly: 0.9132336018411967
+RBF: 0.9177598772535481
+</code></pre><p>By using the dynamic difference, the recognition accuracy is improved by about 6%.Since continuous data is used for the analysis, it was confirmed that the change from the sound before and after was characteristic.</p>
+<p>Next, let&rsquo;s classify consonants as well.
+About 27,000 consonant data are used for class classification.</p>
+<pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.418983174835406
+Poly: 0.5338332114118508
+RBF: 0.5544989027066569
+- ---------------------------------------
+test_result
+Linear: 0.4189448660510195
+Poly: 0.4599067385937643
+RBF: 0.49419402029807075
+</code></pre><pre><code class="language-text:" data-lang="text:">train_result
+Linear: 0.5945501097293343
+Poly: 0.8152889539136796
+RBF: 0.8201658132162887
+- ---------------------------------------
+test_result
+Linear: 0.5684374142817957
+Poly: 0.6783395812379994
+RBF: 0.7101581786595959
+</code></pre><p>Regarding consonants, the accuracy was greatly improved (<strong>about 22%</strong>) compared with the one using the features of MFCC (12 dimensions).
+It was confirmed that the dynamic difference is more effective as a feature because the consonant has a larger change in the waveform than the vowel.
+On the other hand, the lack of data is considered to be a problem because the difference in accuracy between test and train increases as the amount of features increases.</p>
+<h2 id="consideration">Consideration</h2>
+<h4 id="regarding-vowels">Regarding vowels</h4>
+<p>For vowels, it was confirmed that the accuracy is improved by using the features of the spectral envelope by using MFCC, as compared with the formant analysis.
+At the beginning of the sentence, it was stated that the formant analysis is sufficient when there are only vowels, but it is limited to the pronunciation data of a single vowel. However, this time, for the vowel data, we used segmented utterance data of sentences using julius. In the case of such vowel data, there is a possibility that the waveform will be affected by the preceding and following sounds and that the waveform will have a different part from that of a single vowel. Therefore, there is a change in the waveform that cannot be captured by the formant analysis, and it is considered that the accuracy is improved by using the MFCC. Furthermore, it is presumed that the accuracy was further improved by including the dynamic difference because it is affected by the change from the sound before and after.</p>
+<h4 id="consonants">Consonants</h4>
+<p>With regard to consonants, three things can be said from this result.</p>
+<ol>
+<li>Since consonants are pronounced using more organs than vowels, the formant analysis only looks at the frequencies emphasized by the envelope of the spectrum, which suggests that the recognition accuracy was poor. It is considered that MFCC has improved accuracy because it can express the spectrum envelope in more detail.</li>
+<li>Some phoneme waveforms of consonants change rapidly, such as a plosive sound. It is presumed that the accuracy was further improved by using the dynamic difference and power spectrum for such phonemes as compared with MFCC.</li>
+<li>Regarding lack of data. Since the total number of data (at the time of dynamic difference) is 27,000 this time, the number of consonants is 26 (julius classification). There is only data. On the other hand, since there are 39 features, the number of data is insufficient. In addition, the data of the text utterances dealt with this time are not adjusted so that the phonemes have the same balance. Therefore, if there are a small amount, the amount of data is about 150, and if there is a large amount, the amount of data is about 4000. By adjusting the variation of the data volume and increasing the overall data volume, the accuracy may be better than this result.</li>
+</ol>
+<h2 id="summary">Summary</h2>
+<p>This article describes the theory and actual classification verification of the most commonly used MFCC in acoustic models.
+A library (librosa) is prepared for MFCC and can be easily implemented, so I explained in detail the example of its theory and usage results.
+We hope this article will help you understand the mechanism of voice recognition and its clues for its implementation.</p>
+<p>In the future, I would like to touch on acoustic models and language models for continuous phonemes.</p>
+<p>##reference</p>
+<ul>
+<li><a href="http://speechresearch.fiw-web.net/66.html">Miyazaki&rsquo;s Pukiwiki</a></li>
+<li><a href="http://aidiary.hatenablog.com/entry/20110514/1305377659">Creation of artificial intelligence</a></li>
+<li>Speech recognition (MLP series)</li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

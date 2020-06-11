@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Suppressing method overrides in Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Suppressing method overrides in Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 6, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/python3">Python3</a></code></small>
+
+</p>
+<pre><code>I posted it at 3 at the beginning, but I moved it because yesterday's part of 1 was unposted and empty.
+</code></pre>
+<p>Prohibiting method overriding during inheritance can be achieved with the <code>final</code> keyword in Java and C++, for example, but this is not a standard feature of Python.
+So, I investigated and thought about how to do it in Python3.</p>
+<h2 id="environment">Environment</h2>
+<ul>
+<li>Ubuntu 18.04</li>
+<li>Python 3.6</li>
+<li>mypy: 0.750</li>
+</ul>
+<h2 id="implementation">Implementation</h2>
+<p>All of this implementation is located at <a href="https://github.com/eduidl/python-sandbox/tree/master/prohibit_override">https://github.com/eduidl/python-sandbox/tree/master/prohibit_override</a>.</p>
+<h2 id="mypy">mypy</h2>
+<ul>
+<li><a href="https://github.com/python/mypy">https://github.com/python/mypy</a></li>
+</ul>
+<p>Type hints were introduced in Python 3.5. It is a tool for static type checking using the type hints.
+With such mypy, you can use the decorator <code>@final</code> to assert that it is a method that should not be overridden.</p>
+<p>The usage is as follows. It uses <code>@final</code> to assert that it is a final method called <code>hello</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py:mypy.py" data-lang="py:mypy.py"><span style="color:#f92672">from</span> typing_extensions <span style="color:#f92672">import</span> final
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Base</span>:
+    <span style="color:#a6e22e">@final</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;hello&#34;</span>)
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Derived</span>(Base):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hello</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">print</span> ( <span style="color:#e6db74">&#34;Hello&#34;</span>)
+
+Base()<span style="color:#f92672">.</span>hello()
+Derived()<span style="color:#f92672">.</span>hello()
+</code></pre></div><p>Using mypy on this file will give me a warning.</p>
+<pre><code class="language-console" data-lang="console">$ mypy mypy.py
+mypy.py:13: error: Cannot override final attribute &quot;hello&quot; (previously declared in base class &quot;Base&quot;)
+Found 1 error in 1 file (checked 1 source file)
+</code></pre><p>However, as with Type Hints, there is no effect on execution, so be careful.</p>
+<pre><code class="language-console" data-lang="console">$python3 mypy.py
+hello
+Hello
+</code></pre><h3 id="pros">Pros</h3>
+<ul>
+<li>Easy to install for those who are already using mypy</li>
+<li>It seems that it can be used as a constant</li>
+</ul>
+<h3 id="cons">Cons</h3>
+<ul>
+<li>No error at run time, no warning</li>
+<li>The installation itself can be put in pip, but the cost is high for those who do not write type hints</li>
+</ul>
+<h3 id="reference">Reference</h3>
+<ul>
+<li><a href="https://mypy.readthedocs.io/en/latest/final_attrs.html">https://mypy.readthedocs.io/en/latest/final_attrs.html</a></li>
+</ul>
+<h3 id="added">Added</h3>
+<p>In Python 3.8 and later, it seems to be implemented in the <code>typing</code> module of the standard library. However, I still need some type checker including mypy.</p>
+<p><a href="https://docs.python.org/ja/3.8/library/typing.html#typing.final">https://docs.python.org/ja/3.8/library/typing.html#typing.final</a></p>
+<ul>
+<li>Add note</li>
+</ul>
+<h2 id="using-__init_subclass__">Using <code>__init_subclass__</code></h2>
+<p>Static analysis with mypy is also good, but I&rsquo;m more happy to check it at runtime and raise an exception.
+Is the image like <code>abc</code> (<a href="https://docs.python.org/ja/3/library/abc.html">https://docs.python.org/ja/3/library/abc.html</a>) which is the abstract base class module of the standard library?</p>
+<p>So, this is what I tried to implement with reference to <a href="https://github.com/python/cpython/blob/3.8/Lib/abc.py">https://github.com/python/cpython/blob/3.8/Lib/abc.py</a> (even if you say reference, there are only about <code>__isfinalmethod__</code> left. I feel like that).
+It&rsquo;s a simple implementation that just matches all methods against the base class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#f92672">import</span> inspect
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> Any, Callable, List, Tuple
+
+AnyCallable <span style="color:#f92672">=</span> Callable[<span style="color:#f92672">...</span>, Any]
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final</span>(funcobj: AnyCallable) <span style="color:#f92672">-&gt;</span> AnyCallable:
+    setattr(funcobj,<span style="color:#e6db74">&#39;__isfinalmethod__&#39;</span>, True)
+    <span style="color:#66d9ef">return</span> funcobj
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_func_type</span>(cls: type, func_name: str) <span style="color:#f92672">-&gt;</span> str:
+    func <span style="color:#f92672">=</span> getattr(cls, func_name)
+
+    <span style="color:#66d9ef">if</span> isinstance(func, classmethod):
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;class method&#39;</span>
+    <span style="color:#66d9ef">elif</span> isinstance(func, staticmethod):
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;static method&#39;</span>
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;member function&#39;</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Final</span>:
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__init_subclass__</span>(cls, <span style="color:#f92672">**</span>kwargs) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">for</span> func_name, func <span style="color:#f92672">in</span> cls<span style="color:#f92672">.</span>get_methods():
+            <span style="color:#66d9ef">for</span> ancestor <span style="color:#f92672">in</span> cls<span style="color:#f92672">.</span>__bases__:
+                <span style="color:#66d9ef">if</span> ancestor <span style="color:#f92672">==</span> object <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> hasattr(cls, func_name):
+                    <span style="color:#66d9ef">continue</span>
+                ancestor_func <span style="color:#f92672">=</span> getattr(ancestor, func_name, None)
+                <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> ancestor_func <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> getattr(ancestor_func,<span style="color:#e6db74">&#39;__isfinalmethod__&#39;</span>, False) <span style="color:#f92672">or</span> \
+                        type(func) <span style="color:#f92672">==</span> type(ancestor_func) <span style="color:#f92672">and</span> \
+                        getattr(func,<span style="color:#e6db74">&#39;__func__&#39;</span>, func) <span style="color:#f92672">==</span> getattr(ancestor_func,<span style="color:#e6db74">&#39;__func__&#39;</span>, ancestor_func):
+                    <span style="color:#66d9ef">continue</span>
+
+                func_type <span style="color:#f92672">=</span> get_func_type(ancestor, func_name)
+                <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">TypeError</span>(f<span style="color:#e6db74">&#39;Fail to declare class {cls.__name__}, for override final {func_type}: {func_name}&#39;</span>)
+
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_methods</span>(cls) <span style="color:#f92672">-&gt;</span> List[Tuple[str, AnyCallable]]:
+        <span style="color:#66d9ef">return</span> inspect<span style="color:#f92672">.</span>getmembers(cls, <span style="color:#66d9ef">lambda</span> x: inspect<span style="color:#f92672">.</span>isfunction(x) <span style="color:#f92672">or</span> inspect<span style="color:#f92672">.</span>ismethod(x))
+</code></pre></div><h3 id="implementation-details">Implementation details</h3>
+<p>I usually skip it, but I will briefly explain it because it is an advent calendar.</p>
+<h4 id="final"><code>final</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final</span>(funcobj: AnyCallable) <span style="color:#f92672">-&gt;</span> AnyCallable:
+    setattr(funcobj,<span style="color:#e6db74">&#39;__isfinalmethod__&#39;</span>, True)
+    <span style="color:#66d9ef">return</span> funcobj
+</code></pre></div><p>Implementation of <code>abc.abstractmethod</code> (<a href="https://github.com/python/cpython/blob/3.8/Lib/abc.py#L7-L25)">https://github.com/python/cpython/blob/3.8/Lib/abc.py#L7-L25)</a>. PyCharm is giving a warning. I used <code>setattr</code>.</p>
+<h4 id="get_func_type"><code>get_func_type</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_func_type</span>(cls: type, func_name: str) <span style="color:#f92672">-&gt;</span> str:
+    func <span style="color:#f92672">=</span> getattr(cls, func_name)
+
+    <span style="color:#66d9ef">if</span> isinstance(func, classmethod):
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;class method&#39;</span>
+    <span style="color:#66d9ef">elif</span> isinstance(func, staticmethod):
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;static method&#39;</span>
+    <span style="color:#66d9ef">else</span>:
+        <span style="color:#66d9ef">return</span><span style="color:#e6db74">&#39;member function&#39;</span>
+</code></pre></div><p>It just looks for a <code>staticmethod</code>, a <code>classmethod</code> or a member function to use for the error message.</p>
+<h4 id="final-1"><code>Final</code></h4>
+<p>I wrote using metaclasses at first, but remember <a href="https://xaro.hatenablog.jp/entry/2017/01/09/225403">[Effective Python] item 33 in Python 3.6 changes like this</a>,Rewrittenusing<code>__init_subclass__</code>(certainlyeasytouse).</p>
+<h4 id="finalget_methods"><code>Final.get_methods</code></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#a6e22e">@classmethod</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">get_methods</span>(cls) <span style="color:#f92672">-&gt;</span> List[Tuple[str, AnyCallable]]:
+    <span style="color:#66d9ef">return</span> inspect<span style="color:#f92672">.</span>getmembers(cls, <span style="color:#66d9ef">lambda</span> x: inspect<span style="color:#f92672">.</span>isfunction(x) <span style="color:#f92672">or</span> inspect<span style="color:#f92672">.</span>ismethod(x))
+</code></pre></div><p><code>inspect.getmembers</code> (<a href="https://docs.python.org/ja/3/library/inspect.html#inspect.getmembers">https://docs.python.org/ja/3/library/inspect.html#inspect.getmembers</a>) takes a predicate as the second argument and returns what is true ．
+This time, I want all member functions, static methods, and class methods, so I will collect the ones for which <code>inspect.isfunction</code> or <code>inspect.ismethod</code> is true.</p>
+<h4 id="final__init_subclass__"><code>Final.__init_subclass__</code></h4>
+<p>First of all, regarding <code>__init_subclass__</code>, it is a function introduced in Python 3.6, and the details are described in the official document (<a href="https://docs.python.org/ja/3/reference/datamodel.html#object.__init_subclass__">https://docs.python.org/ja/3/reference/datamodel.html#object.__init_subclass__</a> ). I will quote.</p>
+<blockquote>
+<p>This method will be called whenever the class in which it is defined is inherited. cls is a new subclass.</p>
+</blockquote>
+<p>That&rsquo;s all, but the point is that what I used to write using metaclasses is easier to write.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#75715e"># Up to Python 3.5</span>
+<span style="color:#75715e"># Actually only use Examle, never directly use ExamleMeta</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ExampaleMeta</span>(type):
+    <span style="color:#66d9ef">def</span> __new__(mcs, name, bases, attrs):cls <span style="color:#f92672">=</span> super()<span style="color:#f92672">.</span>__new__(mcs, name, bases, attrs)
+        some_func(cls)
+        <span style="color:#66d9ef">return</span> cls
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Exampale</span>(metaclass<span style="color:#f92672">=</span>ExampaleMeta):
+    <span style="color:#66d9ef">def</span> __init__(self, args):
+        <span style="color:#75715e"># various</span>
+
+<span style="color:#75715e"># From Python 3.6</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Exampale</span>:
+    <span style="color:#66d9ef">def</span> __init__(self, args):
+        <span style="color:#75715e"># various</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__init_subclass__</span>(cls, <span style="color:#f92672">**</span>kwargs):
+        some_func(cls)
+</code></pre></div><p>So, if you can use Python 3.6, you should use <code>__init_subclass__</code> as much as possible. So, about this implementation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__init_subclass__</span>(cls, <span style="color:#f92672">**</span>kwargs) <span style="color:#f92672">-&gt;</span> None:
+    <span style="color:#66d9ef">for</span> func_name, func <span style="color:#f92672">in</span> cls<span style="color:#f92672">.</span>get_methods():
+        <span style="color:#66d9ef">for</span> ancestor <span style="color:#f92672">in</span> cls<span style="color:#f92672">.</span>__bases__:
+            <span style="color:#66d9ef">if</span> ancestor <span style="color:#f92672">==</span> object <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> hasattr(cls, func_name):
+                <span style="color:#66d9ef">continue</span>
+            ancestor_func <span style="color:#f92672">=</span> getattr(ancestor, func_name, None)
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> ancestor_func <span style="color:#f92672">or</span> <span style="color:#f92672">not</span> getattr(ancestor_func,<span style="color:#e6db74">&#39;__isfinalmethod__&#39;</span>, False) <span style="color:#f92672">or</span> \
+                    type(func) <span style="color:#f92672">==</span> type(ancestor_func) <span style="color:#f92672">and</span> \
+                    getattr(func,<span style="color:#e6db74">&#39;__func__&#39;</span>, func) <span style="color:#f92672">==</span> getattr(ancestor_func,<span style="color:#e6db74">&#39;__func__&#39;</span>, ancestor_func):
+                <span style="color:#66d9ef">continue</span>
+
+            func_type <span style="color:#f92672">=</span> get_func_type(ancestor, func_name)
+            <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">TypeError</span>(f<span style="color:#e6db74">&#39;Fail to declare class {cls.__name__}, for override final {func_type}: {func_name}&#39;</span>)
+</code></pre></div><p>For all methods with <code>Final.get_methods</code> and inherited classes with <code>__bases__</code>, for each class</p>
+<ul>
+<li>Do you have a method with the same name</li>
+<li>If you have a <code>__isfinalmethod__</code> attribute and it&rsquo;s not <code>True</code></li>
+<li>If <code>__isfinalmethod__</code> is <code>True</code>, isn&rsquo;t it overridden?</li>
+</ul>
+<p>Check and raise a <code>raise TypeError</code> if it is applicable. By the way, <code>abc</code> also throws <code>TypeError</code>.</p>
+<h3 id="example-of-use">Example of use</h3>
+<p>Prepare the following class.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>(metaclass<span style="color:#f92672">=</span>FinalMeta):
+
+    <span style="color:#a6e22e">@final</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>(self):
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#a6e22e">@final</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_class</span>(cls):
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#a6e22e">@staticmethod</span>
+    <span style="color:#a6e22e">@final</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_static</span>():
+        <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">overridable</span>(self):
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;from A&#34;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">B</span>(A):
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><h4 id="member-function-overrides">Member function overrides</h4>
+<p>I&rsquo;ve tried a few cases and it seems to work.</p>
+<ul>
+<li>Inherits A directly</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">C</span>(A):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class C, for override final member function: final_member</span>
+</code></pre></div><ul>
+<li>Inherit class (B) that inherits A</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">D</span>(B):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class D, for override final member function: final_member</span>
+</code></pre></div><ul>
+<li>Multiple inheritance</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">E</span>(A, int):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class E, for override final member function: final_member</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">F</span>(int, B):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class F, for override final member function: final_member</span>
+</code></pre></div><ul>
+<li>Override with class method</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">G</span>(A):
+
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>(cls) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class G, for override final member function: final_member</span>
+</code></pre></div><ul>
+<li>Override with static method</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">H</span>(A):
+
+    <span style="color:#a6e22e">@staticmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_member</span>() <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class H, for override final member function: final_member</span>
+</code></pre></div><h4 id="class-method-override">class method override</h4>
+<p>Only in one case.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">J</span>(A):
+
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_class</span>(cls) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class J, for override final class method: final_class</span>
+</code></pre></div><h4 id="override-static-method">Override static method</h4>
+<p>This is also only one case.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">K</span>(A):
+
+    <span style="color:#a6e22e">@staticmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">final_static</span>() <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">pass</span>
+<span style="color:#75715e">#=&gt; Fail to declare class K, for override final static method: final_static</span>
+</code></pre></div><h4 id="normal">Normal</h4>
+<p>Finally, let&rsquo;s look at a case where no exception occurs. Sounds okay.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">L</span>(A):
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">overridable</span>(self) <span style="color:#f92672">-&gt;</span> None:
+        <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;from L&#34;</span>)
+
+
+L()<span style="color:#f92672">.</span>overridable()
+<span style="color:#75715e">#=&gt; from l</span>
+</code></pre></div><h3 id="pros-1">Pros</h3>
+<ul>
+<li>Can detect an override and raise an exception at runtime</li>
+</ul>
+<h3 id="cons-1">Cons</h3>
+<ul>
+<li>There is probably runtime overhead (although not measured)
+-Since the implementation is quite naive, it will be a little faster if you manage it with set or so (actually <code>abc</code> seems to make cache using weak references or <a href="https://github.com/python/cpython/blob/">https://github.com/python/cpython/blob/</a> 3.7/Lib/_py_abc.py)</li>
+<li>It seems impossible to make constants this way.</li>
+</ul>
+<h3 id="supplement">Supplement</h3>
+<p>In the case of <code>abc</code>, an exception will be raised at the time of instantiation, but I think this is because if you raise the exception at the time of class definition, you cannot define the abstract class.
+This is not related to <code>final</code> this time, so I tried to raise an exception when defining a class.</p>
+<h2 id="summary">Summary</h2>
+<p>I introduced two methods to suppress the override.
+I say suppression because there is a loophole after all if you use <code>setattr</code>. After all, is that something like Python?</p>
+<h2 id="related-links">Related Links</h2>
+<ul>
+<li>There seem to be some people who think about things similar to me, and there were some precedents. (I didn&rsquo;t like any of the implementations because I didn&rsquo;t like them or didn&rsquo;t understand them at all.)
+-https://stackoverflow.com/questions/3948873/prevent-function-overriding-in-python
+-https://stackoverflow.com/questions/321024/making-functions-non-override-able
+-https://stackoverflow.com/questions/2425656/how-to-prevent-a-function-from-being-overridden-in-python</li>
+</ul>
+<p>I like this one from the third link.</p>
+<blockquote>
+<p># We&rsquo;ll fire you if you override this method.</p>
+</blockquote>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

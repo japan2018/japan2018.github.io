@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Visualize 2019 nem with WordCloud | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Visualize 2019 nem with WordCloud</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 22, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/mecab-not"> mecab NOT</a></code></small>
+
+</p>
+<pre><code>This article is from [nem#2 Advent Calendar 2019](https://qiita.com/advent-calendar/2019/nem-2).
+</code></pre>
+<h1 id="content-of-this-article">Content of this article</h1>
+<p>① Extract only the characters from the nem related documents,
+② Disassemble into parts of speech with Mecab and visualize with WordCloud.
+③ Furthermore, it is not fun with just WordCloud, so add one time.</p>
+<p>#Environment</p>
+<p>Mac 10.15.1
+Python 3.7.4</p>
+<h1 id="1-extract-only-letters-from-nem-related-documents">1. Extract only letters from nem-related documents</h1>
+<p>By the way, what is the nem-related document that looks like a summary of 2019&hellip;
+I agree. It&rsquo;s an advent calendar.</p>
+<p>~~ This time, I extracted the strings from all the articles of this year&rsquo;s nem advent calendar ~~
+If you do that, it seems to be meaningless unless you keep it on the last day, so for the time being the first article
+The text is from @44uk_i3&rsquo;s <a href="https://qiita.com/44uk_i3/items/53ad306d2c82df41803f">Summary of specifications that change between NEM1 and NEM2</a> article.
+(Properly got permission)</p>
+<h2 id="for-the-time-being-the-style-of-pasting-the-source-code">For the time being, the style of pasting the source code</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:scrapy.py" data-lang="python:scrapy.py"><span style="color:#f92672">import</span> urllib.request
+<span style="color:#f92672">from</span> bs4 <span style="color:#f92672">import</span> BeautifulSoup
+
+text <span style="color:#f92672">=</span> []
+
+<span style="color:#75715e"># Target site URL</span>
+url <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;https://qiita.com/44uk_i3/items/53ad306d2c82df41803f&#39;</span>
+html <span style="color:#f92672">=</span> urllib<span style="color:#f92672">.</span>request<span style="color:#f92672">.</span>urlopen(url)
+soup <span style="color:#f92672">=</span> BeautifulSoup(html,<span style="color:#e6db74">&#39;html.parser&#39;</span>)
+
+<span style="color:#75715e"># Qiita&#39;s article is the text in &lt;div class=&#34;p-items_article&#34;&gt;</span>
+article <span style="color:#f92672">=</span> soup<span style="color:#f92672">.</span>findAll(<span style="color:#e6db74">&#39;div&#39;</span> ,class_<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;p-items_article&#39;</span>)
+
+<span style="color:#75715e"># Extract only text from body</span>
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> article:
+    text<span style="color:#f92672">.</span>append(i<span style="color:#f92672">.</span>text)
+
+<span style="color:#75715e"># Save the extracted text in nem.txt</span>
+file <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#39;nem.txt&#39;</span>,<span style="color:#e6db74">&#39;w&#39;</span>,encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;utf-8&#39;</span>)
+file<span style="color:#f92672">.</span>writelines(text)
+file<span style="color:#f92672">.</span>close()
+</code></pre></div><p>I wonder if there is anything worth mentioning. Please comment if something happens.</p>
+<h1 id="2-disassemble-into-parts-of-speech-with-mecab-and-visualize-with-wordcloud">2. Disassemble into parts of speech with Mecab and visualize with WordCloud</h1>
+<p>Yes, I will disassemble. As I write this way, I remember the day when I was moved by using Mecab for the first time.</p>
+<p>This is Mecab.</p>
+<pre><code>$ mecab
+Out of Momomo Momomo
+Sumomo noun, general, *,*,*,*,sumo, plum, plum
+Mo particle, particle, *,*,*,*,mo, mo, mo
+Peach noun, general, *,*,*,*, peach, peach, peach
+Mo particle, particle, *,*,*,*,mo, mo, mo
+Peach noun, general, *,*,*,*, peach, peach, peach
+Particle, unification, *,*,*,*, of, no, no
+Of which, noun, independence, adverbial, *, *, *, of, Uchi, Uchi
+EOS
+</code></pre><h2 id="speak-in-source-code">Speak in source code</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:nem_wordcloud.py" data-lang="python:nem_wordcloud.py"><span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">from</span> wordcloud <span style="color:#f92672">import</span> WordCloud
+
+<span style="color:#75715e">#Open the saved text</span>
+data <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#34;./nem.txt&#34;</span>,<span style="color:#e6db74">&#34;rb&#34;</span>)<span style="color:#f92672">.</span>read()
+text <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+
+mecab <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;-Ochasen&#39;</span>)
+mecab<span style="color:#f92672">.</span>parse(<span style="color:#e6db74">&#39;&#39;</span>)
+
+<span style="color:#75715e"># Morphological analysis</span>
+node <span style="color:#f92672">=</span> mecab<span style="color:#f92672">.</span>parseToNode(text)
+
+<span style="color:#75715e">#Word list used for WordCloud</span>
+output <span style="color:#f92672">=</span> []
+
+<span style="color:#75715e"># Use words to separate words</span>
+<span style="color:#66d9ef">while</span> node:
+  word <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>surface
+  hinnsi <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;,&#34;</span>)[<span style="color:#ae81ff">0</span>]
+  <span style="color:#75715e"># Specify the part of speech to add to the array</span>
+  <span style="color:#66d9ef">if</span> hinnsi <span style="color:#f92672">in</span> [<span style="color:#e6db74">&#34;verb&#34;</span>, <span style="color:#e6db74">&#34;adverb&#34;</span>, <span style="color:#e6db74">&#34;adjective&#34;</span>, <span style="color:#e6db74">&#34;noun&#34;</span>]:
+    output<span style="color:#f92672">.</span>append(word)
+  node <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>next
+
+text <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join(output)
+
+<span style="color:#75715e"># Japanese font path (mac)</span>
+fpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/System/Library/Fonts/ Hiragino Mincho ProN.ttc&#34;</span>
+
+<span style="color:#75715e"># WordCloud generation. Specify background color</span>
+wc <span style="color:#f92672">=</span> WordCloud(
+    background_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;white&#34;</span>,
+    font_path<span style="color:#f92672">=</span>fpath,
+    width<span style="color:#f92672">=</span><span style="color:#ae81ff">800</span>,
+    height<span style="color:#f92672">=</span><span style="color:#ae81ff">600</span>)<span style="color:#f92672">.</span>generate(text)
+
+Save <span style="color:#66d9ef">as</span> <span style="color:#75715e">#png</span>
+wc<span style="color:#f92672">.</span>to_file(<span style="color:#e6db74">&#34;./wc.png&#34;</span>)
+</code></pre></div><p>Yes, change the font to whatever you like.
+The default fonts on Mac are in <code>/System/Library/Fonts/</code>. Googling Windows.</p>
+<h2 id="the-finished-product">The finished product</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/463141/9f6a7b16-e0ce-2bff-cfc3-a28871b474e9.png" alt="nem.png"></p>
+<p>I made something like that.</p>
+<h1 id="3-add-another-step">3. Add another step</h1>
+<p>As for the contents so far, there are many articles on Qiita, so I will add another work.</p>
+<h2 id="spoil-the-source-code-first">Spoil the source code first</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:nem_wordcloud_2.py" data-lang="python:nem_wordcloud_2.py"><span style="color:#f92672">import</span> MeCab
+<span style="color:#f92672">from</span> wordcloud <span style="color:#f92672">import</span> WordCloud
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">from</span> wordcloud <span style="color:#f92672">import</span> WordCloud ,ImageColorGenerator
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+
+<span style="color:#75715e">#Open the saved text</span>
+data <span style="color:#f92672">=</span> open(<span style="color:#e6db74">&#34;./nem.txt&#34;</span>,<span style="color:#e6db74">&#34;rb&#34;</span>)<span style="color:#f92672">.</span>read()
+text <span style="color:#f92672">=</span> data<span style="color:#f92672">.</span>decode(<span style="color:#e6db74">&#39;utf-8&#39;</span>)
+
+mecab <span style="color:#f92672">=</span> MeCab<span style="color:#f92672">.</span>Tagger(<span style="color:#e6db74">&#39;-Ochasen&#39;</span>)
+mecab<span style="color:#f92672">.</span>parse(<span style="color:#e6db74">&#39;&#39;</span>)
+
+<span style="color:#75715e"># Morphological analysis</span>
+node <span style="color:#f92672">=</span> mecab<span style="color:#f92672">.</span>parseToNode(text)
+
+<span style="color:#75715e">#List of words used for WordCloud</span>
+output <span style="color:#f92672">=</span> []
+
+<span style="color:#75715e"># Use words to separate words</span>
+<span style="color:#66d9ef">while</span> node:
+  word <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>surface
+  hinnsi <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>feature<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;,&#34;</span>)[<span style="color:#ae81ff">0</span>]
+  <span style="color:#75715e"># Specify the part of speech to add to the array</span>
+  <span style="color:#66d9ef">if</span> hinnsi <span style="color:#f92672">in</span> [<span style="color:#e6db74">&#34;verb&#34;</span>, <span style="color:#e6db74">&#34;adverb&#34;</span>, <span style="color:#e6db74">&#34;adjective&#34;</span>, <span style="color:#e6db74">&#34;noun&#34;</span>]:
+    output<span style="color:#f92672">.</span>append(word)
+  node <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>next
+
+<span style="color:#75715e"># Japanese font path (mac)</span>
+fpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/System/Library/Fonts/ Hiragino Mincho ProN.ttc&#34;</span>
+
+text <span style="color:#f92672">=</span><span style="color:#e6db74">&#39;&#39;</span><span style="color:#f92672">.</span>join(output)
+
+imagepaht <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;./nem_icon_black.png&#34;</span>
+img_color <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(Image<span style="color:#f92672">.</span>open(imagepaht))
+
+wc <span style="color:#f92672">=</span> WordCloud(
+    width<span style="color:#f92672">=</span><span style="color:#ae81ff">800</span>,
+    height<span style="color:#f92672">=</span><span style="color:#ae81ff">800</span>,
+    font_path<span style="color:#f92672">=</span>fpath,
+    mask<span style="color:#f92672">=</span>img_color,
+    background_color<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;white&#34;</span>,
+    collocations<span style="color:#f92672">=</span>False,)<span style="color:#f92672">.</span>generate(text)
+
+wc<span style="color:#f92672">.</span>to_file(<span style="color:#e6db74">&#34;./wc_nem.png&#34;</span>)
+</code></pre></div><p>Yes, I prepared this image first.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/463141/2c76f1fe-7d5b-8542-d626-5c0cbf65b9f2.png" alt="nem_icon_black.png"></p>
+<p>As you all know, that icon is black.
+This image is <code>./nem_icon_black.png</code> specified in <code>imagepaht</code>.</p>
+<p>And here is the image that is created by executing this code.</p>
+<h2 id="the-finished-product-1">The finished product</h2>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/463141/6b5b6d33-68ec-6d41-c5b2-928c2e63580f.png" alt="wc_nem.png"></p>
+<p>It&rsquo;s better than I expected.</p>
+<p>#Summary</p>
+<p>If you increase the amount of data a little more, it seems that you can analyze what was important for nem in 2019</p>
+<h1 id="bonus">bonus</h1>
+<p>You can also create this version by changing the original image and changing the settings.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/463141/68ab80fe-e65f-6fe8-2d03-243fdd4b606e.png" alt="wc_symbol.png"></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

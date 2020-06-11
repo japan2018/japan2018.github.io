@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [Memorandum] Python calculation speedup (may be) module Numba related summary | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [Memorandum] Python calculation speedup (may be) module Numba related summary</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Sep 13, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/scipy">scipy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numpy">numpy</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/numba">Numba</a></code></small>
+
+</p>
+<pre><code>I want to run a #Python program at high speed!
+</code></pre>
+<p>** &ldquo;If you can calculate 10 times faster, you can make 10 times more failures&rdquo; **
+If you think so, everyone should think that it would be good to be able to calculate quickly.</p>
+<p>As for the title, Numba, it is a module that can accelerate the calculation on Python by using JIT (just-in-time) compiler.
+This article is a memorandum of past excellent articles about Numba.
+I will briefly describe Numba below.</p>
+<p>In Python, the for statement is the cause of delay and can be speeded up by comprehension notation.
+However, there may be situations where <strong>for statements are used (especially multiple times)</strong>.
+Numba is a <em>may</em> tool that can speed up a for statement with just two statements: <code>import numba</code> and <code>@numba.jit</code>.</p>
+<p>You can find the list of functions supported by Numba here.
+<a href="http://numba.pydata.org/numba-doc/0.14/numpy_support.html#supported-ufuncs">Numpy Support in numba</a></p>
+<p>In detail, arithmetic operations such as <code>add</code> <code>subtract</code> and simple functions such as <code>exp</code> <code>log10</code> <code>sqrt</code>,
+Trigonometric functions such as <code>sin</code> <code>cos</code> <code>tan</code> are supported.</p>
+<p>However, <code>fft</code> doesn&rsquo;t support many calculations at present (or, in principle, impossible?).
+(*It does not mean that you cannot calculate just because it is not faster)
+Intrinsic notation that can be calculated normally or empty list cannot be calculated by numba.
+It seems that the area will be used in places where it is possible to use numba by finely dividing the defined function.</p>
+<p>So,
+・Repeat simple calculations
+・Turn multiple for statements
+In such cases, it may be faster? That is Numba.</p>
+<p>It can be said that it is necessary to interact well with the for statement in order to utilize Numpy, which can be calculated at high speed.</p>
+<p>** Below is a summary of articles dealing with Numba content. **</p>
+<p>Write a program that is 1 million times faster
+<a href="http://qiita.com/Akai_Banana/items/48a35d2a40d1804d3b32">http://qiita.com/Akai_Banana/items/48a35d2a40d1804d3b32</a></p>
+<p>Python: Speeding up with Numba
+<a href="http://dr-kayai.hatenablog.com/entry/2014/10/09/175456">http://dr-kayai.hatenablog.com/entry/2014/10/09/175456</a></p>
+<p>I thought it would be slow to use a for statement in NumPy, but it didn&rsquo;t happen.
+<a href="http://qiita.com/termoshtt/items/d6cf43e777946b3c1d93">http://qiita.com/termoshtt/items/d6cf43e777946b3c1d93</a></p>
+<p>A note when accelerating Python code with Numba
+<a href="http://qiita.com/toyolab/items/b5d95bd38b3c7c66b510">http://qiita.com/toyolab/items/b5d95bd38b3c7c66b510</a></p>
+<p>How to dramatically speed up Python code with the JIT compiler library Numba
+<a href="http://myenigma.hatenablog.com/entry/2017/03/02/155433">http://myenigma.hatenablog.com/entry/2017/03/02/155433</a></p>
+<p>What I did when I wanted to make python faster -Numba edition-
+<a href="http://qiita.com/open_cans/items/b6cde6c28f8eacba0ca1">http://qiita.com/open_cans/items/b6cde6c28f8eacba0ca1</a></p>
+<p>How to make Python for beginners faster 〇 〇
+<a href="http://qiita.com/yukkyo1222/items/df4487bbc2767c630247">http://qiita.com/yukkyo1222/items/df4487bbc2767c630247</a></p>
+<p>I installed Numba with Python3.5 and tried using it
+<a href="http://qiita.com/fujibo/items/9a776e671170137d7ade">http://qiita.com/fujibo/items/9a776e671170137d7ade</a></p>
+<p>Speed up Python code (first Numba)
+<a href="http://fjkei.hatenadiary.jp/entry/2015/06/21/121251o">http://fjkei.hatenadiary.jp/entry/2015/06/21/121251o</a></p>
+<p>Accelerating reaction diffusion simulation with Python with JIT
+<a href="https://qiita.com/kaityo256/items/3c07252ab63591256835">https://qiita.com/kaityo256/items/3c07252ab63591256835</a></p>
+<hr>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

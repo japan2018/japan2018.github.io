@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Making an autonomous driving robot car with Raspberry Pi3 B&#43; and ultrasonic distance sensor HC-SR04 | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Making an autonomous driving robot car with Raspberry Pi3 B+ and ultrasonic distance sensor HC-SR04</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 15, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/raspberrypi"> RaspberryPi</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ultrasonic-sensor"> ultrasonic sensor</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/pwm"> PWM</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/rc"> RC</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>The elements that make up a self-driving car in the real world are vehicle position estimation, object recognition, action judgment, and vehicle body control. It is possible to implement all four of these elements on the basis of radio control, but it is not easy to easily estimate the vehicle&rsquo;s position, and this time the target is low-speed driving, so there is almost no need for body control. Therefore, this time, I would like to use an ultrasonic distance sensor to recognize an object in front of me and make a simple action decision to avoid it with a radio-controlled robot car that operates automatically.</p>
+<p>#Environment</p>
+<ul>
+<li>Raspbian GNU/Linux 9.4</li>
+<li>Python 3.5.3</li>
+<li>GNU Make 4.1</li>
+<li>gcc version 6.3.0</li>
+<li>lircd 0.9.4c</li>
+<li>ServoBlaster (2nd Oct 2019)</li>
+</ul>
+<h1 id="robot-car-overall-composition">Robot car overall composition</h1>
+<p>It sends a PWM signal from a Raspai to a commercially available radio control to control the accelerator and steering. It recognizes an object in front by using three ultrasonic distance sensors in front and makes a motion decision to turn the steering wheel to the left and right.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/106383/517c96da-7e3d-1f91-6249-c156c9ed224d.jpeg" width="340">&lt; img src=&quot;https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/106383/7de5123a-433b-f281-c5c6-28150cc0895d.jpeg&rdquo; width=&quot;400&quot;&gt;
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/106383/1373123c-8b35-9c5d-41f8-6d2e0a7f00c7.jpeg" width="740"></p>
+<h2 id="parts-used">Parts used</h2>
+<p><strong>- RC: Tamiya 1/10 XB Series No.199 NSX (TT-02 Chassis)</strong>
+The main body can be anything, but I would like to attach a body to keep various hardware clean, so I recommend a larger one. Also, as I will explain later, since I wanted to run at a low speed this time, it seems that speed control was easier if it was not a 7.2V type.</p>
+<p>**- Battery: Tamiya 7.2V Custom Pack **
+It was okay to align the voltage from the main body of 7.2V with a linear regulator and make it common with the power supply of Raspberry, but it was easier to use a mobile battery for the power supply of the Raspberry side, so this time the power source of the radio control main unit is independent from the Raspberry side. I was allowed to.</p>
+<p><strong>- Speed Controller: HiLetgo 5A Mini DC Motor PWM Speed Controller 3V-35V</strong>
+This time I was most troubled. The motor is controlled by 7.2V PWM, but with the method using the controller this time, it seems that the duty ratio alone cuts off at a certain ratio on the low speed side, so I used it because it is not possible to obtain a low speed. Also, since it is rectified in this circuit, reverse rotation does not occur. It seems that it is possible if you use two to support both positive and negative sides, but this time only positive rotation.</p>
+<p><strong>- Single board computer: Raspberry Pi3 B+</strong>
+There are no particular points to note. It can be used as it is. OS ver.</p>
+<p>**- Battery for Raspberry Pi: Poweradd Ombar ijuice 3350mAh Mobile Battery **
+Any kind of cheap thing is OK. The larger the capacity, the better, but we chose this size considering the layout.</p>
+<p><strong>- Switch for Raspberry Pi: Audiofan USB TypeA</strong>
+It is for the switch that activates Raspberry Pi. When this is turned on, it will enter the standby state.</p>
+<p><strong>- Infrared remote control module: IR HX1838</strong>
+It is used as a trigger to start driving from standby.</p>
+<p>**- Ultrasonic distance sensor: HC-SR04 + acrylic mount angle **
+It is a sensor for recognizing obstacles on the front left and right.</p>
+<p><strong>- Hard Fixture: MOLATE Straight Plate Flat Repair Plate 96*19mm Thickness 2.6mm</strong>
+When making this robot car, the most difficult thing is how to lay out the hardware. I installed this plate by scratching this plate between the screws originally attached to the main body and drilling screw holes.</p>
+<h2 id="hardware-implementation">Hardware implementation</h2>
+<p>**- Wiring **
+The whole structure is based on the same type of radio control <a href="https://qiita.com/yas-nyan/items/8e358d919c663848b4e6">this site</a>. The final overall wiring is shown in the last figure.</p>
+<p>**- Ultrasonic sensor **
+The basic usage of ultrasonic waves is <a href="http://make.bcde.jp/raspberry-pi/%e8%b6%85%e9%9f%b3%e6%b3%a2%e8%b7%9d%e9%9b%a2%e3%82%bb%e3%83%b3%e3%82%b5hc-sr04%e3%82%92%e4%bd%bf%e3%81%86/">this site</a>Iwasallowedtorefertoit.Both5Vand3.3Vareusedbecause3ultrasonicsensorsareused.Itisstatedthatitisnecessarytostepdownto3.3Vusingaresistorwhenusingthe5Voutput,butitisusedasitis(5Vcanbeusedasis.Ialsosawthearticle,butitwaspossibleforthetimebeing). Also, after thinking that I got the same three, I found out that only one was different.</p>
+<p>**- infrared remote control **
+I used the infrared remote control while referring to <a href="https://qiita.com/s_ponta/items/0ad51f3642de4bad1a62">this site</a> to trigger the movement of the robot car. I didn&rsquo;t have time to spend here, so I decided to start the operation by pressing any button on the remote control. See the source code below for details.
+The overall configuration of the hardware wiring is shown below. <br/>
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/106383/d8274b75-1b5e-248e-fa0c-f15f7bfd49f2.jpeg" width="900"></p>
+<h2 id="raspberry-pi-setup">Raspberry Pi setup</h2>
+<p>**- Network settings for Raspberry Pi and PC **
+The settings required for Raspberry Pi are that you need to connect to the Internet so that you can download the required software and set up the server for SSH connection. Of course, development is done in a environment where Wi-fi can be used by Raspai as a server and PC of client, but when debugging is needed in a place where there is no wide Wif-fi environment for operation test, An ad hoc connection is required to connect the PC directly to the wireless. For ad hoc connection, I referred to <a href="https://research.itplants.com/?p=2113">this site</a>.
+**- Settings at startup of Raspberry Pi **
+Turn on the radio control and Razpai, and when Razpai starts up as it is, it will be set up so that the program called /home/pi/nsx.py will work with python3, so the following description is added to /etc/rc.local. Please note that you need to execute sudo in your environment, so you need to pass the password (hogehoge here) and the full path.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">:/etc/rc.local
+
+echo <span style="color:#e6db74">&#34;hogehoge&#34;</span> | sudo -u pi /user/bin/python3 /home/pi/nsx.py
+</code></pre></div><h2 id="software-implementation">Software implementation</h2>
+<p>**- Servo control by ServoBraster **
+I used <a href="https://github.com/richardghirst/PiBits/tree/master/ServoBlaster">ServoBlaster</a> to send the command value to the speed controller and steering servo by PWM signal. Depending on the duty ratio of the PWM signal, a value of 100 to 200 is transmitted with 150 as the center of neutral to adjust the opening. Since this value differs depending on the servo, it is necessary to determine the value to be used for control while implementing it. For some reason, the last minute value around 150 did not receive detailed command, and it was a dead zone between 140 and 150 and between 160 and 150, so there is a limit to low speed running due to accelerator opening. Therefore, an additional speed controller HiLetgo is used to narrow down the current value.</p>
+<p>**- Distance measurement with an ultrasonic distance sensor **
+It seems that the distance accuracy is about a few centimeters at the maximum, but as a caveat, if the ultrasonic reflection cannot be measured correctly, the Abort timer has been introduced because the measurement will not be completed endlessly and it will not be possible to get out of the While Loop. When Abort is done, the value measured last time is used as it is. I tried various methods such as taking the average value of several steps, but the accuracy of the value was compromised because the simple method gives the most stable operation.</p>
+<p>**- Start switch with infrared remote control **
+I used lirc for infrared transmission and reception of Razpai. The installation procedure is as <a href="https://qiita.com/s_ponta/items/0ad51f3642de4bad1a62">reference here</a>,butthepointstonotearethefollowingconfigfiledescriptions.Specifygpover-irandgpio_pinfordtoverlayandspecifytheGPIOpin.Here,20GPIOpins(=boardpinNo.38) are used.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">:/boot/config.txt
+
+<span style="color:#75715e"># Uncomment this to enable the lirc-rpi module</span>
+<span style="color:#75715e">#dtoverlay=lirc-rpi</span>
+<span style="color:#75715e">#dtparam=gpio_in_pin=20</span>
+<span style="color:#75715e">#dtparam=gpio_in_pull=up</span>
+dtoverlay<span style="color:#f92672">=</span>gpio-ir,gpio_pin<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>
+dtoverlay<span style="color:#f92672">=</span>gpio-irtx,gpio_pin<span style="color:#f92672">=</span><span style="color:#ae81ff">20</span>
+</code></pre></div><p>Based on the above, the whole source code is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">:<span style="color:#f92672">~/</span>nsx<span style="color:#f92672">.</span>py
+
+<span style="color:#f92672">import</span> subprocess <span style="color:#f92672">as</span> sp <span style="color:#75715e"># For executing Servo Blaster with sudo</span>
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">from</span> time <span style="color:#f92672">import</span> sleep
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">import</span> RPi.GPIO <span style="color:#f92672">as</span> GPIO <span style="color:#75715e"># for Raspberry Pi GPIO</span>
+
+<span style="color:#75715e"># Value definition for execution</span>
+dirServo <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;PiBits/ServoBlaster/user&#34;</span>
+dirHome <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;/home/pi&#34;</span>
+passwd <span style="color:#f92672">=</span> (<span style="color:#e6db74">&#34;hogehoge&#34;</span>)<span style="color:#f92672">.</span>encode() <span style="color:#75715e"># sudo execution password</span>
+
+<span style="color:#75715e"># Ultrasonic distance sensor parameters</span>
+trigCenter <span style="color:#f92672">=</span> <span style="color:#ae81ff">19</span>
+echoCenter <span style="color:#f92672">=</span> <span style="color:#ae81ff">18</span>
+trigLeft <span style="color:#f92672">=</span> <span style="color:#ae81ff">15</span>
+echoLeft <span style="color:#f92672">=</span> <span style="color:#ae81ff">16</span>
+trigRight <span style="color:#f92672">=</span> <span style="color:#ae81ff">7</span>
+echoRight <span style="color:#f92672">=</span> <span style="color:#ae81ff">8</span>
+
+<span style="color:#75715e"># ServoBlaster execution (initialization)def resetSystem(dirServo, passwd, dirHome):</span>
+    os<span style="color:#f92672">.</span>chdir(dirHome)
+    os<span style="color:#f92672">.</span>chdir(dirServo)
+    sp<span style="color:#f92672">.</span>run((<span style="color:#e6db74">&#34;sudo&#34;</span>, <span style="color:#e6db74">&#34;./servod&#34;</span>), input<span style="color:#f92672">=</span>passwd)
+    os<span style="color:#f92672">.</span>chdir(dirHome)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Reset System&#34;</span>)
+
+<span style="color:#75715e"># Neutralize steering and accelerator (motor command value) at the same time</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setNeutral</span>():
+    stNeutral <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 1=150 &gt;/dev/servoblaster&#34;</span>
+    accNeutral <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 2=150 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(stNeutral)
+    os<span style="color:#f92672">.</span>system(accNeutral)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Set Neutral&#34;</span>)
+
+<span style="color:#75715e"># Making the steering unit neutral</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setStNeutral</span>():
+    stNeutral <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 1=150 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(stNeutral)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Set Steer Neutral&#34;</span>)
+
+<span style="color:#75715e"># Neutral accelerator</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setAccNeutral</span>():
+    accNeutral <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 2=150 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(accNeutral)
+    <span style="color:#75715e">#print(&#34;Set Accel Neutral&#34;)</span>
+
+<span style="color:#75715e"># Forward accelerator Max command value</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setFwdMax</span>():
+    fwdMax <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 2=100 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(fwdMax)
+    <span style="color:#75715e">#print(&#34;Set fwdMax&#34;)</span>
+
+<span style="color:#75715e">#Left steering Max command value</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setLeftMax</span>():
+    leftMax <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 1=100 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(leftMax)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Set leftMax&#34;</span>)
+
+<span style="color:#75715e">#Left steering Min command value (not used this time)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setLeftMin</span>():
+    leftMin <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 1=140 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(leftMin)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Set leftMin&#34;</span>)
+
+<span style="color:#75715e"># Right steering Max command value</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setRightMax</span>():
+    rightMax <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 1=200 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(rightMax)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Set rightMax&#34;</span>)
+
+<span style="color:#75715e"># Right steering Min command value (not used this time)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">setRightMin</span>():
+    rightMin <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;echo 1=160 &gt;/dev/servoblaster&#34;</span>
+    os<span style="color:#f92672">.</span>system(rightMin)
+    <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Set rightMin&#34;</span>)
+
+<span style="color:#75715e"># Distance measurement by ultrasonic distance sensor</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getDistance</span>(TRIG, ECHO, abortTime):
+    GPIO<span style="color:#f92672">.</span>setwarnings(False)
+    GPIO<span style="color:#f92672">.</span>setmode(GPIO<span style="color:#f92672">.</span>BOARD)
+    GPIO<span style="color:#f92672">.</span>setup(TRIG, GPIO<span style="color:#f92672">.</span>OUT)
+    GPIO<span style="color:#f92672">.</span>setup (ECHO, GPIO<span style="color:#f92672">.</span>IN)
+    GPIO<span style="color:#f92672">.</span>output(TRIG, GPIO<span style="color:#f92672">.</span>LOW)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">0.01</span>)
+
+    GPIO<span style="color:#f92672">.</span>output(TRIG, True)
+    time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">0.00001</span>)
+    GPIO<span style="color:#f92672">.</span>output(TRIG, False)
+    
+    startTime <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+    <span style="color:#66d9ef">while</span> GPIO<span style="color:#f92672">.</span>input(ECHO) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+        signaloff <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+        
+        <span style="color:#66d9ef">if</span> ((signaloff<span style="color:#f92672">-</span>startTime)<span style="color:#f92672">&gt;</span> abortTime):
+            distance <span style="color:#f92672">=</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>
+            <span style="color:#66d9ef">return</span> distance
+
+    <span style="color:#66d9ef">while</span> GPIO<span style="color:#f92672">.</span>input(ECHO) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>:
+        signalon <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+
+    timepassed <span style="color:#f92672">=</span> signalon<span style="color:#f92672">-</span>signaloff
+    distance <span style="color:#f92672">=</span> timepassed <span style="color:#f92672">*</span> <span style="color:#ae81ff">17000</span>
+    
+    <span style="color:#66d9ef">return</span> distance
+    
+    GPIO<span style="color:#f92672">.</span>cleanup()
+
+<span style="color:#75715e"># Receive infrared remote control</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getRemoteSignal</span>(flagState):
+    boardNo <span style="color:#f92672">=</span> <span style="color:#ae81ff">38</span>
+    GPIO<span style="color:#f92672">.</span>setmode(GPIO<span style="color:#f92672">.</span>BOARD)
+    GPIO<span style="color:#f92672">.</span>setup(boardNo, GPIO<span style="color:#f92672">.</span>IN)
+  
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#66d9ef">if</span> (GPIO<span style="color:#f92672">.</span>LOW <span style="color:#f92672">==</span> GPIO<span style="color:#f92672">.</span>input(boardNo)):
+            
+            <span style="color:#66d9ef">if</span> (flagState <span style="color:#f92672">==</span> False):
+                flagState <span style="color:#f92672">=</span> True
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Switch ON !!!!!!!!&#34;</span>)
+
+            <span style="color:#66d9ef">elif</span> (flagState <span style="color:#f92672">==</span> True):
+                flagState <span style="color:#f92672">=</span> False
+                <span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Switch OFF !!!!!!!!&#34;</span>)
+
+            time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">0.5</span>)
+
+    <span style="color:#66d9ef">except</span>:
+        GPIO<span style="color:#f92672">.</span>cleanup()
+    
+    <span style="color:#66d9ef">return</span> flagState
+
+<span style="color:#75715e"># Accelerator control (only simple forward and stop control by forward distance measurement)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getAccControl</span>(currDist, setDist):
+
+    flagStop <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    
+    <span style="color:#66d9ef">if</span> (currDist <span style="color:#f92672">&lt;</span>setDist) <span style="color:#f92672">and</span> (currDist <span style="color:#f92672">&gt;-</span><span style="color:#ae81ff">1</span>):
+        
+        setNeutral()
+        flagStop <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+
+    <span style="color:#66d9ef">else</span>:
+        setFwdMax()
+    
+    <span style="color:#66d9ef">return</span> flagStop
+
+<span style="color:#75715e"># Steering control (only simple control by distance measurement)</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getStControl</span>(currDistRight, setDistRight, currDistLeft, setDistLeft, flagStop):
+    statusRight <span style="color:#f92672">=</span> (currDistRight <span style="color:#f92672">&lt;</span>setDistRight) <span style="color:#f92672">and</span> (currDistRight <span style="color:#f92672">&gt;-</span><span style="color:#ae81ff">1</span>)
+    statusLeft <span style="color:#f92672">=</span> (currDistLeft <span style="color:#f92672">&lt;</span>setDistLeft) <span style="color:#f92672">and</span> (currDistLeft <span style="color:#f92672">&gt;-</span><span style="color:#ae81ff">1</span>)
+
+    <span style="color:#66d9ef">if</span> (flagStop <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>):
+
+        setStNeutral()
+
+    <span style="color:#66d9ef">elif</span> (statusRight <span style="color:#f92672">and</span> statusLeft):
+
+        setStNeutral()
+    
+    <span style="color:#66d9ef">elif</span> (statusRight):
+
+        setLeftMin()
+
+    <span style="color:#66d9ef">elif</span> (statusLeft):
+
+        setRightMin()
+
+    <span style="color:#66d9ef">else</span>:
+        setStNeutral()
+
+<span style="color:#75715e"># Avoid error value of ultrasonic distance sensor</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">getTakeOverValue</span>(distLeft, distRight):
+
+    <span style="color:#66d9ef">global</span> prevDistLeft
+    <span style="color:#66d9ef">global</span> prevDistRight
+
+    <span style="color:#66d9ef">if</span> (distLeft <span style="color:#f92672">==</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        distLeft <span style="color:#f92672">=</span> prevDistLeft
+
+    prevDistLeft <span style="color:#f92672">=</span> distLeft
+
+    <span style="color:#66d9ef">if</span> (distRight <span style="color:#f92672">==</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>):
+        distRight <span style="color:#f92672">=</span> prevDistRight
+
+    prevDistRight <span style="color:#f92672">=</span> distRight
+
+    <span style="color:#66d9ef">return</span> (distLeft, distRight)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+
+    <span style="color:#75715e">#Infrared remote control reception status flag initialization</span>
+    <span style="color:#66d9ef">global</span> flagState
+    flagState <span style="color:#f92672">=</span> False
+    
+    <span style="color:#75715e"># Initialize the previous value of the distance to the left and right objects</span>
+    <span style="color:#66d9ef">global</span> prevDistRight
+    <span style="color:#66d9ef">global</span> prevDistLeft
+    prevDistRight <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+    prevDistLeft <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+
+    <span style="color:#75715e"># Calibrate value of ultrasonic distance sensor</span>
+    centerThreshold <span style="color:#f92672">=</span> <span style="color:#ae81ff">30</span> <span style="color:#75715e"># Set short for the front to stop</span>
+    rightThreshold <span style="color:#f92672">=</span> <span style="color:#ae81ff">70</span> <span style="color:#75715e"># Only the right sensor has different types (lots??), so the left and right values are different</span>
+    leftThreshold <span style="color:#f92672">=</span> <span style="color:#ae81ff">60</span>
+
+    <span style="color:#75715e"># Set to the standby state and set the parameter to neutral</span>
+    resetSystem(dirServo, passwd, dirHome)
+    setNeutral()
+    
+    <span style="color:#66d9ef">while</span> True:
+        
+        <span style="color:#75715e"># Check the reception status of the infrared remote control (when operation starts)</span>
+        flagState <span style="color:#f92672">=</span> getRemoteSignal(flagState)
+        
+        <span style="color:#66d9ef">if</span> (flagState <span style="color:#f92672">==</span> True):
+
+            <span style="color:#75715e">#Distance measurement by all ultrasonic distance sensors</span>
+            distCenter <span style="color:#f92672">=</span> getDistance(trigCenter, echoCenter, <span style="color:#ae81ff">0.1</span>)
+            distLeft <span style="color:#f92672">=</span> getDistance(trigLeft, echoLeft, <span style="color:#ae81ff">0.1</span>)
+            distRight <span style="color:#f92672">=</span> getDistance(trigRight, echoRight, <span style="color:#ae81ff">0.3</span>)
+           
+            <span style="color:#75715e"># Alternate value generation when ultrasonic distance sensor returns error</span>
+            distLeft, distRight <span style="color:#f92672">=</span> getTakeOverValue(distLeft, distRight)
+            
+            <span style="color:#75715e"># Stop command value generation based on the distance to the object in front</span>
+            flagStop <span style="color:#f92672">=</span> getAccControl(distCenter, centerThreshold)
+
+            <span style="color:#75715e"># Steering command value generation based on the distance between left and right objects</span>
+            getStControl(distRight, rightThreshold, distLeft, leftThreshold, flagStop)
+            
+            <span style="color:#75715e"># Check the reception status of the infrared remote control</span>
+            flagState <span style="color:#f92672">=</span> getRemoteSignal(flagState)<span style="color:#66d9ef">else</span>:
+            setNeutral()
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;__main__&#34;</span>:
+    main()
+
+</code></pre></div><h1 id="at-the-end">At the end</h1>
+<p>When I say what I used this radio control for, I used it as a ring pillow carrying robot car to carry rings at a wedding lol. Probably the first in the world.
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/106383/c878dfb9-2208-1ee0-9830-0e6865441f95.jpeg" width="400"></p>
+<p>##Link</p>
+<ol>
+<li>
+<p><a href="https://qiita.com/yas-nyan/items/8e358d919c663848b4e6">I made an internet radio control with Raspberry Pi 2 and 1/10 RC of Tamiya</a></p>
+</li>
+<li>
+<p><a href="http://make.bcde.jp/raspberry-pi/%e8%b6%85%e9%9f%b3%e6%b3%a2%e8%b7%9d%e9%9b%a2%e3%82%bb%e3%83%b3%e3%82%b5hc-sr04%e3%82%92%e4%bd%bf%e3%81%86/">Use ultrasonic distance sensor (HC-SR04)</a></p>
+</li>
+<li>
+<p><a href="https://qiita.com/s_ponta/items/0ad51f3642de4bad1a62">Control the remote control using Raspberry Pi 3 Model B+ and lirc 1</a></p>
+</li>
+<li>
+<p><a href="https://research.itplants.com/?p=2113">How to create RPI Ad-Hoc network</a></p>
+</li>
+<li>
+<p><a href="https://github.com/richardghirst/PiBits/tree/master/ServoBlaster">ServoBlaster</a></p>
+</li>
+</ol>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

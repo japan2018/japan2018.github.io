@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried to summarize the basic form of GPLVM | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried to summarize the basic form of GPLVM</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Dec 24, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/machine-learning"> machine learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/unsupervised-learning"> unsupervised learning</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/gaussian-process"> Gaussian process</a></code></small>
+
+</p>
+<pre><code>This article is from [Furukawa Lab, Advent_calendar Day 23](https://qiita.com/advent-calendar/2019/flab).
+</code></pre>
+<p>#Introduction</p>
+<p>GPLVM is an unsupervised learning method that uses Gaussian process (GP) and can estimate low-dimensional manifolds whose data are distributed in high-dimensional space. The main attraction of GPLVM is that the model is very simple and highly expandable, and theoretically easy to handle. In fact, it has been extended to more complex situations such as Bayesian estimation of hyperparameters, time series data analysis <sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>, multiview analysis <sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>, and tensor decomposition <sup id="fnref:3"><a href="#fn:3" class="footnote-ref" role="doc-noteref">3</a></sup>. ． This time, we will derive the most basic GPLVM algorithm starting from probabilistic principal component analysis (probabilistic PCA: pPCA). The derivation this time largely follows the flow of the paper by Professor Lawrence, so please refer to that person for details <sup id="fnref:4"><a href="#fn:4" class="footnote-ref" role="doc-noteref">4</a></sup>.</p>
+<p>#probabilistic PCA</p>
+<p>As its name implies, pPCA is a model in which principal component analysis is re-derived in the framework of probability theory. In pPCA, $\mathbf{X}=(\mathbf{x}_1,\mathbf{x}_2,\cdots,\mathbf{x}_N)\in\mathbb{R}^{D \times N}$ Suppose $\mathbf{x}$ is observed by mapping latent variable $\mathbf{z} \in \mathbb{R}^L$ at the given time [^5 ].</p>
+<pre><code class="language-math" data-lang="math">\mathbf{x} = \mathbf{W}\mathbf{z} + \boldsymbol{\epsilon},
+</code></pre><p>Where $\epsilon$ is the observed noise and isotropic Gaussian noise with accuracy parameter $\beta^{-1}$ is assumed. And it is $\mathbf{W}\in \mathbb{R}^{D \times L}$. We also assume that $\mathbf{z}$ follows the standard normal distribution in the $L$ dimension. That is, $\mathbf{x}$ and $\mathbf{z}$ follow the probability distribution as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+p(\mathbf{x}\mid\mathbf{W},\mathbf{z},\beta) &amp;= \mathcal{N}(\mathbf{x}\mid\mathbf{W}\mathbf{z}, \beta^{-1}\mathbf{I}_D) \\
+p(\mathbf{z}) &amp;= \mathcal{N}(\mathbf{z}\mid\mathbf{0},\mathbf{I}_L)
+\end{align}
+</code></pre><p>At this time, since both $p(\mathbf{x}\mid\mathbf{W},\mathbf{z},\beta)$ and $p(\mathbf{z})$ are Gaussian distributions, the joint distribution $ p(\mathbf{x},\mathbf{z}\mid\mathbf{W},\beta)$ also has a Gaussian distribution, and $p(\mathbf{x},\mathbf{z}\mid\mathbf{W The $p(\mathbf{x}\mid\mathbf{W},\beta)$ obtained by marginalizing },\beta)$ with respect to the latent variable $\mathbf{z}$ also has a Gaussian distribution. Actually this is $p(\mathbf{x}\mid\mathbf{W},\beta)=\mathcal{N}(\mathbf{x}\mid\mathbb{E}[\mathbf{x}],\ mathbb{V}[\mathbf{x}])$ can be calculated as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\mathbb{E}[\mathbf{x}]&amp;=\mathbb{E}[\mathbf{W}\mathbf{z} + \boldsymbol{\epsilon}] \\
+&amp;=\mathbf{W}\mathbb{E}[\mathbf{z}] + \mathbb{E}[\boldsymbol{\epsilon}] \\
+&amp;=\mathbf{0} \\
+\mathbb{V}[\mathbf{x}]&amp;=\mathbb{E}[(\mathbf{W}\mathbf{z} + \boldsymbol{\epsilon})(\mathbf{W}\mathbf{z} + \boldsymbol{\epsilon})^{\rm T}] \\
+&amp;=\mathbf{W}\mathbb{E}[\mathbf{z}\mathbf{z}^{\rm T}]\mathbf{W}^{\rm T} + \mathbb{E}[\boldsymbol {\epsilon}\mathbf{z}^{\rm T}]\mathbf{W}^{\rm T} + \mathbb{E}[\boldsymbol{\epsilon}\boldsymbol{\epsilon}^{\rm T}]\\
+&amp;=\mathbf{W}\mathbf{W}^{\rm T} + \beta^{-1}\mathbf{I}_D \\
+&amp;=\mathbf{C}
+\end{align}
+</code></pre><p>In the above transformation, it is assumed that $\mathbf{W}$ is not a random variable and can be output outside the expected value. It is assumed that $\mathbf{z}$ and $\boldsymbol{\epsilon}$ are independent. Is used.</p>
+<p>Here, since $\boldsymbol{\epsilon}$ and $\mathbf{z}$ have independent distributions, $p(\mathbf{x}\mid\mathbf{W},\beta)$ and $\mathbf{ The distribution is independent for x}$. Therefore</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+p(\mathbf{X}\mid\mathbf{W},\beta)=\prod^N_{n=1}p(\mathbf{x}_n\mid\mathbf{W},\beta)
+\tag{2}
+\end{align}
+</code></pre><p>It becomes. The logarithm of the likelihood function in Eq. (2) is maximized for $\mathbf{W}$ and $\beta$ as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+L_{\rm pPCA}&amp;=\log{p(\mathbf{X}\mid\mathbf{W},\beta)} \\
+&amp;=\sum^N_{n=1}\log{p(\mathbf{x}_n\mid\mathbf{W},\beta)} \\
+&amp;=\sum^N_{n=1}\left(-\frac{D}{2}\log{2\pi}-\frac{1}{2}\log{|\mathbf{C}|} -\frac{1}{2}{\rm Tr}[\mathbf{C}^{-1}\mathbf{x}_n\mathbf{x}^{\rm T}_n]\right) \\
+&amp;=-\frac{ND}{2}\log{2\pi}-\frac{N}{2}\log{|\mathbf{C}|}-\frac{N}{2}{\rm Tr}[\mathbf{C}^{-1}\mathbf{V}] \tag{3}
+\end{align}
+</code></pre><p>This is the objective function for probabilistic principal component analysis <sup id="fnref:5"><a href="#fn:5" class="footnote-ref" role="doc-noteref">5</a></sup>. There are two methods to estimate $\mathbf{W}$ and $\beta$ that maximize this objective function. Differentiating $L$ to obtain it in a closed form and using the EM algorithm, Since it is out of the main subject, it is omitted here. For details, refer to this paper <sup id="fnref:6"><a href="#fn:6" class="footnote-ref" role="doc-noteref">6</a></sup></p>
+<p>#Dual probabilistic PCA</p>
+<p>In pPCA, we consider $\mathbf z_n$ as a random variable and $\mathbf{W}$ as a parameter, and consider a $\mathbf x_n$ stochastic model.
+In contrast, Dual Probabilistic PCA (DPPCA) uses $\mathbf{Z}=(\mathbf z_1,\mathbf z_2,\cdots,\mathbf z_N)\in\mathbb{R}^{L\times N}$ as a parameter. , Consider $\mathbf w_d$ as a random variable
+Consider a $\mathbf x_{:d}$ stochastic model. Where $\mathbf x_{:d}=(x_{1d},x_{2d},\cdots,x_{Nd})^{\rm T}$. That is,</p>
+<pre><code class="language-math" data-lang="math">\mathbf{x}_{:d} = \mathbf{Z}^{\rm T}\mathbf{w}_d + \boldsymbol{\epsilon}_{:d},
+</code></pre><p>And $\mathbf w_d$ and $\boldsymbol \epsilon_{:d}$ are assumed to follow the following probability distributions.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+p(\mathbf w_d)&amp;=\mathcal{N}(\mathbf w_d\mid\mathbf{0},\mathbf{I}_L) \\
+p(\boldsymbol{\epsilon}_{:d})&amp;=\mathcal{N}(\boldsymbol{\epsilon}_{:d}\mid\mathbf{0},\beta^{-1}\mathbf (I}_N)
+\end{align}
+</code></pre><p>Since $p(\mathbf w_d)$ and $p(\mathbf x_{:d}\mid \mathbf{Z},\mathbf{w}_{:d},\beta)$ are Gaussian distributions, the rest is pPCA. Similarly, by marginalizing $\mathbf{w}_d$, the likelihood function is obtained as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+p(\mathbf{X} \mid \mathbf{Z}, \beta)&amp;=\prod^D_{d=1}\mathcal{N}(\mathbf{x}_{:d}\mid\mathbf{ 0},\mathbf{Z}\mathbf{Z}^{\rm T}+\beta^{-1}\mathbf{I}_N) \\
+\end{align}
+</code></pre><p>By taking the logarithm of this likelihood function, the objective function of DPPCA can be obtained.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\log{p(\mathbf{X} \mid \mathbf{Z}, \beta)} &amp;=\sum^D_{d=1}\log{p(\mathbf{x}_{:d} \mid \mathbf{Z}, \beta)} \\
+&amp;=-\frac{ND}{2}\log{2\pi}-\frac{D}{2}\log{|\mathbf{K}|}-\frac{D}{2}{\rm Tr}[\mathbf{K}^{-1}\mathbf{S}] \tag{4}
+\end{align}
+</code></pre><p>Here, $\mathbf S$ and $\mathbf K$ are defined as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\mathbf S &amp;= \frac 1 D \mathbf{X}\mathbf{X}^{\rm T} \\
+\mathbf K &amp;= \mathbf Z \mathbf Z^{\rm T}+\beta^{-1}\mathbf I_N
+\end{align}
+</code></pre><p>Looking at Equation (4), it may seem that what you are doing with pPCA is not so different because after all, the roles of $\mathbf W$ and $\mathbf Z$ are swapped. But consider the following constant minus Eq. (4):</p>
+<pre><code class="language-math\int" data-lang="math\int"></code></pre><p>At this time, estimating $\mathbf{Z}$ that maximizes Eq. (4) from the following equation is to minimize the KL divergence between the gram matrix of the observed data and the gram matrix of the latent variable $\mathbf It turns out to be equivalent to estimating {Z}$. In other words, the purpose of DPPCA is to estimate the latent variable $\mathbf{Z}$ so that the similarity between the observed data and the similarity between the corresponding latent variables match as much as possible.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\int \mathcal{N}(\mathbf{x}\mid\mathbf{0},\mathbf{S})\log{\mathcal{N}(\mathbf{x}\mid\mathbf{0},\ mathbf{S})}d\mathbf{x}-L_{\rm DPPCA} &amp;=\frac{D}{2}\{-\log{|\mathbf S|}+\log{|\mathbf{K }|}+{\rm Tr}[\mathbf{K}^{-1}\mathbf{S}]+N\} \\
+&amp;= D_{\rm KL}[\mathcal{N}(\mathbf{x}\mid\mathbf{0},\mathbf{S}) || \mathcal{N}(\mathbf{x}\mid\ mathbf{0},\mathbf{K})]
+\end{align}
+</code></pre><p>At this time, in DPPCA, nonlinear dimension reduction can be realized by defining the similarity of the observed data and the similarity of the latent variable using the kernel function $k(\cdot,\cdot)$ other than the standard dot product. ． In particular, the method of nonlinear dimension reduction using the kernel function for the similarity of observed data is called kernel principal component analysis <sup id="fnref:7"><a href="#fn:7" class="footnote-ref" role="doc-noteref">7</a></sup>, and the method of performing the nonlinear dimension reduction for the similarity of latent variables using the kernel function. It is called GPLVM.</p>
+<p>Both methods can reduce nonlinear dimensionality, but each has its advantages and disadvantages. In kernel principal component analysis, a kernel function is used for the similarity between observation data. Once you have calculated $\mathbf{S}$ using the kernel function, you can obtain an analytical solution as with ordinary principal component analysis. ． However, since the mapping from the latent space to the observation space is unknown, it is necessary to solve the pre-image problem <sup id="fnref:8"><a href="#fn:8" class="footnote-ref" role="doc-noteref">8</a></sup> to estimate the point in the observation space corresponding to any point in the latent space. On the other hand, GPLVM does not cause the pre-image problem because the mapping from latent space to observation space can be written explicitly. Instead, you need to update $\mathbf{K}$ each time the latent variable changes.</p>
+<p>#Gaussian Process Latent Variable Model</p>
+<p>So far, we have found that GPLVM is a learning model that estimates latent variable $\mathbf Z$ so as to maximize the following objective function.</p>
+<pre><code class="language-math" data-lang="math">L_{\rm DPPCA} = -\frac{ND}{2}\log{2\pi}-\frac{D}{2}\log{|\mathbf{K}|}-\frac{D}{ 2}{\rm Tr}[\mathbf{K}^{-1}\mathbf{S}] \tag{5}
+</code></pre><p>Where $\mathbf K$ is $\mathbf K= k(\mathbf Z,\mathbf Z) + \beta^{-1}\mathbf{I using the kernel function $k(\cdot,\cdot)$ }_N$ is defined.</p>
+<p>In fact, this objective function can also be derived from the GP point of view. I will omit details about GP this time, so if you want to know about GP, please refer to this book <sup id="fnref:9"><a href="#fn:9" class="footnote-ref" role="doc-noteref">9</a></sup>. The mapping from latent space $\mathcal Z$ to observation space $\mathcal X$ is $f:\mathcal Z \rightarrow \mathcal X=\mathbb{R}^D$, and $\mathbf x\in\mathcal X $ Is assumed to be dimensionally independent. Ie,</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+x_{nd}=f_d(\mathbf z_n)+\epsilon_{nd}
+\end{align}
+</code></pre><p>Suppose that $\mathbf z_n$ to $x_{nd}$ are generated independently for each dimension. Where $\epsilon_{nd}$ is Gaussian noise with precision parameter $\beta$. Let the prior distribution of $f_d$ be $f_d\sim \mathcal{GP}(0,k(\mathbf{z},\mathbf{z}'))$<sup id="fnref:10"><a href="#fn:10" class="footnote-ref" role="doc-noteref">10</a></sup>. If the observed data is $\mathbf X =(\mathbf x_1,\mathbf x_2,\cdots,\mathbf x_N)$ and the corresponding latent variable is $\mathbf Z$, the prior distribution is $p(\mathbf f_d\ mid \mathbf Z)=\mathcal{N}(\mathbf f_d\mid \mathbf 0, k(\mathbf Z,\mathbf Z))$ <sup id="fnref:11"><a href="#fn:11" class="footnote-ref" role="doc-noteref">11</a></sup>. Where $\mathbf f_d=(f_d(\mathbf z_1),f_d(\mathbf z_2),\cdots,f_d(\mathbf z_N))$. Then $\mathbf f_d$ is independent in dimension $d$, so the marginal likelihood is</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+p(\mathbf{X}\mid \mathbf{Z},\beta) &amp;= \prod^D_{d=1}p(\mathbf{x}_{:d}\mid \mathbf{Z},\ beta) \\
+&amp;= \prod^D_{d=1}\int{p(\mathbf{x}_{:d}\mid \mathbf{f}_d,\beta)p(\mathbf{f}_d\mid \mathbf {Z})}d\mathbf{f}_d
+\end{align}
+</code></pre><p>It becomes. Also, both $p(\mathbf{x}_{:d}\mid \mathbf{f}_d,\beta)$ and $p(\mathbf{f}_d\mid \mathbf{Z})$ are Gaussian distributions. Therefore, the marginal likelihood also has a Gaussian distribution.</p>
+<p>Therefore $p(\mathbf x_{:d}\mid\mathbf Z)=\mathcal N(\mathbf x_{:d}\mid\mathbb E[\mathbf x_{:d}],\mathbb V[\mathbf x_{:d}])$ will be as follows.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\mathbb{E}[\mathbf x_{:d}]&amp;=\mathbb{E}[\mathbf f_d+\boldsymbol{\epsilon}_{:d}]\\
+&amp;=\mathbf 0\\
+\mathbb{V}[\mathbf x_{:d}]&amp;=\mathbb{E}[(\mathbf f_d+\boldsymbol{\epsilon}_{:d})(\mathbf f_d+\boldsymbol{\epsilon}_{ :d})^{\rm T}] \\
+&amp;=\mathbb{E}[\mathbf f_d\mathbf f^{\rm T}_d]+2\mathbb{E}[\boldsymbol{\epsilon}_{:d}\mathbf f^{\rm T} _d]+\mathbb{E}[\boldsymbol{\epsilon}_{:d}\boldsymbol{\epsilon}^{\rm T}_{:d}] \\
+&amp;=k(\mathbf Z,\mathbf Z)+\beta^{-1}\mathbf I_N \\
+&amp;=\mathbf K
+\end{align}
+</code></pre><p>Than this</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\log{p(\mathbf{X}\mid \mathbf{Z},\beta)} &amp;= \sum^D_{d=1}\log{p(\mathbf{x}_{:d}\mid \mathbf{Z},\beta)} \\
+&amp;= -\frac{ND}{2}\log{2\pi}-\frac{D}{2}\log{|\mathbf{K}|}-\frac{D}{2}{\rm Tr}[\mathbf{K}^{-1}\mathbf{S}]\\
+\end{align}
+</code></pre><p>And matches equation (5). In other words, when the latent variable $\mathbf Z$ estimated by DPPCA is changed, the latent variable that maximizes the marginal likelihood is estimated when the output becomes a multidimensional Gaussian process instead of the latent variable as the input. You can see that it is equivalent to From this, the posterior distribution of the mapping $f$ from the latent space to the observation space can be written as the following Gaussian process.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+f &amp;\sim \mathcal{GP}(\mu(\mathbf{z}),\sigma(\mathbf{z},\mathbf{z}')) \\
+\mu(\mathbf{z}) &amp;= k(\mathbf{z},\mathbf{Z}) (k(\mathbf{Z},\mathbf{Z})+\beta^{-1}\mathbf {I})^{-1}\mathbf{X} \\
+\sigma(\mathbf{z},\mathbf{z}') &amp;= k(\mathbf{z},\mathbf{z}')-k(\mathbf{z},\mathbf{Z})(k (\mathbf{Z},\mathbf{Z})+\beta^{-1}\mathbf{I})^{-1}k(\mathbf{Z},\mathbf{z})
+\end{align}
+</code></pre><p>Furthermore, for hyperparameters, it can be seen that estimating hyperparameters that maximize Eq. (5) is equivalent to estimating hyperparameters that maximize marginal likelihood. Can also be guaranteed in terms of maximizing marginal likelihood.</p>
+<p>Since equation (5) cannot be analytically solved, the gradient method is used to estimate $\mathbf Z$ and hyperparameters. When $L_{\rm DPPCA}$ is differentiated with respect to $z_{nl}$, since $z_{nl}$ is an argument of the kernel function, it can be calculated using the following chain rule of differentiation. I can do it.</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\frac{\partial L_{\rm DPPCA}}{\partial z_{nl}}={\rm Tr}\left(\frac{\partial L_{\rm DPPCA}}{\partial \mathbf{K}} \frac{\partial \mathbf{K}}{\partial z_{nl}}\right)
+\end{align}
+</code></pre><p>here</p>
+<pre><code class="language-math" data-lang="math">\begin{align}
+\frac{\partial L_{\rm DPPCA}}{\partial \mathbf{K}} = \frac{D}{2}(\mathbf{K}^{-1}\mathbf{S}\mathbf{K }^{-1}-\mathbf{K}^{-1})
+\end{align}
+```It becomes. Since $\frac{\partial \mathbf{K}}{\partial z_{nl}}$ depends on the kernel function, differentiate it accordingly. In addition, in the calculation of the actual algorithm, in order to suppress the latent variable from becoming an extreme value, the formula with the logarithm of the prior distribution $\log{p(\mathbf{Z})}$ is maximized. As for the prior distribution, the standard normal distribution is basically used.
+
+#GPLVM operation verification
+
+Finally, actually implement GPLVM on python and verify whether learning is successful with simple data.
+This time, the data obtained by uniformly sampling the latent variable $\mathbf z$ at 200 points in the range of $[-1,1]^2$ into 3D space by the following function was used as the observation data. Where $\mathbf{\epsilon}$ is Gaussian noise. The Gaussian kernel is used as the kernel function, and hyperparameters and observation noise are estimated by marginal likelihood maximization. The initial value of the latent variable is also randomly determined.
+
+
+```math
+\begin{align}
+x_{n1} &amp;= z_{n1}+\epsilon_{n1} \\
+x_{n2} &amp;= z_{n2}+\epsilon_{n2} \\
+x_{n3} &amp;= z_{n1}^2-z_{n2}^2+\epsilon_{n3} \\
+\end{align}
+</code></pre><p>The actual program is as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:GPLVM.py" data-lang="python:GPLVM.py"><span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">GPLVM</span>(object):
+    <span style="color:#66d9ef">def</span> __init__(self,Y,LatentDim,HyperParam,X<span style="color:#f92672">=</span>None):
+        self<span style="color:#f92672">.</span>Y <span style="color:#f92672">=</span> Y
+        self<span style="color:#f92672">.</span>hyperparam <span style="color:#f92672">=</span> HyperParam
+        self<span style="color:#f92672">.</span>dataNum <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>Y<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>]
+        self<span style="color:#f92672">.</span>dataDim <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>Y<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]
+
+        self<span style="color:#f92672">.</span>latentDim <span style="color:#f92672">=</span> LatentDim
+        <span style="color:#66d9ef">if</span> X <span style="color:#f92672">is</span> <span style="color:#f92672">not</span> None:
+            self<span style="color:#f92672">.</span>X <span style="color:#f92672">=</span> X
+        <span style="color:#66d9ef">else</span>:
+            self<span style="color:#f92672">.</span>X <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.1</span><span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randn(self<span style="color:#f92672">.</span>dataNum,self<span style="color:#f92672">.</span>latentDim)
+        self<span style="color:#f92672">.</span>S <span style="color:#f92672">=</span> Y <span style="color:#960050;background-color:#1e0010">@</span> Y<span style="color:#f92672">.</span>T
+        self<span style="color:#f92672">.</span>history <span style="color:#f92672">=</span> {}
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fit</span>(self,epoch<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>,epsilonX<span style="color:#f92672">=</span><span style="color:#ae81ff">0.5</span>,epsilonSigma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0025</span>,epsilonAlpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.00005</span>):
+
+        resolution <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+        M <span style="color:#f92672">=</span> resolution<span style="color:#f92672">**</span>self<span style="color:#f92672">.</span>latentDim
+        self<span style="color:#f92672">.</span>history[<span style="color:#e6db74">&#39;X&#39;</span>] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((epoch, self<span style="color:#f92672">.</span>dataNum, self<span style="color:#f92672">.</span>latentDim))
+        self<span style="color:#f92672">.</span>history[<span style="color:#e6db74">&#39;F&#39;</span>] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((epoch, M, self<span style="color:#f92672">.</span>dataDim))
+        sigma <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>log(self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>])
+        alpha <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>log(self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">1</span>])
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(epoch):
+
+            <span style="color:#75715e"># Update latent variables</span>
+            K <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>kernel(self<span style="color:#f92672">.</span>X,self<span style="color:#f92672">.</span>X,self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>]) <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>eye(self<span style="color:#f92672">.</span>dataNum)
+            Kinv <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>inv(K)
+            G <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span><span style="color:#f92672">*</span>(Kinv <span style="color:#960050;background-color:#1e0010">@</span> self<span style="color:#f92672">.</span>S <span style="color:#960050;background-color:#1e0010">@</span> Kinv<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>dataDim<span style="color:#f92672">*</span>Kinv)
+            dKdX <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>(((self<span style="color:#f92672">.</span>X[:,None,:]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>X[None,:,:]]<span style="color:#f92672">*</span>K[:,:,None]))<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>]
+            <span style="color:#75715e"># dFdX = (G[:,:,None] * dKdX).sum(axis=1)-self.X</span>
+            dFdX <span style="color:#f92672">=</span> (G[:,:,None] <span style="color:#f92672">*</span> dKdX)<span style="color:#f92672">.</span>sum(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+            self<span style="color:#f92672">.</span>X <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>X <span style="color:#f92672">+</span> epsilonX <span style="color:#f92672">*</span> dFdX
+            self<span style="color:#f92672">.</span>history[<span style="color:#e6db74">&#39;X&#39;</span>][i] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>X
+
+            <span style="color:#75715e"># Update hyperparameters</span>
+            Dist <span style="color:#f92672">=</span> ((self<span style="color:#f92672">.</span>X[:, None, :]<span style="color:#f92672">-</span>self<span style="color:#f92672">.</span>X[None, :, :]) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>)<span style="color:#f92672">.</span>sum(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+            dKdSigma <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.5</span><span style="color:#f92672">*</span>Dist<span style="color:#f92672">/</span>self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">*</span>K
+            dFdSigma <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>trace(G <span style="color:#960050;background-color:#1e0010">@</span> dKdSigma)
+            sigma <span style="color:#f92672">=</span> sigma <span style="color:#f92672">+</span> epsilonSigma <span style="color:#f92672">*</span> dFdSigma
+            self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>exp(sigma)
+
+            dKdAlpha <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>eye(self<span style="color:#f92672">.</span>dataNum)
+            dFdAlpha <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>trace(G <span style="color:#960050;background-color:#1e0010">@</span> dKdAlpha)
+            alpha <span style="color:#f92672">=</span> alpha <span style="color:#f92672">+</span> epsilonAlpha <span style="color:#f92672">*</span> dFdAlpha
+            self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">1</span>] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>exp(alpha)
+
+            zeta <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>meshgrid(np<span style="color:#f92672">.</span>linspace(self<span style="color:#f92672">.</span>X[:, <span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>min(), self<span style="color:#f92672">.</span>X[:, <span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>max(), resolution),
+                               np<span style="color:#f92672">.</span>linspace(self<span style="color:#f92672">.</span>X[:, <span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>min(), self<span style="color:#f92672">.</span>X[:, <span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>max(), resolution))
+            zeta <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>dstack(zeta)<span style="color:#f92672">.</span>reshape(M, self<span style="color:#f92672">.</span>latentDim)
+            K <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>kernel(self<span style="color:#f92672">.</span>X,self<span style="color:#f92672">.</span>X,self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>]) <span style="color:#f92672">+</span> self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">1</span>]<span style="color:#f92672">*</span>np<span style="color:#f92672">.</span>eye(self<span style="color:#f92672">.</span>dataNum)
+            Kinv <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>inv(K)
+            KStar <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>kernel(zeta, self<span style="color:#f92672">.</span>X, self<span style="color:#f92672">.</span>hyperparam[<span style="color:#ae81ff">0</span>])
+            self<span style="color:#f92672">.</span>F <span style="color:#f92672">=</span> KStar <span style="color:#960050;background-color:#1e0010">@</span> Kinv <span style="color:#960050;background-color:#1e0010">@</span> self<span style="color:#f92672">.</span>Y
+            self<span style="color:#f92672">.</span>history[<span style="color:#e6db74">&#39;F&#39;</span>][i] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>F
+
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">kernel</span>(self,X1, X2, length):
+        Dist <span style="color:#f92672">=</span> (((X1[:, None, :]<span style="color:#f92672">-</span>X2[None, :, :]) <span style="color:#f92672">**</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">/</span> length)<span style="color:#f92672">.</span>sum(axis<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>)
+        K <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>exp(<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span> <span style="color:#f92672">*</span> Dist)
+        <span style="color:#66d9ef">return</span> K
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:main.py" data-lang="python:main.py"><span style="color:#f92672">from</span> GPLVM <span style="color:#f92672">import</span> GPLVM
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+<span style="color:#f92672">from</span> mpl_toolkits.mplot3d <span style="color:#f92672">import</span> Axes3D
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">createKuraData</span>(N, D,sigma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>):
+    X <span style="color:#f92672">=</span> (np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand(N, <span style="color:#ae81ff">2</span>)<span style="color:#f92672">-</span><span style="color:#ae81ff">0.5</span>) <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>
+    Y <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((N, D))
+    Y[:, :<span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> X
+    Y[:,<span style="color:#ae81ff">2</span>]<span style="color:#f92672">=</span>X[:,<span style="color:#ae81ff">0</span>]<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span><span style="color:#f92672">-</span>X[:,<span style="color:#ae81ff">1</span>]<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>
+    Y <span style="color:#f92672">+=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>normal(<span style="color:#ae81ff">0</span>,sigma,(N,D))
+
+    <span style="color:#66d9ef">return</span> [X,Y]
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">plot_prediction</span>(Y,f,Z,epoch, isSave<span style="color:#f92672">=</span>False):
+    fig <span style="color:#f92672">=</span> plt<span style="color:#f92672">.</span>figure(<span style="color:#ae81ff">1</span>,[<span style="color:#ae81ff">10</span>,<span style="color:#ae81ff">8</span>])
+
+    nb_nodes <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]
+    nb_dim <span style="color:#f92672">=</span> f<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">2</span>]
+    resolution <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>sqrt(nb_nodes)<span style="color:#f92672">.</span>astype(<span style="color:#e6db74">&#39;int&#39;</span>)
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(epoch):
+        <span style="color:#66d9ef">if</span> i<span style="color:#f92672">%</span><span style="color:#ae81ff">10</span> <span style="color:#f92672">is</span> <span style="color:#ae81ff">0</span>:
+            ax_input <span style="color:#f92672">=</span> fig<span style="color:#f92672">.</span>add_subplot(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>, projection<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;3d&#39;</span>, aspect<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;equal&#39;</span>)
+            ax_input<span style="color:#f92672">.</span>cla()
+            <span style="color:#75715e">#Display of observation space</span>
+            r_f <span style="color:#f92672">=</span> f[i]<span style="color:#f92672">.</span>reshape(resolution, resolution, nb_dim)
+            ax_input<span style="color:#f92672">.</span>plot_wireframe(r_f[:, :, <span style="color:#ae81ff">0</span>], r_f[:, :, <span style="color:#ae81ff">1</span>], r_f[:, :, <span style="color:#ae81ff">2</span>],color<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;k&#39;</span>)
+            ax_input<span style="color:#f92672">.</span>scatter(Y[:, <span style="color:#ae81ff">0</span>], Y[:, <span style="color:#ae81ff">1</span>], Y[:, <span style="color:#ae81ff">2</span>], c<span style="color:#f92672">=</span>Y[:, <span style="color:#ae81ff">0</span>], edgecolors<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;k&#34;</span>,marker<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;x&#39;</span>)
+            ax_input<span style="color:#f92672">.</span>set_xlim(Y[:, <span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>min(), Y[:, <span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>max())
+            ax_input<span style="color:#f92672">.</span>set_ylim(Y[:, <span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>min(), Y[:, <span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>max())
+            ax_input<span style="color:#f92672">.</span>set_zlim(Y[:, <span style="color:#ae81ff">2</span>]<span style="color:#f92672">.</span>min(), Y[:, <span style="color:#ae81ff">2</span>]<span style="color:#f92672">.</span>max())
+            <span style="color:#75715e"># plt.savefig(&#34;fig1.pdf&#34;)</span>
+
+            <span style="color:#75715e"># Display latent space</span>
+            ax_latent <span style="color:#f92672">=</span> fig<span style="color:#f92672">.</span>add_subplot(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>, aspect<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;equal&#39;</span>)
+            ax_latent<span style="color:#f92672">.</span>cla()
+            ax_latent<span style="color:#f92672">.</span>set_xlim(Z[:,:, <span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>min(), Z[:,:, <span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>max())
+            ax_latent<span style="color:#f92672">.</span>set_ylim(Z[:,:, <span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>min(), Z[:,:, <span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>max())
+            ax_latent<span style="color:#f92672">.</span>scatter(Z[i,:, <span style="color:#ae81ff">0</span>], Z[i,:, <span style="color:#ae81ff">1</span>], c<span style="color:#f92672">=</span>Y[:, <span style="color:#ae81ff">0</span>], edgecolors<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;k&#34;</span>)
+            plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#34;fig/fig{0}.png&#34;</span><span style="color:#f92672">.</span>format(i))
+
+        plt<span style="color:#f92672">.</span>pause(<span style="color:#ae81ff">0.001</span>)
+
+    <span style="color:#66d9ef">if</span> isSave:
+        plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#34;result.png&#34;</span>, dpi<span style="color:#f92672">=</span><span style="color:#ae81ff">100</span>)
+    plt<span style="color:#f92672">.</span>show()
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    L<span style="color:#f92672">=</span><span style="color:#ae81ff">2</span>
+    N<span style="color:#f92672">=</span><span style="color:#ae81ff">200</span>
+    D<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>
+    sigma<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>
+    alpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.05</span>
+    beta<span style="color:#f92672">=</span><span style="color:#ae81ff">0.08</span>seedData<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+    resolution <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span>
+    M <span style="color:#f92672">=</span> resolution<span style="color:#f92672">**</span>L
+
+    <span style="color:#75715e">#Generate input data</span>
+    <span style="color:#75715e"># np.random.seed(seedData)</span>
+    [X,Y] <span style="color:#f92672">=</span> createKuraData(N,D,sigma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.01</span>)
+    <span style="color:#75715e"># Y = np.loadtxt(&#39;kura.txt&#39;, delimiter=&#39;&#39;)</span>
+
+    <span style="color:#75715e"># Kernel configuration</span>
+    [U,D,Vt] <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>linalg<span style="color:#f92672">.</span>svd(Y)
+    model <span style="color:#f92672">=</span> GPLVM(Y,L, np<span style="color:#f92672">.</span>array([sigma<span style="color:#f92672">**</span><span style="color:#ae81ff">2</span>,alpha<span style="color:#f92672">/</span>beta]))
+    <span style="color:#75715e"># GPLVM optimization</span>
+    epoch <span style="color:#f92672">=</span> <span style="color:#ae81ff">200</span>
+    model<span style="color:#f92672">.</span>fit(epoch<span style="color:#f92672">=</span>epoch,epsilonX<span style="color:#f92672">=</span><span style="color:#ae81ff">0.05</span>,epsilonSigma<span style="color:#f92672">=</span><span style="color:#ae81ff">0.0005</span>,epsilonAlpha<span style="color:#f92672">=</span><span style="color:#ae81ff">0.00001</span>)
+
+    <span style="color:#75715e"># Get estimated latent variable</span>
+    X <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>history[<span style="color:#e6db74">&#39;X&#39;</span>]
+    f <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>history[<span style="color:#e6db74">&#39;F&#39;</span>]
+
+    <span style="color:#75715e"># Display learning results</span>
+    plot_prediction(Y,f,X,epoch,True)
+
+</code></pre></div><img width="800" alt="res.gif" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/547678/ef824989-26c3-a541-2298-165c4ff7078b.gif">
+<p>The left figure shows the learning process of the estimated manifold in the observation space. The right figure is the latent variable at that time. If the initial value of the parameter is not bad to some extent, it will operate stably even if the initial value is randomly determined. In particular, if the width of the kernel function is made large in advance, it tends to be stable. ‥</p>
+<p>#in conclusion
+Here is a summary of my understanding of GPLVM. If you have any questions or suggestions, please contact us.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>[Jack Wang and Hertzmann, Aaron and Fleet, David J, Gaussian Process Dynamical Models, Advances in Neural Information Processing Systems 18, 2006.](<a href="http://www.dgp.toronto.edu/~jmwang/(gpdm/nips05final.pdf)">http://www.dgp.toronto.edu/~jmwang/(gpdm/nips05final.pdf)</a> <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p><a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.301.9812&amp;rep=rep1&amp;type=pdf">Carl Henrik. Ek, Shared Gaussian Process Latent Variable Models, PhD Thesis, 2009.</a> <a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:3" role="doc-endnote">
+<p><a href="https://arxiv.org/abs/1108.6296">Zenglin Xu and Feng Yan and Yuan Qi, Infinite Tucker Decomposition: Nonparametric Bayesian Models for Multiway Data Analysis, Proceedings of the 29th International Conference on Machine Learning, ICML, 2012.</a> <a href="#fnref:3" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:4" role="doc-endnote">
+<p><a href="http://jmlr.csail.mit.edu/papers/volume6/lawrence05a/lawrence05a.pdf">Neil Lawrence, Probabilistic Non-linear Principal Component Analysis with Gaussian Process Latent Variable Models, J. Mach. Learn. Res., 2005.</a> <a href="#fnref:4" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:5" role="doc-endnote">
+<p>At first glance, the objective functions of PCA and pPCA seem to be different, and I wonder how similar the objective functions of PCA and pPCA are. <a href="#fnref:5" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:6" role="doc-endnote">
+<p>[Michael Tipping and Christopher Bishop, Probabilistic Principal Component Analysis, Journal of the Royal Statistical Society Series, 1999.](<a href="http://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.(pdf)">http://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.(pdf)</a> <a href="#fnref:6" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:7" role="doc-endnote">
+<p>Strictly speaking, the kernel principal component analysis is different because it uses the dual representation of ordinary principal component analysis instead of DPPCA, but here the difference is ignored. <a href="#fnref:7" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:8" role="doc-endnote">
+<p>[James T. Kwok and Ivor W. Tsang, The pre-image problem in kernel methods, ,IEEE Transactions on Neural Networks, 2004.](<a href="https://www.aaai.org/Papers/ICML/(2003/ICML03-055.pdf)">https://www.aaai.org/Papers/ICML/(2003/ICML03-055.pdf)</a> <a href="#fnref:8" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:9" role="doc-endnote">
+<p><a href="http://www.gaussianprocess.org/gpml/chapters/RW.pdf">Carl E. Rasmussen and Christopher K. I. Williams. Gaussian Processes for Machine Learning. The MIT Press, 2006.</a> <a href="#fnref:9" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:10" role="doc-endnote">
+<p>$\mathcal{GP}(\mu_0(\mathbf{z}),k(\mathbf{z},\mathbf{z}))$ is the average function $\mu_0(\mathbf{z} )$, covariance function $k(\mathbf{z},\mathbf{z}')$ is a Gaussian process. <a href="#fnref:10" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:11" role="doc-endnote">
+<p>The probability distribution of the output when given an arbitrary set of inputs to the Gaussian process uses the property of consistently following the Gaussian distribution. <a href="#fnref:11" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

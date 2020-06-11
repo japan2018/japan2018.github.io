@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Introductory Cython -2- | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Introductory Cython -2-</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 12, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/cython">Cython</a></code></small>
+
+</p>
+<pre><code>This article is a continuation of [&quot;Introduction to Cython&quot;](http://qiita.com/pashango2/items/45cb85390193d97523ca).
+</code></pre>
+<p>Let&rsquo;s get started with Cython again this time so as not to go too deep.
+It should be noted that this article is intended to have you enjoy the delicious portion of Cython without going deep.</p>
+<h1 id="cython-notation-early-tour">Cython Notation Early Tour</h1>
+<p>Cython&rsquo;s notation isn&rsquo;t that hard, and there&rsquo;s good sample code in the Cython tutorial, so let&rsquo;s borrow it.</p>
+<pre><code class="language-python:" data-lang="python:">def myfunction(x, y=2):
+    a = x-y
+    return a + x * y
+
+def _helper(a):
+    return a + 1
+
+class A:
+    def __init__(self, b=0):
+        self.a = 3
+        self.b = b
+        self._scale = 2.0
+        self.read_only = 1.0
+
+    def foo(self, x):
+        return x + _helper(1.0)
+</code></pre><p>Here is the code above optimized with Cython.</p>
+<pre><code class="language-python:Cython" data-lang="python:Cython">%%cython
+cpdef int myfunction(int x, int y=2):
+    cdef int a = x-y
+    return a + x * y
+
+cdef double _helper(double a):
+    return a + 1
+
+cdef class A:
+    cdef public int x
+    cdef public int y
+    cdef double _scale
+    cdef readonly float read_only
+
+    def __init__(self, int b=0):
+        self.a = 3
+        self.b = b
+        self._scale = 2.0
+        self.read_only = 1.0
+
+    cpdef double foo(self, double x):
+        return (x + _helper(1.0)) * self._scale
+</code></pre><p>You can see how to type variables, arguments, and return values, so there&rsquo;s no need to explain them.</p>
+<h3 id="function-declaration">Function declaration</h3>
+<p>If you look closely at the function declaration, myfunction function is defined by <code>cpdef</code>, _helper function is defined by <code>cdef</code>, the list of function declaration is as follows.</p>
+<table>
+<thead>
+<tr>
+<th align="center">Declaration</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">def</td>
+<td align="left">Slow, can be called from Python</td>
+</tr>
+<tr>
+<td align="center">cdef</td>
+<td align="left">Fast, cannot be called from Python, can only be used within Cython</td>
+</tr>
+<tr>
+<td align="center">cpdef</td>
+<td align="left">Hybrid of def and cdef, def when called from Python, cdef when called from Cython</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cdef-class">cdef class</h3>
+<p>If you say <code>cdef class A</code> in the class declaration, it will be a cdef class.
+The cdef class manages attributes with a dict, compared to a normal class that manages attributes, so it has better memory efficiency and faster access, but is subject to the following restrictions.</p>
+<ul>
+<li>Dynamic method/member addition not possible</li>
+<li>Multiple inheritance with cdef method as parent is not possible, single inheritance is possible</li>
+</ul>
+<p>The member definition must be defined in advance as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cdef <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>:
+    cdef public int x
+    cdef public int y
+    cdef double _scale
+    cdef readonly float read_only
+<span style="color:#f92672">...</span>
+</code></pre></div><p>If you don&rsquo;t add public like <code>_scale</code> member, you cannot refer from Python.
+Also, if you add the <code>readonly</code> attribute like the <code>read_only</code> member, you cannot change it from Python.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">a <span style="color:#f92672">=</span> A()
+a<span style="color:#f92672">.</span>_scale <span style="color:#75715e"># error</span>
+a<span style="color:#f92672">.</span>read_only <span style="color:#f92672">=</span> <span style="color:#ae81ff">2.0</span> <span style="color:#75715e"># error</span>
+</code></pre></div><h3 id="list-of-file-extensions-used-by-cython">List of file extensions used by Cython</h3>
+<table>
+<thead>
+<tr>
+<th align="center">Extension</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">.pyx</td>
+<td align="left">It can be thought of as an implementation file and the program itself</td>
+</tr>
+<tr>
+<td align="center">.pxd</td>
+<td align="left">Definition file</td>
+</tr>
+<tr>
+<td align="center">.pxi</td>
+<td align="left">Include File</td>
+</tr>
+</tbody>
+</table>
+<p>If you know the above, you should be in good hands.</p>
+<h1 id="pure-python-mode">pure Python mode</h1>
+<p>As a general procedure for speeding up a Python program, it is a general procedure to add a type definition to the original program.
+So, let&rsquo;s dare to suggest a different approach, which is &ldquo;pure Python mode&rdquo;.</p>
+<p>Let&rsquo;s rewrite the above sample in pure Python mode.</p>
+<pre><code class="language-python:pure_Python" data-lang="python:pure_Python">%%cython
+import cython
+
+@cython.ccall
+@cython.locals(x=cython.int, y=cython.int)
+@cython.returns(cython.int)
+def myfunction(x, y=2):
+    a = x-y
+    return a + x * y
+
+@cython.cfunc
+@cython.locals(a=cython.double)
+@cython.returns(cython.double)
+def _helper(a):
+    return a + 1
+
+
+@cython.cclass
+class A:
+    a = cython.declare(cython.int, visibility='public')
+    b = cython.declare(cython.int, visibility='public')
+    _scale = cython.declare(cython.double)
+    read_only = cython.declare(cython.double, visibility=&quot;readonly&quot;)
+
+    @cython.locals(b=cython.int)
+    def __init__(self, b=0):
+        self.a = 3
+        self.b = b
+        self._scale = 2.0
+        self.read_only = 1.0
+
+    @cython.ccall
+    @cython.locals(x=cython.double)
+    @cython.returns(cython.double)
+    def foo(self, x):
+        return x + _helper(1.0) * self._scale
+</code></pre><p>It is a style to do <code>import cython</code> to Python code and add type information by decorating. With this, you can use both Python execution and Cython compilation in the same file.</p>
+<p>Since the type information is defined outside the function, it is not necessary to change the Python code part inside the function.
+Since the readability of the processing part is the same, it is surprisingly comfortable if you get used to the decorator storm.</p>
+<p>See the official documentation for more details on Cython&rsquo;s pure Python mode. It&rsquo;s a short tutorial, so it&rsquo;s easy to read as there are few English sentences.</p>
+<p><a href="http://cython.readthedocs.io/en/latest/src/tutorial/pure.html">http://cython.readthedocs.io/en/latest/src/tutorial/pure.html</a></p>
+<p>#Agumenting .pxd file</p>
+<p>You can speed up the code in a function as it is in pure Python mode, but if you use a .pxd file, you can speed up without changing the entire .py file.</p>
+<p>This explanation is partly excerpted because there is a brief explanation in the official manual.</p>
+<p><a href="http://omake.accense.com/static/doc-ja/cython/src/tutorial/pure.html">http://omake.accense.com/static/doc-ja/cython/src/tutorial/pure.html</a></p>
+<p>If it finds a .pxd with the same name as the &gt;.py file, Cython scans the cdefed classes and the cdef/cpdefed functions and methods. Then convert the corresponding class, function or method in .py to the appropriate type. So if you had an a.pxd like the following:</p>
+<blockquote>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cdef <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>:
+    cpdef foo(self, int i)
+</code></pre></div><blockquote>
+<p>At the same time if you have a file called a.py like this:</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>:
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">foo</span>(self, i):
+        <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;Big&#34;</span> <span style="color:#66d9ef">if</span> i <span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1000</span> <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#34;Small&#34;</span>
+</code></pre></div><blockquote>
+<p>The code is interpreted as follows:</p>
+</blockquote>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">cdef <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>:
+    cpdef foo(self, int i):
+        <span style="color:#66d9ef">print</span> <span style="color:#e6db74">&#34;Big&#34;</span> <span style="color:#66d9ef">if</span> i <span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1000</span> <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#34;Small&#34;</span>
+</code></pre></div><h1 id="cooperation-between-type-hint-and-cython-wishful-observation">Cooperation between type hint and Cython (wishful observation)</h1>
+<p>A closer look at the pure Python mode code <a href="http://qiita.com/pashango2/items/de342abc10722ed7a569#%E5%BC%B7%E5%8A%9B%E3%81%AA%E3%82%BF%E3%82%A4%E3%83%97%E3%83%92%E3%83%B3%E3%83%86%E3%82%A3%E3%83%B3%E3%25Similarto82%B0">PyCharm type hinting</a>.
+I use PyCharm&rsquo;s type hints a lot, so pure Python mode feels easy to use.</p>
+<pre><code class="language-python:" data-lang="python:">class A:
+    &quot;&quot;&quot;
+    :type a: int
+    :type b: int
+    &quot;&quot;&quot;
+
+    def __init__(self, b=0):
+        &quot;&quot;&quot;
+        :type b: int
+        &quot;&quot;&quot;
+        self.a = 3
+        self.b = b
+
+    def foo(self, x):
+        &quot;&quot;&quot;
+        :type x: float
+        :rtype: float
+        &quot;&quot;&quot;
+        return x * float(self.a)
+</code></pre><p>Also, Python has a stub file (.pyi) that contains only type information.</p>
+<p><a href="https://www.python.org/dev/peps/pep-0484/#stub-files">https://www.python.org/dev/peps/pep-0484/#stub-files</a></p>
+<p>The stub file is very similar to the &ldquo;agumenting.pxd file&rdquo; described at the end.</p>
+<p>In the future, Python code that writes type hints or Python code that writes type annotations will be automatically speeded up by Cython without touching the code (although perfect speeding will be difficult, of course). Personally I am happy when this happens.However, I haven&rsquo;t found such information in my research, so if you have any information about type hints and Cython automation, I would appreciate it.</p>
+<p>#Summary
+It&rsquo;s pretty quick, but I introduced the features of Cython.
+Cython has many features, but for the time being it should be sufficient to speed up using Cython.</p>
+<p>If you want to get an overview of Cython, the slides below are well organized and recommended.</p>
+<p><a href="http://www.behnel.de/cython200910/talk.html">http://www.behnel.de/cython200910/talk.html</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

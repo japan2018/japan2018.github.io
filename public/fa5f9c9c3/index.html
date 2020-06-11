@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] How to make code that is not good with Python refactoring into ordinary beautiful code that is not beautiful object-oriented design | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] How to make code that is not good with Python refactoring into ordinary beautiful code that is not beautiful object-oriented design</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jul 20, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code>* [Method to improve bad code by Ruby refactoring to beautiful object-oriented design code-Part 1](http://tango-ruby.hatenablog.com/entry/2016/07/15/133122)
+</code></pre>
+<ul>
+<li><a href="http://tango-ruby.hatenablog.com/entry/2016/07/15/133153">Part 2</a></li>
+<li><a href="http://tango-ruby.hatenablog.com/entry/2016/07/15/133217">Part 3</a></li>
+</ul>
+<p>Let&rsquo;s do this with Python</p>
+<h2 id="original-code">original code</h2>
+<p>I try to imitate the original Ruby version as much as possible. The test uses py.test.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3"><span style="color:#75715e">#ordersreport.py</span>
+
+<span style="color:#f92672">from</span> collections <span style="color:#66d9ef">import</span> namedtuple
+
+
+Order <span style="color:#f92672">=</span> namedtuple(<span style="color:#e6db74">&#34;Order&#34;</span>, <span style="color:#e6db74">&#34;amount placed_at&#34;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">OrdersReport</span>:
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__init__</span>(self, orders, start_date, end_date):
+        self<span style="color:#f92672">.</span>orders <span style="color:#f92672">=</span> orders
+        self<span style="color:#f92672">.</span>start_date <span style="color:#f92672">=</span> start_date
+        self<span style="color:#f92672">.</span>end_date <span style="color:#f92672">=</span> end_date
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>(self):
+        orders_within_range <span style="color:#f92672">=</span> []
+        <span style="color:#66d9ef">for</span> order <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>orders:
+            <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>start_date <span style="color:#f92672">&lt;=</span> order<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">&lt;=</span> self<span style="color:#f92672">.</span>end_date:
+                orders_within_range<span style="color:#f92672">.</span>append(order)
+
+        sum_ <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># Add underscore to avoid conflict with built-in function sum</span>
+        <span style="color:#66d9ef">for</span> order <span style="color:#f92672">in</span> orders_within_range:
+            sum_ <span style="color:#f92672">+=</span> order<span style="color:#f92672">.</span>amount
+        <span style="color:#66d9ef">return</span> sum_
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3"><span style="color:#75715e">#ordersreport_test.py</span>
+
+<span style="color:#f92672">from</span> datetime <span style="color:#66d9ef">import</span> date
+<span style="color:#f92672">from</span> ordersreport <span style="color:#66d9ef">import</span> Order, OrdersReport
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_sales_within_date_range</span>():
+    order_within_range1 <span style="color:#f92672">=</span> Order(
+        amount<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, placed_at<span style="color:#f92672">=</span>date(<span style="color:#ae81ff">2016</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">10</span>))
+    order_within_range2 <span style="color:#f92672">=</span> Order(
+        amount<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>, placed_at<span style="color:#f92672">=</span>date(<span style="color:#ae81ff">2016</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">15</span>))
+    order_out_of_range <span style="color:#f92672">=</span> Order(
+        amount<span style="color:#f92672">=</span><span style="color:#ae81ff">6</span>, placed_at<span style="color:#f92672">=</span>date(<span style="color:#ae81ff">2016</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>))
+    orders <span style="color:#f92672">=</span> [order_within_range1, order_within_range2, order_out_of_range]
+
+    start_date <span style="color:#f92672">=</span> date(<span style="color:#ae81ff">2016</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">1</span>)
+    end_date <span style="color:#f92672">=</span> date(<span style="color:#ae81ff">2016</span>, <span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">31</span>)
+
+    report <span style="color:#f92672">=</span> OrdersReport(orders, start_date, end_date)
+    <span style="color:#66d9ef">assert</span> report<span style="color:#f92672">.</span>total_sales_within_date_range() <span style="color:#f92672">==</span> <span style="color:#ae81ff">15</span>
+</code></pre></div><p>I don&rsquo;t think I need any explanation, but if you need it, read the Ruby version.</p>
+<h2 id="1-change-from-not-good-to-good">1-change from &ldquo;not good&rdquo; to &ldquo;good&rdquo;</h2>
+<blockquote>
+<p>First, change the process that stores the orders within the range in orders_within_range.</p>
+</blockquote>
+<p>This is where filter or comprehension is used in Python. filter is convenient when the condition is already a function, but when you want to write a conditional expression, the comprehension is better than combining filter and lambda.</p>
+<p>ruby version</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">orders_within_range <span style="color:#f92672">=</span> @orders<span style="color:#f92672">.</span>select <span style="color:#66d9ef">do</span> <span style="color:#f92672">|</span>order<span style="color:#f92672">|</span>
+  order<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">&gt;=</span> @start_date <span style="color:#f92672">&amp;&amp;</span> order<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">&lt;=</span> @end_date
+<span style="color:#66d9ef">end</span>
+</code></pre></div><p>python version</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3">orders_within_range <span style="color:#f92672">=</span>
+    [o <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>orders
+     <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>start_date <span style="color:#f92672">&lt;=</span> o<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">&lt;=</span> self<span style="color:#f92672">.</span>end_date]
+</code></pre></div><blockquote>
+<p>Next is the process of turning each to get the total sales.
+The number of lines is too long due to sum declarations. Basically, one method should be within 5 lines. The original code has 13 lines. For the time being, you can just refactor just to reduce the number of lines. You can use inject here.</p>
+</blockquote>
+<p>In Python, there is reduce instead of inject, but I don&rsquo;t use it much. In such cases, sum is used straightforwardly. For the argument of sum, pass the generator using comprehension.</p>
+<p>Ruby version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby">    orders_within_range<span style="color:#f92672">.</span>inject(<span style="color:#ae81ff">0</span>) <span style="color:#66d9ef">do</span> <span style="color:#f92672">|</span>sum, order<span style="color:#f92672">|</span>
+      sum <span style="color:#f92672">+</span> order<span style="color:#f92672">.</span>amount
+    <span style="color:#66d9ef">end</span>
+</code></pre></div><p>Python version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3">    <span style="color:#66d9ef">return</span> sum(o<span style="color:#f92672">.</span>amount <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> orders_within_range)
+</code></pre></div><p>In the Ruby version, the return statement itself could be omitted by using inject, but it cannot be omitted in Python, and it expresses explicitly that the calculation result is returned.</p>
+<h2 id="2-from-mashi-to-like">2-From &ldquo;Mashi&rdquo; to &ldquo;Like&rdquo;</h2>
+<blockquote>
+<p>First, let&rsquo;s make orders_within_range a private method and put it out. The method name is orders_within_range.</p>
+</blockquote>
+<p>I don&rsquo;t really like to divide a function of this length further, but if there are several other calculation methods that use orders_within_range, I think they can be shared. In the case of Python, there is no private, but by convention, use names that start with an underscore. Since there are no arguments, it is a property.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>(self):
+        <span style="color:#66d9ef">return</span> sum(o<span style="color:#f92672">.</span>amount <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>_orders_within_range)
+
+    <span style="color:#a6e22e">@property</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_orders_within_range</span>(self):
+        <span style="color:#66d9ef">return</span> [o <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>orders
+                <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>start_date <span style="color:#f92672">&lt;=</span> o<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">&lt;=</span> self<span style="color:#f92672">.</span>end_date]
+</code></pre></div><p>Now, next,</p>
+<blockquote>
+<p>This violates the “don&rsquo;t hear, say” law I wrote earlier in this blog.
+&hellip;
+Here, it&rsquo;s not good because you are &ldquo;listening&rdquo; to whether order.placed_at is within the range in the select. If you change this to &ldquo;just say&rdquo;, it will look like this.</p>
+</blockquote>
+<p>So, I&rsquo;ve added <code>placed_between?</code> to the Order class, but I&rsquo;m against this change.</p>
+<p><code>placed_before?</code>, <code>placed_after?</code>, <code>placed_at?</code>, Do you add more and more when needed? Are you sure you want to delete the caller when you no longer need it? Are you forgetting to delete a lot of unused methods in your project?</p>
+<p>It may be fine if there is a reason to keep <code>order.placed_at</code> private, but as long as it&rsquo;s public, it&rsquo;s the opposite of including the general process of &ldquo;date comparison&rdquo; in the Order responsibilities. ..</p>
+<blockquote>
+<p>. If you look at the whole code, start_date and end_date are used here and there as arguments. These start_date and end_date must be entered every time. That reduces readability and reusability.
+&hellip;
+start_date and end_date are always a pair, and one of them does not hold. So putting them all together is the next change.</p>
+</blockquote>
+<p>Is this correct. It is subtle for the Order class only, but if there are many other places that use the date range, implement it.</p>
+<p>(By way of an aside, SQLAlchemy has a function called Composite Column Type that can be used to map a &ldquo;class that specifies a range of dates&rdquo; to two columns on the RDB and also generate SQL <a href="http://qiita.com/methane/items/57c4e4cf8fa7822bbceb">Reference</a>)</p>
+<p>The ones implemented so far are as follows. I was a bit worried about <code>include?</code> in the Ruby version, but I changed it to <code>__contains__</code>. When representing a range, it is common to use a semi-open interval [start, end] in Python (like C++), so that part was also separated from Ruby.</p>
+<p>Since DateRange doesn&rsquo;t actually depend on date, it&rsquo;s tempting to simply represent a range of numbers as a Range type, but it restrains itself because it conflicts with the built-in range and there is a strong fear of over-generalization. ..</p>
+<p>To summarize the code so far</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3"><span style="color:#75715e">#ordersreport.py</span>
+
+<span style="color:#f92672">from</span> collections <span style="color:#66d9ef">import</span> namedtuple
+
+
+Order <span style="color:#f92672">=</span> namedtuple(<span style="color:#e6db74">&#34;Order&#34;</span>, <span style="color:#e6db74">&#34;amount placed_at&#34;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DateRange</span>(namedtuple(<span style="color:#e6db74">&#34;DateRange&#34;</span>, <span style="color:#e6db74">&#34;start end&#34;</span>)):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__contains__</span>(self, date):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>start <span style="color:#f92672">&lt;=</span> date <span style="color:#f92672">&lt;</span>self<span style="color:#f92672">.</span>end
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">OrdersReport</span>:
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__init__</span>(self, orders, date_range):
+        self<span style="color:#f92672">.</span>orders <span style="color:#f92672">=</span> orders
+        self<span style="color:#f92672">.</span>date_range <span style="color:#f92672">=</span> date_range
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>(self):
+        <span style="color:#66d9ef">return</span> sum(o<span style="color:#f92672">.</span>amount <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>_orders_within_range)
+
+    <span style="color:#a6e22e">@property</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_orders_within_range</span>(self):
+        <span style="color:#66d9ef">return</span> [o <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>orders <span style="color:#66d9ef">if</span> o<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">in</span> self<span style="color:#f92672">.</span>date_range]
+<span style="color:#960050;background-color:#1e0010">```</span><span style="color:#75715e">## No. 3-Don&#39;t change from &#34;Like&#34; to &#34;Suge&#34;</span>
+
+In Part <span style="color:#ae81ff">3</span> of the original article, there were two stages of refactoring:
+
+Before refactoring:
+
+<span style="color:#960050;background-color:#1e0010">```</span>rb
+  <span style="color:#75715e">#Before refactoring</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>
+    orders_within_range<span style="color:#f92672">.</span>map(<span style="color:#f92672">&amp;</span>:amount)<span style="color:#f92672">.</span>inject(<span style="color:#ae81ff">0</span>) do <span style="color:#f92672">|</span>sum, amount<span style="color:#f92672">|</span>
+      sum <span style="color:#f92672">+</span> amount
+    end
+  end
+</code></pre></div><p>Extract the method that takes the sum of <code>Order.amount</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rb" data-lang="rb">  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>
+    total_sales(orders_within_range)
+  <span style="color:#66d9ef">end</span>
+
+  <span style="color:#66d9ef">private</span>
+
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales</span>(orders)
+    orders<span style="color:#f92672">.</span>map(<span style="color:#f92672">&amp;</span><span style="color:#e6db74">:amount</span>)<span style="color:#f92672">.</span>inject(<span style="color:#ae81ff">0</span>) <span style="color:#66d9ef">do</span> <span style="color:#f92672">|</span>sum, amount<span style="color:#f92672">|</span>
+      sum <span style="color:#f92672">+</span> amount
+    <span style="color:#66d9ef">end</span>
+  <span style="color:#66d9ef">end</span>
+</code></pre></div><p>And the implementation of <code>total_sales</code> in one line in idiom:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-rb" data-lang="rb">  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales</span>(orders)
+    orders<span style="color:#f92672">.</span>map(<span style="color:#f92672">&amp;</span><span style="color:#e6db74">:amount</span>)<span style="color:#f92672">.</span>inject(<span style="color:#ae81ff">0</span>, <span style="color:#e6db74">:+</span>)
+  <span style="color:#66d9ef">end</span>
+</code></pre></div><p>The reason for method extraction is that we want to make public method implementation as easy as it can be seen at a glance, and certainly the code before refactoring needs to take a breath of &ldquo;um,&rdquo; to understand what it is doing. .. Even the last idiom on a single line isn&rsquo;t obvious to anyone who doesn&rsquo;t know this idiom, so it may make sense to separate them by named methods.</p>
+<p>On the other hand, Python is readable enough at the time of <code>sum(o.amount for o in self._orders_within_range)</code>, and if you dare rewrite it as <code>self._total_sales(self._orders_within_range)</code>, the readability (*) is very good. Does not improve.
+On the contrary, readability is reduced by the amount of time it takes for the implementation of <code>_total_sales</code> to jump and return just to make sure it&rsquo;s taking the sum of amount. So I won&rsquo;t do anything here.</p>
+<ul>
+<li>&ldquo;Readability&rdquo; here is the time it takes to gain a deep understanding of the level at which you can debug and modify as described in &ldquo;The Art of Readable Code&rdquo;. So it&rsquo;s simple enough to write in one line, you don&rsquo;t have to twist your head to read it, and the caller divides the processing from only one place to a few places into a method, ``What does that method specifically do? This means that the brain will be used more and more to move the code for checking &ldquo;whether or not&rdquo;, and on the contrary, the readability will decrease.</li>
+</ul>
+<p>##Part 4-Discard object-oriented design</p>
+<p>Personally, I found it difficult to understand the responsibility of OrdersReport.</p>
+<p>As the name suggests, date_range should not be passed as an argument to <code>total_sales_within_date_range</code>, as other report generation methods may not rely on date_range if it is responsible for calculating various reports from an array of Order s. I wonder?</p>
+<p>Then you don&rsquo;t even know what you mean by class. In Python, the file itself is a module, so a function is sufficient.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>(orders, date_range):
+    <span style="color:#66d9ef">return</span> sum(o<span style="color:#f92672">.</span>amount <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> orders <span style="color:#66d9ef">if</span> o<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">in</span> date_range)
+</code></pre></div><h2 id="summary">Summary</h2>
+<p>Which do you prefer, code that Ruby people think is object-oriented and beautiful or code that Python people think is simple and normal?</p>
+<p>Python version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python3" data-lang="python3"><span style="color:#75715e">#ordersreport.py</span>
+
+<span style="color:#f92672">from</span> collections <span style="color:#66d9ef">import</span> namedtuple
+
+
+Order <span style="color:#f92672">=</span> namedtuple(<span style="color:#e6db74">&#34;Order&#34;</span>, <span style="color:#e6db74">&#34;amount placed_at&#34;</span>)
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DateRange</span>(namedtuple(<span style="color:#e6db74">&#34;DateRange&#34;</span>, <span style="color:#e6db74">&#34;start end&#34;</span>)):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__contains__</span>(self, date):
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>start <span style="color:#f92672">&lt;=</span> date <span style="color:#f92672">&lt;</span>self<span style="color:#f92672">.</span>end
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>(orders, date_range):
+    <span style="color:#75715e"># (List[Order], DateRange) -&gt; int</span>
+    <span style="color:#66d9ef">return</span> sum(o<span style="color:#f92672">.</span>amount <span style="color:#66d9ef">for</span> o <span style="color:#f92672">in</span> orders <span style="color:#66d9ef">if</span> o<span style="color:#f92672">.</span>placed_at <span style="color:#f92672">in</span> date_range)
+</code></pre></div><p>Ruby version:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ruby" data-lang="ruby"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">OrdersReport</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">initialize</span>(orders, date_range)
+    @orders <span style="color:#f92672">=</span> orders
+    @date_range <span style="color:#f92672">=</span> date_range
+  <span style="color:#66d9ef">end</span>
+
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">total_sales_within_date_range</span>
+    orders_within_range<span style="color:#f92672">.</span>map(<span style="color:#f92672">&amp;</span><span style="color:#e6db74">:amount</span>)<span style="color:#f92672">.</span>inject(<span style="color:#ae81ff">0</span>) <span style="color:#66d9ef">do</span> <span style="color:#f92672">|</span>sum, amount<span style="color:#f92672">|</span>
+      sum <span style="color:#f92672">+</span> amount
+    <span style="color:#66d9ef">end</span>
+  <span style="color:#66d9ef">end</span>
+
+  <span style="color:#66d9ef">private</span>
+
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">orders_within_range</span>
+    @orders<span style="color:#f92672">.</span>select <span style="color:#66d9ef">do</span> <span style="color:#f92672">|</span>order<span style="color:#f92672">|</span>
+      order<span style="color:#f92672">.</span>placed_between?(@date_range)
+    <span style="color:#66d9ef">end</span>
+  <span style="color:#66d9ef">end</span>
+<span style="color:#66d9ef">end</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DateRange</span> <span style="color:#f92672">&lt;</span><span style="color:#66d9ef">Struct</span><span style="color:#f92672">.</span>new(<span style="color:#e6db74">:start_date</span>, <span style="color:#e6db74">:end_date</span>)
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">include?</span>(date)
+    (start_date<span style="color:#f92672">..</span>end_date)<span style="color:#f92672">.</span>cover? date
+  <span style="color:#66d9ef">end</span>
+<span style="color:#66d9ef">end</span>
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Order</span> <span style="color:#f92672">&lt;</span><span style="color:#66d9ef">OpenStruct</span>
+  <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">placed_between?</span>(date_range)
+    date_range<span style="color:#f92672">.</span>include?(placed_at)
+  <span style="color:#66d9ef">end</span>
+<span style="color:#66d9ef">end</span>
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] What I did to save Python memory | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] What I did to save Python memory</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 22, 2015
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code>#Background
+</code></pre>
+<p>Start up multiple processes that take several days on a small server with 4 CPU memory 4G
+I was running out of memory in a couple of hours if I calculated while maintaining CPU 100% x 4.
+CPU usage has dropped dramatically. Apparently it was out of memory.</p>
+<h1 id="what-was-happening">What was happening</h1>
+<p>Increased processing time Nitomonai, process memory usage increased
+→Memory exhaustion
+→Memory swap occurs
+→Memory access speed is significantly degraded
+→ Memory wait CPU usage is less than 1%
+→ It will not end forever (significant deterioration in performance)</p>
+<p>#Countermeasures 0. Solve with money
+In most cases, increasing the number of servers or improving server performance will solve the problem.
+I didn&rsquo;t select it because it was an individual PJ, but when I switched to a server with about 32G memory
+I think that&rsquo;s the solution.</p>
+<h1 id="countermeasure-1-vertical-division-of-processing">Countermeasure 1. Vertical division of processing</h1>
+<p>The memory management of python is fully automated by the basic VM. The only solution to the memory leak is to kill the process
+Dividing the parts that were processing 8 different categories with one command to give a good equality to the processing.</p>
+<h3 id="before-improvement">Before improvement</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Category</span>(Enum):
+    A <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+    B <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+    C <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+
+<span style="color:#66d9ef">for</span> category <span style="color:#f92672">in</span> Category:
+  benchmark(category)
+</code></pre></div><h3 id="after-improvement">After improvement</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">category <span style="color:#f92672">=</span> manage<span style="color:#f92672">.</span>get_category_by_priority()
+benchmark(category)
+</code></pre></div><h1 id="countermeasure-2-introduced-supervisor">Countermeasure 2. Introduced supervisor</h1>
+<p>The code for improvement 1 had to be executed in 8 steps, so if the process stopped
+Each process needed to be started up again. It is convenient to use supervisor in such a case</p>
+<pre><code class="language-lang:shell" data-lang="lang:shell">easy_install supervisor
+echo_supervisord_conf &gt;/etc/supervisord.conf
+supervisord
+supervisord status
+alias sc='supervisorctl'
+sc restart
+sc reread
+sc stop all
+sc status
+sc restart all
+</code></pre><p>#Countermeasures 3. Manual GC is used
+GC of python is not familiar so there may be side effects.
+So far, it&rsquo;s stable with the memory leak resolved,
+There is a possibility of black magic, so I do not recommend it so much.</p>
+<p>If you use a lot of class cache, memory leak frequently occurs in python2 series.
+Will python3 solve the problem of increasing memory consumption?</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Category</span>(Enum):
+    A <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+    B <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+    C <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+
+<span style="color:#66d9ef">for</span> category <span style="color:#f92672">in</span> Category:
+  benchmark(category)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">benchmark</span>(category):
+  bulk <span style="color:#f92672">=</span> []
+  tmp_data <span style="color:#f92672">=</span> Tmp<span style="color:#f92672">.</span>get_all()
+  <span style="color:#66d9ef">for</span> _tmp <span style="color:#f92672">in</span> tmp_data:
+    bulk<span style="color:#f92672">.</span>append(calc(_tmp))
+  DBTable<span style="color:#f92672">.</span>bulk_create(bulk) <span style="color:#75715e"># Bulk!</span>
+
+  <span style="color:#75715e"># Free memory</span>
+  <span style="color:#f92672">import</span> gc
+  <span style="color:#66d9ef">del</span> tmp_data
+  <span style="color:#66d9ef">del</span> bulk
+  gc<span style="color:#f92672">.</span>collect()
+</code></pre></div><p>See also: gc — garbage collector interface
+<a href="http://docs.python.jp/2/library/gc.html">http://docs.python.jp/2/library/gc.html</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

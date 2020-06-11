@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Try extracting features from sensor data with CNN | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Try extracting features from sensor data with CNN</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Aug 31, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/chainer"> Chainer</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/anomaly-detection"> Anomaly detection</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/autoencoder"> Autoencoder</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/convolutionalneuralnetworks"> ConvolutionalNeuralNetworks</a></code></small>
+
+</p>
+<pre><code># I tried convolution with sensor data (1 dimensional vector)
+</code></pre>
+<p>The convolutional neural network is generally used in image processing, but this time, I tried using a one-dimensional vector as seen in sensor data. The point is to convert the data structure using reshape to make it pseudo-three-dimensional (RGB, X, Y), which is the same as the image. I think that convolution can extract features even if there are few learning parameters, and is effective in detecting anomalies.</p>
+<p>#1. Create sample data
+Create a Sin wave for one cycle using numpy,
+Add pseudo noise with np.random.rand()
+Create 100 pieces with some variation.
+99 pieces were used for learning and the other one was used as a verification waveform.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py">data<span style="color:#f92672">=</span>[]
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100</span>):
+    data<span style="color:#f92672">.</span>append([np<span style="color:#f92672">.</span>sin(np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> n <span style="color:#f92672">/</span><span style="color:#ae81ff">50</span>)<span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand())<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100</span>)])
+</code></pre></div><p>#2.Create CNN model</p>
+<p>Create a learning model using Convolution2D of Chainer.
+The structure that restores the convolved data to the original input data at the last layer.
+With this, feature extraction is performed as AutoEncoder.</p>
+<p>~~ The activation function is set to Tanh because the data in the middle of Convlution is
+I thought that there was no negative side when visualizing, and it looked bad. ~~
+(Addition) I made it possible to take out the data when making it visible without passing through the activation function. I thought this was the right one.</p>
+<p>Even with ReLU, the Sin wave data did not affect the learning results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-CNN.py" data-lang="CNN.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyChain</span>(chainer<span style="color:#f92672">.</span>Chain):
+
+    <span style="color:#66d9ef">def</span> __init__(self,n_out):
+        super(MyChain, self)<span style="color:#f92672">.</span>__init__()
+        <span style="color:#66d9ef">with</span> self<span style="color:#f92672">.</span>init_scope():
+            self<span style="color:#f92672">.</span>l1 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(None,<span style="color:#ae81ff">2</span>, ksize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">4</span>),stride<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+            self<span style="color:#f92672">.</span>l2 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(None,<span style="color:#ae81ff">2</span>, ksize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">4</span>),stride<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+            self<span style="color:#f92672">.</span>l3 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(None,<span style="color:#ae81ff">2</span>, ksize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">4</span>),stride<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+            self<span style="color:#f92672">.</span>l4 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Linear(None, n_out)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__Call__</span>(self,x,y):
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>mean_squared_error(self<span style="color:#f92672">.</span>fwd(x),y)
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fwd</span>(self, x):
+        h1 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l1(x),<span style="color:#ae81ff">2</span>))
+        h2 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l2(h1),<span style="color:#ae81ff">2</span>))
+        h3 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l3(h2),<span style="color:#ae81ff">2</span>))
+        h3 <span style="color:#f92672">=</span> h3<span style="color:#f92672">.</span>reshape(h3<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>l4(h3)
+</code></pre></div><p>#3.learn</p>
+<p>When using CNN, it cannot be read with one-dimensional vector data.
+Therefore, we transform the training data using Reshape.
+Also, the one that will be the teacher data is the original vector data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py">TrainData <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(data,dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">100</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">100</span>)
+x<span style="color:#f92672">=</span>chainer<span style="color:#f92672">.</span>Variable(TrainData[:<span style="color:#ae81ff">99</span>])
+
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">201</span>):
+    model<span style="color:#f92672">.</span>zerograds()
+    loss<span style="color:#f92672">=</span>model(x,x<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">99</span>,<span style="color:#ae81ff">100</span>))
+    loss<span style="color:#f92672">.</span>backward()
+    optimizer<span style="color:#f92672">.</span>update()
+</code></pre></div><p>#4. result</p>
+<p>First, the result of restoration from the input waveform.
+It can be restored normally.
+<img src="https://qiita-image-store.s3.amazonaws.com/0/199413/cad40844-ee06-33d3-1a29-cfb2a88816f4.png" alt="200-Epoch Validation Graph.png"></p>
+<p>For reference, let&rsquo;s look at the waveform of the convolution process.
+I try to match the size of the data in a pseudo manner.</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/199413/86975dd2-bcba-e9fd-4f8d-87a0b4b92bf7.png" alt="200-Epoch Convolution Graph.png"></p>
+<p>Well, I honestly don&rsquo;t really understand very well.
+It can be said that Layer3 has a narrowed down waveform,
+Is the characteristic of Sin wave itself such a thing?
+Is it capturing the shape of a mountain?
+I tried learning several times, but the waveform is different each time.
+I think it&rsquo;s interesting.</p>
+<p>#5. Expansion to anomaly detection</p>
+<p>I&rsquo;ve seen anomaly detection using AutoEncoder in the past,
+This is a method of expressing the anomaly degree using the difference between the input and the restored output.
+Similarly, I made abnormal data and verified it.</p>
+<p>The first is the phase shift
+I tried shifting the input value by 5 dots (5/100 cycles).</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/199413/c56a1d4e-10d6-09e4-9d6d-9a373b92815d.png" alt="Shift Error Input Graph.png"></p>
+<p>The waveform of Predict has a result close to the original phase, and the line shape is jagged.
+This seems to be easily detected as an abnormality.</p>
+<p>Next, if one point like a spike is protruding</p>
+<p><img src="https://qiita-image-store.s3.amazonaws.com/0/199413/7ba3dbba-c42e-07e3-e200-b0ad63654b26.png" alt="Spike Error Input Graph.png"></p>
+<p>This is also jagged.
+If it is jagged like this, it may be useful for detecting anomalies based on features such as differences.</p>
+<p>#6. Conclusion
+This time I posted for the first time.
+Through this site, I look at your posts and study.
+I thought it was a repayment, so I decided to post it.
+I hope this post has helped you with something.</p>
+<h1 id="additional-actual-sample-code-used">(Additional) Actual sample code used</h1>
+<p>Environment Python 3.6.1
+Anaconda 4.4.0 (64-bit)
+Chainer 2.0.2</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sample.py" data-lang="sample.py"><span style="color:#f92672">import</span> chainer
+<span style="color:#f92672">import</span> chainer.functions <span style="color:#f92672">as</span> F
+<span style="color:#f92672">import</span> chainer.links <span style="color:#f92672">as</span> L
+<span style="color:#f92672">import</span> chainer.optimizers
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#f92672">as</span> plt
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyChain</span>(chainer<span style="color:#f92672">.</span>Chain):
+    <span style="color:#66d9ef">def</span> __init__(self,n_out):
+
+        super(MyChain, self)<span style="color:#f92672">.</span>__init__()
+
+        <span style="color:#66d9ef">with</span> self<span style="color:#f92672">.</span>init_scope():
+
+            self<span style="color:#f92672">.</span>l1 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(None,<span style="color:#ae81ff">2</span>, ksize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">4</span>),stride<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+            self<span style="color:#f92672">.</span>l2 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(None,<span style="color:#ae81ff">2</span>, ksize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">4</span>),stride<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+            self<span style="color:#f92672">.</span>l3 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Convolution2D(None,<span style="color:#ae81ff">2</span>, ksize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">4</span>),stride<span style="color:#f92672">=</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>))
+            self<span style="color:#f92672">.</span>l4 <span style="color:#f92672">=</span> L<span style="color:#f92672">.</span>Linear(None, n_out)
+
+    <span style="color:#66d9ef">def</span> __call__(self,x,y):
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>mean_squared_error(self<span style="color:#f92672">.</span>fwd(x),y)
+
+    
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">fwd</span>(self, x):
+
+        h1 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l1(x),<span style="color:#ae81ff">2</span>))
+        h2 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l2(h1),<span style="color:#ae81ff">2</span>))
+        h3 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l3(h2),<span style="color:#ae81ff">2</span>))
+        h3 <span style="color:#f92672">=</span> h3<span style="color:#f92672">.</span>reshape(h3<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">0</span>],<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>l4(h3)
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">Layaer1</span>(self, x):
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l1(x),<span style="color:#ae81ff">2</span>)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">Layaer2</span>(self, x):
+        h1<span style="color:#f92672">=</span>F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l1(x),<span style="color:#ae81ff">2</span>))
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l2(h1),<span style="color:#ae81ff">2</span>)
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">Layaer3</span>(self, x):
+        h1 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l1(x),<span style="color:#ae81ff">2</span>))
+        h2 <span style="color:#f92672">=</span> F<span style="color:#f92672">.</span>tanh(F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l2(h1),<span style="color:#ae81ff">2</span>))
+        <span style="color:#66d9ef">return</span> F<span style="color:#f92672">.</span>max_pooling_2d(self<span style="color:#f92672">.</span>l3(h2),<span style="color:#ae81ff">2</span>)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">CreatePlotData</span>(arr,n1):
+    Buf1,Buf2<span style="color:#f92672">=</span>[],[]
+    <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(n1):
+        Buf1<span style="color:#f92672">.</span>append(<span style="color:#ae81ff">0</span>)
+        Buf2<span style="color:#f92672">.</span>append(<span style="color:#ae81ff">0</span>)
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(arr<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">1</span>]):
+        <span style="color:#66d9ef">for</span> j <span style="color:#f92672">in</span> range(n1):
+            Buf1<span style="color:#f92672">.</span>append(arr[<span style="color:#ae81ff">0</span>][i]<span style="color:#f92672">.</span>real)
+            Buf2<span style="color:#f92672">.</span>append(arr[<span style="color:#ae81ff">1</span>][i]<span style="color:#f92672">.</span>real)
+      
+    <span style="color:#66d9ef">return</span> np<span style="color:#f92672">.</span>array(Buf1,dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32),np<span style="color:#f92672">.</span>array(Buf2,dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)
+
+
+data<span style="color:#f92672">=</span>[]
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100</span>):
+    data<span style="color:#f92672">.</span>append([np<span style="color:#f92672">.</span>sin(np<span style="color:#f92672">.</span>pi <span style="color:#f92672">*</span> n <span style="color:#f92672">/</span><span style="color:#ae81ff">50</span>)<span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span>np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>rand())<span style="color:#66d9ef">for</span> n <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">100</span>)])
+
+model <span style="color:#f92672">=</span> MyChain(<span style="color:#ae81ff">100</span>)
+optimizer <span style="color:#f92672">=</span> chainer<span style="color:#f92672">.</span>optimizers<span style="color:#f92672">.</span>Adam()
+optimizer<span style="color:#f92672">.</span>setup(model)
+
+TrainData <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(data,dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">100</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">100</span>)
+x<span style="color:#f92672">=</span>chainer<span style="color:#f92672">.</span>Variable(TrainData[:<span style="color:#ae81ff">99</span>])ValidationData<span style="color:#f92672">=</span>TrainData[<span style="color:#ae81ff">99</span>]<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">100</span>)
+PlotInput <span style="color:#f92672">=</span> ValidationData<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">100</span>)
+
+<span style="color:#66d9ef">for</span> epoch <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">201</span>):
+    model<span style="color:#f92672">.</span>zerograds()
+    loss<span style="color:#f92672">=</span>model(x,x<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">99</span>,<span style="color:#ae81ff">100</span>))
+    loss<span style="color:#f92672">.</span>backward()
+    optimizer<span style="color:#f92672">.</span>update()
+
+    <span style="color:#66d9ef">if</span> epoch<span style="color:#f92672">%</span><span style="color:#ae81ff">20</span><span style="color:#f92672">==</span><span style="color:#ae81ff">0</span>:
+
+        Layer1Arr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(model<span style="color:#f92672">.</span>Layaer1(ValidationData)<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">2</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+        Layer1Arr1,Layer1Arr2 <span style="color:#f92672">=</span> CreatePlotData(Layer1Arr,<span style="color:#ae81ff">2</span>)
+
+        Layer2Arr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(model<span style="color:#f92672">.</span>Layaer2(ValidationData)<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">2</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+        Layer2Arr1,Layer2Arr2 <span style="color:#f92672">=</span> CreatePlotData(Layer2Arr,<span style="color:#ae81ff">4</span>)
+        
+        Layer3Arr <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>array(model<span style="color:#f92672">.</span>Layaer3(ValidationData)<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">2</span>,<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
+        Layer3Arr1,Layer3Arr2 <span style="color:#f92672">=</span> CreatePlotData(Layer3Arr,<span style="color:#ae81ff">8</span>)
+         
+        plt<span style="color:#f92672">.</span>plot(PlotInput,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Input&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(Layer1Arr1,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Lalyer1-1&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(Layer1Arr2,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Lalyer1-2&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(Layer2Arr1,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Lalyer2-1&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(Layer2Arr2,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Lalyer2-2&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(Layer3Arr1,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Lalyer3-1&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(Layer3Arr2,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Lalyer3-2&#39;</span>)
+        plt<span style="color:#f92672">.</span>legend()
+        plt<span style="color:#f92672">.</span>savefig(str(epoch)<span style="color:#f92672">+</span><span style="color:#e6db74">&#39;-Epoch Convolution Graph.png&#39;</span>)
+        plt<span style="color:#f92672">.</span>close()
+
+        predict <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fwd(ValidationData) 
+        predict<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>array(predict<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">100</span>)
+        plt<span style="color:#f92672">.</span>plot(predict,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Predict&#39;</span>)
+        plt<span style="color:#f92672">.</span>plot(PlotInput,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Input&#39;</span>)
+        plt<span style="color:#f92672">.</span>legend()
+        plt<span style="color:#f92672">.</span>savefig(str(epoch)<span style="color:#f92672">+</span><span style="color:#e6db74">&#39;-Epoch Validation Graph.png&#39;</span>)   
+        plt<span style="color:#f92672">.</span>close()
+
+ErrorPlot <span style="color:#f92672">=</span> [PlotInput[i<span style="color:#f92672">+</span><span style="color:#ae81ff">5</span>]<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(len(PlotInput)<span style="color:#f92672">-</span><span style="color:#ae81ff">5</span>)]
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">5</span>):
+    ErrorPlot<span style="color:#f92672">.</span>append(PlotInput[i])
+
+predict <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fwd(chainer<span style="color:#f92672">.</span>Variable(np<span style="color:#f92672">.</span>array(ErrorPlot,dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32))<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">100</span>)) 
+predict<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>array(predict<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">100</span>)
+plt<span style="color:#f92672">.</span>plot(predict,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Predict&#39;</span>)
+plt<span style="color:#f92672">.</span>plot(ErrorPlot,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Error Input&#39;</span>)    
+plt<span style="color:#f92672">.</span>legend()
+plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#39;Shift Error Input Graph.png&#39;</span>)    
+plt<span style="color:#f92672">.</span>close()
+
+Rnd <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>randint(<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">99</span>)
+
+ErrorPlot2<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>array(PlotInput)
+ErrorPlot2[Rnd]<span style="color:#f92672">=</span>ErrorPlot2[Rnd]<span style="color:#f92672">+</span><span style="color:#ae81ff">3</span>
+
+predict <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>fwd(chainer<span style="color:#f92672">.</span>Variable(np<span style="color:#f92672">.</span>array(ErrorPlot2,dtype<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>float32))<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">100</span>)) 
+predict<span style="color:#f92672">=</span>np<span style="color:#f92672">.</span>array(predict<span style="color:#f92672">.</span>data)<span style="color:#f92672">.</span>reshape(<span style="color:#ae81ff">100</span>)
+plt<span style="color:#f92672">.</span>plot(predict,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Predict&#39;</span>)
+plt<span style="color:#f92672">.</span>plot(ErrorPlot2,label<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;Error Input&#39;</span>)    
+plt<span style="color:#f92672">.</span>legend()
+plt<span style="color:#f92672">.</span>savefig(<span style="color:#e6db74">&#39;Spike Error Input Graph.png&#39;</span>)    
+plt<span style="color:#f92672">.</span>close()
+</code></pre></div>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

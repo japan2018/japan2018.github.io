@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] [Python] A note when accelerating genetic algorithms using multiprocessing | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] [Python] A note when accelerating genetic algorithms using multiprocessing</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jul 21, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/genetic-algorithm"> genetic algorithm</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/multiprocessing"> multiprocessing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/optimization"> optimization</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/systre"> systre</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>If you google Google and parallel processing, you will see many articles about the module called multiprocessing, so I tried it in the article I wrote before.</p>
+<p><a href="http://qiita.com/toyolab/items/569c263d58b69b1a6b42">[Python] Trying optimization of FX systre parameter with genetic algorithm</a></p>
+<p>The genetic algorithm evaluates many individuals and performs genetic processing such as selection and crossover according to their fitness, but since the evaluation of each individual is completely independent, it is suitable for parallel processing. .. This time, I will apply parallel processing to the individual evaluation part.</p>
+<p>#Original code</p>
+<p>This is the code of the genetic algorithm before parallelization. It was used for optimizing the systole parameters in the above article, so it is not general purpose. The surrounding code is omitted.</p>
+<p>``'&lsquo;py
+def Optimize(ohlc, Prange):
+def shift(x, n=1): return np.concatenate((np.zeros(n), x[:-n])) # shift function</p>
+<pre><code>SlowMA = np.empty([len(Prange[0]), len(ohlc)]) # long-term moving average
+for i in range(len(Prange[0])):
+    SlowMA[i] = ind.iMA(ohlc, Prange[0][i])
+
+FastMA = np.empty([len(Prange[1]), len(ohlc)]) # short-term moving average
+for i in range(len(Prange[1])):
+    FastMA[i] = ind.iMA(ohlc, Prange[1][i])
+
+ExitMA = np.empty([len(Prange[2]), len(ohlc)]) # moving average for settlement
+for i in range(len(Prange[2])):
+    ExitMA[i] = ind.iMA(ohlc, Prange[2][i])
+
+Close = ohlc['Close'].values # closing price
+
+M = 20 # population
+Eval = np.zeros([M, 6]) # Evaluation item
+Param = InitParam(Prange, M) # Parameter initialization
+gens = 0 # number of generations
+while gens &lt;100:
+    for k in range(M):
+        i0 = Param[k,0]
+        i1 = Param[k,1]
+        i2 = Param[k,2]
+        #Buy entry signal
+        BuyEntry = (FastMA[i1] &gt;SlowMA[i0]) &amp; (shift(FastMA[i1]) &lt;= shift(SlowMA[i0]))
+        #Sell entry signal
+        SellEntry = (FastMA[i1] &lt;SlowMA[i0]) &amp; (shift(FastMA[i1]) &gt;= shift(SlowMA[i0]))
+        #Buy exit signal
+        BuyExit = (Close &lt;ExitMA[i2]) &amp; (shift(Close) &gt;= shift(ExitMA[i2]))
+        #Sell Exit Signal
+        SellExit = (Close &gt;ExitMA[i2]) &amp; (shift(Close) &lt;= shift(ExitMA[i2]))
+        #Backtest
+        Trade, PL = Backtest(ohlc, BuyEntry, SellEntry, BuyExit, SellExit)
+        Eval[k] = BacktestReport(Trade, PL)
+    # Generational change
+    Param = Evolution(Param, Eval[:,0], Prange)
+    gens += 1
+    #print(gens, Eval[0,0])
+Slow = Prange[0][Param[:,0]]
+Fast = Prange[1][Param[:,1]]
+Exit = Prange[2][Param[:,2]]
+return pd.DataFrame({'Slow':Slow,'Fast':Fast,'Exit':Exit,'Profit': Eval[:,0],'Trades':Eval[:,1],
+                     'Average':Eval[:,2],'PF':Eval[:,3],'MDD':Eval[:,4],'RF':Eval[:,5]},
+                     columns=['Slow','Fast','Exit','Profit','Trades','Average','PF','MDD','RF'])
+</code></pre>
+<pre><code>
+Let it run as it is and measure the execution time.
+
+``''py
+import time
+
+start = time.perf_counter()
+result = Optimize(ohlc, [SlowMAperiod, FastMAperiod, ExitMAperiod])
+print(&quot;elapsed_time = {0} sec&quot;.format(time.perf_counter()-start))
+</code></pre><pre><code>elapsed_time = 11.180512751173708 sec
+</code></pre>
+<p>Replace with #map function</p>
+<p>In the original code, it is between the <code>for</code> statements that it is parallelized. It is a time-consuming part in back-testing and evaluation with the parameters of each individual. When using multiprocessing, it seems easy to use the <code>map</code> method, so first try replacing the <code>for</code> statement with the <code>map</code> function.</p>
+<p>For that reason, it is necessary to make the repeated part a function, but there is a point to note here. If it is just a <code>map</code> function, it is more convenient to define the function in the <code>Optimize</code> function, but when using multiprocessing, an error will occur. So, outside the <code>Optimize</code> function, I defined the function with the name <code>evaluate</code>.</p>
+<p>For the convenience of passing it to <code>map</code>, we want to use only <code>k</code> as the argument of the <code>evaluate</code> function. Therefore, the variables for technical indicators such as <code>SlowMA</code> and <code>FastMA</code> are global variables. However, <code>Param</code> is the function argument.</p>
+<p>``'&lsquo;py
+SlowMA = np.empty([len(SlowMAperiod), len(ohlc)]) # long-term moving average
+for i in range(len(SlowMAperiod)):
+SlowMA[i] = ind.iMA(ohlc, SlowMAperiod[i])</p>
+<p>FastMA = np.empty([len(FastMAperiod), len(ohlc)]) # short-term moving average
+for i in range(len(FastMAperiod)):
+FastMA[i] = ind.iMA(ohlc, FastMAperiod[i])</p>
+<p>ExitMA = np.empty([len(ExitMAperiod), len(ohlc)]) # moving average for settlement
+for i in range(len(ExitMAperiod)):
+ExitMA[i] = ind.iMA(ohlc, ExitMAperiod[i])</p>
+<p>Close = ohlc[&lsquo;Close&rsquo;].values # closing price</p>
+<p>#Shift function
+def shift(x, n=1):
+return np.concatenate((np.zeros(n), x[:-n]))</p>
+<h1 id="function-to-process-in-parallel">Function to process in parallel</h1>
+<p>def evaluate(k,Param):
+i0 = Param[k,0]
+i1 = Param[k,1]
+i2 = Param[k,2]
+#Buy entry signal
+BuyEntry = (FastMA[i1] &gt;SlowMA[i0]) &amp; (shift(FastMA[i1]) &lt;= shift(SlowMA[i0]))
+#Sell entry signal
+SellEntry = (FastMA[i1] &lt;SlowMA[i0]) &amp; (shift(FastMA[i1]) &gt;= shift(SlowMA[i0]))
+#Buy exit signal
+BuyExit = (Close &lt;ExitMA[i2]) &amp; (shift(Close) &gt;= shift(ExitMA[i2]))
+#Sell Exit Signal
+SellExit = (Close &gt;ExitMA[i2]) &amp; (shift(Close) &lt;= shift(ExitMA[i2]))
+#Backtest
+Trade, PL = Backtest(ohlc, BuyEntry, SellEntry, BuyExit, SellExit)
+return BacktestReport(Trade, PL)</p>
+<pre><code>The following code replaces the `map` function instead of the `for` statement.
+
+``''py
+import functools
+
+def Optimize(ohlc, Prange):
+    M = 20 # population
+    Eval = np.zeros([M, 4]) # Evaluation item
+    Param = InitParam(Prange, M) # Parameter initialization
+    gens = 0 # number of generations
+    while gens &lt;100:
+        #for k in range(M): Eval[k] = evaluate(k,Param)
+        Eval = np.array(list(map(functools.partial(evaluate, Param=Param), np.arange(M))))
+        # Generational change
+        Param = Evolution(Param, Eval[:,0], Prange)
+        gens += 1
+        #print(gens, Eval[0,0])
+    Slow = Prange[0][Param[:,0]]
+    Fast = Prange[1][Param[:,1]]
+    Exit = Prange[2][Param[:,2]]
+    return pd.DataFrame({'Slow':Slow,'Fast':Fast,'Exit':Exit,'Profit': Eval[:,0],'Trades':Eval[:,1],
+                         'Average':Eval[:,2],'PF':Eval[:,3],'MDD':Eval[:,4],'RF':Eval[:,5]},columns=['Slow','Fast','Exit','Profit','Trades','Average','PF','MDD','RF'])
+</code></pre><p>Actually, it was not easy to write just with <code>map</code>. The function <code>evaluate</code> that repeats is put in the first argument of the <code>map</code> function, but since there are two arguments of the <code>evaluate</code> function, the second argument <code>Param</code> should be fixed to <code>Param</code>. I am using functools.partial`.</p>
+<p>Also, the return value of <code>map</code> is converted into a NumPy array, but it seems that it must be converted into a list before that. (It depends on the Python version. I tried Python 3.5.1 this time.)</p>
+<p>When I ran this, I got the following results:</p>
+<pre><code>elapsed_time = 11.157917446009389 sec
+</code></pre>
+<p>This means that even if you change the <code>for</code> statement to <code>map</code>, the execution time does not change much.</p>
+<h1 id="multiprocessing">multiprocessing</h1>
+<p>Introducing multiprocessing is easy if replaced by the <code>map</code> function.</p>
+<p>``'&lsquo;py
+import functools
+import multiprocessing as mp</p>
+<p>def Optimize(ohlc, Prange):
+M = 20 # population
+Eval = np.zeros([M, 4]) # Evaluation item
+Param = InitParam(Prange, M) # Parameter initialization
+pool = mp.Pool() # create process pool
+gens = 0 # number of generations
+while gens &lt;100:
+#for k in range(M): Eval[k] = evaluate(k,Param)
+Eval = np.array(list(pool.map(functools.partial(evaluate, Param=Param), np.arange(M))))
+# Generational change
+Param = Evolution(Param, Eval[:,0], Prange)
+gens += 1
+#print(gens, Eval[0,0])
+Slow = Prange[0][Param[:,0]]
+Fast = Prange[1][Param[:,1]]
+Exit = Prange[2][Param[:,2]]
+return pd.DataFrame({&lsquo;Slow&rsquo;:Slow,&lsquo;Fast&rsquo;:Fast,&lsquo;Exit&rsquo;:Exit,&lsquo;Profit&rsquo;: Eval[:,0],&lsquo;Trades&rsquo;:Eval[:,1],
+&lsquo;Average&rsquo;:Eval[:,2],&lsquo;PF&rsquo;:Eval[:,3],&lsquo;MDD&rsquo;:Eval[:,4],&lsquo;RF&rsquo;:Eval[:,5]},
+columns=[&lsquo;Slow&rsquo;,&lsquo;Fast&rsquo;,&lsquo;Exit&rsquo;,&lsquo;Profit&rsquo;,&lsquo;Trades&rsquo;,&lsquo;Average&rsquo;,&lsquo;PF&rsquo;,&lsquo;MDD&rsquo;,&lsquo;RF&rsquo;])</p>
+<pre><code>
+Just create a process pool with the `Pool` class and replace the `map` part above with `pool.map`. Specify the number of processes with the argument of `Pool`. If you don't write any arguments, it will use all CPU threads.
+
+You can use all threads for simple processing, but since there is other code, using half the thread is the fastest this time.
+
+Since it was 8 threads of Corei7, the result of running with `Pool(5)` is
+
+    elapsed_time = 5.766524394366197 sec
+
+is. About twice as fast. I expected it to be a little faster, but maybe it was due to genetic processing other than individual repetition. If your system takes more time to backtest, parallelization may be more effective.</code></pre>
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

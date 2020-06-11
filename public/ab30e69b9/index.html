@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Things to keep in mind when creating automation tools for the manufacturing site with Python | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Things to keep in mind when creating automation tools for the manufacturing site with Python</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 20, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/vbscript"> VBScript</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/automation"> automation</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/production-technology"> production technology</a></code></small>
+
+</p>
+<pre><code># Motivation for this article #
+</code></pre>
+<p>Last year, I changed jobs from a production engineering job to a data analysis job, and I have more opportunities to write Python. I am currently involved in a project to develop a preprocessing tool for machine learning. Meanwhile, looking back when I was working as a production engineer, I thought that there were various tasks that could be automated </b>. Based on the knowledge of Python obtained after changing jobs and the knowledge of the days of production engineers, I will describe the material that can be used when working again at the manufacturing site. We hope it will be helpful for those who are facing similar needs.
+▽ This article would be nice if you combine existing technologies! The above is a description, and I will first say that there is nothing new in technology.</p>
+<h1 id="what-to-automate-">What to automate</h1>
+<p>When I was working as a production engineer, there was work to <b>collect the data coming out of the process at the end of the day</b>. We save the logs and inspection results of the manufacturing equipment as csv files for each product and aggregate them at the end of the day to check the progress rate and defect rate on that day. In the process in charge, 4 csv was output every time one product was manufactured as shown in the figure below.</p>
+<p>◎ Manufacturing equipment setting value log
+◎ Manufacturing equipment status log
+◎ Product shape data
+◎ Judgment result calculated from shape data</p>
+<p>The part that determines the shape was made in Python, but this is what I asked the programmer of the information system to instruct how to determine.
+The above four csvs were collected in one Excel file every day. In other words, it was a translation of 4 x the number of manufactured files. If you start the production from the end of the day, it will be completed in the evening, so I asked the manufacturing staff to concentrate during the production.
+Of course, <b>this work does not need to be done by any person. </b>I was asked to do it in the gap time, but I regret that I should not have taken time because it is not a work that adds value to the product. I should have had the time spent devising ideas for reducing defects (=work that only people can do). </b>Although it&rsquo;s new, I&rsquo;ll show you how to automate this task with your current knowledge.</p>
+<p>&lt;img src=&quot;https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/318960/2a05f2d0-00a0-59ea-f834-ea13c344610e.png&quot;width=90%&gt;</p>
+<h1 id="things-to-keep-in-mind-when-creating-automated-tools">Things to keep in mind when creating automated tools</h1>
+<p>There are some things to keep in mind in order to create an automation tool in Python and use it in the manufacturing site. As a premise, it is assumed that the production engineer (=I) will create the tool and the manufacturing staff (=the person who actually makes the product) will use it.</p>
+<p>####<b>◎ Make it into a form that can be executed by a person with zero programming knowledge</b>
+It is better to assume that there are almost no people in the manufacturing field, including production engineers, who have programming knowledge. Basically, let&rsquo;s pass the tool so that it can be executed with just a click. This is also good from the standpoint of saving manufacturing staff. Also, if the operation of the tool depends on the Python package, it is impossible to ask &ldquo;Please insert 0.25.1 for pandas and 3.0.0 for openpyxl.. .&rdquo; It must be passed in a form that can be executed without building an environment.</p>
+<p>####<b>◎ Do not write items that are likely to change on a daily basis in a Python script</b>
+For example, the storage location of data may be changed due to site circumstances. In that case, if you write the path of the file in the Python script, you will have to rewrite the Python script every time there is a change. If there is no person who can read and write Python, it will not be possible to cope (= it will be called at the scene each time).</p>
+<p>####<b>◎ It&rsquo;s better to think that you can&rsquo;t use pip to install a package on a PC on site.</b>
+Depending on the rules of the company or factory, the network of the manufacturing site is closed within the line or in the factory and is often not connected to the outside. Since the manufacturing conditions and the acquired data are the first-class confidential information of the manufacturer, I think that most of the time, the network is physically disconnected from the outside so that it does not leak to the outside. Even in the case of the project I am doing now, I am going to the customer&rsquo;s factory to see the data.</p>
+<p>####<b>◎ Make Microsoft Office use without problems during operation</b>
+If Office is installed on the PC at the manufacturing site, it is required that Office can be used without problems (= does not freeze) while the tool is running. The reason for this is that the manufacturer may use the same PC to write daily reports in Excel or check Excel in which past data has been aggregated. If you can&rsquo;t use Office during the process, your reputation will drop sharply (laughs).</p>
+<p>####<b>◎Configure with OSS only</b>
+The use of OSS is a prerequisite because the production engineer (non-programmer) creates the automation tool himself. In addition, when delivering the product as a product to the customer, it may be necessary to create it only with OSS, because after the tool is handed over, the customer&rsquo;s manufacturing/information department wants to maintain it as much as possible.</p>
+<p>####<b>◎I often listen to the voice of the site (=manufacturer)</b>
+I wrote everything that included everything (laughs), but since each site has different requests, let&rsquo;s listen carefully and then start creating.
+For example, in the example that aggregates the above csv files,</p>
+<p>● Processed for each product (that is, aggregation is finished at the same time as production of the day is finished)
+● Batch processing after production is over</p>
+<p>There are two possible patterns.
+We would like to listen to these detailed specifications well in advance to maximize usability. This time, I will explain using &ldquo;processing for each product&rdquo; as an example.</p>
+<p>(Note) If the judgment result is continuous NG, it is necessary to stop the line urgently as a process abnormality. Therefore, the judgment itself is basically performed for each product.</p>
+<p>#Technologies that can be used to make tools
+The technologies that can be used for each of the above items are listed below.</p>
+<p>| Notes | Countermeasures | Library to be used |
+|&mdash;&ndash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash; &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;-|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; &mdash;&mdash;&mdash;&mdash;&ndash;|
+| Make it into a form that can be executed by people with no programming knowledge | ・Create Python script into exe<br> ・Tools are provided as batch files | PyInstaller |
+Items that are likely to change on a daily basis are not written in the Python script | Items that are likely to change are in a format that can be read from command line arguments (using sys.argv) or configuration files | sys |
+It is better to think that you cannot install the package using pip on the PC in the field | Convert Python script to exe | PyInstaller |
+| Make specifications so that Microsoft Office can be used without problems during operation | (Example) Measures for stable use of Excel during processing <br>When operating Excel for a long time (writing a large amount of text, etc.), use Python. Better to use VBScript instead of | openpyxl<br> (where processing time is short) |
+| Make sure processing is finished when production is finished (on request) | Process by product | watchdog |</p>
+<p>I&rsquo;ll explain in more detail.
+<b>◎Correspondence to “make it into a form that can be executed by a person with zero programming knowledge”</b>
+This can be done by exercising the created Python script using the library <a href="https://pypi.org/project/PyInstaller/">PyInstaller</a>.Bymakingitintoanexe,itisnotnecessarytobuildanenvironmentatthemanufacturingsite(theenvironmentisincludedintheexe). Furthermore, by providing the exe as a batch file, the user can use the tool by simply double-clicking the batch file.</p>
+<p>The site that I referred to
+● <a href="https://qiita.com/takanorimutoh/items/53bf44d6d5b37190e7d1">Create exe file with PyInstaller</a>
+● <a href="https://www.adminweb.jp/command/bat/">Create batch file</a></p>
+<p><b>◎Correspondence to “Do not write items that are likely to change on a daily basis in the Python script”</b>
+For items that are likely to change, use command line arguments (described in the batch file) or create a separate setting file and read it from there. If you do so, even if you have a place you want to change in the field, you can just rewrite the batch file with a text editor, so even people who do not have knowledge of Python can handle it.</p>
+<p>The site that I referred to
+<a href="https://note.nkmk.me/python-command-line-arguments/">How to handle command line arguments in Python</a></p>
+<p><b> ◎ Countermeasures against &ldquo;It is better to think that you cannot install the package on your PC using pip&rdquo; </b>
+Same as the first measure above</p>
+<p><b>◎Correspondence to &ldquo;Make Microsoft Office use without problems during operation&quot;</b>When working with Excel files in Python, I think it&rsquo;s standard to use the library <a href="https://pypi.org/project/openpyxl/">openpyxl</a>.However,inthepast,duringtheprocessofcombiningmultiplesheetsusingopenpyxl,itbecameimpossibletooperateanotherunrelatedExcelfile(thecausecannotbegrasped.). So, this time I decided to use VBScript instead of Python for csv aggregation. It is better to confirm that Microsoft Office can be used without problems during tool operation, not just Excel.</p>
+<p><b>◎Countermeasures to “make sure that processing is finished when production is finished”</b>
+I will monitor the folder where the shape data is stored with the library <a href="https://pypi.org/project/watchdog/">watchdog</a>andstartprocessingatthetimingwhenthedataisstored.Bydoingso,theuseronlyneedstostartthetool(=double-clickthebatchfile)beforestartingproduction,andstopthebatchfile(=Ctrl+C) at the end of production on that day.</p>
+<p>The site that I referred to
+<a href="https://qiita.com/ksato9700/items/ea4b769d010e8cf1fb0c">Command execution triggered by file update (python)</a></p>
+<p>Besides the above sites,
+I referred to &ldquo;<a href="https://www.oreilly.co.jp/books/9784873117782/">Automated processing programming that allows non-programmers to let Python do boring things&rdquo;</a>.</p>
+<h1 id="try-to-write-the-code">Try to write the code</h1>
+<p>Following is the code that automatically aggregates multiple csv files into a single Excel file based on the above considerations. Think of it as a memo after that. .</p>
+<h3 id="operation-content">Operation content</h3>
+<p>I thought about the processing shown in the figure below.
+Imagine that the product flows from left to right and the process proceeds from top to bottom.</p>
+<p>&lt;img src=&quot;https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/318960/4e656889-2ff8-a2ff-5b64-fbb43c845b76.png&quot;width=90%&gt;</p>
+<p>There are 5 files and 3 scripts.</p>
+<p>File:
+◎Setting value log (csv) output from manufacturing equipment
+◎Status log (csv) output from manufacturing equipment
+◎Shape data (csv) output from the shape measuring machine
+◎ Judgment result (csv) calculated based on shape data
+◎Excel that aggregates four csvs</p>
+<p>These files are saved in different folders.</p>
+<p>script:
+◎ integration.py
+【role】
+Control the flow of processing
+【motion】
+· Monitor the folder where shape data is saved and determine the shape when a file is generated
+(= execute ShapeJudgment.py)</p>
+<ul>
+<li>When the judgment result is saved, execute excel_merge.vbs that aggregates csv
+・After aggregation, move csv to &ldquo;Aggregated folder&rdquo;</li>
+</ul>
+<p>◎ShapeJudgment.py
+【role】
+OK/NG judgment based on shape data
+【motion】
+Read shape data and save the judgment result
+(Note) Since the judgment result is directly related to quality, the code created by the expert in the information system department is used.</p>
+<p>◎ excel_merge.vbs
+【role】
+Combine csv files into one Excel file
+【motion】
+Read csv file and add it as Excel file sheet
+――
+The command line argument of the batch file finally provided to the user is as follows. It&rsquo;s complicated, but</p>
+<p>What&rsquo;s particularly complicated is that in Integration.py, ShapeJudgment.py is executed by passing sys.argv[1], sys.argv[4], and sys.argv[5] as command line arguments. In ShapeJudgment.py they correspond to sys.argv[0], sys.argv[1], sys.argv[2].
+By using the <b> command line argument, you don&rsquo;t have to write a concrete path in the Python script, and if you want to change the path, just edit the batch file. </b></p>
+<p>| Contents | Position in batch file | Correspondence in integration.py | Correspondence in ShapeJudgment.py |
+|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;&mdash;&ndash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash;|&mdash;&mdash;&mdash;&ndash; &mdash;&mdash;&mdash;&mdash;&mdash;-|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash;|
+| integration.exe path <br> (integration.py converted to exe) | 0th argument | sys.argv[0] |-|
+| Path of ShapeJudgment.exe (ShapeJudgment.py converted to exe) | 1st argument | sys.argv[1] | sys.argv[0] |
+| <br> path of the folder where the &ldquo;setting value log&rdquo; is saved | Second argument | sys.argv[2] |-|
+| <br> path of the folder where the &ldquo;device status log&rdquo; is saved | Third argument | sys.argv[3] |-|
+| Path of the folder where &ldquo;shape data&rdquo; is saved | Fourth argument | sys.argv[4] | sys.argv[1] |
+| Path of the folder where the &ldquo;judgment result&rdquo; is saved | 5th argument | sys.argv[5] | sys.argv[2] |
+| Path of the folder where &ldquo;aggregated Excel file&rdquo; is saved | 6th argument | sys.argv[6] |-|
+| excel_merge.vbs path | 7th argument | sys.argv[7] |-|</p>
+<p>The process flow is as follows. There are 10 steps for each product.
+<b> We will proceed on the assumption that the time required for 10 steps is sufficiently short compared to the takt time (flow interval) of the product. If the takt time is short, the next product will flow during processing, so I think that it is necessary to devise a processing method. </b></p>
+<p>| Order | Event | Save to <br> (command line argument for batch file) |
+|&mdash;&ndash;|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;- &mdash;&mdash;&mdash;&mdash;&mdash;-|&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; &mdash;&mdash;&mdash;&mdash;-|
+0 | Start monitoring the folder where <br>shape data is stored in integration.py |
+| 1 | Products flow into the process |
+| 2 | Products are processed by manufacturing equipment | |
+| 3 | Setting value log is saved | sys.argv[2] |
+| | Device status log is saved | sys.argv[3] |
+| 4 | Measuring products with a profilometer | |
+| 5 | Shape data is saved | sys.argv[4] |
+6 | ShapeJudgment.py is executed from integration.py | |
+| 7 | Judgment result is saved | sys.argv[5] |
+| 8 | integration.py executes <br>excel_merge.vbs | |
+| 9 | Aggregated Excel file is saved <br> | sys.argv[6] |
+| 10 | Move integrated csv to another folder with integration.py | In the parent folder of each command line argument |
+| 11 | Go back to 1 <br>(Next product is coming) | |</p>
+<h3 id="code-example">Code example</h3>
+<p>Here is the code that actually confirmed the movement.</p>
+<p>Execution environment
+OS: Windows 10 Home version 1909
+Python 3.7.6watchdog 0.10.2
+openpyxl 3.0.0</p>
+<p><b>■ Script that controls the processing flow</b></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:integration.py" data-lang="python:integration.py"><span style="color:#75715e"># Import required libraries</span>
+<span style="color:#f92672">import</span> datetime
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> watchdog.observers <span style="color:#f92672">import</span> Observer
+<span style="color:#f92672">from</span> watchdog.events <span style="color:#f92672">import</span> FileSystemEventHandler
+<span style="color:#f92672">import</span> subprocess
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> openpyxl
+<span style="color:#f92672">import</span> shutil
+<span style="color:#f92672">import</span> pathlib
+
+
+Class that executes <span style="color:#75715e"># ShapeJudgment.py and excel_merge.vbs</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Execute</span>(FileSystemEventHandler):
+    <span style="color:#66d9ef">def</span> __init__(self, path):
+        self<span style="color:#f92672">.</span>path <span style="color:#f92672">=</span> path
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_run_command</span>(self):
+
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        ShapeJudgment.py path (sys.argv[1]) in command line argument,
+</span><span style="color:#e6db74">        Folder path where &#34;shape data&#34; is saved (sys.argv[4]),
+</span><span style="color:#e6db74">        Path of the folder where &#34;judgment result&#34; is saved (sys.argv[5])
+</span><span style="color:#e6db74">        Run ShapeJudgment.exe with
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+        command <span style="color:#f92672">=</span> [sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">1</span>],sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">4</span>],sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">5</span>]]
+        subprocess<span style="color:#f92672">.</span>run(command, shell<span style="color:#f92672">=</span>True)
+
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        Create if there is no aggregated Excel (name of “date + aggregate” in sys.argv[6])
+</span><span style="color:#e6db74">        Usually made when the first product of the day flows
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>isfile(
+                os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">6</span>], datetime<span style="color:#f92672">.</span>date<span style="color:#f92672">.</span>today()<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;_aggregate.xlsx&#34;</span>)):
+            wb <span style="color:#f92672">=</span> openpyxl<span style="color:#f92672">.</span>Workbook()
+            wb<span style="color:#f92672">.</span>save(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">6</span>], datetime<span style="color:#f92672">.</span>date<span style="color:#f92672">.</span>today()<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)) <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;_aggregate.xlsx&#34;</span>)
+
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        Execute VBScript by passing each csv (sys.argv[2] ~ sys.argv[5])
+</span><span style="color:#e6db74">        The aggregated Excel is saved in sys.argv[6] with the name &#34;Date + aggregate&#34;.
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+        command <span style="color:#f92672">=</span> [<span style="color:#e6db74">r</span><span style="color:#e6db74">&#34;wscript&#34;</span>,
+                     sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">7</span>], sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">2</span>],
+                     sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">3</span>], sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">4</span>],
+                     sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">5</span>],os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">6</span>],datetime<span style="color:#f92672">.</span>date<span style="color:#f92672">.</span>today()<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#39;%Y-%m-</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>))<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;_aggregate.xlsx&#34;</span>]
+
+        subprocess<span style="color:#f92672">.</span>run(command, shell <span style="color:#f92672">=</span> True)
+        
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        Storage location of each csv Create sys.argv[2] ~ sys.argv[5] if there is no &#34;aggregated&#34; folder in the parent
+</span><span style="color:#e6db74">        Then move the csv that has been aggregated to the &#34;aggregated&#34; folder
+</span><span style="color:#e6db74">        Pass if a file with the same name already exists in the &#34;aggregated&#34; folder
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">6</span>):
+            <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>isdir(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(pathlib<span style="color:#f92672">.</span>Path(sys<span style="color:#f92672">.</span>argv[i])<span style="color:#f92672">.</span>parents[<span style="color:#ae81ff">0</span>], <span style="color:#e6db74">&#34;aggregated&#34;</span>)):
+                os<span style="color:#f92672">.</span>mkdir(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(pathlib<span style="color:#f92672">.</span>Path(sys<span style="color:#f92672">.</span>argv[i])<span style="color:#f92672">.</span>parents[<span style="color:#ae81ff">0</span>], <span style="color:#e6db74">&#34;aggregated&#34;</span>))
+            <span style="color:#66d9ef">try</span>:
+                shutil<span style="color:#f92672">.</span>move(sys<span style="color:#f92672">.</span>argv[i] <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;</span><span style="color:#ae81ff">\\</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">+</span> os<span style="color:#f92672">.</span>listdir(sys<span style="color:#f92672">.</span>argv[i])[<span style="color:#ae81ff">0</span>],
+                            os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(pathlib<span style="color:#f92672">.</span>Path(sys<span style="color:#f92672">.</span>argv[i])<span style="color:#f92672">.</span>parents[<span style="color:#ae81ff">0</span>], <span style="color:#e6db74">&#34;aggregated&#34;</span>))
+            <span style="color:#66d9ef">except</span> shutil<span style="color:#f92672">.</span>Error:
+                <span style="color:#66d9ef">pass</span>
+
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">on_created</span>(self,event):
+        self<span style="color:#f92672">.</span>_run_command()
+
+<span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">Function to monitor the folder where the shape data (csv) of the inspection device is saved
+</span><span style="color:#e6db74">When a new file is created, the method in the Execute class is executed
+</span><span style="color:#e6db74">The monitoring target is a folder (sys.argv[4]) where &#34;shape data&#34; is saved.
+</span><span style="color:#e6db74">Keep monitoring until Ctrl+C is pressed
+</span><span style="color:#e6db74">&#39;&#39;&#39;</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">watch_shape</span>(path <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">4</span>]):
+    <span style="color:#66d9ef">while</span> True:
+        event_handler <span style="color:#f92672">=</span> Execute(path)
+        observer <span style="color:#f92672">=</span> Observer()
+        observer<span style="color:#f92672">.</span>schedule(event_handler,path,recursive <span style="color:#f92672">=</span> True)
+        observer<span style="color:#f92672">.</span>start()
+        <span style="color:#66d9ef">try</span>:
+            <span style="color:#66d9ef">while</span> True:
+                time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">KeyboardInterrupt</span>:
+            observer<span style="color:#f92672">.</span>stop()
+        observer<span style="color:#f92672">.</span>join()
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    watch_shape()
+</code></pre></div><p><b>■ Script to save OK/NG judgment based on shape data</b></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:ShapeJudgment.py" data-lang="python:ShapeJudgment.py"><span style="color:#f92672">import</span> pandas <span style="color:#f92672">as</span> pd
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> sys
+<span style="color:#f92672">import</span> glob
+
+<span style="color:#75715e"># Function to save the judgment result based on the shape data</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">main</span>():
+
+    <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">    Read shape data (Assuming that there is always only one csv file at the same time)
+</span><span style="color:#e6db74">    Pass if there is no file
+</span><span style="color:#e6db74">    sys.argv[1] is the path of the folder where shape data is saved
+</span><span style="color:#e6db74">    &#39;&#39;&#39;</span>
+    <span style="color:#66d9ef">try</span>:
+        shape_df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">1</span>] ,glob<span style="color:#f92672">.</span>glob(<span style="color:#e6db74">&#34;*.csv&#34;</span>)[<span style="color:#ae81ff">0</span>]))
+    <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">IndexError</span>:
+        <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">else</span>:
+
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        ・・・ Judgment algorithm operates ・・・・・
+</span><span style="color:#e6db74">        This is a part directly related to quality, so after specifying the judgment method,
+</span><span style="color:#e6db74">        Ask an expert in the information system department to write
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+
+        <span style="color:#e6db74">&#39;&#39;&#39;
+</span><span style="color:#e6db74">        Save the judgment result (judgment_df)
+</span><span style="color:#e6db74">        sys.argv[2] is the path of the folder to save the judgment result
+</span><span style="color:#e6db74">        The file name is &#34;judgment result_shape data.csv&#34;
+</span><span style="color:#e6db74">        &#39;&#39;&#39;</span>
+        judgment_df<span style="color:#f92672">.</span>to_csv(os<span style="color:#f92672">.</span>path<span style="color:#f92672">.</span>join(sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">2</span>], <span style="color:#e6db74">&#34;judgment result_&#34;</span><span style="color:#f92672">+</span>glob<span style="color:#f92672">.</span>glob(<span style="color:#e6db74">&#34;*.csv&#34;</span>)[<span style="color:#ae81ff">0</span>]))
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+    main()
+</code></pre></div><p><b>■ Script that aggregates four csv files into one Excel file</b></p>
+<pre><code class="language-VB:excel_merge.vbs" data-lang="VB:excel_merge.vbs">'------------------------------------------------- -------------------------------------
+'
+'' Combine the csv files output from the device into one Excel file for each sheet
+'
+'
+'Note Please do not open the Excel file to be aggregated while the script is running.
+'Unlock the Excel files to be aggregated before executing the script (not read-only).
+'' Please do not put anything other than csv file in the output folder of the manufacturing equipment and inspection equipment
+'If this script terminates abnormally, terminate the Excel process manually.
+'
+'
+'------------------------------------------------- -------------------------------------
+Option Explicit
+
+Dim fileSystem
+Dim targetFolder
+Dim fileList
+Dim Excel
+Dim merge_Workbook
+Dim objWorkbook
+Dim objSheet
+Dim wkFile
+Dim i
+
+
+'sys.argv[2] = WScript.Arguments(0): Path to the folder that contains the manufacturing device settings log (csv)
+'sys.argv[3] = WScript.Arguments(1): Path to the folder containing the manufacturing equipment status log (csv)
+'sys.argv[4] = WScript.Arguments(2): Path of the folder containing the inspection device shape data (csv)
+'sys.argv[5] = WScript.Arguments(3): Path of the folder with the inspection result (csv) of the inspection device
+'sys.argv[6] = WScript.Arguments(4): Path of Excel file that aggregates the above csv
+
+'Open Excel object
+Set Excel = CreateObject(&quot;Excel.Application&quot;)
+
+'Excel display settings (If this setting is made, Excel will not open or close during processing)
+Excel.Visible = False
+Excel.DisplayAlerts = False
+Excel.ScreenUpdating = False
+
+
+ 'Load the workbooks to aggregate
+Set merge_Workbook = Excel.Workbooks.Open(WScript.Arguments(4))
+
+
+'Loop for each file
+For i = 0 To 3'Loop for the number of csv files to aggregate
+
+'Get a file list for each folder (assuming there is only one file, but for the time being)
+'Create an object that handles the file systemSet fileSystem = CreateObject(&quot;Scripting.FileSystemObject&quot;)
+Set targetFolder = fileSystem.getFolder(WScript.Arguments(i))
+Set fileList = targetFolder.Files
+It's a sequel.
+        For Each wkFile In fileList
+        Set objWorkbook = Excel.Workbooks.Open(WScript.Arguments(i) &amp; &quot;\&quot; &amp; wkFile.Name)
+                'Get a sheet object (assuming there is only one sheet in the copy source file)
+                Set objSheet = objWorkbook.Sheets(1)
+                'Get a sheet object (assuming there is only one sheet in the copy source file)
+                objSheet.Copy ,merge_Workbook.Sheets(merge_Workbook.Sheets.Count)
+                'Set the sheet name as the csv file name (delete &quot;.csv&quot;)
+                'merge_Workbook.Sheets(merge_Workbook.Sheets.Count).Name = replace(wkFile.Name,&quot;.csv&quot;,&quot;&quot;)
+                'Close the csv file
+            objWorkbook.Close
+            Set objWorkbook = Nothing
+        Next
+
+Next
+
+'Delete Sheet1 only the first time
+If merge_Workbook.Sheets.Count &lt;6 Then
+'Delete by specifying Sheet1
+merge_Workbook.Sheets(1).Delete
+End If
+
+'Set the first sheet as the active sheet
+merge_Workbook.Sheets(1).Activate
+
+
+'Overwrite save workbooks to aggregate
+merge_Workbook.Save
+
+'Close the workbook to aggregate
+merge_Workbook.Close
+Set merge_Workbook = Nothing
+
+'Exit Excel
+Excel.ScreenUpdating = True
+Excel.Quit
+  
+Set Excel = Nothing
+</code></pre><p>If you move the above code, (4 x production number) csv files will be combined into one Excel file.
+This way of putting together is not quite good, but it is just an example (laugh)</p>
+<p>&lt;img src=&quot;https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/318960/39caf51f-6841-04f3-d8d6-883f73e6205a.png&quot;width=90%&gt;</p>
+<h3 id="how-to-create-a-batch-file">How to create a batch file</h3>
+<p>Next, I will explain how to create a batch file.
+The batch file is made in two steps.</p>
+<ol>
+<li>Convert Python script into exe</li>
+<li>Make a batch file with various paths as command line arguments</li>
+</ol>
+<p>First of all, it is an exe of 1., but it is done using Pyinstaller as described above.
+At the command prompt, move to the directory where integration.py and ShapeJudgment.py exist, and then execute the following command.</p>
+<pre><code class="language-console" data-lang="console">$ pyinstaller integration.py --onefile
+$ pyinstaller ShapeJudgment.py --onefile
+</code></pre><p>Then,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Bash" data-lang="Bash"><span style="color:#ae81ff">44536</span> INFO: Building COLLECT COLLECT-00.toc completed successfully.
+</code></pre></div><p>Is displayed, a folder called dist will be created in the same directory. Integration.py and ShapeJudgment.py have been exe&rsquo;d in that folder
+Contains integration.exe and ShapeJudgment.exe.</p>
+<p>&lt;img src=&quot;https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/318960/50eb0030-a9ad-2c1d-3156-4f96a16188e8.png&quot;width=90%&gt;</p>
+<p>Next, create the batch file of 2.
+Write the following contents in a text editor such as Notepad and save it with the extension &ldquo;.bat&rdquo;. The first line is a comment. Please note that there is a space between each pass. In addition, ^ (caret) is a symbol necessary for line feed.</p>
+<pre><code class="language-:" data-lang=":">@rem integration.exe bat file to execute
+&quot;integration.exe path&quot; ^
+ &quot;Path for ShapeJudgment.exe&quot;^
+ &quot;Path to the folder where the &quot;setting value log&quot; is saved&quot;^
+ &quot;Path to the folder where the &quot;device status log&quot; is saved&quot;^
+ &quot;Path to the folder where &quot;shape data&quot; is saved&quot;^
+ &quot;Folder path where &quot;judgment result&quot; is saved&quot;^
+ &quot;Folder path where &quot;aggregated Excel files&quot; are saved&quot;^
+ &quot;path for excel_merge.vbs&quot;
+
+↓Example of description
+@rem integration.exe bat file to execute
+&quot;C:\Users\PycharmProjects\untitled2\dist\integration.exe&quot; ^
+&quot;C:\Users\PycharmProjects\untitled2\dist\ShapeJudgment.exe&quot;^
+ &quot;C:\Users\input\Manufacturing equipment log\Manufacturing equipment setting value log&quot;^
+ &quot;C:\Users\input\Manufacturing equipment log\Manufacturing equipment status log&quot;^
+ &quot;C:\Users\input\ Inspection device log\ Inspection device shape data&quot;^
+ &quot;C:\Users\input\inspection device log\inspection device judgment result&quot;^
+ &quot;C:\Users\output\ Aggregated Excel file&quot;^
+ &quot;C:\Users\VBS\excel_merge.vbs&quot;
+</code></pre><p>Lines 3 to 10 correspond to sys.argv[1] to sys.argv[7] written in integration.py.</p>
+<h3 id="after-all-what-should-i-put-in-the-pc-at-the-manufacturing-site">After all, what should I put in the PC at the manufacturing site?</h3>
+<p>Various files came out, but the following four files are finally put in the PC at the manufacturing site. Of course, change the path written in the batch file according to the PC on the shop floor.</p>
+<p>&lt;img src=&quot;https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/318960/93ebeba5-f3ae-c18a-eb85-78b8bb4b07f8.png&quot;width=70%&gt;</p>
+<p><b>Before the start of production on that day, ask the manufacturing staff to double-click the &ldquo;executable file.bat&rdquo;. Then, every time the product flows, the four csv files are automatically combined into one Excel file. Stop the batch file after pressing &ldquo;Ctrl+C&rdquo; after production. At that point, the aggregation into the Excel file is complete. </b></p>
+<p>The above processing is an example,
+It seems that the library described above can be used for various automation needs at the manufacturing site.</p>
+<p>#important point
+There are some notes on the above method, so write it down.</p>
+<p>■Exe file may become huge
+ㆍBy using pyinstaller as an exe, all the libraries in the Python environment at the time of creation will be imported. Therefore, the file size becomes huge and the operation of the exe may become slow. In order to avoid this, it is good to make an exe without the library that is not used. The following articles will help you to convert to exe without specific libraries.
+<a href="https://yutori-insotsu.net/pc/exe-with-pyinstaller">The case where the program made in Python was made into an exe with PyInstaller, the size became messed up [June 2019, solution added]</a></p>
+<p>■Cannot check aggregated Excel files during production
+If an Excel file is opened during the writing operation, a writing error will occur. Therefore, if you want to check the aggregated Excel file during production, you need to copy it separately and open it.</p>
+<p>#Remarks
+Since the programming hurdles have fallen dramatically these days, I think there will be more opportunities for non-programmers to automate work using programming. At that time, it may be more important to have the communication ability to grasp the needs of the field properly, and the attitude to create a &ldquo;tool that can be used in the field&rdquo;, rather than programming skills.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

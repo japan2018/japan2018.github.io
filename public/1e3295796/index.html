@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Face recognition with Python OpenCV | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Face recognition with Python OpenCV</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Apr 21, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/face-recognition"> face recognition</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/face-detection"> face detection</a></code></small>
+
+</p>
+<pre><code>#Overview
+</code></pre>
+<p>This article is for people who want to perform face recognition with OpenCV of Python.
+In this article, I will explain how to detect faces from images, camera images, mp4 files, and how to cut and save only faces from images.
+#environment
+macOS Catalina 10.15.4
+Python 3.7.5
+opencv-python 4.2.0.34
+numpy 1.18.2
+#Install OpenCV
+$ pip install opencv-python</p>
+<h1 id="directory-structure">Directory structure</h1>
+<pre><code>.
+├── cascades
+│ └── haarcascade_frontalface_default.xml
+├── image_detect.py
+├── images
+│ └── 001.jpg
+├── trimmed
+└── venv
+</code></pre><p>The directory structure is like this.
+The face detectors in the cascades folder can be found in lib/python3.7/site-packages/cv2/data in your Python installation directory or virtual environment directory.</p>
+<p>#Detect face and enclose it in a rectangle</p>
+<h2 id="detected-from-image">detected from image</h2>
+<p>``&rsquo;&rsquo; image_detect.py
+import cv2</p>
+<p>cascade_path = &ldquo;./cascades/haarcascade_frontalface_default.xml&rdquo;
+img_path = &ldquo;./images/001.jpg&rdquo;
+color = (255, 255, 255) # Color of the rectangle surrounding the detected face</p>
+<p>src = cv2.imread(img_path,0)
+gray = cv2.cvtColor(src,cv2.cv2.COLOR_BAYER_BG2GRAY)
+cascade = cv2.CascadeClassifier(cascade_path)
+rect = cascade.detectMultiScale(gray)
+if len(rect)&gt; 0:
+for x, y, w, h in rect:
+cv2.rectangle(src, (x, y), (x+w, y+h), color)</p>
+<p>cv2.imshow(&lsquo;detected&rsquo;, src)
+cv2.waitKey(0)
+cv2.destroyAllWindows()</p>
+<pre><code>x, y, w, h correspond to the upper left x coordinate of the face, the upper left y coordinate of the face, the width of the face, and the height of the face.
+Also, the origin of the xy coordinate is at the upper left of the image, although not limited to OpenCV.
+##Detected from camera image
+``'' image_detect.py
+import cv2
+
+cascade_path = &quot;./cascades/haarcascade_frontalface_default.xml&quot;
+cascade = cv2.CascadeClassifier(cascade_path)
+color = (255, 255, 255) # Color of the rectangle surrounding the detected face
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    rect = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=2, minSize=(30, 30))
+    if len(rect)&gt; 0:
+        for x, y, w, h in rect:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), color)
+    cv2.imshow('detected', frame)
+    key = cv2.waitKey(1)
+    if key == ord('q'):
+        break
+cap.release()
+cv2.destroyAllWindows()
+</code></pre><p>You can get the video of the camera by setting the argument of cv2.VideoCapture() to the device number of the camera, but you can also handle the video file by inputting the path to the mp4 file.
+#Detect face, trim and save</p>
+<h2 id="when-there-is-only-one-image">When there is only one image</h2>
+<p>``&rsquo;&rsquo; image_detect.py
+import cv2</p>
+<p>cascade_path = &ldquo;./cascades/haarcascade_frontalface_default.xml&rdquo;
+img_path = &ldquo;./images/001.jpg&rdquo;
+out_path = &ldquo;./trimmed/&rdquo;</p>
+<p>src = cv2.imread(img_path,0)
+gray = cv2.cvtColor(src,cv2.cv2.COLOR_BAYER_BG2GRAY)
+cascade = cv2.CascadeClassifier(cascade_path)
+rect = cascade.detectMultiScale(gray)
+if len(rect)&gt; 0:
+for i,[x, y, w, h] in enumerate(rect):
+img_trimmed = src[y:y + h, x:x + w]
+file_name = &ldquo;{}.jpg&rdquo;.format(i)
+file_path = out_path + file_name
+cv2.imwrite(file_path, img_trimmed)</p>
+<pre><code>Loop count and rect contents can be acquired at the same time by using enumerate in for statement
+When trimming, take out in slices.
+## When you want to detect multiple images at once
+``'' image_detect.py
+import cv2
+import os
+
+cascade_path = &quot;./cascades/haarcascade_frontalface_default.xml&quot;
+img_path = &quot;./images/&quot;
+out_path = &quot;./trimmed/&quot;
+
+files = os.listdir(img_path)
+cascade = cv2.CascadeClassifier(cascade_path)
+
+for file in files:
+    src = cv2.imread(img_path+file,0)
+    gray = cv2.cvtColor(src,cv2.cv2.COLOR_BAYER_BG2GRAY)
+    rect = cascade.detectMultiScale(gray)
+    if len(rect)&gt; 0:
+        for i,[x, y, w, h] in enumerate(rect):
+            img_trimmed = src[y:y + h, x:x + w]
+            file_name = &quot;{}_{}&quot;.format(i,file)
+            file_path = out_path + file_name
+            cv2.imwrite(file_path, img_trimmed)
+</code></pre><p>When you put the image you want to trim in the images folder and execute it, it will be saved in the trimmed folder in the format of &ldquo;{face index number}_{original file name}&rdquo;.
+#Summary
+OpenCV is convenient</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I want to make a monkey patch only partially with Python? | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I want to make a monkey patch only partially with Python?</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Sep 12, 2016
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/%E9%BB%92%E9%AD%94%E8%A1%93">黒魔術</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/monkeypatch">monkeyPatch</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/import_hooks">import_hooks</a></code></small>
+
+</p>
+<pre><code>What is # monkey patch?
+</code></pre>
+<blockquote>
+<p>Monkey patches can extend or modify the code of dynamic languages (e.g. Smalltalk, JavaScript, Objective-C, Ruby, Perl, Python, Groovy, etc.) at runtime without changing the original source code. Is the way to do it.</p>
+</blockquote>
+<p><a href="https://en.wikipedia.org/wiki/%E3%83%A2%E3%83%B3%E3%82%AD%E3%83%BC%E3%83%91%E3%83%83%E3%83%81">Wiki Reference</a></p>
+<h1 id="subject">Subject</h1>
+<p>Round 3 is no longer rounded off in Python3</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">print</span> round(<span style="color:#ae81ff">2.5</span>) <span style="color:#75715e"># =&gt; 3.0</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3">print(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e"># =&gt; 2</span>
+</code></pre></div><p>It seems that the round function from python3 is now handled as a floating point.
+You can use this by rounding off!</p>
+<h1 id="rounding-code">Rounding code</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3" data-lang="py3"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">custom_round</span>(x, d<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>):
+    <span style="color:#f92672">import</span> math
+    p <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#f92672">**</span> d
+    <span style="color:#66d9ef">return</span> float(math<span style="color:#f92672">.</span>floor((x <span style="color:#f92672">*</span> p) <span style="color:#f92672">+</span> math<span style="color:#f92672">.</span>copysign(<span style="color:#ae81ff">0.5</span>, x)))<span style="color:#f92672">/</span>p
+print(custom_round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+</code></pre></div><p><a href="http://python3porting.com/differences.html#rounding-behavior">Reference URL</a></p>
+<h1 id="--i-want-to-write--">↓ ↓ I want to write ↓ ↓</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample.py" data-lang="py3:sample.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+</code></pre></div><p>Generate #setting.py</p>
+<h2 id="1-for-the-time-being-monkey-patch">1. For the time being, monkey patch</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:setting.py" data-lang="py3:setting.py"><span style="color:#f92672">import</span> builtins <span style="color:#75715e"># Built-in functions are in builtins</span>
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">custom_round</span>(x, d<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>):
+    <span style="color:#f92672">import</span> math
+    p <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#f92672">**</span> d
+    <span style="color:#66d9ef">return</span> float(math<span style="color:#f92672">.</span>floor((x <span style="color:#f92672">*</span> p) <span style="color:#f92672">+</span> math<span style="color:#f92672">.</span>copysign(<span style="color:#ae81ff">0.5</span>, x)))<span style="color:#f92672">/</span>p
+builtins<span style="color:#f92672">.</span>round <span style="color:#f92672">=</span> custom_round <span style="color:#75715e"># monkey patch</span>
+</code></pre></div><ul>
+<li>Calling the target function in the custom function causes an infinite loop.
+<ul>
+<li>=&gt; You can call from builtins import round as alias outside the cuntom function and use the alias function.
+(Since the function is made object by as. In module, as is passed by reference)</li>
+</ul>
+</li>
+<li>In round = custom_round, since the round has already been made into an object, it does not become a monkey patch.</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample.py" data-lang="py3:sample.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+</code></pre></div><h6 id="i-thought-it-was-successful-because-it-was-displayed">I thought it was successful because it was displayed.</h6>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample.py" data-lang="py3:sample.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+<span style="color:#f92672">import</span> sample2
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample2.py" data-lang="py3:sample2.py"><span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+</code></pre></div><ul>
+<li>When the target function is executed in another file, the custom function is called.
+<ul>
+<li>=&gt; If the target function is used in an external module such as library, there is a possibility that the behavior will be destroyed.</li>
+</ul>
+</li>
+</ul>
+<h6 id="-not-safe">=&gt; Not safe!!!!?</h6>
+<h2 id="2-from-stack-trace-hook-the-calling-name-space">2. From stack trace, hook the calling name space</h2>
+<pre><code class="language-py3:" data-lang="py3:">import inspect, imp
+import builtins
+def custom_round(x, d=0):
+    import math
+    p = 10 ** d
+    return float(math.floor((x * p) + math.copysign(0.5, x)))/p
+
+frame = (frame for (frame, filename, _, _, _,_) in
+             inspect.getouterframes(inspect.currentframe())[1:]
+                 if not'importlib' in filename and not __file__ in filename][0]
+        #Because there is a case that importlib is used for the acquisition and import of the caller
+frame.f_locals['round'] = custom_round
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample.py" data-lang="py3:sample.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+<span style="color:#f92672">import</span> sample2
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample2.py" data-lang="py3:sample2.py"><span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 2</span>
+</code></pre></div><ul>
+<li>importlib may be included in the trace of import. (Confirm when you have a hierarchy)</li>
+<li>In builtins, it is stored in namespace without going through module.
+<ul>
+<li>In module, replace the last line with the following code.
+<ul>
+<li>Overwrite the module of namespace with the module that replaces only the target function.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-py3:" data-lang="py3:"># ${module}: target module, ${function}: target function
+replacing = imp.load_module('temp', *imp.find_module(${module}))
+setattr(replacing,'${function}', ${custom function})
+frame.f_locals[${module}] = replacing
+</code></pre><h6 id="i-think-i-could-separate-the-file-setting-process-is-not-done-in-sample2">I think I could separate the file&hellip; setting process is not done in sample2&hellip;</h6>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample.py" data-lang="py3:sample.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+<span style="color:#f92672">import</span> sample2
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample2.py" data-lang="py3:sample2.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 2</span>
+</code></pre></div><p>=&gt; The module imported once is retained in sys.modules, and it is referenced from sys.module in the second import, and code is not called.</p>
+<h2 id="3-directly-replace-builtinsimport-and-call-the-monkey-patch-function-when-importing">3. Directly replace builtins.import and call the monkey patch function when importing.</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:setting.py" data-lang="py3:setting.py"><span style="color:#f92672">import</span> inspect<span style="color:#f92672">,</span> imp
+<span style="color:#f92672">import</span> builtins
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">custom_round</span>(x, d<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>):
+    <span style="color:#f92672">import</span> math
+    p <span style="color:#f92672">=</span> <span style="color:#ae81ff">10</span> <span style="color:#f92672">**</span> d
+    <span style="color:#66d9ef">return</span> float(math<span style="color:#f92672">.</span>floor((x <span style="color:#f92672">*</span> p) <span style="color:#f92672">+</span> math<span style="color:#f92672">.</span>copysign(<span style="color:#ae81ff">0.5</span>, x)))<span style="color:#f92672">/</span>p
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">hooking</span>():
+    frame <span style="color:#f92672">=</span> (frame <span style="color:#66d9ef">for</span> (frame, filename, _, _, _,_) <span style="color:#f92672">in</span>
+             inspect<span style="color:#f92672">.</span>getouterframes(inspect<span style="color:#f92672">.</span>currentframe())[<span style="color:#ae81ff">1</span>:]
+                 <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span><span style="color:#e6db74">&#39;importlib&#39;</span> <span style="color:#f92672">in</span> filename <span style="color:#f92672">and</span> <span style="color:#f92672">not</span> __file__ <span style="color:#f92672">in</span> filename][<span style="color:#ae81ff">0</span>]
+        <span style="color:#75715e">#Because there is a case that importlib is used for the acquisition and import of the caller</span>
+    frame<span style="color:#f92672">.</span>f_locals[<span style="color:#e6db74">&#39;round&#39;</span>] <span style="color:#f92672">=</span> custom_round
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Importer</span>(object):
+    old_import <span style="color:#f92672">=</span> __import__
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">new_import</span>(self, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        <span style="color:#66d9ef">if</span> args[<span style="color:#ae81ff">0</span>] <span style="color:#f92672">==</span> __name__: hooking()
+        <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>old_import(<span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+
+hooking()
+<span style="color:#f92672">import</span> builtins
+builtins<span style="color:#f92672">.</span>__import__ <span style="color:#f92672">=</span> Importer()<span style="color:#f92672">.</span>new_import
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample.py" data-lang="py3:sample.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+<span style="color:#f92672">import</span> sample2
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py3:sample2.py" data-lang="py3:sample2.py"><span style="color:#f92672">import</span> setting
+<span style="color:#66d9ef">print</span>(round(<span style="color:#ae81ff">2.5</span>)) <span style="color:#75715e">#=&gt; 3.0</span>
+</code></pre></div><ul>
+<li>Call the monkey patch function by hooking import.
+<ul>
+<li>In python3, there are import hooks mechanism such as meta path, path hooks,
+These are not called in the modules stored in sys.modules.</li>
+<li>Since the import hook is added in the first import, the first monkey pathc function is
+Calls are listed at the top level.</li>
+</ul>
+</li>
+</ul>
+<p>#Summary</p>
+<p>Finally, I was able to implement a monkey patch with only the module in which the import setting was written.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] COVID-19 Hokkaido Data Edition (2) Toward Open Data &#43; Automatic Update | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] COVID-19 Hokkaido Data Edition (2) Toward Open Data + Automatic Update</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Mar 12, 2020
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/open-data"> Open Data</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/github-actions"> GitHub Actions</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/covid-19"> COVID-19</a></code></small>
+
+</p>
+<pre><code>## Table of contents
+</code></pre>
+<p><a href="https://qiita.com/Kanahiro/items/b47984fbf77f4e632663">COVID-19 Hokkaido data edition (1) Initial data creation by scraping etc.</a>
+<a href="https://qiita.com/Kanahiro/items/8f0768708d2c47ae3206">COVID-19 Hokkaido Data Edition (2) To open data + automatic update</a> ←This article!
+<a href="https://qiita.com/Kanahiro/items/782cb6d5497d3c3704ec">COVID-19 Hokkaido data edition ③ Fully automated</a></p>
+<p>![Screenshot 2020-03-10 17.37.10.png](<a href="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/73197/cfee968c-cffb-cc29-67c0-(76b076fa30cd.png)">https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/73197/cfee968c-cffb-cc29-67c0-(76b076fa30cd.png)</a></p>
+<p>In ①, we have summarized V0 in the above figure, but this article will summarize the use of external APIs such as open data portal.</p>
+<h2 id="issues-with-v0">Issues with V0</h2>
+<p>In V0, data acquisition relied on (1) scraping from the road website and (2) static CSV files provided by Sapporo City.
+This has the following problems.</p>
+<ul>
+<li>I want to use data that is openly published as open data, not scraped data</li>
+<li>Scraping is vulnerable to changes in website table structure</li>
+<li>Effort to push every time the CSV file is updated</li>
+</ul>
+<p>Then what happens if it&rsquo;s easy? After V1 in the above figure? It is very easy if the flow at the bottom left, which is, is realized.</p>
+<p>Currently, (probably) exchanging tabular data in PDF format for easy viewing by users and publishing it, or directly posting data in HTML, so-called machine-readable data The situation is finished (I understand the intent to make the material readable by anyone). I think it would have been difficult to collect data from this website if even positive patient data was provided in PDF (it was a HTML table, so I could forcibly read it). It should be recognized by many people in this case that various kinds of information can be distributed as raw data (CSV, etc.) as open data.</p>
+<p>If my feeling is realized, it will become the shape in the lower left. I wish that would happen in the near future.</p>
+<p>It was realized in about 2 days when I was able to afford.</p>
+<h2 id="transition-to-open-data">Transition to open data</h2>
+<h4 id="hokkaido">Hokkaido</h4>
+<p>The Hokkaido data will be updated not only on the website but also on the <a href="https://www.harp.lg.jp/opendata/">Hokkaido Open Data Portal</a>. It is a mechanism that the person in charge in Hokkaido uploads the latest CSV file to this portal from time to time. As the name implies, the data released here is open data, and anyone can access CSV data for free.</p>
+<h4 id="sapporo">Sapporo</h4>
+<p>In addition, Sapporo City also operates an open data portal site <a href="https://data.pf-sapporo.jp/">Sapporo City ICT utilization platform DATA SMART CITY SAPPORO</a>. Published as The data is created by the person in charge as in Hokkaido. Thank you.</p>
+<p>It was a tremendous sense of speed (it was possible to move smoothly because there was such a soil as the portal). I gave up the speediness that the image of the government overturned, and made a modification to make the previous script compatible with the open data portal.</p>
+<p><a href="https://github.com/codeforsapporo/covid19hokkaido_scraping/tree/f3923df7f6a3781e94ef5b514c9d9ec7fe5aa4b1">https://github.com/codeforsapporo/covid19hokkaido_scraping/tree/f3923df7f6a3781e94ef5b514c9d9ec7fe5aa4b1</a>
+*Dating to the commit at the time of writing this article</p>
+<p>When main.py is executed, the data entered in REMOTE_SOURCES of settings.py is circulated and json etc. is spit out.
+The CSV data released this time can access the file through the API, but since it was necessary to read the CSV data after all, it is not a access via the API but a direct link to the resource. Convert the read CSV into dict and dump to json.</p>
+<p>On this repository, main.py is scheduled to run every 15 minutes and spits out jsons on the gh-pages branch.
+So, if the data of each portal is updated, it will be reflected in json class within 15 minutes. These jsons can be accessed from outside without CORS restrictions (like). In other words, it functions as a <b>pseudo API server</b>.
+If the front side can read those json classes through asynchronous communication, the data update will be fully automated.
+*Currently, there is no validation at the time of json generation, so there is still a high risk in full automation and we have not implemented it.</p>
+<h2 id="at-the-end">At the end</h2>
+<p>Up to the last time, I used to use web site scraping and static CSV files to store data, but with the release of open data at a speed that can be overturned by the common sense of Hokkaido and Sapporo, the ideal shape shown in the top figure It happened. It&rsquo;s certainly a change triggered by the new coronavirus, but without a portal site, it would not be so smooth in the first place, and there must have been steady activities to create such a site. I am grateful for the activities of my ancestors, and I hope I can move forward.</p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

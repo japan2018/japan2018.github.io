@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] Python class attributes and metaclasses | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] Python class attributes and metaclasses</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Jan 17, 2017
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+</p>
+<pre><code># Problem
+</code></pre>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Base</span>:
+    __BASE_PARAMS__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;base&#34;</span>]
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>(Base):
+    __PARAMS__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;a&#34;</span>]
+
+    
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">B</span>(Base):
+    __PARAMS__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;b&#34;</span>]
+</code></pre></div><p>As mentioned above, there is a <code>Base</code> class, and the <code>A</code> class and the <code>B</code> class inherit the <code>Base</code> class.
+I want to add a class attribute called <code>__ALL_PARAMS__</code> which is a combination of parent class <code>__BASE_PARAMS__</code> and own <code>__PARAMS__</code> to <code>A</code> class and <code>B</code> class. In other words, we want to obtain the following results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">A<span style="color:#f92672">.</span>__ALL_PARAMS__
+<span style="color:#75715e"># [&#39;base&#39;,&#39;a&#39;]</span>
+
+B<span style="color:#f92672">.</span>__ALL_PARAMS__
+<span style="color:#75715e"># [&#39;base&#39;,&#39;b&#39;]</span>
+</code></pre></div><p>A normal implementation would look like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Base</span>:
+    __BASE_PARAMS__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;base&#34;</span>]
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>(Base):
+    __PARAMS__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;a&#34;</span>]
+    __ALL_PARAMS__ <span style="color:#f92672">=</span> Base<span style="color:#f92672">.</span>__BASE_PARAMS__ <span style="color:#f92672">+</span> __PARAMS__
+
+    
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">B</span>(Base):
+    __PARAMS__ <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;b&#34;</span>]
+    __ALL_PARAMS__ <span style="color:#f92672">=</span> Base<span style="color:#f92672">.</span>__BASE_PARAMS__ <span style="color:#f92672">+</span> __PARAMS__
+
+
+A<span style="color:#f92672">.</span>__ALL_PARAMS__
+<span style="color:#75715e"># [&#39;base&#39;,&#39;a&#39;]</span>
+
+B<span style="color:#f92672">.</span>__ALL_PARAMS__
+<span style="color:#75715e"># [&#39;base&#39;,&#39;b&#39;]</span>
+</code></pre></div><p>However, there are many classes that inherit the <code>Base</code> class, and it is troublesome to write the class attribute <code>__ALL_PARAMS__ = Base.__BASE_PARAMS__ + __PARAMS__</code>, which is irrelevant to processing, to all inherited classes.</p>
+<p>Isn&rsquo;t there a simple way to solve this problem without making sense to the inherited class?
+I want you to think about it.</p>
+<h1 id="meta-programming">Meta programming</h1>
+<p>Metaprogramming is a technique for defining a program in a program.</p>
+<p>I will not discuss the basics of metaprogramin here. If you want to know meta programming, please refer to the following articles.</p>
+<p><a href="http://qiita.com/fujimisakari/items/0d4786dd9ddeed4eb702">Meta programming with Python</a>
+[__new__ and __init__ and metaclass]](<a href="http://qiita.com/FGtatsuro/items/49f907a809e53b874b18">http://qiita.com/FGtatsuro/items/49f907a809e53b874b18</a>)
+<a href="http://qiita.com/mitsuru793/items/aa45f837dbe09b0874e5">In the python metaclass, pass the comparison operator as a string to the ORM method and assemble the where clause. </a></p>
+<p>Now, using metaclasses, we can solve the previous problem as follows.</p>
+<pre><code class="language-python:" data-lang="python:">class MetaClass(type):
+    def __init__(cls, name, bases, attribute):
+        super(MetaClass, cls).__init__(name, bases, attribute)
+        cls.__ALL_PARAMS__ = cls.__BASE_PARAMS__ + getattr(cls, &quot;__PARAMS__&quot;, [])
+
+
+class Base(metaclass=MetaClass):
+    __BASE_PARAMS__ = [&quot;base&quot;]
+
+
+class A(Base):
+    __PARAMS__ = [&quot;a&quot;]
+
+    
+class B(Base):
+    __PARAMS__ = [&quot;b&quot;]
+
+
+A.__ALL_PARAMS__
+# ['base','a']
+
+B.__ALL_PARAMS__
+# ['base','b']
+</code></pre><p>For Python2, assign the metaclass to the special attribute <code>__metaclass__</code>.</p>
+<pre><code class="language-python:" data-lang="python:">class Base(object):
+    __metaclass__ = MetaClass
+</code></pre><h2 id="various-meta-programming">Various meta programming</h2>
+<p>You can also extend the language using metaprogramming.
+The Final class in Java doesn&rsquo;t exist in Python, but you can use metaclasses to define similar functionality.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python:final_metaclass.py" data-lang="python:final_metaclass.py"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FinalMetaClass</span>(type):
+    <span style="color:#66d9ef">def</span> __init__(cls, name, bases, namespace):
+        super(FinalMetaClass, cls)<span style="color:#f92672">.</span>__init__(name, bases, namespace)
+        <span style="color:#66d9ef">for</span> _class <span style="color:#f92672">in</span> bases:
+            <span style="color:#66d9ef">if</span> isinstance(_class, FinalMetaClass):
+                <span style="color:#66d9ef">raise</span> <span style="color:#a6e22e">TypeError</span>()
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>:
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">B</span>(A, metaclass<span style="color:#f92672">=</span>FinalMetaClass):
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#75715e"># Error!!</span>
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">C</span>(B):
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><h2 id="__init__-or-__new__">__init__ or __new__?</h2>
+<p>Should I use <code>__init__</code> or <code>__new__</code> in a metaclass that inherits type?
+Basically, it&rsquo;s a matter of taste, whichever is fine.
+However, <code>__new__</code> has a higher degree of freedom, such as being able to rewrite <code>__slots__</code>.</p>
+<h2 id="new-special-method-__prepare__">New special method __prepare__</h2>
+<p>A special method <code>__prepare__</code> has been added from Python3.
+Normally, <code>__dict__</code> is a dict type whose order is not guaranteed (what happened in Python 3.6), so you can control this with <code>__prepare__</code>.</p>
+<p>The following is an excerpt from <a href="http://docs.python.jp/3/reference/datamodel.html">Python document</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> collections
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">OrderedClass</span>(type):
+
+    <span style="color:#a6e22e">@classmethod</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">__prepare__</span>(metacls, name, bases, <span style="color:#f92672">**</span>kwds):
+        <span style="color:#66d9ef">return</span> collections<span style="color:#f92672">.</span>OrderedDict()
+
+    <span style="color:#66d9ef">def</span> __new__(metacls, name, bases, namespace, <span style="color:#f92672">**</span>kwds):
+        cls <span style="color:#f92672">=</span> type<span style="color:#f92672">.</span>__new__(metacls, name, bases, dict(namespace))
+        cls<span style="color:#f92672">.</span>members <span style="color:#f92672">=</span> tuple(namespace)
+        <span style="color:#66d9ef">return</span> cls
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>(metaclass<span style="color:#f92672">=</span>OrderedClass):
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">one</span>(self): <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">two</span>(self): <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">three</span>(self): <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">four</span>(self): <span style="color:#66d9ef">pass</span>
+    
+A<span style="color:#f92672">.</span>members
+<span style="color:#75715e"># (&#39;__module__&#39;,&#39;__qualname__&#39;,&#39;one&#39;,&#39;two&#39;,&#39;three&#39;,&#39;four&#39;)</span>
+</code></pre></div><p>It can be confirmed that the enumeration of class members is in the order of definition.</p>
+<h2 id="metaclass-inheritance">Metaclass inheritance</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MetaA</span>(type):
+    <span style="color:#66d9ef">def</span> __new__(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        cls <span style="color:#f92672">=</span> type<span style="color:#f92672">.</span>__new__(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        cls<span style="color:#f92672">.</span>MetaA <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Yes&#34;</span>
+        <span style="color:#66d9ef">return</span> cls
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MetaB</span>(type):
+    <span style="color:#66d9ef">def</span> __new__(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        cls <span style="color:#f92672">=</span> type<span style="color:#f92672">.</span>__new__(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        cls<span style="color:#f92672">.</span>MetaB <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Yes&#34;</span>
+        <span style="color:#66d9ef">return</span> cls
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>(metaclass<span style="color:#f92672">=</span>MetaA):
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">B</span>(A, metaclass<span style="color:#f92672">=</span>MetaB):
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>When I try to define the <code>B</code> class, I get the following error:</p>
+<pre><code>TypeError: metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
+</code></pre><p>It is not only the <code>type</code> subclass that can be passed to <code>metaclass</code>.
+Anything that is Callable that corresponds to a particular argument can be used. In this case, you can pass a function to break the diamond inheritance.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MetaA</span>(type):
+    <span style="color:#66d9ef">def</span> __new__(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+        cls <span style="color:#f92672">=</span> type<span style="color:#f92672">.</span>__new__(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+        cls<span style="color:#f92672">.</span>MetaA <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Yes&#34;</span>
+        <span style="color:#66d9ef">return</span> cls
+
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">A</span>(metaclass<span style="color:#f92672">=</span>MetaA):
+    <span style="color:#66d9ef">pass</span>
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">MetaB</span>(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs):
+    cls <span style="color:#f92672">=</span> type(mcls, <span style="color:#f92672">*</span>args, <span style="color:#f92672">**</span>kwargs)
+    cls<span style="color:#f92672">.</span>MetaB <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Yes&#34;</span>
+    <span style="color:#66d9ef">return</span> cls
+    
+
+<span style="color:#66d9ef">class</span> <span style="color:#a6e22e">B</span>(A, metaclass<span style="color:#f92672">=</span>MetaAB):
+    <span style="color:#66d9ef">pass</span>
+
+B<span style="color:#f92672">.</span>MetaA, B<span style="color:#f92672">.</span>MetaB
+<span style="color:#75715e"># (&#39;Yes&#39;,&#39;Yes&#39;)</span>
+</code></pre></div><h2 id="how-to-use-meta-programming">How to use meta programming</h2>
+<p>Metaprogramming is powerful enough to change language specifications.
+Therefore, heavy use of metaprogramming can be a source of confusion in team programming.</p>
+<p>Basically, if the design is solid, there should be almost no meta programming.
+When creating a class attribute of an inheritance destination as an exception, it is often easier to write it by using a metaclass.</p>
+<p>#Reference
+<a href="http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Metaprogramming.html">http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Metaprogramming.html</a></p>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>

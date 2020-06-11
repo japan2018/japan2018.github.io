@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <meta name="generator" content="Hugo 0.72.0" />
+
+  
+  <meta name="description" content="Some description">
+  
+
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="https://memotut.com/apple-touch-icon.png">
+
+  
+  <link rel="icon" type="image/png" sizes="32x32" href="https://memotut.com/favicon-32x32.png">
+
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="https://memotut.com/favicon-16x16.png">
+
+  
+  <link rel="manifest" href="https://memotut.com/site.webmanifest">
+
+  
+  <link rel="mask-icon" href="https://memotut.com/safari-pinned-tab.svg" color="#5bbad5">
+
+  <meta name="msapplication-TileColor" content="#da532c">
+
+  <meta name="theme-color" content="#ffffff">
+
+  
+  <link rel="stylesheet" href="https://memotut.com/css/bootstrap.min.css" />
+
+  
+  <title>[Python] I tried extracting characters from subtitles (OpenCV: tesseract-ocr) | Memo Tut</title>
+  
+
+  <style>
+body {
+  min-width: 300px;
+}
+
+.custom-navbar {
+  margin-bottom: 1em;
+  height: 60px;
+}
+
+.custom-navbar a {
+  display: inline-block; 
+  padding: 18px 0;
+  margin-right: 1em; 
+  font-weight: bold; 
+}
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  text-decoration: none; 
+}
+
+@media print {
+  .custom-navbar {
+    display: none;
+  }
+}
+
+article {
+  padding-bottom: 1em;
+}
+
+img {
+  max-width: 100%;
+}
+
+
+body {
+  background-color: #fff;
+}
+
+
+
+body {
+  color: #212529;
+}
+
+
+
+a {
+  color: #007bff;
+}
+
+
+
+a:hover,
+a:focus {
+  color: #0056b3;
+}
+
+
+
+.custom-navbar {
+  background-color: #212529;
+}
+
+
+
+.custom-navbar a {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
+.custom-navbar a:hover,
+.custom-navbar a:focus {
+  color: rgba(255, 255, 255, 1);
+}
+
+
+
+.container {
+  max-width: 800px;
+}
+
+
+
+pre {
+  display: block;
+  padding: 9.5px;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  color: inherit; 
+  white-space: pre-wrap;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+code {
+  padding: 2px 4px;
+  color: inherit; 
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: .9em;
+}
+
+
+
+blockquote,
+.blockquote {
+  padding: 10px 20px;
+  margin: 0 0 20px;
+  font-size: 1em;
+  border-left: 5px solid #6c757d;
+}
+
+</style>
+</head>
+
+<body>
+  <nav class="custom-navbar">
+  <div class="container">
+    
+    <a href="/">Posts</a>
+    
+    <a href="/tags/">Tags</a>
+    
+    <a href="/about/">About</a>
+    
+    <a href="/index.xml">RSS</a>
+    
+  </div>
+</nav>
+  
+  <div class="container">
+    <article>
+      <h1>[Python] I tried extracting characters from subtitles (OpenCV: tesseract-ocr)</h1>
+<p>
+  <small class="text-secondary">
+  
+  
+  Nov 24, 2019
+  </small>
+  
+
+<small><code><a href="https://memotut.com/tags/python">Python</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-processing"> image processing</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/opencv"> OpenCV</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/image-recognition"> image recognition</a></code></small>
+
+
+<small><code><a href="https://memotut.com/tags/ocr"> OCR</a></code></small>
+
+</p>
+<pre><code>#Introduction
+</code></pre>
+<p>Here, I will try extracting characters from the subtitles that are displayed under the political broadcast.
+Since there is no background, it seems to be quite binary.</p>
+<p>Although it is possible to get the character and the position with considerable accuracy by extracting the character with the google cloud vision API, I will try to get the character by other methods here.</p>
+<h1 id="tesseract-ocr--pyocr">tesseract-ocr / pyocr</h1>
+<p>First, let&rsquo;s recognize characters using <code>tesseract</code> and <code>pyocr</code>.</p>
+<p>This is the source image.
+<img width="832" alt="sentences.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/ddbc7aae-0992-4bd4-14ba-a4bea72e9c47.png"></p>
+<p>Extract the characters and positions with the script below.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> sys
+
+<span style="color:#f92672">import</span> pyocr
+<span style="color:#f92672">import</span> pyocr.builders
+
+<span style="color:#f92672">import</span> cv2
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">imageToText</span>(src):
+tools <span style="color:#f92672">=</span> pyocr<span style="color:#f92672">.</span>get_available_tools()
+<span style="color:#66d9ef">if</span> len(tools) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;No OCR tool found&#34;</span>)
+sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+
+tool <span style="color:#f92672">=</span> tools[<span style="color:#ae81ff">0</span>]
+
+dst <span style="color:#f92672">=</span> tool<span style="color:#f92672">.</span>image_to_string(
+Image<span style="color:#f92672">.</span>open(src),
+lang<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;jpn&#39;</span>,
+builder<span style="color:#f92672">=</span>pyocr<span style="color:#f92672">.</span>builders<span style="color:#f92672">.</span>WordBoxBuilder(tesseract_layout<span style="color:#f92672">=</span><span style="color:#ae81ff">6</span>)
+)
+<span style="color:#66d9ef">return</span> dst
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+img_path <span style="color:#f92672">=</span> sys<span style="color:#f92672">.</span>argv[<span style="color:#ae81ff">1</span>]
+
+out <span style="color:#f92672">=</span> imageToText(img_path)
+
+img <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>imread(img_path)
+sentence <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> d <span style="color:#f92672">in</span> out:
+sentence<span style="color:#f92672">.</span>append(d<span style="color:#f92672">.</span>content)
+cv2<span style="color:#f92672">.</span>rectangle(img, d<span style="color:#f92672">.</span>position[<span style="color:#ae81ff">0</span>], d<span style="color:#f92672">.</span>position[<span style="color:#ae81ff">1</span>], (<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>), <span style="color:#ae81ff">2</span>)
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(sentence)<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;.&#34;</span>,<span style="color:#e6db74">&#34;.</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>))
+
+cv2<span style="color:#f92672">.</span>imshow(<span style="color:#e6db74">&#34;img&#34;</span>, img)
+cv2<span style="color:#f92672">.</span>imwrite(<span style="color:#e6db74">&#34;output.png&#34;</span>, img)
+cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">0</span>)
+cv2<span style="color:#f92672">.</span>destroyAllWindows()
+</code></pre></div><br>
+<ul>
+<li>letter</li>
+</ul>
+<pre><code>Article 25 All citizens have the right to live a healthy and culturally minimal life.
+The two countries must endeavor to improve and improve social welfare, social security and public health in all aspects of their lives.
+(Right to receive education and council to be received) Article 26 All citizens have the right to receive education in accordance with their abilities, as provided for by law.
+2. All citizens shall be obliged to have their children protected by ordinary education, as required by law.
+This is free of charge for compulsory education.
+[Rights and obligations of working, standards of working conditions and prohibition of abuse of children] Article 27 All citizens have the right to work and are obligated.
+2 Wages, working hours, rest and other working conditions are set by law.
+3 Children must not use this.
+Workers' right to organize and collective action] Article 28. The right of workers to organize and the right to collective bargaining and other collective actions is guaranteed.
+Property rights] Article 29 Property rights shall not infringe upon them.
+2 The content of property rights shall be determined by law in order to comply with public welfare.
+3 Private property can be used for the public with just compensation.
+</code></pre><ul>
+<li>Character position
+<img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/4eb27550-f903-dfe4-4b1f-7b8f3a887cec.png" alt="output.png"></li>
+</ul>
+<p>In the image of only characters obtained from word, html, etc., the characters themselves can be acquired, but the exact position of the characters seems to be difficult to acquire. What I want here is the position of each sentence, but even if I adjust it with the parameter of <code>tesseract_layout=6</code>, it seems that I can get it only in character units.</p>
+<h1 id="method">Method</h1>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/7baacf19-b4e4-e468-c156-6bcd2464265e.png" alt="output.png"></p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/e17b68e9-67c8-c6bc-f9b5-576e8f3ce7f4.png" alt="range.png"></p>
+<p>I tried to extract straight lines by binarization and Hough conversion, but I think that I will try ROI (cut out a part of the image) and apply OCR only to the part where subtitles will appear once.</p>
+<p>I was wondering if I could extract only the gray subtitles in the area, but it&rsquo;s hard to know because it&rsquo;s a person and it&rsquo;s likely to be :scream:</p>
+<h1 id="development-of">development of</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#f92672">import</span> sys
+
+<span style="color:#f92672">import</span> cv2
+<span style="color:#f92672">import</span> os
+<span style="color:#f92672">import</span> numpy <span style="color:#f92672">as</span> np
+
+<span style="color:#f92672">import</span> pyocr
+<span style="color:#f92672">import</span> pyocr.builders
+
+<span style="color:#f92672">from</span> PIL <span style="color:#f92672">import</span> Image, ImageDraw, ImageFont
+
+<span style="color:#f92672">import</span> time
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process</span>(src):
+kernel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones((<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">3</span>),np<span style="color:#f92672">.</span>uint8)
+gray <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(src, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+
+o_ret, o_dst <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(gray, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>THRESH_OTSU)
+dst <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>morphologyEx(o_dst, cv2<span style="color:#f92672">.</span>MORPH_OPEN, kernel)
+<span style="color:#66d9ef">return</span> cv2<span style="color:#f92672">.</span>bitwise_not(dst)
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">imageToText</span>(tool, src):
+tmp_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;temp.png&#34;</span>
+
+cv2<span style="color:#f92672">.</span>imwrite(tmp_path, src)
+dst <span style="color:#f92672">=</span> tool<span style="color:#f92672">.</span>image_to_string(
+Image<span style="color:#f92672">.</span>open(tmp_path),
+lang<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;jpn&#39;</span>,
+builder<span style="color:#f92672">=</span>pyocr<span style="color:#f92672">.</span>builders<span style="color:#f92672">.</span>WordBoxBuilder(tesseract_layout<span style="color:#f92672">=</span><span style="color:#ae81ff">6</span>)
+)
+
+sentence <span style="color:#f92672">=</span> []
+<span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> dst:
+sentence<span style="color:#f92672">.</span>append(item<span style="color:#f92672">.</span>content)
+
+<span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(sentence)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">createTextImage</span>(src, sentence, px, py, color<span style="color:#f92672">=</span>(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">8</span>), fsize<span style="color:#f92672">=</span><span style="color:#ae81ff">28</span>):
+
+tmp_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;src_temp.png&#34;</span>
+cv2<span style="color:#f92672">.</span>imwrite(tmp_path, src)
+
+img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(tmp_path)
+draw <span style="color:#f92672">=</span> ImageDraw<span style="color:#f92672">.</span>Draw(img)
+
+font <span style="color:#f92672">=</span> ImageFont<span style="color:#f92672">.</span>truetype(<span style="color:#e6db74">&#34;./IPAfont00303/ipag.ttf&#34;</span>, fsize)
+draw<span style="color:#f92672">.</span>text((px, py), sentence, fill<span style="color:#f92672">=</span>color, font<span style="color:#f92672">=</span>font)
+img<span style="color:#f92672">.</span>save(tmp_path)
+<span style="color:#66d9ef">return</span> cv2<span style="color:#f92672">.</span>imread(tmp_path)
+
+
+
+<span style="color:#66d9ef">if</span> __name__ <span style="color:#f92672">==</span><span style="color:#e6db74">&#39;__main__&#39;</span>:
+
+tools <span style="color:#f92672">=</span> pyocr<span style="color:#f92672">.</span>get_available_tools()
+<span style="color:#66d9ef">if</span> len(tools) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>:
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;No OCR tool found&#34;</span>)
+sys<span style="color:#f92672">.</span>exit(<span style="color:#ae81ff">1</span>)
+
+tool <span style="color:#f92672">=</span> tools[<span style="color:#ae81ff">0</span>]
+
+cap <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoCapture(<span style="color:#e6db74">&#39;one_minutes.mp4&#39;</span>)
+
+cap_width <span style="color:#f92672">=</span> int(cap<span style="color:#f92672">.</span>get(cv2<span style="color:#f92672">.</span>CAP_PROP_FRAME_WIDTH))
+cap_height <span style="color:#f92672">=</span> int(cap<span style="color:#f92672">.</span>get(cv2<span style="color:#f92672">.</span>CAP_PROP_FRAME_HEIGHT))
+fps <span style="color:#f92672">=</span> cap<span style="color:#f92672">.</span>get(cv2<span style="color:#f92672">.</span>CAP_PROP_FPS)
+
+telop_height <span style="color:#f92672">=</span> <span style="color:#ae81ff">50</span>
+
+fourcc <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoWriter_fourcc(<span style="color:#e6db74">&#39;m&#39;</span>,<span style="color:#e6db74">&#39;p&#39;</span>,<span style="color:#e6db74">&#39;4&#39;</span>,<span style="color:#e6db74">&#39;v&#39;</span>)
+writer <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>VideoWriter(<span style="color:#e6db74">&#39;extract_telop_text.mp4&#39;</span>,fourcc, fps, (cap_width, cap_height <span style="color:#f92672">+</span> telop_height))
+
+start <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time()
+count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+<span style="color:#66d9ef">try</span>:
+<span style="color:#66d9ef">while</span> True:
+<span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> cap<span style="color:#f92672">.</span>isOpened():
+<span style="color:#66d9ef">break</span>
+
+<span style="color:#66d9ef">if</span> cv2<span style="color:#f92672">.</span>waitKey(<span style="color:#ae81ff">1</span>) <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xFF</span> <span style="color:#f92672">==</span> ord(<span style="color:#e6db74">&#39;q&#39;</span>):
+<span style="color:#66d9ef">break</span>
+
+ret, frame <span style="color:#f92672">=</span> cap<span style="color:#f92672">.</span>read()
+
+<span style="color:#66d9ef">if</span> frame <span style="color:#f92672">is</span> None:
+<span style="color:#66d9ef">break</span>
+
+telop <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros((telop_height, cap_width, <span style="color:#ae81ff">3</span>), np<span style="color:#f92672">.</span>uint8)
+telop[:] <span style="color:#f92672">=</span> tuple((<span style="color:#ae81ff">128</span>,<span style="color:#ae81ff">128</span>,<span style="color:#ae81ff">128</span>))
+
+gray_frame <span style="color:#f92672">=</span> process(frame)
+roi <span style="color:#f92672">=</span> gray_frame[<span style="color:#ae81ff">435</span>:<span style="color:#ae81ff">600</span>, :]
+txt <span style="color:#f92672">=</span> imageToText(tool, roi)
+
+images <span style="color:#f92672">=</span> [frame, telop]
+
+frame <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>concatenate(images, axis<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>)
+font <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>FONT_HERSHEY_SIMPLEX
+
+seconds <span style="color:#f92672">=</span> round(count<span style="color:#f92672">/</span>fps, <span style="color:#ae81ff">4</span>)
+
+cv2<span style="color:#f92672">.</span>putText(frame, <span style="color:#e6db74">&#34;{:.4f} [sec]&#34;</span><span style="color:#f92672">.</span>format(seconds),
+(cap_width<span style="color:#f92672">-</span><span style="color:#ae81ff">250</span>, cap_height <span style="color:#f92672">+</span> telop_height<span style="color:#f92672">-</span><span style="color:#ae81ff">10</span>),
+font,
+<span style="color:#ae81ff">1</span>,
+(<span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>),
+<span style="color:#ae81ff">2</span>,
+(cv2<span style="color:#f92672">.</span>LINE_AA)
+
+writer<span style="color:#f92672">.</span>write(createTextImage(frame, txt, <span style="color:#ae81ff">20</span>, cap_height <span style="color:#f92672">+</span> <span style="color:#ae81ff">10</span>))
+count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;{}[sec]&#34;</span><span style="color:#f92672">.</span>format(seconds))
+
+<span style="color:#66d9ef">except</span> cv2<span style="color:#f92672">.</span>error <span style="color:#66d9ef">as</span> e:
+<span style="color:#66d9ef">print</span>(e)
+
+writer<span style="color:#f92672">.</span>release()
+cap<span style="color:#f92672">.</span>release()
+
+<span style="color:#66d9ef">print</span>(<span style="color:#e6db74">&#34;Done!!! {}[sec]&#34;</span><span style="color:#f92672">.</span>format(round(time<span style="color:#f92672">.</span>time()<span style="color:#f92672">-</span>start,<span style="color:#ae81ff">4</span>)))
+
+</code></pre></div><h2 id="supplement-i-am-using-pil-instead-of-opencv-to-write-japanese-characters-but-i-am-temporarily-saving-the-image-file-when-passing-data-because-of-that-it-took-more-than-10-minutes-to-generate-the-video-sweat_smile">Supplement-I am using PIL instead of openCV to write Japanese characters, but I am temporarily saving the image file when passing data. Because of that, it took more than 10 minutes to generate the video: sweat_smile:</h2>
+<p>Is there any better way: disappointed_relieved:</p>
+<p>Example)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">
+tmp_path <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;src_temp.png&#34;</span>
+Output the image data used <span style="color:#f92672">in</span> <span style="color:#75715e">#openCV</span>
+cv2<span style="color:#f92672">.</span>imwrite(tmp_path, src)
+
+Load data <span style="color:#66d9ef">with</span> <span style="color:#75715e">#PIL</span>
+img <span style="color:#f92672">=</span> Image<span style="color:#f92672">.</span>open(tmp_path)
+</code></pre></div><ul>
+<li>
+<p>The font uses IPA font.
+<a href="https://ipafont.ipa.go.jp/IPAfont/IPAfont00303.zip">https://ipafont.ipa.go.jp/IPAfont/IPAfont00303.zip</a></p>
+</li>
+<li>
+<p>The process before character recognition is as follows.</p>
+</li>
+</ul>
+<ol>
+<li>Make image black and white</li>
+<li>Binary processing by Otsu formula</li>
+<li>Noise reduction by opening process (contraction -&gt; enlargement)</li>
+<li>Flip the image</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Python" data-lang="Python"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">process</span>(src):
+kernel <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>ones((<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">3</span>),np<span style="color:#f92672">.</span>uint8)
+gray <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>cvtColor(src, cv2<span style="color:#f92672">.</span>COLOR_BGR2GRAY)
+
+o_ret, o_dst <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>threshold(gray, <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">255</span>, cv2<span style="color:#f92672">.</span>THRESH_OTSU)
+dst <span style="color:#f92672">=</span> cv2<span style="color:#f92672">.</span>morphologyEx(o_dst, cv2<span style="color:#f92672">.</span>MORPH_OPEN, kernel)
+<span style="color:#66d9ef">return</span> cv2<span style="color:#f92672">.</span>bitwise_not(dst)
+</code></pre></div><p>#Result</p>
+<p><img src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/ac13eefd-9f4c-abc5-9b95-5dfd74f6a96c.gif" alt="extract_telop_text.gif"></p>
+<p>Kampe is a little disturbing the character recognition, but I think it can be read to some extent.</p>
+<h1 id="in-conclusion">in conclusion</h1>
+<p>Next, let&rsquo;s recognize characters using Google Cloud Vision API.
+I tried Demo from <a href="https://cloud.google.com/vision/,">https://cloud.google.com/vision/,</a> but the accuracy is still high.
+<img width="834" alt="demo.png" src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/288206/833142c0-c5f8-ac1d-27f9-ee2ecee9f304.png"></p>
+<h1 id="helpful-links">Helpful links</h1>
+<ul>
+<li><a href="http://motojapan.hateblo.jp/entry/2018/03/12/094636">[Python] OCR (tesseract-ocr / pyocr) reads the expiration date (image → sequence) [House IT#19]</a></li>
+<li><a href="https://qiita.com/seigot/items/7d424000c8d35e5146e4">Convert image data to text with pyOCR in Mac environment</a></li>
+<li><a href="https://www.tech-tech.xyz/drawtext.html">Insert Japanese characters in images with Python. </a></li>
+</ul>
+
+    </article>
+  </div>
+
+  
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-169005401-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+  
+
+  
+<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#216942",
+      "text": "#b2d192"
+    },
+    "button": {
+      "background": "#afed71"
+    }
+  }
+})});
+</script>
+
+</body>
+
+</html>
